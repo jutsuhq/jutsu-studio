@@ -434,12 +434,12 @@ Authorization server `https://clerk.higgsfield.ai` (`/.well-known/oauth-authoriz
 How Jutsu signs in (`OAuthDiscovery`, `ClientRegistration`, `PKCEAuthorizer`, `OAuthClient`, `LoopbackAuthorizationPresenter`):
 
 1. **Discovery.** Read `resource_metadata` from the 401, fetch it, then fetch the first authorization server's metadata.
-2. **Client ID.** Use dynamic client registration (RFC 7591) as a public client:
+2. **Client ID.** The Client ID Metadata Document below when the server supports it; otherwise dynamic client registration (RFC 7591) as a public client:
    - request: `client_name: "Jutsu Studio"`, `token_endpoint_auth_method: "none"`, grants `authorization_code` + `refresh_token`;
    - redirects: `http://127.0.0.1:{47613,51874,58329}/callback` (RFC 8252 loopback, fixed ports so they match exactly);
    - a `client_id` registered earlier at the same issuer is reused.
 
-   A Client ID Metadata Document is supported by the server and drafted in `docs/oauth-client.json`. Its `client_id` URL is on GitHub Pages, which doesn't serve it yet, so the app passes `metadataDocumentURL: nil` and always registers.
+   Client ID Metadata Document: when the server advertises `client_id_metadata_document_supported`, `client_id` is `https://jutsuhq.github.io/jutsu-studio/oauth-client.json`, which GitHub Pages serves from `docs/oauth-client.json`. Registration remains the fallback. Checked on 2026-10-16: with that `client_id`, `/oauth/authorize` leads to Higgsfield's sign-in page, while an unpublished URL gets 401.
 3. **Authorization.** Authorization code with PKCE S256 and `state`. Scope `openid email offline_access`, with `resource=https://mcp.higgsfield.ai/mcp` (RFC 8707) on both the authorize and token requests. The browser returns the code to a listener on the first free loopback port.
 4. **Tokens.** Stored in the Keychain and refreshed with `refresh_token`. The ID token gives the account's email for display.
 
