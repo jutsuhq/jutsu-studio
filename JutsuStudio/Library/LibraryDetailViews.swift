@@ -105,7 +105,7 @@ struct RecordLines: View {
             Text(item.billingSummary)
             if let timing = item.timingSummary {
                 Text(timing)
-                    .hoverHint("Queue wait: from queueing until Higgsfield started generating")
+                    .hoverHint("Queue wait: until generation started")
             }
         }
         .font(.system(size: 11.5, weight: .medium))

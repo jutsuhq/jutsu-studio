@@ -21,7 +21,7 @@ struct KlingOptions: View {
 
     /// Off as well as disabled where the connection can't keep the background.
     private var backgroundToggle: some View {
-        let reason = context.videoBackgroundUnavailableReason
+        let reason = context.unavailableHint(for: .klingVideoBackground)
         return HStack(spacing: Theme.Spacing.small) {
             Text("Keep the video's background")
                 .font(.system(size: 12.5, weight: .medium))
@@ -37,13 +37,11 @@ struct KlingOptions: View {
             .labelsHidden()
         }
         .disabled(reason != nil)
-        .hoverHint(
-            reason.map { Text($0) }
-                ?? Text("Kling puts the character into the source video's scene instead of the reference image's"))
+        .hoverHint(reason.map { Text($0) } ?? Text("Use the video's scene"))
     }
 
     private var orientationPicker: some View {
-        let reason = context.unavailableReason(for: .klingOrientation)
+        let reason = context.unavailableHint(for: .klingOrientation)
         return VStack(alignment: .leading, spacing: Theme.Spacing.small) {
             Text("Character faces")
                 .font(.system(size: 12.5, weight: .medium))
@@ -51,9 +49,7 @@ struct KlingOptions: View {
             SegmentedControl(selection: $form.characterOrientation) { $0.title }
         }
         .disabled(reason != nil)
-        .hoverHint(
-            reason.map { Text($0) }
-                ?? Text("As in image keeps the way the character faces in the image; as in video follows the video"))
+        .hoverHint(reason.map { Text($0) } ?? Text("Follow the image or video"))
     }
 }
 
@@ -63,15 +59,13 @@ struct BitratePicker: View {
     let context: CreateContext
 
     var body: some View {
-        let reason = context.unavailableReason(for: .seedanceBitrate)
+        let reason = context.unavailableHint(for: .seedanceBitrate)
         VStack(alignment: .leading, spacing: Theme.Spacing.small) {
             SectionLabel(title: "Quality")
             SegmentedControl(selection: bitrate) { $0.title }
         }
         .disabled(reason != nil)
-        .hoverHint(
-            reason.map { Text($0) }
-                ?? Text("High bitrate keeps more detail in the encoded video; Standard makes a smaller file"))
+        .hoverHint(reason.map { Text($0) } ?? Text("Video bitrate"))
     }
 
     /// Until one is picked, the connection's own default.
@@ -92,7 +86,7 @@ struct CinemaOptions: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        let reason = context.unavailableReason(for: .cinemaControls)
+        let reason = context.unavailableHint(for: .cinemaControls)
         VStack(alignment: .leading, spacing: Theme.Spacing.small) {
             Button {
                 withAnimation(reduceMotion ? nil : .easeOut(duration: 0.15)) { isOpen.toggle() }
@@ -129,9 +123,7 @@ struct CinemaOptions: View {
                 .disabled(reason != nil)
             }
         }
-        .hoverHint(
-            reason.map { Text($0) }
-                ?? Text("Camera, lens, genre, era and the rest; on Auto, Cinema Studio picks them from the prompt"))
+        .hoverHint(reason.map { Text($0) } ?? Text("Camera, lens, genre and more"))
     }
 
     /// "2 set", or Auto with none set.

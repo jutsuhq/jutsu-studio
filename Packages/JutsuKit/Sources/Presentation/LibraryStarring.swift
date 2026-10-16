@@ -75,16 +75,3 @@ extension UserMessage {
                 message: String(localized: "The star is back as it was. Try again.", bundle: .module))
     }
 }
-
-/// Wording for the star, which is also the result's like on Higgsfield when the account made it.
-public enum LibraryStar {
-    public static func help(isStarred: Bool, syncsLike: Bool) -> String {
-        switch (isStarred, syncsLike) {
-        case (true, true): String(localized: "Unstar, and remove the like on Higgsfield", bundle: .module)
-        case (true, false): String(localized: "Unstar", bundle: .module)
-        case (false, true):
-            String(localized: "Star to find it with the Starred filter; it is liked on Higgsfield too", bundle: .module)
-        case (false, false): String(localized: "Star to find it with the Starred filter", bundle: .module)
-        }
-    }
-}

@@ -219,7 +219,17 @@ struct CullingButtons: View {
                 .labelStyle(.iconOnly)
                 .foregroundStyle(isCurrent ? Theme.accent : Theme.text)
                 .accessibilityAddTraits(isCurrent ? .isSelected : [])
-                .hoverHint(count > 1 ? String(localized: "\(action.title) \(count) results") : action.title)
+                .hoverHint(hint(for: action))
+        }
+    }
+
+    /// "Keep", "Reject 3 results", "Clear verdict".
+    private func hint(for action: CullingAction) -> String {
+        switch (action, count > 1) {
+        case (.clear, false): String(localized: "Clear verdict")
+        case (.clear, true): String(localized: "Clear \(count) verdicts")
+        case (_, false): action.title
+        case (_, true): String(localized: "\(action.title) \(count) results")
         }
     }
 }

@@ -874,9 +874,6 @@
     "Allow Jutsu Studio in System Settings › General › Login Items." : {
 
     },
-    "Already processing, the API can't cancel it" : {
-
-    },
     "Already used by %@" : {
 
     },
@@ -1033,9 +1030,6 @@
       }
     },
     "Cancel the selected job" : {
-
-    },
-    "Cancel, nothing is charged" : {
 
     },
     "Canceled" : {
@@ -1281,28 +1275,6 @@
     "Estimate" : {
 
     },
-    "Estimate from %lld similar past jobs; Higgsfield doesn't report progress" : {
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Estimate from %lld similar past job; Higgsfield doesn't report progress"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Estimate from %lld similar past jobs; Higgsfield doesn't report progress"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "Estimate, Higgsfield quotes it after upload" : {
 
     },
@@ -1454,9 +1426,6 @@
     "Higgsfield refused this key ID and secret. Check both and try again." : {
 
     },
-    "Higgsfield renders this draft at 1080p for a third of a new 1080p render" : {
-
-    },
     "Higgsfield server error (HTTP %lld)" : {
 
     },
@@ -1526,9 +1495,6 @@
           }
         }
       }
-    },
-    "Its files are uploaded. Its price is checked and it's sent to Higgsfield once a slot is free; Settings › Output › Parallel jobs sets how many run at once." : {
-
     },
     "Job failed" : {
 
@@ -2195,12 +2161,6 @@
     "Star or unstar results" : {
 
     },
-    "Star to find it with the Starred filter" : {
-
-    },
-    "Star to find it with the Starred filter; it is liked on Higgsfield too" : {
-
-    },
     "Starred" : {
 
     },
@@ -2211,9 +2171,6 @@
 
     },
     "Start frame" : {
-
-    },
-    "Stop the download, the generation is already charged" : {
 
     },
     "Stored in" : {
@@ -2439,9 +2396,6 @@
 
     },
     "Unstar" : {
-
-    },
-    "Unstar, and remove the like on Higgsfield" : {
 
     },
     "Untitled template" : {
@@ -2799,6 +2753,49 @@
     },
     "%lld px" : {
 
+    },
+    "Only on a Higgsfield account" : {
+
+    },
+    "Only with an API key" : {
+
+    },
+    "Sent once a slot is free" : {
+
+    },
+    "Stop download" : {
+
+    },
+    "Cancel job" : {
+
+    },
+    "Can't cancel while processing" : {
+
+    },
+    "Render this draft in 1080p" : {
+
+    },
+    "Estimate from %lld past jobs" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Estimate from %lld past job"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Estimate from %lld past jobs"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

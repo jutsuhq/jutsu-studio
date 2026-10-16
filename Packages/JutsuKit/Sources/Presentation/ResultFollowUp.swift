@@ -57,8 +57,8 @@ extension Job {
 public enum FinalizeText {
     /// The button and menu item.
     public static let title = String(localized: "Finalize in 1080p", bundle: .module)
-    public static let help = String(
-        localized: "Higgsfield renders this draft at 1080p for a third of a new 1080p render", bundle: .module)
+    /// The button's tooltip.
+    public static let help = String(localized: "Render this draft in 1080p", bundle: .module)
 
     /// "Finalize in 1080p until Oct 22, 2026 at 14:05", or "The 1080p finalize ended Oct 22, 2026 at 14:05" once
     /// `deadline` is past at `now`.

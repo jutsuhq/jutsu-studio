@@ -213,15 +213,12 @@ extension LibraryView {
                         }
                     }
                     .buttonStyle(.iconAction)
-                    .hoverHint(
-                        kind == .image
-                            ? "Pick two images to show side by side" : "Pick two results to play side by side"
-                    )
+                    .hoverHint(kind == .image ? "Compare two images" : "Compare two results")
                 }
             }
             Button(DeliveryContent.title, systemImage: "shippingbox") { deliverySets = DeliverySetsRoute() }
                 .buttonStyle(.iconAction)
-                .hoverHint("Named sets of exact versions, exported in several formats at once")
+                .hoverHint("Open delivery sets")
             if origin == .higgsfield, availability == .available {
                 Button("Refresh", systemImage: "arrow.clockwise") {
                     Task { await environment.loadHistory(refresh: true) }
@@ -230,9 +227,8 @@ extension LibraryView {
                 .keyboardShortcut(refreshShortcut)
                 .disabled(environment.history.isLoading)
                 .hoverHint(
-                    $refreshShortcut.map {
-                        String(localized: "Load the newest videos from Higgsfield (\($0.displayText))")
-                    } ?? String(localized: "Load the newest videos from Higgsfield"))
+                    $refreshShortcut.map { String(localized: "Refresh (\($0.displayText))") }
+                        ?? String(localized: "Refresh"))
             } else {
                 // Keeps the row as wide on both origins, so the header never moves under the title on one of them.
                 Color.clear.frame(width: 34, height: 34)

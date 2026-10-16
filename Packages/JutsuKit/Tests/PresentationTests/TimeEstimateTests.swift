@@ -35,7 +35,7 @@ enum TimingFixture {
         #expect(estimate.label == "usually ~2 min")
         #expect(estimate.fraction == 0.5)
         #expect(!estimate.isOverdue)
-        #expect(estimate.help == "Estimate from 4 similar past jobs; Higgsfield doesn't report progress")
+        #expect(estimate.help == "Estimate from 4 past jobs")
         #expect(row.progress == nil)
         #expect(row.progressText == nil)
     }

@@ -21,7 +21,7 @@ struct ScoreVariantsButton: View {
             }
             .buttonStyle(.secondaryAction)
             .disabled(reason != nil || environment.variantScorer.isRunning)
-            .hoverHint(reason ?? String(localized: "Predict each variant's hook, engagement and sustain, free"))
+            .hoverHint(reason ?? String(localized: "Predict virality"))
             .sheet(item: $request) { ScoreVariantsSheet(plan: $0.plan) }
         }
     }
@@ -225,7 +225,7 @@ private struct ViralityDetails: View {
                 Button("Open dashboard") { openURL(report) }
                     .buttonStyle(.link)
                     .font(.system(size: 12))
-                    .hoverHint(String(localized: "Open the full report on Higgsfield"))
+                    .hoverHint(String(localized: "Open report on Higgsfield"))
             }
         }
         .padding(Theme.Spacing.large)

@@ -25,7 +25,7 @@ struct EditingExportButton: View {
                         .controlSize(.small)
                     Button("Cancel Export", systemImage: "xmark") { model.cancel() }
                         .buttonStyle(.iconAction)
-                        .hoverHint("Cancel the export")
+                        .hoverHint("Cancel export")
                 }
             } else {
                 menu
@@ -56,7 +56,7 @@ struct EditingExportButton: View {
         .menuIndicator(.hidden)
         .fixedSize()
         .disabled(item.outputFile == nil)
-        .hoverHint(EditingExportContent.menuTitle)
+        .hoverHint("Export for editing")
     }
 
     private func export(_ preset: ExportPreset) {

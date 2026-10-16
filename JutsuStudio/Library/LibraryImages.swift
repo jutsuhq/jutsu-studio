@@ -67,8 +67,7 @@ struct SavedImageCard: View {
             isAvailable
                 ? image.prompt
                 : String(
-                    localized:
-                        "The file isn't where it was saved. If it's on a drive that isn't connected, connect it to see the image again."
+                    localized: "File missing or drive disconnected"
                 )
         )
         .task(id: isAvailable ? image.fileURL : nil) {

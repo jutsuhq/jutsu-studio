@@ -95,8 +95,8 @@ struct DeliverySetDetail: View {
             .font(.caption)
             .hoverHint(
                 draft.isFrozen
-                    ? DeliveryContent.frozenMessage
-                    : String(localized: "The set's versions are fixed when it is first exported."))
+                    ? String(localized: "Versions locked after export")
+                    : String(localized: "Versions lock on first export"))
         }
     }
 
@@ -139,7 +139,7 @@ struct DeliverySetDetail: View {
                         try? draft.setItems(draft.items.filter { $0.reference != item.reference })
                     }
                     .labelStyle(.iconOnly)
-                    .hoverHint("Take this item out of the set")
+                    .hoverHint("Remove from set")
                 }
             }
             .buttonStyle(.plain)
@@ -192,7 +192,7 @@ struct DeliverySetDetail: View {
         let pending = DeliveryPlan.tasks(for: draft, scope: .pending) { _ in false }.count
         return HStack(spacing: Theme.Spacing.small) {
             Button("New Set from This One", systemImage: "arrow.triangle.branch") { startNextRound(draft) }
-                .hoverHint("Start the next round with the items' newest versions")
+                .hoverHint("New set with newest versions")
             if let folder = draft.folder {
                 Button("Show in Finder", systemImage: "folder") {
                     NSWorkspace.shared.activateFileViewerSelecting([folder.url])
@@ -214,9 +214,7 @@ struct DeliverySetDetail: View {
                 }
                 .buttonStyle(.primaryAction)
                 .disabled(pending == 0)
-                .hoverHint(
-                    "Write only what isn't exported as the set is now: new outputs, a fixed crop, failed or skipped files"
-                )
+                .hoverHint("Export only changes")
             } else {
                 Button("Export…") { export(.all, relations: relations, to: nil) }
                     .buttonStyle(.primaryAction)
