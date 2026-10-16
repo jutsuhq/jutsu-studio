@@ -1,0 +1,1777 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "cinemaStudio4.camera_aperture" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aperture"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_aperture.f11-deep-focus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "f/11, deep focus"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_aperture.f14-wide-open" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "f/1.4, wide open"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_aperture.f4-moderate" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "f/4, moderate"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_lens" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lens"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_lens.anamorphic" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anamorphic"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_lens.clean-sharp" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clean and sharp"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_lens.halation-vintage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vintage with halation"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_lens.vintage-anamorphic" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vintage anamorphic"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_lens.warm-vintage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Warm vintage"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_model" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Camera"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_model.35mm-film" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "35mm film"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_model.8mm-film" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "8mm film"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_model.dv-camcorder" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DV camcorder"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_model.modern" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modern digital"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Movement"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.aerial-pullback" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aerial pullback"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.arc-left" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arc left"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.arc-right" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arc right"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.bullet-time" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bullet time"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.crane-down" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crane down"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.crane-up" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crane up"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.crush-zoom" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crash zoom"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.dolly-in" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dolly in"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.dolly-out" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dolly out"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.dolly-zoom" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dolly zoom"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.drone-orbit" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drone orbit"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.handheld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Handheld"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.helicopter-shot" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Helicopter shot"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.pan-left" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pan left"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.pan-right" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pan right"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.pedestal-down" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pedestal down"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.pedestal-up" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pedestal up"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.pov" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "POV"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.rack-focus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rack focus"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.robot-arm" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Robot arm"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.side-tracking" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Side tracking"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.slider-left" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slider left"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.slider-right" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slider right"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.slow-zoom-in" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slow zoom in"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.slow-zoom-out" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slow zoom out"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.snorricam" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SnorriCam"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.static-shot" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Static shot"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.tilt-down" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tilt down"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.tilt-up" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tilt up"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.tracking" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tracking"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.truck-left" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Truck left"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.truck-right" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Truck right"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.camera_movement.whip-pan" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whip pan"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Color palette"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.a-dream-in-color" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A Dream in Color"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.a-hotel-for-one" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A Hotel for One"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.after-dark" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "After Dark"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.amber-wasteland" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Amber Wasteland"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.back-row-kissing-seats" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back Row Kissing Seats"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.bioluminescent-night" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bioluminescent Night"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.breakfast-on-schedule" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Breakfast on Schedule"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.bubblegum-boulevard" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bubblegum Boulevard"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.crimson-vigi" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crimson Vigi"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.dont-turn-it-off-im-watching" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Don't Turn It Off, I'm Watching"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.everyone-speaks-in-whispers" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Everyone Speaks in Whispers"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.favela-gold" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favela Gold"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.field-post" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Field Post"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.gasoline-sunset" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gasoline Sunset"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.ghost-in-the-code" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ghost in the Code"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.glossy-flesh" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glossy Flesh"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.highway-standoff" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Highway Standoff"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.home-is-the-next-gas-station" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Home Is the Next Gas Station"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.industrial-fog" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Industrial Fog"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.mirage-at-noon" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mirage at Noon"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.neon-rain-at-midnight" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neon Rain at Midnight"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.oil-ochre" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oil Ochre"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.on-the-other-side-of-the-porthole" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On the Other Side of the Porthole"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.overtime" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Overtime"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.pink-velvet" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pink Velvet"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.playtime" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Playtime"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.runaway-summer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Runaway Summer"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.stairs-go-up" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stairs Go Up"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.static-noon" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Static Noon"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.the-butterfly" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Butterfly"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.the-circus" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Circus"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.the-crimson-ballet" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Crimson Ballet"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.the-earth-keeps-things-reluctantly" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Earth Keeps Things Reluctantly"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.the-emerald-ambush" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Emerald Ambush"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.the-faded-fresco" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Faded Fresco"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.the-grey-channel" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Grey Channel"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.the-ground" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Ground"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.the-investigation" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Investigation"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.the-iron-borough" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Iron Borough"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.the-morning-after-rain" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Morning After Rain"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.the-mountain-convent" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Mountain Convent"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.the-neighbors-saw-everything" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Neighbors Saw Everything"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.the-silk-curtain-falls" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Silk Curtain Falls"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.the-way-home-is-longer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Way Home Is Longer"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.tropic-fever-dream" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tropic Fever Dream"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.turquoise-mirage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turquoise Mirage"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.twilight-fable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Twilight Fable"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.two-days-to-the-horizon" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Two Days to the Horizon"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.wallpaper-romance" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wallpaper Romance"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.color_palette.yellow-room" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yellow Room"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cinema Studio 4.0 · directs the shot from the prompt"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.era" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Era"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.era.1960s" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1960s"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.era.1980s" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1980s"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.era.1990s" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1990s"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.era.2000s" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2000s"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.era.2020s" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2020s"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.family" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cinema Studio"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.genre" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Genre"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.genre.action" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Action"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.genre.comedy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comedy"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.genre.drama" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drama"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.genre.epic" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Epic"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.genre.horror" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Horror"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.genre.noir" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noir"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.light" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lighting"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.light.contre-jour" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contre-jour"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.light.overhead-fall" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Overhead falloff"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.light.practicals" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Practicals"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.light.silhouette" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Silhouette"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.light.soft-cross" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Soft cross light"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.light.window" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Window light"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.pacing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pacing"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.pacing.calm" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calm"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.pacing.chaotic" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chaotic"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.pacing.dynamic" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dynamic"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.pacing.single-shot" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Single shot"
+          }
+        }
+      }
+    },
+    "cinemaStudio4.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cinema Studio 4.0"
+          }
+        }
+      }
+    },
+    "genjutsu.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Higgsfield's own"
+          }
+        }
+      }
+    },
+    "genjutsu.family" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Genjutsu"
+          }
+        }
+      }
+    },
+    "genjutsu.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Genjutsu"
+          }
+        }
+      }
+    },
+    "klingMotionControl.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kling 3.0 · Pro at 1080p"
+          }
+        }
+      }
+    },
+    "klingMotionControl.family" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kling"
+          }
+        }
+      }
+    },
+    "klingMotionControl.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kling 3.0"
+          }
+        }
+      }
+    },
+    "klingMotionControl26.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kling 2.6 · cheaper motion control"
+          }
+        }
+      }
+    },
+    "klingMotionControl26.family" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kling"
+          }
+        }
+      }
+    },
+    "klingMotionControl26.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kling 2.6"
+          }
+        }
+      }
+    },
+    "klingO3VideoEdit.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kling O3 · changes the clip as the prompt says"
+          }
+        }
+      }
+    },
+    "klingO3VideoEdit.family" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kling"
+          }
+        }
+      }
+    },
+    "klingO3VideoEdit.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kling O3 Edit"
+          }
+        }
+      }
+    },
+    "klingO3VideoReference.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kling O3 · follows the video and the prompt"
+          }
+        }
+      }
+    },
+    "klingO3VideoReference.family" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kling"
+          }
+        }
+      }
+    },
+    "klingO3VideoReference.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kling O3"
+          }
+        }
+      }
+    },
+    "minimaxH3MaxReference.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MiniMax H3 Max · 480p or 768p, on an account"
+          }
+        }
+      }
+    },
+    "minimaxH3MaxReference.family" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MiniMax"
+          }
+        }
+      }
+    },
+    "minimaxH3MaxReference.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MiniMax H3 Max"
+          }
+        }
+      }
+    },
+    "minimaxH3Reference.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MiniMax H3 · 2K, 5–15 s"
+          }
+        }
+      }
+    },
+    "minimaxH3Reference.family" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MiniMax"
+          }
+        }
+      }
+    },
+    "minimaxH3Reference.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MiniMax H3"
+          }
+        }
+      }
+    },
+    "seedance25.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seedance 2.5 · follows the prompt"
+          }
+        }
+      }
+    },
+    "seedance25.family" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seedance"
+          }
+        }
+      }
+    },
+    "seedance25.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seedance 2.5"
+          }
+        }
+      }
+    },
+    "wan27Reference.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wan 2.7 · 720p and 1080p, up to 10 s"
+          }
+        }
+      }
+    },
+    "wan27Reference.family" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wan"
+          }
+        }
+      }
+    },
+    "wan27Reference.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wan 2.7"
+          }
+        }
+      }
+    },
+    "wan30PrimeReference.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wan 3.0 Prime · follows the video and the prompt"
+          }
+        }
+      }
+    },
+    "wan30PrimeReference.family" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wan"
+          }
+        }
+      }
+    },
+    "wan30PrimeReference.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wan 3.0 Prime"
+          }
+        }
+      }
+    },
+    "wan30Reference.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wan 3.0 · follows the video and the prompt"
+          }
+        }
+      }
+    },
+    "wan30Reference.family" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wan"
+          }
+        }
+      }
+    },
+    "wan30Reference.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wan 3.0"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

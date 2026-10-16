@@ -1,0 +1,25 @@
+{
+  "tool": "generate_image",
+  "arguments": {
+    "params": {
+      "model": "soul_2",
+      "prompt": "a paper boat on a calm lake, evening light",
+      "quality": "1.5k",
+      "aspect_ratio": "1:1",
+      "count": 2,
+      "use_unlim": true
+    }
+  },
+  "isError": true,
+  "text": "Error starting generation: Unlimited generations aren't supported for text2image_soul_v2.",
+  "answer": {
+    "error": "Unlimited generations aren't supported for text2image_soul_v2.",
+    "adjustments": {
+      "params.count": {
+        "requested": 2,
+        "used": 1,
+        "reason": "use_unlim spends the free-trial allowance once per generation, so count is capped at 1. Submit separate calls for more, or drop use_unlim to generate a batch on credits."
+      }
+    }
+  }
+}

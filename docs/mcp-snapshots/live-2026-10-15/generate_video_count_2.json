@@ -1,0 +1,31 @@
+{
+  "tool": "generate_video",
+  "arguments": {
+    "params": {
+      "model": "seedance_2_5",
+      "mode": "t2v",
+      "prompt": "a paper boat drifting on a calm lake",
+      "duration": 4,
+      "resolution": "480p",
+      "aspect_ratio": "9:16",
+      "count": 2,
+      "use_unlim": false
+    }
+  },
+  "answer": {
+    "results": [
+      {
+        "id": "e62128d0-f91e-4c5c-aafd-f1be29d8039e",
+        "type": "video",
+        "status": "pending",
+        "model": "seedance_2_5"
+      },
+      {
+        "id": "3e91e2e7-caee-482e-9c9e-c0af66cda89d",
+        "type": "video",
+        "status": "pending",
+        "model": "seedance_2_5"
+      }
+    ]
+  }
+}

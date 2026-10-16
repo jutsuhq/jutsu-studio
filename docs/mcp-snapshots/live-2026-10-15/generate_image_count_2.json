@@ -1,0 +1,29 @@
+{
+  "tool": "generate_image",
+  "arguments": {
+    "params": {
+      "model": "soul_2",
+      "prompt": "a paper boat on a calm lake, morning light",
+      "quality": "1.5k",
+      "aspect_ratio": "1:1",
+      "count": 2,
+      "use_unlim": false
+    }
+  },
+  "answer": {
+    "results": [
+      {
+        "id": "8c2f6fdf-d06c-4666-bd7b-f6d8c5eafcfc",
+        "type": "image",
+        "status": "pending",
+        "model": "text2image_soul_v2"
+      },
+      {
+        "id": "b2315e67-3ee8-4b8b-9e73-b62860d37ec8",
+        "type": "image",
+        "status": "pending",
+        "model": "text2image_soul_v2"
+      }
+    ]
+  }
+}

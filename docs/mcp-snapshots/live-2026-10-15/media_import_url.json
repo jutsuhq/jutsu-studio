@@ -1,0 +1,13 @@
+{
+  "tool": "media_import_url",
+  "arguments": {
+    "url": "https://example.com/clip.mp4",
+    "type": "video"
+  },
+  "answer": {
+    "media_id": "86198d56-f1e1-4176-b6bf-68a90d545a01",
+    "type": "video",
+    "content_type": "video/mp4",
+    "source_url": "https://example.com/clip.mp4"
+  }
+}

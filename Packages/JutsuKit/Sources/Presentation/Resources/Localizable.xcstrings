@@ -1,0 +1,2805 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Checking the image models…" : {
+
+    },
+    "\"%@\" uses %@, which this connection doesn't offer." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "\"%1$@\" uses %2$@, which this connection doesn't offer."
+          }
+        }
+      }
+    },
+    "\"%@\" uses an image model this connection doesn't offer, so it runs on %@." : {
+
+    },
+    "\"draft\" for drafts, otherwise empty" : {
+
+    },
+    "%@ GB" : {
+
+    },
+    "%@ KB" : {
+
+    },
+    "%@ MB" : {
+
+    },
+    "%@ TB" : {
+
+    },
+    "%@ batch" : {
+
+    },
+    "%@ clip — pick up to %@ below" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ clip — pick up to %2$@ below"
+          }
+        }
+      }
+    },
+    "%@ cr" : {
+
+    },
+    "%@ cr left on your plan" : {
+
+    },
+    "%@ credits" : {
+
+    },
+    "%@ edits an image: add one" : {
+
+    },
+    "%@ is below the 640×640 minimum for object swap." : {
+
+    },
+    "%@ isn't available on this connection" : {
+
+    },
+    "%@ older than %lld days, %@ in total. The library keeps their jobs, inputs and costs and shows the files as missing." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ older than %2$lld days, %3$@ in total. The library keeps their jobs, inputs and costs and shows the files as missing."
+          }
+        }
+      }
+    },
+    "%@ plan" : {
+
+    },
+    "%@ plan, %lld credits left" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ plan, %#@credits@ left"
+          },
+          "substitutions" : {
+            "credits" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg credit"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg credits"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%@ s" : {
+
+    },
+    "%@ selected · %lld ranges · billed %lld s" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ selected · %2$lld ranges · billed %3$lld s"
+          }
+        }
+      }
+    },
+    "%@ selected · billed %lld s" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ selected · billed %2$lld s"
+          }
+        }
+      }
+    },
+    "%@ takes up to %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ takes up to %2$@."
+          }
+        }
+      }
+    },
+    "%@ · %@ · Price from Higgsfield" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$@ · Price from Higgsfield"
+          }
+        }
+      }
+    },
+    "%@ · About %@ · Estimate" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · About %2$@ · Estimate"
+          }
+        }
+      }
+    },
+    "%@ · Free" : {
+
+    },
+    "%@ · Price from Higgsfield" : {
+
+    },
+    "%@ · Price from Higgsfield · charged on completion" : {
+
+    },
+    "%@ · prepared sources, previews and downloaded inputs" : {
+
+    },
+    "%@ — %@ draft" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ — %2$@ draft"
+          }
+        }
+      }
+    },
+    "%@ — %@ final" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ — %2$@ final"
+          }
+        }
+      }
+    },
+    "%lld bytes" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld byte"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld bytes"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld characters" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld character"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld characters"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld credits" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld credit"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld credits"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld d ago" : {
+
+    },
+    "%lld drafts" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld draft"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld drafts"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld files" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld file"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld files"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld fps" : {
+
+    },
+    "%lld h" : {
+
+    },
+    "%lld h ago" : {
+
+    },
+    "%lld image requests are running too." : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld image request is running too."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld image requests are running too."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld image requests are still running." : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld image request is still running."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld image requests are still running."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld images" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld image"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld images"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld images weren't added" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld image wasn't added"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld images weren't added"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld jobs" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld job"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld jobs"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld jobs are still running." : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld job is still running."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld jobs are still running."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld jobs in the queue" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld job in the queue"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld jobs in the queue"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld jobs queued" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld job queued"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld jobs queued"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld min" : {
+
+    },
+    "%lld min ago" : {
+
+    },
+    "%lld of %lld done" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of %2$lld done"
+          }
+        }
+      }
+    },
+    "%lld of %lld jobs queued" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of %2$lld jobs queued"
+          }
+        }
+      }
+    },
+    "%lld of %lld jobs weren't canceled" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of %2$lld jobs weren't canceled"
+          }
+        }
+      }
+    },
+    "%lld of %lld slots busy" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of %2$lld slots busy"
+          }
+        }
+      }
+    },
+    "%lld of them are already with Higgsfield, which is asked to drop them. A job it already started can't be canceled and is charged." : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld of them is already with Higgsfield, which is asked to drop them. A job it already started can't be canceled and is charged."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld of them are already with Higgsfield, which is asked to drop them. A job it already started can't be canceled and is charged."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld of them are being sent to Higgsfield right now, so quitting waits up to %lld seconds for Higgsfield to answer." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%#@sending@ being sent to Higgsfield right now, so quitting waits up to %2$lld seconds for Higgsfield to answer."
+          },
+          "substitutions" : {
+            "sending" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg of them is"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg of them are"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld paused" : {
+
+    },
+    "%lld ranges · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld ranges · %2$@"
+          }
+        }
+      }
+    },
+    "%lld reference images" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld reference image"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld reference images"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld s" : {
+
+    },
+    "%lld s = %lld credits" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld s = %#@credits@"
+          },
+          "substitutions" : {
+            "credits" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg credit"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg credits"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld s = up to %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld s = up to %2$@"
+          }
+        }
+      }
+    },
+    "%lld s · estimating…" : {
+
+    },
+    "%lld selected" : {
+
+    },
+    "%lld set" : {
+
+    },
+    "%lld stopped" : {
+
+    },
+    "%lld styles" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld style"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld styles"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld variants" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld variant"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld variants"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld videos" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld video"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld videos"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "30 days" : {
+
+    },
+    "7 days" : {
+
+    },
+    "A batch makes one video per style or character" : {
+
+    },
+    "A batch takes up to %lld characters" : {
+
+    },
+    "A batch takes up to %lld characters. Remove one to add another." : {
+
+    },
+    "A batch takes up to %lld styles" : {
+
+    },
+    "A batch takes up to %lld styles. Remove one to add another." : {
+
+    },
+    "A batch uses one range, remove the others" : {
+
+    },
+    "A direct link to the file, starting with https://. Jutsu Studio downloads it first." : {
+
+    },
+    "A reference image can't be read. Add it again, then save the template." : {
+
+    },
+    "A style makes one video per run" : {
+
+    },
+    "An input of this job doesn't point to a secure Higgsfield address. Add the files again to run it." : {
+
+    },
+    "An input of this job is no longer available on Higgsfield. Add the files again to run it." : {
+
+    },
+    "API key" : {
+
+    },
+    "API key is invalid" : {
+
+    },
+    "API key, billed in USD per job" : {
+
+    },
+    "About %@ · Estimate" : {
+
+    },
+    "About %@ · Estimate · charged on completion" : {
+
+    },
+    "Access was denied" : {
+
+    },
+    "Account" : {
+
+    },
+    "Add %lld–%lld s" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Add %1$lld–%2$lld s"
+          }
+        }
+      }
+    },
+    "Add a source video" : {
+
+    },
+    "Add a start frame, or clear the end frame" : {
+
+    },
+    "Add at least %lld characters" : {
+
+    },
+    "Add at least %lld images" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Add at least %lld image"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Add at least %lld images"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Add at least one image" : {
+
+    },
+    "Add images under references instead." : {
+
+    },
+    "Add videos as the source instead." : {
+
+    },
+    "Add ⌘, ⌃ or ⌥ so it doesn't fire while typing" : {
+
+    },
+    "Added" : {
+
+    },
+    "All" : {
+
+    },
+    "All styles" : {
+
+    },
+    "Allow Jutsu Studio in System Settings › General › Login Items." : {
+
+    },
+    "Already processing, the API can't cancel it" : {
+
+    },
+    "Already used by %@" : {
+
+    },
+    "An API key can't read past generations. Sign in to your account in Settings to see them." : {
+
+    },
+    "Animal" : {
+
+    },
+    "As in image" : {
+
+    },
+    "As in video" : {
+
+    },
+    "Auto" : {
+
+    },
+    "Background removed from %@" : {
+
+    },
+    "Barlow Condensed by The Barlow Project Authors, SIL Open Font License 1.1." : {
+
+    },
+    "Batch" : {
+
+    },
+    "Batch: %@" : {
+
+    },
+    "Bird" : {
+
+    },
+    "Bold" : {
+
+    },
+    "Build %@" : {
+
+    },
+    "Built-in" : {
+
+    },
+    "Can't be scored: made by another account" : {
+
+    },
+    "Can't be scored: made with an API key" : {
+
+    },
+    "Can't be scored: no account job ID" : {
+
+    },
+    "Can't be scored: not finished" : {
+
+    },
+    "Can't download the file" : {
+
+    },
+    "Can't export the result" : {
+
+    },
+    "Can't get the price of this character." : {
+
+    },
+    "Can't load the library" : {
+
+    },
+    "Can't load the traits." : {
+
+    },
+    "Can't load your Higgsfield history" : {
+
+    },
+    "Can't load your elements" : {
+
+    },
+    "Can't move %lld files to the Trash" : {
+
+    },
+    "Can't move the file to the Trash" : {
+
+    },
+    "Can't open %lld files" : {
+
+    },
+    "Can't open “%@”" : {
+
+    },
+    "Can't reach Higgsfield" : {
+
+    },
+    "Can't read the video's frame size" : {
+
+    },
+    "Can't read where this request is: %@ It's followed again after the next sign-in or launch, and its price still counts." : {
+
+    },
+    "Can't remove the result from the Library" : {
+
+    },
+    "Can't save the template" : {
+
+    },
+    "Can't save to Higgsfield" : {
+
+    },
+    "Can't update the like on Higgsfield" : {
+
+    },
+    "Can't use this link" : {
+
+    },
+    "Cancel %lld Jobs" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Cancel %lld Job"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Cancel %lld Jobs"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Cancel %lld jobs?" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Cancel %lld job?"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Cancel %lld jobs?"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Cancel the selected job" : {
+
+    },
+    "Cancel, nothing is charged" : {
+
+    },
+    "Canceled" : {
+
+    },
+    "Canceled on the server." : {
+
+    },
+    "Capybara" : {
+
+    },
+    "Cat" : {
+
+    },
+    "Change Voice" : {
+
+    },
+    "Change Voice to %@" : {
+
+    },
+    "Change a clip as the prompt says, with Seedance 2.5." : {
+
+    },
+    "Character" : {
+
+    },
+    "Character %lld" : {
+
+    },
+    "Character %lld: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Character %1$lld: %2$@"
+          }
+        }
+      }
+    },
+    "Character refs" : {
+
+    },
+    "Character sheets" : {
+
+    },
+    "Characters" : {
+
+    },
+    "Characters, products or clothes" : {
+
+    },
+    "Charge whatever Higgsfield bills when it finishes" : {
+
+    },
+    "Charged on completion" : {
+
+    },
+    "Check Again" : {
+
+    },
+    "Check your generations on Higgsfield before trying again, or it may be charged twice." : {
+
+    },
+    "Check your internet connection and try again." : {
+
+    },
+    "Checking what this connection can run…" : {
+
+    },
+    "Checking…" : {
+
+    },
+    "Choose a folder for the exported take. Existing files are never replaced." : {
+
+    },
+    "Cinema Studio's creative controls are set only with an API key, not on the account" : {
+
+    },
+    "Committed today: %@" : {
+
+    },
+    "Connect Higgsfield again to keep following this request. Its price still counts." : {
+
+    },
+    "Connect Higgsfield first" : {
+
+    },
+    "Connect Higgsfield in Settings" : {
+
+    },
+    "Connection needs attention · sign in again, then resume" : {
+
+    },
+    "Continue a clip past its last frame, with Seedance 2.5." : {
+
+    },
+    "Convert this video first" : {
+
+    },
+    "Credits" : {
+
+    },
+    "Credits left: %@" : {
+
+    },
+    "Cutout" : {
+
+    },
+    "Date and time, mode, ID" : {
+
+    },
+    "Date, draft mark, mode, resolution, ID" : {
+
+    },
+    "Date, mode, ID (default)" : {
+
+    },
+    "Deducted" : {
+
+    },
+    "Delete" : {
+
+    },
+    "Delete %lld results from library?" : {
+
+    },
+    "Delete from library?" : {
+
+    },
+    "Delete results from Library" : {
+
+    },
+    "Describe the clip, e.g. “A fox runs through fresh snow at dawn, slow motion”" : {
+
+    },
+    "Describe the image to make" : {
+
+    },
+    "Development build" : {
+
+    },
+    "Divider" : {
+
+    },
+    "Dog" : {
+
+    },
+    "Done" : {
+
+    },
+    "Download canceled · charged" : {
+
+    },
+    "Downloading" : {
+
+    },
+    "Downloading from %@…" : {
+
+    },
+    "Downloading from %@… %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Downloading from %1$@… %2$@"
+          }
+        }
+      }
+    },
+    "Draft" : {
+
+    },
+    "Draft %@" : {
+
+    },
+    "Draft queued" : {
+
+    },
+    "Draft replaced" : {
+
+    },
+    "Drafts" : {
+
+    },
+    "Dub" : {
+
+    },
+    "Dub into %@" : {
+
+    },
+    "Dubbed from %@" : {
+
+    },
+    "Each character takes one reference image." : {
+
+    },
+    "Each character takes up to %lld reference images." : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Each character takes up to %lld reference image."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Each character takes up to %lld reference images."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Edit" : {
+
+    },
+    "Editing H.264" : {
+
+    },
+    "Empty" : {
+
+    },
+    "End frame" : {
+
+    },
+    "Engagement: %lld" : {
+
+    },
+    "Enhance" : {
+
+    },
+    "Enter both the key ID and the secret" : {
+
+    },
+    "Environment" : {
+
+    },
+    "Estimate" : {
+
+    },
+    "Estimate from %lld similar past jobs; Higgsfield doesn't report progress" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Estimate from %lld similar past job; Higgsfield doesn't report progress"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Estimate from %lld similar past jobs; Higgsfield doesn't report progress"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Estimate, Higgsfield quotes it after upload" : {
+
+    },
+    "Every variant already has a score. Scoring them again replaces those scores." : {
+
+    },
+    "Export Here" : {
+
+    },
+    "Export for Editing…" : {
+
+    },
+    "Extend" : {
+
+    },
+    "Fade out" : {
+
+    },
+    "Failed" : {
+
+    },
+    "Favorites" : {
+
+    },
+    "Final" : {
+
+    },
+    "Final %@" : {
+
+    },
+    "Final queued" : {
+
+    },
+    "Final queued · View in Queue" : {
+
+    },
+    "Finalize in 1080p" : {
+
+    },
+    "Finalize in 1080p until %@" : {
+
+    },
+    "Finals" : {
+
+    },
+    "Finished Motion and Swap videos from Genjutsu, Kling and Seedance on your account appear here." : {
+
+    },
+    "First 5 s" : {
+
+    },
+    "Followed again when the account that sent it is connected. Its price still counts." : {
+
+    },
+    "Free" : {
+
+    },
+    "Free up space on your Mac and try again." : {
+
+    },
+    "Frog" : {
+
+    },
+    "From Higgsfield" : {
+
+    },
+    "From the source" : {
+
+    },
+    "Generate" : {
+
+    },
+    "Generate anyway" : {
+
+    },
+    "Generate × %lld" : {
+
+    },
+    "Generated" : {
+
+    },
+    "Generated in %@" : {
+
+    },
+    "Has starred results" : {
+
+    },
+    "Higgsfield account" : {
+
+    },
+    "Higgsfield account, %lld credits left" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Higgsfield account, %lld credit left"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Higgsfield account, %lld credits left"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Higgsfield answered HTTP %lld" : {
+
+    },
+    "Higgsfield couldn't make the character sheet." : {
+
+    },
+    "Higgsfield couldn't make the image." : {
+
+    },
+    "Higgsfield didn't accept Jutsu Studio's sign-in. Connect with an API key instead." : {
+
+    },
+    "Higgsfield didn't finish this job in time. Check the result in your generations on Higgsfield." : {
+
+    },
+    "Higgsfield is having trouble" : {
+
+    },
+    "Higgsfield may have started these sheets, so they weren't sent again. Check your history on higgsfield.ai before trying again." : {
+
+    },
+    "Higgsfield may have started this job. Check your generations there before trying again." : {
+
+    },
+    "Higgsfield quotes it once the files are uploaded" : {
+
+    },
+    "Higgsfield refused the key. Check it in Settings." : {
+
+    },
+    "Higgsfield refused the request" : {
+
+    },
+    "Higgsfield refused the sign-in." : {
+
+    },
+    "Higgsfield refused this key ID and secret. Check both and try again." : {
+
+    },
+    "Higgsfield renders this draft at 1080p for a third of a new 1080p render" : {
+
+    },
+    "Higgsfield server error (HTTP %lld)" : {
+
+    },
+    "Higgsfield started fewer variants than asked for: %lld missing" : {
+
+    },
+    "Higgsfield's answer couldn't be read, so no score was kept. It may have been charged." : {
+
+    },
+    "Higgsfield's answer didn't check out. Try again." : {
+
+    },
+    "Higgsfield's content check refused the character." : {
+
+    },
+    "Higgsfield's content check refused the prompt." : {
+
+    },
+    "Higgsfield's sign-in server didn't answer as expected. Try again later or use an API key." : {
+
+    },
+    "High bitrate" : {
+
+    },
+    "Highest price" : {
+
+    },
+    "History needs a Higgsfield account" : {
+
+    },
+    "Hook (0–3 s): %lld" : {
+
+    },
+    "Human" : {
+
+    },
+    "Image" : {
+
+    },
+    "Images" : {
+
+    },
+    "Images still being made are followed again on next launch." : {
+
+    },
+    "Include JSON Sidecar" : {
+
+    },
+    "Insect" : {
+
+    },
+    "Internal error." : {
+
+    },
+    "It is being sent to Higgsfield right now, so quitting waits up to %lld seconds for Higgsfield to answer." : {
+
+    },
+    "It leads to a web page or another kind of file. Use a direct link to the file, such as one ending in .mp4 or .jpg; pages like a YouTube video can't be downloaded." : {
+
+    },
+    "It resumes on next launch." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It resumes on next launch."
+          }
+        }
+      }
+    },
+    "Its files are uploaded. Its price is checked and it's sent to Higgsfield once a slot is free; Settings › Output › Parallel jobs sets how many run at once." : {
+
+    },
+    "Job failed" : {
+
+    },
+    "Job paused" : {
+
+    },
+    "Job rejected" : {
+
+    },
+    "Jutsu Studio can't save %@: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Jutsu Studio can't save %1$@: %2$@"
+          }
+        }
+      }
+    },
+    "Jutsu Studio couldn't read the sign-in to revoke it, so it stays valid on Higgsfield until it expires." : {
+
+    },
+    "Jutsu Studio opens videos and images." : {
+
+    },
+    "Jutsu Studio stopped waiting for the browser. Try signing in again." : {
+
+    },
+    "Jutsu Studio stopped while sending this job, so Higgsfield may have started it. Look for it in your Higgsfield history in Library before you retry: if it started, a retry is charged again." : {
+
+    },
+    "Jutsu Studio tries again later by itself." : {
+
+    },
+    "Jutsu Studio wasn't allowed to use your account." : {
+
+    },
+    "Jutsu Studio, %lld active jobs" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Jutsu Studio, %lld active job"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Jutsu Studio, %lld active jobs"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Jutsu Studio, no active jobs" : {
+
+    },
+    "Keep" : {
+
+    },
+    "Keep the description under 4,000 characters." : {
+
+    },
+    "Kept failing before it was sent (%@) · not charged, resume to try again" : {
+
+    },
+    "Kept failing before it was sent · not charged, resume to try again" : {
+
+    },
+    "Key ID" : {
+
+    },
+    "Key is invalid" : {
+
+    },
+    "Kling keeps the source's sound on the server only with an API key, not on the account" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kling keeps the source's sound on the server only with an API key, not on the account"
+          }
+        }
+      }
+    },
+    "Kling keeps the video's background only on a Higgsfield account, not with an API key" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kling keeps the video's background only on a Higgsfield account, not with an API key"
+          }
+        }
+      }
+    },
+    "Kling's character orientation is set only with an API key, not on the account" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kling's character orientation is set only with an API key, not on the account"
+          }
+        }
+      }
+    },
+    "Links to files over %@ aren't downloaded. Trim the video first." : {
+
+    },
+    "List price" : {
+
+    },
+    "Low credits: %@ left" : {
+
+    },
+    "Made by %@" : {
+
+    },
+    "Made on Higgsfield · %@" : {
+
+    },
+    "Make still images from a prompt. Every image is saved to Library › Images." : {
+
+    },
+    "Mode, preset, resolution, ID" : {
+
+    },
+    "Model temporarily unavailable" : {
+
+    },
+    "Motion" : {
+
+    },
+    "Motion transfer" : {
+
+    },
+    "Move %@ to the Trash?" : {
+
+    },
+    "Move your characters, products or clothes with motion from any clip." : {
+
+    },
+    "Mute" : {
+
+    },
+    "Natural" : {
+
+    },
+    "Needs a Higgsfield account" : {
+
+    },
+    "New" : {
+
+    },
+    "Newest first" : {
+
+    },
+    "No jobs in the queue" : {
+
+    },
+    "No videos on Higgsfield yet" : {
+
+    },
+    "None" : {
+
+    },
+    "None of these results can be scored" : {
+
+    },
+    "Not available for this account" : {
+
+    },
+    "Not available with this API key" : {
+
+    },
+    "Not charged" : {
+
+    },
+    "Not enough API balance · top up, then resume" : {
+
+    },
+    "Not enough balance" : {
+
+    },
+    "Not enough credits" : {
+
+    },
+    "Not enough credits for Generate, try a draft" : {
+
+    },
+    "Not enough credits on your plan" : {
+
+    },
+    "Not enough disk space" : {
+
+    },
+    "Not enough disk space to prepare this job. Free up space on your Mac, then retry." : {
+
+    },
+    "Not enough disk space to save the result · free up space, then resume" : {
+
+    },
+    "Nothing was sent: Jutsu Studio couldn't save the price first. %@" : {
+
+    },
+    "Object swap" : {
+
+    },
+    "Object swap needs 640×640 px, allow the upscale" : {
+
+    },
+    "Oldest first" : {
+
+    },
+    "On Higgsfield · the whole clip is used" : {
+
+    },
+    "On Higgsfield, not downloaded yet" : {
+
+    },
+    "On this Mac" : {
+
+    },
+    "One range × up to %lld characters, side by side" : {
+
+    },
+    "One range × up to %lld styles, side by side" : {
+
+    },
+    "Only secure links (https://) are downloaded. Try the same address with https." : {
+
+    },
+    "Open a video or images" : {
+
+    },
+    "Optional, for faces, products or a look" : {
+
+    },
+    "Optional, keeps faces consistent" : {
+
+    },
+    "Original" : {
+
+    },
+    "Other" : {
+
+    },
+    "Out of plan credits · top up, then resume" : {
+
+    },
+    "Over today's cap, you'll be asked to confirm" : {
+
+    },
+    "Over today's spend cap" : {
+
+    },
+    "Paste a link to a video" : {
+
+    },
+    "Paste a link to an image" : {
+
+    },
+    "Paste a web address that starts with https://." : {
+
+    },
+    "Paused" : {
+
+    },
+    "Paused by you · nothing is submitted until you resume" : {
+
+    },
+    "Peak at %@" : {
+
+    },
+    "Per job" : {
+
+    },
+    "Pick a range inside the video" : {
+
+    },
+    "Pick a style" : {
+
+    },
+    "Pick at least %@ of video" : {
+
+    },
+    "Pick at least %lld styles" : {
+
+    },
+    "Pick at most %@ of video" : {
+
+    },
+    "Pick one more" : {
+
+    },
+    "Pick two results to compare" : {
+
+    },
+    "Plan" : {
+
+    },
+    "Plan's unlimited generations · not counted in the daily cap" : {
+
+    },
+    "Prepare" : {
+
+    },
+    "Preparing" : {
+
+    },
+    "Price from Higgsfield" : {
+
+    },
+    "Price from Higgsfield goes over today's spending cap · confirm to resume" : {
+
+    },
+    "Price not known yet" : {
+
+    },
+    "Price shown after the run" : {
+
+    },
+    "Price shown after the run. Higgsfield gives no quote for a Topaz upscale; Jutsu reads what it charged from your credit history when it finishes." : {
+
+    },
+    "Price unknown" : {
+
+    },
+    "Price unknown — charged on completion. Higgsfield gives no quote for this before it runs." : {
+
+    },
+    "Pro" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pro"
+          }
+        }
+      }
+    },
+    "Processing" : {
+
+    },
+    "Processing %@" : {
+
+    },
+    "Prompt" : {
+
+    },
+    "Prompt · optional" : {
+
+    },
+    "Prop" : {
+
+    },
+    "Queue wait %@" : {
+
+    },
+    "Queued" : {
+
+    },
+    "Queued jobs pause until you connect again." : {
+
+    },
+    "Quitting waits up to %lld seconds for the ones being sent or saved." : {
+
+    },
+    "Ready to compare" : {
+
+    },
+    "Recent" : {
+
+    },
+    "Redraw the whole clip in one of the catalog styles." : {
+
+    },
+    "Reference %lld" : {
+
+    },
+    "Reference images" : {
+
+    },
+    "References" : {
+
+    },
+    "References are full." : {
+
+    },
+    "Refine the look, e.g. “warm sunset light, film grain”" : {
+
+    },
+    "Reframe" : {
+
+    },
+    "Reframe to %@" : {
+
+    },
+    "Reframed from %@" : {
+
+    },
+    "Refresh Higgsfield history" : {
+
+    },
+    "Refunded" : {
+
+    },
+    "Rejected" : {
+
+    },
+    "Rejected as explicit content" : {
+
+    },
+    "Rejected by content moderation" : {
+
+    },
+    "Rejected by content moderation." : {
+
+    },
+    "Rejected: a recognizable person or protected content" : {
+
+    },
+    "Released under the MIT License." : {
+
+    },
+    "Remove" : {
+
+    },
+    "Remove Background" : {
+
+    },
+    "Remove a character to add another." : {
+
+    },
+    "Remove images, %@ takes one" : {
+
+    },
+    "Remove images, %@ takes up to %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Remove images, %1$@ takes up to %2$lld"
+          }
+        }
+      }
+    },
+    "Remove images, this mode takes one" : {
+
+    },
+    "Remove images, this mode takes up to %lld" : {
+
+    },
+    "Remove the API key?" : {
+
+    },
+    "Render %lld finals" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Render %lld final"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Render %lld finals"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Render Finals for Starred…" : {
+
+    },
+    "Render Final…" : {
+
+    },
+    "Replace an object in the clip with your own item." : {
+
+    },
+    "Replacement objects" : {
+
+    },
+    "Restyle" : {
+
+    },
+    "Retry" : {
+
+    },
+    "Retry Download" : {
+
+    },
+    "Retry Job" : {
+
+    },
+    "Retry the selected job" : {
+
+    },
+    "Retrying in %@ · attempt %lld · last error: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Retrying in %1$@ · attempt %2$lld · last error: %3$@"
+          }
+        }
+      }
+    },
+    "Retrying · attempt %lld · last error: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Retrying · attempt %1$lld · last error: %2$@"
+          }
+        }
+      }
+    },
+    "Running on %@" : {
+
+    },
+    "Running on Genjutsu" : {
+
+    },
+    "Save" : {
+
+    },
+    "Save to Higgsfield…" : {
+
+    },
+    "Saved to Higgsfield" : {
+
+    },
+    "Say what changes, e.g. “Replace the car with Image 1, keep the rest of the shot”" : {
+
+    },
+    "Say what happens next" : {
+
+    },
+    "Say what should change" : {
+
+    },
+    "Say who moves, e.g. “Image 1 dances on a rooftop at night”" : {
+
+    },
+    "Score Again…" : {
+
+    },
+    "Score Variants…" : {
+
+    },
+    "Score anyway" : {
+
+    },
+    "Search a gallery" : {
+
+    },
+    "Secret" : {
+
+    },
+    "Seedance starts from the frames, so references aren't used. Clear both frames to use them." : {
+
+    },
+    "Seedance's bitrate is set with an API key; the account doesn't offer it yet" : {
+
+    },
+    "Seedance's start and end frames run with an API key; the account doesn't offer them yet" : {
+
+    },
+    "Selected" : {
+
+    },
+    "Shorten the prompt to 10 000 characters" : {
+
+    },
+    "Show Create" : {
+
+    },
+    "Show Library" : {
+
+    },
+    "Show Queue" : {
+
+    },
+    "Show in Finder" : {
+
+    },
+    "Side by side" : {
+
+    },
+    "Sign Out" : {
+
+    },
+    "Sign in again" : {
+
+    },
+    "Sign in to see your Higgsfield history" : {
+
+    },
+    "Sign out of Higgsfield?" : {
+
+    },
+    "Sign-in failed" : {
+
+    },
+    "Sign-in isn't available right now" : {
+
+    },
+    "Sign-in timed out" : {
+
+    },
+    "Signed in" : {
+
+    },
+    "Signed out on this Mac only" : {
+
+    },
+    "Software Update by Sparkle, MIT License." : {
+
+    },
+    "Something went wrong" : {
+
+    },
+    "Source" : {
+
+    },
+    "Source on Higgsfield" : {
+
+    },
+    "Source video" : {
+
+    },
+    "Space" : {
+
+    },
+    "Spent" : {
+
+    },
+    "Standard" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Standard"
+          }
+        }
+      }
+    },
+    "Star" : {
+
+    },
+    "Star or unstar results" : {
+
+    },
+    "Star to find it with the Starred filter" : {
+
+    },
+    "Star to find it with the Starred filter; it is liked on Higgsfield too" : {
+
+    },
+    "Starred" : {
+
+    },
+    "Start and end frames" : {
+
+    },
+    "Start anyway" : {
+
+    },
+    "Start frame" : {
+
+    },
+    "Stop the download, the generation is already charged" : {
+
+    },
+    "Stored in" : {
+
+    },
+    "Style %lld" : {
+
+    },
+    "Styles made outside Jutsu Studio aren't listed: Higgsfield's history doesn't return them." : {
+
+    },
+    "Sustain: %lld" : {
+
+    },
+    "Swap" : {
+
+    },
+    "The 1080p finalize ended %@" : {
+
+    },
+    "The file is too large" : {
+
+    },
+    "The generation failed." : {
+
+    },
+    "The item to put in the clip" : {
+
+    },
+    "The job may have started" : {
+
+    },
+    "The key is deleted from macOS Keychain. %@" : {
+
+    },
+    "The rest weren't queued." : {
+
+    },
+    "The result is no longer available on Higgsfield. Results expire about 7 days after they finish." : {
+
+    },
+    "The server answered %lld. Check that the link opens in a browser." : {
+
+    },
+    "The server answered %lld. Try again in a few minutes." : {
+
+    },
+    "The server answered %lld: it gives the file only to a browser. Open the link in a browser, save the file, then drop it on the window." : {
+
+    },
+    "The star is back as it was. Try again." : {
+
+    },
+    "The subject stays on a black background, in an MP4 without transparency. The clip's sound is put back." : {
+
+    },
+    "The site doesn't let the app download this file" : {
+
+    },
+    "The video file moves to the Trash and its history entry is removed." : {
+
+    },
+    "The video files move to the Trash and their history entries are removed." : {
+
+    },
+    "These %lld jobs add %@, bringing today to %@ against your %@ cap." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "These %1$lld jobs add %2$@, bringing today to %3$@ against your %4$@ cap."
+          }
+        }
+      }
+    },
+    "These %lld jobs' price isn't known, so it may take today past your %@ cap. Today is at %@ so far." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "These %1$lld jobs' price isn't known, so it may take today past your %2$@ cap. Today is at %3$@ so far."
+          }
+        }
+      }
+    },
+    "These images add %@, bringing today to %@ against your %@ cap." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "These images add %1$@, bringing today to %2$@ against your %3$@ cap."
+          }
+        }
+      }
+    },
+    "These images' price isn't known, so they may take today past your %@ cap. Today is at %@ so far." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "These images' price isn't known, so they may take today past your %1$@ cap. Today is at %2$@ so far."
+          }
+        }
+      }
+    },
+    "These scores bring today to %@ against your %@ cap." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "These scores bring today to %1$@ against your %2$@ cap."
+          }
+        }
+      }
+    },
+    "These scores' price isn't known, so they may take today past your %@ cap. Today is at %@ so far." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "These scores' price isn't known, so they may take today past your %1$@ cap. Today is at %2$@ so far."
+          }
+        }
+      }
+    },
+    "They resume on next launch." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "They resume on next launch."
+          }
+        }
+      }
+    },
+    "They stay in the Library. %@" : {
+
+    },
+    "This connection makes one video per job" : {
+
+    },
+    "This connection offers no image models" : {
+
+    },
+    "This element has no images to use." : {
+
+    },
+    "This job adds %@, bringing today to %@ against your %@ cap." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "This job adds %1$@, bringing today to %2$@ against your %3$@ cap."
+          }
+        }
+      }
+    },
+    "This job's price isn't known, so it may take today past your %@ cap. Today is at %@ so far." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "This job's price isn't known, so it may take today past your %1$@ cap. Today is at %2$@ so far."
+          }
+        }
+      }
+    },
+    "This link isn't a video" : {
+
+    },
+    "This link isn't a video or an image" : {
+
+    },
+    "This link isn't an image" : {
+
+    },
+    "This sign-in method isn't available" : {
+
+    },
+    "Today" : {
+
+    },
+    "Top of Higgsfield's published range, quoted after upload" : {
+
+    },
+    "Top up your API balance in the Higgsfield console." : {
+
+    },
+    "Trending" : {
+
+    },
+    "Trim end" : {
+
+    },
+    "Trim range" : {
+
+    },
+    "Trim start" : {
+
+    },
+    "Try again in a moment." : {
+
+    },
+    "Try again." : {
+
+    },
+    "Unavailable style" : {
+
+    },
+    "Undo" : {
+
+    },
+    "Unlimited" : {
+
+    },
+    "Unlimited generations make one video at a time" : {
+
+    },
+    "Unlimited generations of the plan" : {
+
+    },
+    "Unofficial, not affiliated with or endorsed by Higgsfield AI." : {
+
+    },
+    "Unstar" : {
+
+    },
+    "Unstar, and remove the like on Higgsfield" : {
+
+    },
+    "Untitled template" : {
+
+    },
+    "Updating the price" : {
+
+    },
+    "Upload" : {
+
+    },
+    "Uploading" : {
+
+    },
+    "Uploads %lld images and saves them as a character element on your Higgsfield account, for References › From Higgsfield and the web app. Free, no credits are spent." : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Uploads %lld image and saves it as a character element on your Higgsfield account, for References › From Higgsfield and the web app. Free, no credits are spent."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Uploads %lld images and saves them as a character element on your Higgsfield account, for References › From Higgsfield and the web app. Free, no credits are spent."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Upscale" : {
+
+    },
+    "Upscale to %@" : {
+
+    },
+    "Upscale to %lld×%lld before upload? Detail won't improve, but the API will accept it." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Upscale to %1$lld×%2$lld before upload? Detail won't improve, but the API will accept it."
+          }
+        }
+      }
+    },
+    "Upscaled from %@" : {
+
+    },
+    "Variant %lld" : {
+
+    },
+    "Version %@" : {
+
+    },
+    "Version %@ (%@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Version %1$@ (%2$@)"
+          }
+        }
+      }
+    },
+    "Video" : {
+
+    },
+    "Video ready" : {
+
+    },
+    "Videos" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Videos"
+          }
+        }
+      }
+    },
+    "Videos made on higgsfield.ai appear here once you sign in to your account in Settings." : {
+
+    },
+    "View in Queue" : {
+
+    },
+    "Viral potential: %lld" : {
+
+    },
+    "Virality report on Higgsfield" : {
+
+    },
+    "Virality score %lld of 100" : {
+
+    },
+    "Virality scores" : {
+
+    },
+    "Voice" : {
+
+    },
+    "Voice changed from %@" : {
+
+    },
+    "Waiting for slot" : {
+
+    },
+    "Waiting for the account's tool catalog to be confirmed" : {
+
+    },
+    "What happens next? e.g. “She turns around and walks to the door”" : {
+
+    },
+    "What should change? e.g. “Make it night, with rain on the street”" : {
+
+    },
+    "Whole range" : {
+
+    },
+    "Wild" : {
+
+    },
+    "Will convert to MP4 · H.264" : {
+
+    },
+    "Will upscale to %@" : {
+
+    },
+    "Write a prompt" : {
+
+    },
+    "Write a prompt or add an image" : {
+
+    },
+    "You find both in the Higgsfield console." : {
+
+    },
+    "You were not charged." : {
+
+    },
+    "Your Higgsfield sign-in has expired." : {
+
+    },
+    "Your Uploads" : {
+
+    },
+    "Your plan has no credits left for this job." : {
+
+    },
+    "Your sign-in is deleted from macOS Keychain. %@" : {
+
+    },
+    "Yours" : {
+
+    },
+    "all of the account's slots on Higgsfield are busy" : {
+
+    },
+    "and %lld more" : {
+
+    },
+    "billed in USD" : {
+
+    },
+    "charged" : {
+
+    },
+    "credits" : {
+
+    },
+    "date the job was queued, 2026-03-07" : {
+
+    },
+    "deleted" : {
+
+    },
+    "failed runs are free" : {
+
+    },
+    "first 8 characters of the job ID" : {
+
+    },
+    "just now" : {
+
+    },
+    "macOS Keychain" : {
+
+    },
+    "macOS can't play this format (WebM and similar). Export it as MP4 or MOV and add it again." : {
+
+    },
+    "macOS or the app already uses it" : {
+
+    },
+    "mode, restyle" : {
+
+    },
+    "no connection to Higgsfield" : {
+
+    },
+    "not charged" : {
+
+    },
+    "not enough credits on Higgsfield" : {
+
+    },
+    "preset name, empty without a preset" : {
+
+    },
+    "resolution, 720p" : {
+
+    },
+    "taking longer than usual" : {
+
+    },
+    "the model is unavailable on Higgsfield" : {
+
+    },
+    "time it was queued, 14-05-09" : {
+
+    },
+    "up to %@" : {
+
+    },
+    "usually %@" : {
+
+    },
+    "Variant %lld of %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Variant %1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "Reject" : {
+
+    },
+    "Clear Keep or Reject" : {
+
+    },
+    "Keep results in Library" : {
+
+    },
+    "Reject results in Library" : {
+
+    },
+    "Clear keep or reject" : {
+
+    },
+    "Reference" : {
+
+    },
+    "%lld references" : {
+
+    },
+    "Can't make a video from these images" : {
+
+    },
+    "%@ doesn't take them. Pick another model in Create and try again." : {
+
+    },
+    "%@ doesn't take start and end frames, so they are references now." : {
+
+    },
+    "%lld images were removed" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld image was removed"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld images were removed"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%@ takes up to %@: %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ takes up to %2$@: %3$@."
+          }
+        }
+      }
+    },
+    "Edited from" : {
+
+    },
+    "Not in the library" : {
+
+    },
+    "Unavailable" : {
+
+    },
+    "Delivery Sets" : {
+
+    },
+    "New Delivery Set" : {
+
+    },
+    "The file isn't on this Mac. Download it to the library or connect its drive." : {
+
+    },
+    "This set has been exported, so its versions stay as they are. Start a new set from it instead." : {
+
+    },
+    "Delivery %@" : {
+
+    },
+    "%@ – next round" : {
+
+    },
+    "Not exported" : {
+
+    },
+    "Exported %@ to %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Exported %1$@ to %2$@"
+          }
+        }
+      }
+    },
+    "%lld done" : {
+
+    },
+    "%lld failed" : {
+
+    },
+    "%lld skipped" : {
+
+    },
+    "%lld px" : {
+
+    }
+  },
+  "version" : "1.0"
+}

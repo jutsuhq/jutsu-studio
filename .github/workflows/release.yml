@@ -1,0 +1,140 @@
+name: Release
+
+# Pushing a tag vX.Y.Z builds, signs, notarizes and staples the DMG with scripts/release.sh, launches it once
+# (scripts/smoke-launch.sh) and attaches it with the dSYMs, the Sparkle appcast (scripts/appcast.sh) and the Homebrew
+# cask to a draft GitHub release whose notes start from scripts/release-notes.sh. Publish the draft after adding the
+# summary from docs/release-notes-template.md; that also offers the update to installed copies, which read
+# releases/latest/download/appcast.xml. CONTRIBUTING.md#releasing lists the secrets and how to create them.
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify-ref:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify the release commit and download location
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main ||
+            { echo '::error::Release tags must point to a commit on main'; exit 1; }
+          version=$(sed -nE 's/^[[:space:]]*MARKETING_VERSION:[[:space:]]*"?([^"[:space:]]+)"?.*/\1/p' project.yml | head -n 1)
+          [[ "v$version" == "$GITHUB_REF_NAME" ]] ||
+            { echo '::error::The tag does not match MARKETING_VERSION'; exit 1; }
+          feed=$(sed -nE 's/^[[:space:]]*SUFeedURL:[[:space:]]*(.*)/\1/p' project.yml)
+          [[ "$feed" == "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/latest/download/appcast.xml" ]] ||
+            { echo '::error::SUFeedURL does not point to this release repository'; exit 1; }
+          [[ $(gh api "repos/$GITHUB_REPOSITORY" --jq .private) == false ]] ||
+            { echo '::error::Make the release repository public before publishing downloads'; exit 1; }
+          [[ $(gh api "repos/$GITHUB_REPOSITORY/private-vulnerability-reporting" --jq .enabled) == true ]] ||
+            { echo '::error::Enable private vulnerability reporting before release'; exit 1; }
+
+  validate:
+    needs: verify-ref
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    needs: validate
+    permissions:
+      contents: write
+    runs-on: xcode-27
+    timeout-minutes: 60
+    environment: release
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The job writes releases through `gh` with GH_TOKEN; git itself needs no credentials.
+          persist-credentials: false
+          # The whole history and the tags: the notes list the commits since the previous release.
+          fetch-depth: 0
+
+      - name: Set signing paths on the runner
+        run: |
+          echo "KEYCHAIN=$RUNNER_TEMP/signing.keychain-db" >>"$GITHUB_ENV"
+          echo "NOTARY_KEY=$RUNNER_TEMP/AuthKey.p8" >>"$GITHUB_ENV"
+
+      - name: Install XcodeGen
+        run: scripts/install-xcodegen.sh "$RUNNER_TEMP" >>"$GITHUB_PATH"
+
+      - name: Import the Developer ID certificate
+        env:
+          P12_BASE64: ${{ secrets.DEVELOPER_ID_P12_BASE64 }}
+          P12_PASSWORD: ${{ secrets.DEVELOPER_ID_P12_PASSWORD }}
+        run: |
+          keychain_password=$(openssl rand -base64 32)
+          security create-keychain -p "$keychain_password" "$KEYCHAIN"
+          security set-keychain-settings -lut 3600 "$KEYCHAIN"
+          security unlock-keychain -p "$keychain_password" "$KEYCHAIN"
+          printf '%s' "$P12_BASE64" | base64 --decode >"$RUNNER_TEMP/developer-id.p12"
+          security import "$RUNNER_TEMP/developer-id.p12" -k "$KEYCHAIN" -P "$P12_PASSWORD" -f pkcs12 \
+            -T /usr/bin/codesign -T /usr/bin/security
+          rm -f "$RUNNER_TEMP/developer-id.p12"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$keychain_password" "$KEYCHAIN" >/dev/null
+          keychains=("$KEYCHAIN")
+          while IFS= read -r keychain; do keychains+=("$keychain"); done < <(
+            security list-keychains -d user | sed -E 's/^[[:space:]]*"//; s/"[[:space:]]*$//')
+          security list-keychains -d user -s "${keychains[@]}"
+
+      - name: Write the notarization key
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          umask 077
+          printf '%s\n' "$ASC_KEY_P8" >"$NOTARY_KEY"
+
+      - name: Build, sign, notarize
+        env:
+          DEVELOPMENT_TEAM: ${{ secrets.APPLE_TEAM_ID }}
+          NOTARY_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          NOTARY_ISSUER: ${{ secrets.ASC_ISSUER_ID }}
+        run: scripts/release.sh "${GITHUB_REF_NAME#v}"
+
+      - name: Write the release notes
+        run: |
+          previous=$(git describe --tags --abbrev=0 --match 'v*.*.*' "$GITHUB_REF_NAME^" 2>/dev/null || true)
+          scripts/release-notes.sh "$previous" "$GITHUB_REF_NAME" "${GITHUB_REF_NAME#v}" >"$RUNNER_TEMP/notes.md"
+
+      - name: Sign the update and write the appcast
+        env:
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
+        run: |
+          [[ -n "$SPARKLE_ED_PRIVATE_KEY" ]] || { echo "::error::secret SPARKLE_ED_PRIVATE_KEY is not set"; exit 1; }
+          scripts/appcast.sh "${GITHUB_REF_NAME#v}" "$RUNNER_TEMP/notes.md"
+
+      - name: Create the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=${GITHUB_REF_NAME#v}
+          gh release create "$GITHUB_REF_NAME" --draft --verify-tag --notes-file "$RUNNER_TEMP/notes.md" \
+            --title "Jutsu Studio $version" \
+            "build/Jutsu-Studio-$version.dmg" "build/Jutsu-Studio-$version.dmg.sha256" \
+            "build/Jutsu-Studio-$version-dSYMs.zip" build/appcast.xml
+
+      # The tap is a separate repo the owner updates by hand from this file (CONTRIBUTING.md#releasing).
+      - name: Attach the Homebrew cask
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=${GITHUB_REF_NAME#v}
+          scripts/update-cask.sh "$version" "build/Jutsu-Studio-$version.dmg.sha256"
+          cat packaging/homebrew/jutsu-studio.rb
+          gh release upload "$GITHUB_REF_NAME" packaging/homebrew/jutsu-studio.rb
+
+      - name: Remove the keychain and the key
+        if: always()
+        run: |
+          security delete-keychain "$KEYCHAIN" 2>/dev/null || true
+          rm -f "$NOTARY_KEY" "$RUNNER_TEMP/developer-id.p12"

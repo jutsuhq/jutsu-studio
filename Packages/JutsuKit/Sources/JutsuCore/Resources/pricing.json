@@ -1,0 +1,61 @@
+{
+  "sources": [
+    "https://open.higgsfield.ai/models/higgsfield/genjutsu/motion-transfer/v1.0",
+    "https://open.higgsfield.ai/models/bytedance/seedance-2.5/reference-to-video",
+    "https://open.higgsfield.ai/models/bytedance/seedance-2.5/image-to-video",
+    "https://open.higgsfield.ai/models/bytedance/seedance-2.5/video-edit",
+    "https://open.higgsfield.ai/models/bytedance/seedance-2.5/video-extend",
+    "https://open.higgsfield.ai/models/kling-video/v3/motion-control/std",
+    "https://open.higgsfield.ai/models/kling-video/v3/motion-control/pro",
+    "https://open.higgsfield.ai/models/kling-video/o3/video-reference",
+    "https://open.higgsfield.ai/models/kling-video/o3/video-edit",
+    "https://open.higgsfield.ai/models/kling-video/motion-control/std",
+    "https://open.higgsfield.ai/models/kling-video/motion-control/pro",
+    "https://open.higgsfield.ai/models/alibaba/wan-3.0/reference-to-video",
+    "https://open.higgsfield.ai/models/alibaba/wan-3.0-prime/reference-to-video",
+    "https://open.higgsfield.ai/models/wan/v2.7/reference-to-video",
+    "https://open.higgsfield.ai/models/higgsfield/cinema-studio/4.0",
+    "https://open.higgsfield.ai/models/minimax/h3/reference-to-video",
+    "https://open.higgsfield.ai/pricing",
+    "https://dash.higgsfield.ai/api/v2/pricing/models/?page_size=50"
+  ],
+  "updated": "2026-10-15",
+  "currency": "USD",
+  "unit": "second of the job's source selection (or of the clip asked for; for video-extend, of the source selection plus the added part), rounded up; rates before discounts",
+  "unpriced": "null where no page states the rate at that resolution: the job shows 'Price unknown' until the server's estimate for the uploaded files",
+  "upTo": "{\"upTo\": rate} where a page gives only a range over all settings: the top of the range, so the price is never shown lower than it can be; the job shows 'up to' that price until the server's estimate for the uploaded files",
+  "rateSources": {
+    "alibaba/wan-3.0/reference-to-video": "open.higgsfield.ai/pricing and its feed dash.higgsfield.ai/api/v2/pricing/models, 2026-10-15: original_amount per second at each resolution, 480p 0.05, 720p 0.10, 1080p 0.20 (60% off until 2026-11-01, then 50%)",
+    "alibaba/wan-3.0-prime/reference-to-video": "same feed, 2026-10-15: original_amount per second at each resolution, 480p 0.068, 720p 0.14, 1080p 0.28 (60% off until 2026-11-01, then 40%)",
+    "higgsfield/cinema-studio/4.0": "same feed, 2026-10-15: from 0.2057 (480p, 4 s) to 0.4623 (720p, 30 s) per second, no discount; only that range is published, so both resolutions take its top",
+    "kling-video/o3/video-reference": "same feed, 2026-10-15: 0.126 to 0.168 per second before the 50% discount; no price names a mode, so std and pro both take the top",
+    "kling-video/o3/video-edit": "same feed and the model page, 2026-10-15: one 'exact' 0.126 per second before the 50% discount that names no mode (the request's default is pro). Standard takes it as an upper bound; Pro has no published rate (the account quotes it at 4/3 of Standard), so it stays null",
+    "minimax/h3/reference-to-video": "same feed and the model page, 2026-10-15: one 'exact' rate at 2K for 1, 10 and 15 s, original_amount 0.13 per generated second (0.065 after the 50% discount). The page adds 0.08 for each reference image past the fifth, so models.json lets the job take five"
+  },
+  "models": {
+    "higgsfield/genjutsu/motion-transfer/v1.0": { "480p": 0.318, "720p": 0.681, "1080p": 1.632 },
+    "higgsfield/genjutsu/object-swap/v1.0": { "480p": 0.318, "720p": 0.681, "1080p": 1.632 },
+    "higgsfield/genjutsu/restyle/v1.0": { "480p": 0.318, "720p": 0.681, "1080p": 1.632 },
+    "bytedance/seedance-2.5/text-to-video": { "480p": 0.2056, "720p": 0.4622, "1080p": 1.1372 },
+    "bytedance/seedance-2.5/reference-to-video": { "480p": 0.2056, "720p": 0.4622, "1080p": 1.1372 },
+    "bytedance/seedance-2.5/image-to-video": { "480p": 0.2056, "720p": 0.4622, "1080p": 1.1372 },
+    "bytedance/seedance-2.5/reference-to-video with video reference": {
+      "480p": 0.24672, "720p": 0.55464, "1080p": 1.36464
+    },
+    "bytedance/seedance-2.5/video-edit": { "480p": 0.24672, "720p": 0.55464, "1080p": 1.36464 },
+    "bytedance/seedance-2.5/video-extend": { "480p": 0.12336, "720p": 0.27732, "1080p": 0.68232 },
+    "kling-video/v3/motion-control/std": { "480p": 0.126, "720p": 0.126 },
+    "kling-video/v3/motion-control/pro": { "1080p": 0.168 },
+    "kling-video/o3/video-reference": {
+      "480p": { "upTo": 0.168 }, "720p": { "upTo": 0.168 }, "1080p": { "upTo": 0.168 }
+    },
+    "kling-video/o3/video-edit": { "480p": { "upTo": 0.126 }, "720p": { "upTo": 0.126 }, "1080p": null },
+    "kling-video/motion-control/std": { "480p": 0.07, "720p": 0.07 },
+    "kling-video/motion-control/pro": { "1080p": 0.112 },
+    "alibaba/wan-3.0/reference-to-video": { "480p": 0.05, "720p": 0.1, "1080p": 0.2 },
+    "alibaba/wan-3.0-prime/reference-to-video": { "480p": 0.068, "720p": 0.14, "1080p": 0.28 },
+    "wan/v2.7/reference-to-video": { "720p": 0.1, "1080p": 0.15 },
+    "higgsfield/cinema-studio/4.0": { "480p": { "upTo": 0.4623 }, "720p": { "upTo": 0.4623 } },
+    "minimax/h3/reference-to-video": { "2K": 0.13 }
+  }
+}

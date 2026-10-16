@@ -1,0 +1,54 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Connect the Higgsfield account or API key this job was made with, then try again." : {
+
+    },
+    "Higgsfield is already making this job, so it can't be canceled." : {
+
+    },
+    "Higgsfield may already be starting this job. Cancel it once it shows as queued." : {
+
+    },
+    "Higgsfield refused to send the result (HTTP %lld). Retry to download it again." : {
+
+    },
+    "Internal error." : {
+
+    },
+    "Jobs queued meanwhile took today's spend close to your cap. Try again to confirm going over it." : {
+
+    },
+    "Only a job waiting for its turn can run next." : {
+
+    },
+    "The file is larger than %@, so it wasn't downloaded." : {
+
+    },
+    "The file isn't on a secure (https) address, so it wasn't downloaded." : {
+
+    },
+    "The server refused to send the file (HTTP %lld)." : {
+
+    },
+    "The server stopped sending the file. Try again later." : {
+
+    },
+    "This job can't be retried." : {
+
+    },
+    "This job is no longer in the queue." : {
+
+    },
+    "This job isn't paused." : {
+
+    },
+    "This job was saved without its Higgsfield request, so its result can't be found." : {
+
+    },
+    "Your Mac is offline. Try again once it is connected." : {
+
+    }
+  },
+  "version" : "1.0"
+}

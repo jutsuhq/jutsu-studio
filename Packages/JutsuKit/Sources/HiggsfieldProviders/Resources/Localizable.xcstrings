@@ -1,0 +1,115 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@ can't make that many images." : {
+
+    },
+    "%@ can't run with an API key." : {
+
+    },
+    "%@ needs a source video." : {
+
+    },
+    "%@ needs an image to edit." : {
+
+    },
+    "An element needs at least one image." : {
+
+    },
+    "Describe the image to make." : {
+
+    },
+    "Genjutsu needs a source video." : {
+
+    },
+    "Higgsfield can't cancel a job from the account connection" : {
+
+    },
+    "Higgsfield couldn't score this video." : {
+
+    },
+    "Higgsfield is still scoring this video. Try again later." : {
+
+    },
+    "Kling needs a reference image." : {
+
+    },
+    "Kling needs a source video." : {
+
+    },
+    "Make 1 to 4 images." : {
+
+    },
+    "Make 1 to 4 sheets." : {
+
+    },
+    "Needs a Higgsfield account" : {
+
+    },
+    "Not available for this account" : {
+
+    },
+    "Restyle needs a preset." : {
+
+    },
+    "Seedance needs the clip to edit or extend." : {
+
+    },
+    "Seedance needs the start frame." : {
+
+    },
+    "The result isn't on a secure (https) address." : {
+
+    },
+    "This image model can't run with an API key." : {
+
+    },
+    "This model doesn't take an image." : {
+
+    },
+    "This model takes at most %lld images." : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "This model takes at most %lld image."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "This model takes at most %lld images."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "This preset can't be made again." : {
+
+    },
+    "Unexpected result from the media_upload tool" : {
+
+    },
+    "Upload" : {
+
+    },
+    "Upload · %lld s" : {
+
+    },
+    "Use at most 3 style references." : {
+
+    },
+    "Variants aren't available for this job." : {
+
+    },
+    "Variants need a Higgsfield account." : {
+
+    }
+  },
+  "version" : "1.0"
+}

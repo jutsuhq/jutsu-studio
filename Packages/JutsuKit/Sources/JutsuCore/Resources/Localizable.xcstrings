@@ -1,0 +1,7 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Today's spending couldn't be read. Nothing was sent. Repair the spending data or turn off the daily cap in Settings." : {}
+  },
+  "version" : "1.0"
+}

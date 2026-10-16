@@ -1,0 +1,260 @@
+{
+  "tool": "ai_influencer_list_presets",
+  "arguments": {
+    "size": 3
+  },
+  "answer": {
+    "total": 39,
+    "cursor": 2,
+    "items": [
+      {
+        "id": "9fe66e84-a354-41e8-92ae-b13183ea0a02",
+        "name": "AI Influencer 38",
+        "preview": {
+          "url": "https://static-public-media.higgsfield.ai/ai-influencer-explore-presets/published/98fccc517cb22b8f2cb6b42ab0c63a893b67961f4f06259eb69014c33cdc83b7",
+          "type": "static",
+          "width": 1744,
+          "height": 2336,
+          "thumbnail_url": "https://static-public-media.higgsfield.ai/ai-influencer-explore-presets/published/9252b19379108ae708458738df92b8565df0c0b25ae5930f09c2b6752cbd0965"
+        },
+        "sheet": {
+          "url": "https://static-public-media.higgsfield.ai/ai-influencer-explore-presets/published/a1c2029674df9e4b83195cbf43efe19be8fc0047c66ed097aa4fe32030f18ccb",
+          "type": "static",
+          "width": 2688,
+          "height": 1520,
+          "thumbnail_url": "https://static-public-media.higgsfield.ai/ai-influencer-explore-presets/published/d329688aa62ea593ae7c996441f96f65fe79a07a10907f8ce08c22cbe506363d"
+        },
+        "priority": 0,
+        "recreate": {
+          "job_set_type": "ai_influencer_sheet",
+          "params": {
+            "tier": "freak",
+            "selection": {
+              "age": [
+                "adult"
+              ],
+              "hair": [
+                "hair_bowl"
+              ],
+              "gender": [
+                "male"
+              ],
+              "height": [
+                "h_tall"
+              ],
+              "accessory": [
+                "acc_none"
+              ],
+              "aesthetic": [
+                "goth"
+              ],
+              "body_type": [
+                "body_ultra"
+              ],
+              "eye_color": [
+                "eye_brown"
+              ],
+              "eye_shape": [
+                "es_almond"
+              ],
+              "skin_tone": [
+                "st_olive"
+              ],
+              "freak_face": [
+                "fn_thickbrows"
+              ],
+              "freak_head": [
+                "head_round"
+              ],
+              "freak_neck": [
+                "neck_column"
+              ],
+              "distinctive": [],
+              "facial_hair": [
+                "fh_pushbroom"
+              ],
+              "hair_colour": [
+                "hc_black"
+              ],
+              "proportions": [
+                "pr_shoulders"
+              ],
+              "ethnicity_origin_base": [
+                "middle_eastern"
+              ]
+            },
+            "brief": "Fashion-editorial freak casting photo of an odd-looking but photoreal person, contemporary goth/streetwear styling. Two-panel sheet: left a tight frontal close-up portrait with the entire head and hair in frame, right a full-body standing shot; arms down, blank deadpan expression. PURE WHITE seamless background, bright soft light. Signature: thick glossy black mushroom bowl cut, heavy black horseshoe moustache, metal braces on the teeth, hyper-muscular body. Outfit: black leather vest over a black shirt with rolled sleeves, wide black leather belt, emerald-green velvet flared trousers, black leather gloves, black heeled boots. Hyper-realistic, natural uniform skin tone, crisp texture, sharp focus.",
+            "seed": 427752,
+            "medias": []
+          }
+        },
+        "recreate_unavailable_reason": null
+      },
+      {
+        "id": "ea7885fc-8739-4817-ae2d-3f430a980f4e",
+        "name": "AI Influencer 52",
+        "preview": {
+          "url": "https://static-public-media.higgsfield.ai/ai-influencer-explore-presets/published/8bc9765f8e9ee88577e20d5b500c058f5a2264d4eb2cfdb76a7d73df6cd847ee",
+          "type": "static",
+          "width": 1024,
+          "height": 1024,
+          "thumbnail_url": "https://static-public-media.higgsfield.ai/ai-influencer-explore-presets/published/1f47e7fff8f467c11975a089935c002c03c80084cce7db04e52e23fa4ef2e6a4"
+        },
+        "sheet": {
+          "url": "https://static-public-media.higgsfield.ai/ai-influencer-explore-presets/published/04d73f854058f8b76e0b2a2ecbdce5d07ee83716b29c7499fdb5a69e5b399650",
+          "type": "static",
+          "width": 2688,
+          "height": 1520,
+          "thumbnail_url": "https://static-public-media.higgsfield.ai/ai-influencer-explore-presets/published/11c10f3c137994b1e1c4f463992f2ad2fa2496050d0049aed6b661c83f3299b6"
+        },
+        "priority": 1,
+        "recreate": {
+          "job_set_type": "ai_influencer_sheet",
+          "params": {
+            "tier": "freak",
+            "selection": {
+              "age": [
+                "adult"
+              ],
+              "hair": [
+                "hs_lampshade"
+              ],
+              "gender": [
+                "male"
+              ],
+              "height": [
+                "h_tall"
+              ],
+              "aesthetic": [
+                "sporty"
+              ],
+              "body_type": [
+                "body_athletic"
+              ],
+              "eye_color": [
+                "eye_blue"
+              ],
+              "eye_shape": [
+                "es_almond"
+              ],
+              "skin_tone": [
+                "st_porcelain"
+              ],
+              "freak_face": [
+                "fn_dimples"
+              ],
+              "freak_head": [
+                "head_oval"
+              ],
+              "freak_neck": [
+                "neck_normal"
+              ],
+              "distinctive": [
+                "df_scar"
+              ],
+              "facial_hair": [
+                "fh_moustache"
+              ],
+              "hair_colour": [
+                "hc_chestnut"
+              ],
+              "proportions": [
+                "pr_longlimbs"
+              ],
+              "ethnicity_origin_base": [
+                "european"
+              ]
+            },
+            "brief": "",
+            "seed": 329596,
+            "medias": []
+          }
+        },
+        "recreate_unavailable_reason": null
+      },
+      {
+        "id": "f1754b73-119c-4959-af7c-45dd1ec9ba64",
+        "name": "AI Influencer 35",
+        "preview": {
+          "url": "https://static-public-media.higgsfield.ai/ai-influencer-explore-presets/published/12691a662d248d3e475bf9718e2f773ae320494a39dace4e8ccfd9bdc4b50543",
+          "type": "static",
+          "width": 1360,
+          "height": 2048,
+          "thumbnail_url": "https://static-public-media.higgsfield.ai/ai-influencer-explore-presets/published/ef446f6f5e626085f77c31306db50f11f09ca77b59ad9c749f7e1667822a61c5"
+        },
+        "sheet": {
+          "url": "https://static-public-media.higgsfield.ai/ai-influencer-explore-presets/published/f82f5144bed4e4263c3e985048ba606c557c458ad2b69342a50c2f58cc1dcfa7",
+          "type": "static",
+          "width": 2688,
+          "height": 1520,
+          "thumbnail_url": "https://static-public-media.higgsfield.ai/ai-influencer-explore-presets/published/6666f11bb7c436c8f9ebee5d3e12e6f13b03b50779aad8c1fd9dcb7353596970"
+        },
+        "priority": 2,
+        "recreate": {
+          "job_set_type": "ai_influencer_sheet",
+          "params": {
+            "tier": "freak",
+            "selection": {
+              "age": [
+                "adult"
+              ],
+              "hair": [
+                "hs_dome"
+              ],
+              "gender": [
+                "female"
+              ],
+              "height": [
+                "h_very_tall"
+              ],
+              "accessory": [
+                "acc_none"
+              ],
+              "aesthetic": [
+                "streetstyle"
+              ],
+              "body_type": [
+                "body_slim"
+              ],
+              "eye_color": [
+                "eye_brown"
+              ],
+              "eye_shape": [
+                "es_almond"
+              ],
+              "skin_tone": [
+                "st_ebony"
+              ],
+              "freak_face": [
+                "fn_cheekbones"
+              ],
+              "freak_head": [
+                "head_long"
+              ],
+              "freak_neck": [
+                "neck_long"
+              ],
+              "distinctive": [],
+              "facial_hair": [
+                "fh_none"
+              ],
+              "hair_colour": [
+                "hc_platinum"
+              ],
+              "proportions": [
+                "pr_longlimbs"
+              ],
+              "ethnicity_origin_base": [
+                "african"
+              ]
+            },
+            "brief": "Fashion-editorial freak casting photo of an odd-looking but photoreal person, contemporary trendy 2026 runway styling (not retro). Two-panel sheet: left a tight close-up portrait with the entire head and hair in frame, right a full-body standing shot; both front-facing, arms down, blank expression. PURE WHITE seamless background, bright soft light. Slim, not overweight. Signature: extremely long thin neck, tall bleached-blonde flat-top haircut like a box. Outfit: lime-green fuzzy mohair cropped cardigan, brown leather midi skirt, white knee socks, chunky black loafers. Hyper-realistic, natural uniform skin tone, crisp texture, 85mm, sharp focus.",
+            "seed": 918241,
+            "medias": []
+          }
+        },
+        "recreate_unavailable_reason": null
+      }
+    ]
+  }
+}

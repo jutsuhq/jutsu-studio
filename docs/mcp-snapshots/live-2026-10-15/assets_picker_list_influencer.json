@@ -1,0 +1,11 @@
+{
+  "tool": "assets_picker_list",
+  "arguments": {
+    "source": "influencer",
+    "kind": "image"
+  },
+  "answer": {
+    "items": [],
+    "next_cursor": null
+  }
+}

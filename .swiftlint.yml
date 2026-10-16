@@ -1,0 +1,66 @@
+# Semantic rules only. Formatting belongs to swift-format (.swift-format), so the two never disagree.
+included:
+  - JutsuStudio
+  - Packages/JutsuKit/Sources
+  - Packages/JutsuKit/Tests
+  - Packages/HiggsfieldKit/Sources
+  - Packages/HiggsfieldKit/Tests
+excluded:
+  - Packages/JutsuKit/.build
+  - Packages/HiggsfieldKit/.build
+
+only_rules:
+  - force_unwrapping
+  - force_try
+  - force_cast
+  - implicitly_unwrapped_optional
+  - fatal_error_message
+  - discouraged_optional_boolean
+  - legacy_random
+  - empty_count
+  - first_where
+  - contains_over_first_not_nil
+  - redundant_nil_coalescing
+  - unused_optional_binding
+  - private_over_fileprivate
+  - unowned_variable_capture
+  - weak_delegate
+  - file_length
+  - type_body_length
+  - function_body_length
+  - cyclomatic_complexity
+  - nesting
+  - large_tuple
+  - function_parameter_count
+  - custom_rules
+
+file_length:
+  warning: 400
+  error: 600
+  ignore_comment_only_lines: true
+type_body_length:
+  warning: 250
+  error: 400
+function_body_length:
+  warning: 50
+  error: 80
+cyclomatic_complexity:
+  warning: 10
+  error: 20
+  ignores_case_statements: true
+function_parameter_count:
+  warning: 6
+  error: 8
+
+custom_rules:
+  no_print:
+    name: "No print"
+    regex: '(?<![\w.])(print|debugPrint|dump|NSLog)\('
+    match_kinds: [identifier]
+    message: "Use os.Logger with privacy annotations instead."
+    severity: error
+  no_userdefaults_secrets:
+    name: "No secrets in UserDefaults"
+    regex: 'UserDefaults[^\n]*(secret|token|password)'
+    message: "Secrets live in Keychain only (see Secrets module)."
+    severity: error

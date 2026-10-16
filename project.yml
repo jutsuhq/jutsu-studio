@@ -1,0 +1,113 @@
+# XcodeGen spec. Generate the project with `xcodegen generate`; JutsuStudio.xcodeproj is not committed.
+name: JutsuStudio
+options:
+  bundleIdPrefix: com.jutsustudio
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+
+packages:
+  JutsuKit:
+    path: Packages/JutsuKit
+  HiggsfieldKit:
+    path: Packages/HiggsfieldKit
+  # Software Update: checks the appcast attached to the latest GitHub release, downloads, installs and relaunches.
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    exactVersion: 2.10.0
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    ENABLE_HARDENED_RUNTIME: YES
+    DEAD_CODE_STRIPPING: YES
+    CODE_SIGN_IDENTITY: "-"
+    # Xcode fills Localizable.xcstrings from Text("…") and String(localized:) on each build.
+    SWIFT_EMIT_LOC_STRINGS: YES
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+
+targets:
+  JutsuStudio:
+    type: application
+    platform: macOS
+    sources: [JutsuStudio]
+    dependencies:
+      - package: JutsuKit
+        product: JutsuCore
+      - package: JutsuKit
+        product: Presentation
+      - package: JutsuKit
+        product: Secrets
+      - package: JutsuKit
+        product: HiggsfieldProviders
+      - package: HiggsfieldKit
+        product: HiggsfieldCore
+      - package: HiggsfieldKit
+        product: HiggsfieldAPI
+      - package: HiggsfieldKit
+        product: HiggsfieldMCP
+      - package: JutsuKit
+        product: JobEngine
+      - package: JutsuKit
+        product: Persistence
+      - package: JutsuKit
+        product: MediaKit
+      - package: Sparkle
+    entitlements:
+      path: JutsuStudio/Resources/JutsuStudio.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.network.client: true
+        # The OAuth loopback redirect listens on 127.0.0.1.
+        com.apple.security.network.server: true
+        com.apple.security.files.user-selected.read-write: true
+        com.apple.security.files.bookmarks.app-scope: true
+        com.apple.security.assets.movies.read-write: true
+        # Sparkle's installer runs outside the sandbox as an XPC service; the app reaches it by these names.
+        com.apple.security.temporary-exception.mach-lookup.global-name:
+          - $(PRODUCT_BUNDLE_IDENTIFIER)-spks
+          - $(PRODUCT_BUNDLE_IDENTIFIER)-spki
+    info:
+      path: JutsuStudio/Resources/Info.plist
+      properties:
+        CFBundleDisplayName: $(APP_DISPLAY_NAME)
+        CFBundleName: $(APP_DISPLAY_NAME)
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSApplicationCategoryType: public.app-category.video
+        # Sparkle. The appcast is a release asset, so `latest/download` follows the newest published release; each
+        # update is checked against this EdDSA key and the app's own code signature before it is installed.
+        SUFeedURL: https://github.com/jutsuhq/jutsu-studio/releases/latest/download/appcast.xml
+        # The public half of the key release.yml signs updates with (secret SPARKLE_ED_PRIVATE_KEY).
+        SUPublicEDKey: RUjFlCdW3fQ0905uaHtYOCvhdtv6nKMkBc4FxFPG0N8=
+        SUEnableInstallerLauncherService: true
+        SUEnableAutomaticChecks: true
+        SUScheduledCheckInterval: 86400
+        NSHumanReadableCopyright: MIT License. Unofficial, not affiliated with Higgsfield AI.
+        # Relative to Contents/Resources. XcodeGen copies Resources/Fonts/*.ttf flat into that folder.
+        ATSApplicationFontsPath: "."
+        # Finder's Open With and drops on the Dock icon. Alternate rank: never the default app for these files.
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Video
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes: [public.movie]
+          - CFBundleTypeName: Image
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes: [public.image]
+    settings:
+      base:
+        PRODUCT_NAME: Jutsu Studio
+        PRODUCT_BUNDLE_IDENTIFIER: com.jutsustudio.JutsuStudio
+        APP_DISPLAY_NAME: Jutsu Studio
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+      # Debug gets its own bundle ID, so its own sandbox container (job store, UserDefaults) and name: a Debug
+      # launch must never resume the release build's paid jobs or change its settings. Release stays as it is.
+      configs:
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: com.jutsustudio.JutsuStudio.debug
+          APP_DISPLAY_NAME: Jutsu Studio Debug

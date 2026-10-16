@@ -1,0 +1,28 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Even re-encoded, this video is %@, over the %@ upload limit. Select a shorter range." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Even re-encoded, this video is %1$@, over the %2$@ upload limit. Select a shorter range."
+          }
+        }
+      }
+    },
+    "The file couldn't be converted: %@" : {
+
+    },
+    "The selected range lies outside the video. Select it again." : {
+
+    },
+    "This image can't be read. Save it as JPEG or PNG and add it again." : {
+
+    },
+    "This video's format can't be read. Convert it to MP4 or MOV first." : {
+
+    }
+  },
+  "version" : "1.0"
+}

@@ -1,0 +1,140 @@
+{
+  "tool": "jobs_wait",
+  "arguments": {
+    "jobs": [
+      {
+        "index": 0,
+        "job_id": "e62128d0-f91e-4c5c-aafd-f1be29d8039e"
+      },
+      {
+        "index": 1,
+        "job_id": "3e91e2e7-caee-482e-9c9e-c0af66cda89d"
+      },
+      {
+        "index": 2,
+        "job_id": "8c2f6fdf-d06c-4666-bd7b-f6d8c5eafcfc"
+      },
+      {
+        "index": 3,
+        "job_id": "b2315e67-3ee8-4b8b-9e73-b62860d37ec8"
+      },
+      {
+        "index": 4,
+        "job_id": "b283e31d-0916-483a-bad2-428e77749cfc"
+      },
+      {
+        "index": 5,
+        "job_id": "287a7844-446e-4bd3-b484-7b93f2f6a6b7"
+      },
+      {
+        "index": 6,
+        "job_id": "6051a981-2b0b-4e86-a17b-829fa5a3d4ba"
+      },
+      {
+        "index": 7,
+        "job_id": "b46fa887-f1b9-4894-90ba-302e1780bf1c"
+      },
+      {
+        "index": 8,
+        "job_id": "295989fc-675c-4ab1-930e-10a29cd3d349"
+      },
+      {
+        "index": 9,
+        "job_id": "b9673ee0-417a-48c1-be0e-d6ec347b7f0a"
+      }
+    ],
+    "timeout_seconds": 15
+  },
+  "answer": {
+    "jobs": [
+      {
+        "index": 0,
+        "job_id": "e62128d0-f91e-4c5c-aafd-f1be29d8039e",
+        "status": "completed",
+        "type": "video",
+        "model": "seedance_2_5",
+        "result_url": "https://example.com/hf_20261015_132249_e62128d0-f91e-4c5c-aafd-f1be29d8039e.mp4"
+      },
+      {
+        "index": 1,
+        "job_id": "3e91e2e7-caee-482e-9c9e-c0af66cda89d",
+        "status": "completed",
+        "type": "video",
+        "model": "seedance_2_5",
+        "result_url": "https://example.com/hf_20261015_132249_3e91e2e7-caee-482e-9c9e-c0af66cda89d.mp4"
+      },
+      {
+        "index": 2,
+        "job_id": "8c2f6fdf-d06c-4666-bd7b-f6d8c5eafcfc",
+        "status": "completed",
+        "type": "image",
+        "model": "text2image_soul_v2",
+        "result_url": "https://example.com/hf_20261015_132250_8c2f6fdf-d06c-4666-bd7b-f6d8c5eafcfc.png"
+      },
+      {
+        "index": 3,
+        "job_id": "b2315e67-3ee8-4b8b-9e73-b62860d37ec8",
+        "status": "completed",
+        "type": "image",
+        "model": "text2image_soul_v2",
+        "result_url": "https://example.com/hf_20261015_132250_b2315e67-3ee8-4b8b-9e73-b62860d37ec8.png"
+      },
+      {
+        "index": 4,
+        "job_id": "b283e31d-0916-483a-bad2-428e77749cfc",
+        "status": "completed",
+        "type": "video",
+        "model": "seedance_2_5",
+        "result_url": "https://example.com/hf_20261015_132254_b283e31d-0916-483a-bad2-428e77749cfc.mp4"
+      },
+      {
+        "index": 5,
+        "job_id": "287a7844-446e-4bd3-b484-7b93f2f6a6b7",
+        "status": "completed",
+        "type": "video",
+        "model": "seedance_2_5",
+        "result_url": "https://example.com/hf_20261015_132257_287a7844-446e-4bd3-b484-7b93f2f6a6b7.mp4"
+      },
+      {
+        "index": 6,
+        "job_id": "6051a981-2b0b-4e86-a17b-829fa5a3d4ba",
+        "status": "completed",
+        "type": "video",
+        "model": "seedance_2_5",
+        "result_url": "https://example.com/hf_20261015_132300_6051a981-2b0b-4e86-a17b-829fa5a3d4ba.mp4"
+      },
+      {
+        "index": 7,
+        "job_id": "b46fa887-f1b9-4894-90ba-302e1780bf1c",
+        "status": "completed",
+        "type": "video",
+        "model": "video_background_remover",
+        "result_url": "https://example.com/hf_20261015_132302_b46fa887-f1b9-4894-90ba-302e1780bf1c.mp4"
+      },
+      {
+        "index": 8,
+        "job_id": "295989fc-675c-4ab1-930e-10a29cd3d349",
+        "status": "completed",
+        "type": "video",
+        "model": "voice_change_merge",
+        "result_url": "https://example.com/hf_20261015_132303_295989fc-675c-4ab1-930e-10a29cd3d349.mp4"
+      },
+      {
+        "index": 9,
+        "job_id": "b9673ee0-417a-48c1-be0e-d6ec347b7f0a",
+        "status": "completed",
+        "type": "video",
+        "model": "dubbing_lipsync",
+        "result_url": "https://example.com/hf_20261015_132305_b9673ee0-417a-48c1-be0e-d6ec347b7f0a.mp4"
+      }
+    ],
+    "summary": {
+      "total": 10,
+      "completed": 10,
+      "failed": 0,
+      "active": 0,
+      "errors": 0
+    },
+    "all_terminal": true
+  }
+}

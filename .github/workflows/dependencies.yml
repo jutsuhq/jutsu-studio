@@ -1,0 +1,27 @@
+name: Sparkle updates
+
+on:
+  schedule:
+    - cron: "23 8 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sparkle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Sparkle is declared in XcodeGen's YAML, which Dependabot's SwiftPM updater cannot edit.
+      - name: Check the pinned updater against its latest stable release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          current=$(sed -nE '/^  Sparkle:/,/^[^ ]/{s/^[[:space:]]*exactVersion:[[:space:]]*([0-9.]+).*/\1/p;}' project.yml)
+          [[ -n "$current" ]] || { echo '::error::Sparkle version not found'; exit 1; }
+          latest=$(gh api repos/sparkle-project/Sparkle/releases/latest --jq .tag_name)
+          [[ "$current" == "${latest#v}" ]] ||
+            { echo "::error::Sparkle $latest is available; review the update to pinned $current in project.yml"; exit 1; }

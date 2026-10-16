@@ -1,0 +1,2433 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Loading image models" : {
+
+    },
+    "Any mode" : {
+
+    },
+    "Video model" : {
+
+    },
+    "Any video model" : {
+
+    },
+    "Drafts and finals" : {
+
+    },
+    "Drafts only" : {
+
+    },
+    "Finals only" : {
+
+    },
+    "Image model" : {
+
+    },
+    "Any image model" : {
+
+    },
+    "Required" : {
+
+    },
+    "Image" : {
+
+    },
+    "Can't read today's spending" : {
+
+    },
+    "Can't save this image" : {
+
+    },
+    "Can't open the material catalog" : {
+
+    },
+    "%@ %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@"
+          }
+        }
+      }
+    },
+    "%@ (%@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ (%2$@)"
+          }
+        }
+      }
+    },
+    "%@ joined" : {
+      "comment" : "File name of an Extend result joined with its original, without the extension"
+    },
+    "%@ on the left, %@ on the right" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ on the left, %2$@ on the right"
+          }
+        }
+      }
+    },
+    "%@ shortcut" : {
+
+    },
+    "%@ · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "%@ · %@ an image" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$@ an image"
+          }
+        }
+      }
+    },
+    "%@ · estimate" : {
+
+    },
+    "%@, %lld active" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$lld active"
+          }
+        }
+      }
+    },
+    "%@, unavailable" : {
+
+    },
+    "%@, up to %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, up to %2$lld"
+          }
+        }
+      }
+    },
+    "%@, use as source" : {
+
+    },
+    "%@. Showing the saved styles." : {
+
+    },
+    "%lld" : {
+
+    },
+    "%lld character sheets" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld character sheet"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld character sheets"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld days" : {
+
+    },
+    "%lld images" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld image"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld images"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld images selected" : {
+
+    },
+    "%lld of %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "%lld of %lld picked" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of %2$lld picked"
+          }
+        }
+      }
+    },
+    "%lld picked" : {
+
+    },
+    "%lld picked · the rest random" : {
+
+    },
+    "%lld presets" : {
+
+    },
+    "+%lld" : {
+
+    },
+    "4–30 s" : {
+
+    },
+    "60 fps costs twice as much." : {
+
+    },
+    "A character sheet shows one person or animal from every side. Use it as a reference to keep them the same in every video." : {
+
+    },
+    "A soft cap on plan credits: jobs over it ask for confirmation instead of starting. It counts jobs finished today and every job in the queue." : {
+
+    },
+    "A soft cap on the API balance: jobs over it ask for confirmation instead of starting. It counts jobs finished today and every job in the queue." : {
+
+    },
+    "API key" : {
+
+    },
+    "AVFoundation can't read the result file." : {
+
+    },
+    "About Jutsu Studio" : {
+
+    },
+    "Active" : {
+
+    },
+    "Active job count" : {
+
+    },
+    "Actual Size" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Actual Size"
+          }
+        }
+      }
+    },
+    "Add %lld Images" : {
+
+    },
+    "Add %lld to References" : {
+
+    },
+    "Add Image" : {
+
+    },
+    "Add a video" : {
+
+    },
+    "Add images" : {
+
+    },
+    "Add range" : {
+
+    },
+    "Add the video again to queue this job." : {
+
+    },
+    "Add to favorites" : {
+
+    },
+    "Added" : {
+
+    },
+    "Adding…" : {
+
+    },
+    "After" : {
+
+    },
+    "All categories" : {
+
+    },
+    "All items" : {
+
+    },
+    "All models" : {
+
+    },
+    "All modes" : {
+
+    },
+    "Amount" : {
+
+    },
+    "Any" : {
+
+    },
+    "Any aspect" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Any aspect"
+          }
+        }
+      }
+    },
+    "Any format · trimmed to 4–30 s" : {
+
+    },
+    "Any resolution" : {
+
+    },
+    "As in image keeps the way the character faces in the image; as in video follows the video" : {
+
+    },
+    "Ask Higgsfield for this job again; it may still finish without a new charge" : {
+
+    },
+    "Asking Higgsfield for the price…" : {
+
+    },
+    "Aspect" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Aspect"
+          }
+        }
+      }
+    },
+    "Audio" : {
+
+    },
+    "Auto" : {
+
+    },
+    "Available when the queue and image requests are done: they still use their prepared files." : {
+
+    },
+    "Back" : {
+
+    },
+    "Back to Clips" : {
+
+    },
+    "Back to Results" : {
+
+    },
+    "Batch" : {
+
+    },
+    "Batch × %lld" : {
+
+    },
+    "Before" : {
+
+    },
+    "Being made" : {
+
+    },
+    "Billed per second of video from a prepaid balance in the Higgsfield console. The key is kept in macOS Keychain." : {
+
+    },
+    "By mode" : {
+
+    },
+    "By resolution" : {
+
+    },
+    "Cache" : {
+
+    },
+    "Camera, lens, genre, era and the rest; on Auto, Cinema Studio picks them from the prompt" : {
+
+    },
+    "Can't be found" : {
+
+    },
+    "Can't change the template" : {
+
+    },
+    "Can't change this setting" : {
+
+    },
+    "Can't download the clip" : {
+
+    },
+    "Can't download the images" : {
+
+    },
+    "Can't download the sheet" : {
+
+    },
+    "Can't download this image" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Can't download this image"
+          }
+        }
+      }
+    },
+    "Can't download this video" : {
+
+    },
+    "Can't duplicate this job" : {
+
+    },
+    "Can't export" : {
+
+    },
+    "Can't export the MCP tool catalog" : {
+
+    },
+    "Can't export the preview" : {
+
+    },
+    "Can't free the space" : {
+
+    },
+    "Can't join the clips" : {
+
+    },
+    "Can't load the credit history" : {
+
+    },
+    "Can't load the presets" : {
+
+    },
+    "Can't load the preview" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Can't load the preview"
+          }
+        }
+      }
+    },
+    "Can't load the voices. Close this and try again." : {
+
+    },
+    "Can't load your characters" : {
+
+    },
+    "Can't load your uploads" : {
+
+    },
+    "Can't open the source video" : {
+
+    },
+    "Can't open the template" : {
+
+    },
+    "Can't open this element" : {
+
+    },
+    "Can't paste the image" : {
+
+    },
+    "Can't queue the final" : {
+
+    },
+    "Can't queue the finals" : {
+
+    },
+    "Can't queue this" : {
+
+    },
+    "Can't save %@" : {
+
+    },
+    "Cancel" : {
+
+    },
+    "Cancel All" : {
+
+    },
+    "Cancel Export" : {
+
+    },
+    "Cancel Job" : {
+
+    },
+    "Cancel the jobs Higgsfield hasn't started; one it is generating can't be canceled" : {
+
+    },
+    "Canceled" : {
+
+    },
+    "Category" : {
+
+    },
+    "Change Voice…" : {
+
+    },
+    "Change this result as a prompt says, with Seedance 2.5" : {
+
+    },
+    "Change…" : {
+
+    },
+    "Character %lld" : {
+
+    },
+    "Character faces" : {
+
+    },
+    "Character sheet" : {
+
+    },
+    "Character sheets of your account. Pick one to use it as a reference image." : {
+
+    },
+    "Characters" : {
+
+    },
+    "Characters, environments and props saved on higgsfield.ai appear here." : {
+
+    },
+    "Charged" : {
+
+    },
+    "Check Now" : {
+
+    },
+    "Check again" : {
+
+    },
+    "Check automatically" : {
+
+    },
+    "Check for Updates…" : {
+
+    },
+    "Check your connection and try again." : {
+
+    },
+    "Choose Video…" : {
+
+    },
+    "Choose a face" : {
+
+    },
+    "Choose a folder for the source video and reference images." : {
+
+    },
+    "Choose style images" : {
+
+    },
+    "Choose…" : {
+
+    },
+    "Clear" : {
+
+    },
+    "Clear Cache" : {
+
+    },
+    "Clear History" : {
+
+    },
+    "Clear History…" : {
+
+    },
+    "Clear Preset" : {
+
+    },
+    "Clear Prompt" : {
+
+    },
+    "Clear all" : {
+
+    },
+    "Clear cache" : {
+
+    },
+    "Clear prompt history?" : {
+
+    },
+    "Clear the cache?" : {
+
+    },
+    "Clear the jobs that didn't finish?" : {
+
+    },
+    "Clips" : {
+
+    },
+    "Close" : {
+
+    },
+    "Close without adding the picked images?" : {
+
+    },
+    "Committed today" : {
+
+    },
+    "Compare" : {
+
+    },
+    "Compare divider" : {
+
+    },
+    "Compare with…" : {
+
+    },
+    "Compare…" : {
+
+    },
+    "Connect Higgsfield" : {
+
+    },
+    "Connect Higgsfield again to generate images." : {
+
+    },
+    "Connect Higgsfield in Settings" : {
+
+    },
+    "Connect from the main window" : {
+
+    },
+    "Connect key" : {
+
+    },
+    "Connect your Higgsfield account" : {
+
+    },
+    "Connect your Higgsfield account to create characters." : {
+
+    },
+    "Connection" : {
+
+    },
+    "Continue this paused job" : {
+
+    },
+    "Continue this result past its last frame, with Seedance 2.5" : {
+
+    },
+    "Copied" : {
+
+    },
+    "Copy" : {
+
+    },
+    "Copy IDs" : {
+
+    },
+    "Copy Image" : {
+
+    },
+    "Copy Job IDs" : {
+
+    },
+    "Copy Link" : {
+
+    },
+    "Copy Prompt" : {
+
+    },
+    "Copy Request ID" : {
+
+    },
+    "Copy Video" : {
+
+    },
+    "Copy Videos" : {
+
+    },
+    "Copy the job's IDs to send to Higgsfield support" : {
+
+    },
+    "Couldn't move the image to the Trash" : {
+
+    },
+    "Couldn't move the images to the Trash" : {
+
+    },
+    "Couldn't remove the images from the library" : {
+
+    },
+    "Couldn't star the images" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Couldn't star the images"
+          }
+        }
+      }
+    },
+    "Create" : {
+
+    },
+    "Create Character" : {
+
+    },
+    "Create Character…" : {
+
+    },
+    "Create a character: a sheet of one person or animal from every side." : {
+
+    },
+    "Create a key in the Higgsfield console" : {
+
+    },
+    "Credit history" : {
+
+    },
+    "Daily cap" : {
+
+    },
+    "Debug" : {
+
+    },
+    "Decrease" : {
+
+    },
+    "Default mode" : {
+
+    },
+    "Default resolution" : {
+
+    },
+    "Delete" : {
+
+    },
+    "Delete Template" : {
+
+    },
+    "Delete Unstarred…" : {
+
+    },
+    "Delete from Library…" : {
+
+    },
+    "Delete “%@”?" : {
+
+    },
+    "Describe the image on the left, then Generate." : {
+
+    },
+    "Description" : {
+
+    },
+    "Deselect" : {
+
+    },
+    "Deselect All" : {
+
+    },
+    "Didn't finish" : {
+
+    },
+    "Direction" : {
+
+    },
+    "Disk use" : {
+
+    },
+    "Dismiss" : {
+
+    },
+    "Done" : {
+
+    },
+    "Done · in Characters and Library › Images" : {
+
+    },
+    "Download" : {
+
+    },
+    "Download and install automatically" : {
+
+    },
+    "Download the result again; it is already paid for" : {
+
+    },
+    "Download to Library" : {
+
+    },
+    "Downloading" : {
+
+    },
+    "Draft" : {
+
+    },
+    "Draft length" : {
+
+    },
+    "Draft or final" : {
+
+    },
+    "Draft resolution" : {
+
+    },
+    "Draft results go to the Trash. The library keeps their jobs, inputs and costs." : {
+
+    },
+    "Drop a video" : {
+
+    },
+    "Dub…" : {
+
+    },
+    "Duplicate" : {
+
+    },
+    "Each final keeps its draft's inputs and is linked to it." : {
+
+    },
+    "Each sheet takes a few minutes. You can close this window: the sheets keep going and show in Characters when they're done." : {
+
+    },
+    "Edit & Re-run" : {
+
+    },
+    "Edit Inputs" : {
+
+    },
+    "Edit…" : {
+
+    },
+    "Element image" : {
+
+    },
+    "Element image, picked %lld" : {
+
+    },
+    "Elements" : {
+
+    },
+    "Empty" : {
+
+    },
+    "Empty pattern or unknown token: the default is used." : {
+
+    },
+    "Estimated time" : {
+
+    },
+    "Estimates made before each job was submitted. Credit history below lists what the account was actually charged and refunded. USD is the API key balance, credits are the account plan." : {
+
+    },
+    "Estimates made before each job was submitted. Higgsfield doesn't report the amount an API key was actually charged. USD is the API key balance, credits are the account plan." : {
+
+    },
+    "Every finished video and image, also saved to your output folder." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Every finished video and image, also saved to your output folder."
+          }
+        }
+      }
+    },
+    "Every finished video, also saved to your output folder." : {
+
+    },
+    "Every image Generate… made, also saved to your output folder." : {
+
+    },
+    "Every image is saved to Library › Images. Pick the ones to add to the references." : {
+
+    },
+    "Example" : {
+
+    },
+    "Export CSV…" : {
+
+    },
+    "Export MCP Tool Catalog…" : {
+
+    },
+    "Export Short Preview…" : {
+
+    },
+    "Extend…" : {
+
+    },
+    "Face" : {
+
+    },
+    "Failed, rejected or canceled · %@" : {
+
+    },
+    "Failed, rejected or paused" : {
+
+    },
+    "File names" : {
+
+    },
+    "File not found" : {
+
+    },
+    "Fills in what the form leaves open differently each time" : {
+
+    },
+    "Finalize in 1080p…" : {
+
+    },
+    "Find" : {
+
+    },
+    "Finish" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Finish"
+          }
+        }
+      }
+    },
+    "Finish signing in in your browser" : {
+
+    },
+    "Finished" : {
+
+    },
+    "Finished images from your account appear here once you make some." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Finished images from your account appear here once you make some."
+          }
+        }
+      }
+    },
+    "Finished jobs appear here and in the Library." : {
+
+    },
+    "Finished videos are saved to your output folder and appear here." : {
+
+    },
+    "Fit" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Fit"
+          }
+        }
+      }
+    },
+    "Folder" : {
+
+    },
+    "Frame" : {
+
+    },
+    "Frames" : {
+
+    },
+    "From Higgsfield" : {
+
+    },
+    "From Higgsfield, for every job on the account, including those made on higgsfield.ai." : {
+
+    },
+    "General" : {
+
+    },
+    "Generate" : {
+
+    },
+    "Generate reference images" : {
+
+    },
+    "Generated image" : {
+
+    },
+    "Generated image, added to the references" : {
+
+    },
+    "Generated image, picked %lld" : {
+
+    },
+    "Generate…" : {
+
+    },
+    "Generate…: %@" : {
+
+    },
+    "Generating at once. By default %lld on an account, %lld with an API key" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Generating at once. By default %1$lld on an account, %2$lld with an API key"
+          }
+        }
+      }
+    },
+    "Generating…" : {
+
+    },
+    "Getting the price from Higgsfield…" : {
+
+    },
+    "Go to Create" : {
+
+    },
+    "Has starred results" : {
+
+    },
+    "Hide Sidebar" : {
+
+    },
+    "Hides the choices" : {
+
+    },
+    "Hides the controls" : {
+
+    },
+    "Higgsfield" : {
+
+    },
+    "Higgsfield accepted %lld jobs that would be lost on quit. Copy their IDs to find them in your Higgsfield history." : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Higgsfield accepted %lld job that would be lost on quit. Copy its ID to find it in your Higgsfield history."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Higgsfield accepted %lld jobs that would be lost on quit. Copy their IDs to find them in your Higgsfield history."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Higgsfield account" : {
+
+    },
+    "Higgsfield gave no price for this, so it can't be queued." : {
+
+    },
+    "Higgsfield lists no voices for this account." : {
+
+    },
+    "Higgsfield refused this connection. Sign in again or connect another key." : {
+
+    },
+    "Higgsfield's sign-in page is open. Approve access for Jutsu Studio and you'll be brought back here automatically." : {
+
+    },
+    "High bitrate keeps more detail in the encoded video; Standard makes a smaller file" : {
+
+    },
+    "Hover to preview a motion, click to use it." : {
+
+    },
+    "Image %lld of %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Image %1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "Image Model" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Image Model"
+          }
+        }
+      }
+    },
+    "Image being made" : {
+
+    },
+    "Image to edit" : {
+
+    },
+    "Images" : {
+
+    },
+    "Images you make with Generate… in Create › References are saved here and in the Images folder of your output folder." : {
+
+    },
+    "Images you uploaded before, newest first. Pick up to %lld to use as references." : {
+
+    },
+    "Increase" : {
+
+    },
+    "Inputs" : {
+
+    },
+    "Installs when you quit" : {
+
+    },
+    "It has more images than fit. Pick up to %lld." : {
+
+    },
+    "It is no longer on this Mac, and the download from Higgsfield failed. Try again in a moment." : {
+
+    },
+    "Its copied reference images are deleted too. Jobs already made from it keep their results." : {
+
+    },
+    "Jobs" : {
+
+    },
+    "Jobs keep running in the background and resume after restart." : {
+
+    },
+    "Join with Original…" : {
+
+    },
+    "Jutsu Studio" : {
+
+    },
+    "Jutsu Studio can't open its library" : {
+
+    },
+    "Jutsu Studio talks to Higgsfield directly. No account of ours, no telemetry. Unofficial, not affiliated with Higgsfield AI." : {
+
+    },
+    "Keep Picking" : {
+
+    },
+    "Keep Them" : {
+
+    },
+    "Keep the starred results and delete the rest of this batch" : {
+
+    },
+    "Keep the video's background" : {
+
+    },
+    "Key ID" : {
+
+    },
+    "Keyboard" : {
+
+    },
+    "Kling puts the character into the source video's scene instead of the reference image's" : {
+
+    },
+    "Language" : {
+
+    },
+    "Last checked %@" : {
+
+    },
+    "Leaves out %lld already in the Queue." : {
+
+    },
+    "Length" : {
+
+    },
+    "Library" : {
+
+    },
+    "Load More" : {
+
+    },
+    "Load the newest videos from Higgsfield" : {
+
+    },
+    "Load the newest videos from Higgsfield (%@)" : {
+
+    },
+    "Loading the sample…" : {
+
+    },
+    "Loading your Higgsfield history…" : {
+
+    },
+    "Loading…" : {
+
+    },
+    "Look" : {
+
+    },
+    "Low credits" : {
+
+    },
+    "MOV, MP4, HEVC, ProRes — converted and trimmed for you. The clip needs 4 to 30 seconds of motion." : {
+
+    },
+    "Made by %@" : {
+
+    },
+    "Make reference images from a prompt" : {
+
+    },
+    "Making the images…" : {
+
+    },
+    "Manage Templates…" : {
+
+    },
+    "Measuring…" : {
+
+    },
+    "Mode" : {
+
+    },
+    "Model" : {
+
+    },
+    "More" : {
+
+    },
+    "More for character %lld" : {
+
+    },
+    "Motion Library and uploads" : {
+
+    },
+    "Move %lld images to the Trash?" : {
+
+    },
+    "Move to Trash" : {
+
+    },
+    "Move to Trash…" : {
+
+    },
+    "Name" : {
+
+    },
+    "New from Template" : {
+
+    },
+    "New from template" : {
+
+    },
+    "New job" : {
+
+    },
+    "New versions come from the project's GitHub releases and are checked against its signing key before they install." : {
+
+    },
+    "Next" : {
+
+    },
+    "Next to the menu bar icon" : {
+
+    },
+    "No characters yet" : {
+
+    },
+    "No credit movements yet" : {
+
+    },
+    "No elements yet" : {
+
+    },
+    "No images match the search" : {
+
+    },
+    "No images on Higgsfield yet" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "No images on Higgsfield yet"
+          }
+        }
+      }
+    },
+    "No images yet" : {
+
+    },
+    "No prompt matches." : {
+
+    },
+    "No results yet" : {
+
+    },
+    "No source video · made from the prompt" : {
+
+    },
+    "No templates yet" : {
+
+    },
+    "No templates yet. Save the Create form as one from the Templates menu." : {
+
+    },
+    "No uploaded images yet" : {
+
+    },
+    "None" : {
+
+    },
+    "Not charged" : {
+
+    },
+    "Not checked yet" : {
+
+    },
+    "Not connected" : {
+
+    },
+    "Not now" : {
+
+    },
+    "Nothing matches these filters" : {
+
+    },
+    "Nothing running" : {
+
+    },
+    "Nothing to copy or paste" : {
+
+    },
+    "Notifications" : {
+
+    },
+    "OK" : {
+
+    },
+    "Old drafts" : {
+
+    },
+    "Older entries" : {
+
+    },
+    "Older than" : {
+
+    },
+    "On Higgsfield, not downloaded yet" : {
+
+    },
+    "Once a day" : {
+
+    },
+    "One connection at a time. To switch, sign out and connect the other one." : {
+
+    },
+    "Only the characters made in Jutsu Studio are listed. Sheets made on higgsfield.ai aren't shown yet." : {
+
+    },
+    "Open" : {
+
+    },
+    "Open Again" : {
+
+    },
+    "Open Console" : {
+
+    },
+    "Open Jutsu Studio" : {
+
+    },
+    "Open Login Items" : {
+
+    },
+    "Open Settings" : {
+
+    },
+    "Open System Settings" : {
+
+    },
+    "Open at login" : {
+
+    },
+    "Open dashboard" : {
+
+    },
+    "Open in Library" : {
+
+    },
+    "Open large" : {
+
+    },
+    "Open report" : {
+
+    },
+    "Open the Image side of Create, where the results are" : {
+
+    },
+    "Open the full report on Higgsfield" : {
+
+    },
+    "Open the result in Library" : {
+
+    },
+    "Open the result to finalize this draft in 1080p" : {
+
+    },
+    "Open the result to render its final" : {
+
+    },
+    "Open these inputs in Create; a new generation is charged again" : {
+
+    },
+    "Opens Settings" : {
+
+    },
+    "Open…" : {
+
+    },
+    "Optional" : {
+
+    },
+    "Optional · %@ changes it as the prompt says" : {
+
+    },
+    "Optional · 4–30 s" : {
+
+    },
+    "Optional · a photo of the face to keep" : {
+
+    },
+    "Optional · up to 3 images of the look to follow" : {
+
+    },
+    "Or describe the clip in the prompt" : {
+
+    },
+    "Output" : {
+
+    },
+    "Parallel jobs" : {
+
+    },
+    "Paste" : {
+
+    },
+    "Paste URL…" : {
+
+    },
+    "Pattern" : {
+
+    },
+    "Pause" : {
+
+    },
+    "Pause All" : {
+
+    },
+    "Pause all" : {
+
+    },
+    "Pay as you go" : {
+
+    },
+    "Pick" : {
+
+    },
+    "Pick a voice to see the price." : {
+
+    },
+    "Pick it to add to the references" : {
+
+    },
+    "Pick one to add its images as references, up to %lld." : {
+
+    },
+    "Pick one way to connect. You can switch later in Settings." : {
+
+    },
+    "Pick up to %lld" : {
+
+    },
+    "Pick winner" : {
+
+    },
+    "Picked %lld" : {
+
+    },
+    "Picked to compare" : {
+
+    },
+    "Play" : {
+
+    },
+    "Play a sample" : {
+
+    },
+    "Play sound" : {
+
+    },
+    "Playback position" : {
+
+    },
+    "Predict each variant's hook, engagement and sustain, free" : {
+
+    },
+    "Prepared sources" : {
+
+    },
+    "Prepared sources, preset previews and downloaded Motion Library clips and uploads are deleted. The library, templates, the files in the Create form and your results stay." : {
+
+    },
+    "Preset previews" : {
+
+    },
+    "Previous" : {
+
+    },
+    "Prices and requests from now on are kept only until you quit." : {
+
+    },
+    "Progress" : {
+
+    },
+    "Prompt" : {
+
+    },
+    "Prompt History" : {
+
+    },
+    "Prompt history" : {
+
+    },
+    "Prompts of earlier jobs leave the prompt picker. Starred prompts, jobs and the library stay." : {
+
+    },
+    "Prompts of jobs you submit appear here." : {
+
+    },
+    "Quality" : {
+
+    },
+    "Queue" : {
+
+    },
+    "Quick Look" : {
+
+    },
+    "Quit" : {
+
+    },
+    "Random" : {
+
+    },
+    "Randomize" : {
+
+    },
+    "Reading the result's size…" : {
+
+    },
+    "Reference images are copied, so the template keeps working when the originals move." : {
+
+    },
+    "Reference images sent from this app or higgsfield.ai appear here." : {
+
+    },
+    "References are full." : {
+
+    },
+    "Reframe takes results up to a minute long." : {
+
+    },
+    "Reframe…" : {
+
+    },
+    "Refresh" : {
+
+    },
+    "Refresh styles" : {
+
+    },
+    "Remove" : {
+
+    },
+    "Remove %lld images from the library?" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Remove %lld image from the library?"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Remove %lld images from the library?"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Remove Background…" : {
+
+    },
+    "Remove Video" : {
+
+    },
+    "Remove character %lld" : {
+
+    },
+    "Remove drafts" : {
+
+    },
+    "Remove every job here from the Queue" : {
+
+    },
+    "Remove from Library" : {
+
+    },
+    "Remove from Library…" : {
+
+    },
+    "Remove from favorites" : {
+
+    },
+    "Remove from the Queue; what it cost still counts in today's spending" : {
+
+    },
+    "Remove range %@" : {
+
+    },
+    "Remove video" : {
+
+    },
+    "Rename" : {
+
+    },
+    "Rename Template" : {
+
+    },
+    "Render Anyway" : {
+
+    },
+    "Render Final" : {
+
+    },
+    "Render Final…" : {
+
+    },
+    "Render final" : {
+
+    },
+    "Render finals for starred" : {
+
+    },
+    "Render the starred drafts as finals at one resolution" : {
+
+    },
+    "Rendering" : {
+
+    },
+    "Requests" : {
+
+    },
+    "Required · %@ changes it as the prompt says" : {
+
+    },
+    "Reset" : {
+
+    },
+    "Reset %@" : {
+
+    },
+    "Resolution" : {
+
+    },
+    "Restore Defaults" : {
+
+    },
+    "Result" : {
+
+    },
+    "Results" : {
+
+    },
+    "Results count only files of jobs in the library." : {
+
+    },
+    "Results download here automatically when a job finishes." : {
+
+    },
+    "Resume" : {
+
+    },
+    "Resume All" : {
+
+    },
+    "Resume all" : {
+
+    },
+    "Retry" : {
+
+    },
+    "Retry Job" : {
+
+    },
+    "Retry download" : {
+
+    },
+    "Review price" : {
+
+    },
+    "Run again with the same inputs — a new job, charged again" : {
+
+    },
+    "Run next" : {
+
+    },
+    "Run these inputs again; the files Higgsfield still has aren't uploaded again" : {
+
+    },
+    "Save" : {
+
+    },
+    "Save %@…" : {
+
+    },
+    "Save Here" : {
+
+    },
+    "Save Inputs…" : {
+
+    },
+    "Save as Template" : {
+
+    },
+    "Save as Template…" : {
+
+    },
+    "Saving inputs" : {
+
+    },
+    "Saving to Higgsfield" : {
+
+    },
+    "Score" : {
+
+    },
+    "Score Again" : {
+
+    },
+    "Score Variants" : {
+
+    },
+    "Scores are kept on each result. Picking the winner stays up to you." : {
+
+    },
+    "Scoring" : {
+
+    },
+    "Search prompts" : {
+
+    },
+    "Search prompts and models" : {
+
+    },
+    "Search prompts and names" : {
+
+    },
+    "Search styles" : {
+
+    },
+    "Secret" : {
+
+    },
+    "Seedance starts the clip on the start frame and, if there is one, ends it on the end frame" : {
+
+    },
+    "Select" : {
+
+    },
+    "Select All" : {
+
+    },
+    "Selected" : {
+
+    },
+    "Send this job again with the same inputs" : {
+
+    },
+    "Send with AirDrop, Messages, Mail or another app" : {
+
+    },
+    "Sending…" : {
+
+    },
+    "Settings" : {
+
+    },
+    "Settings…" : {
+
+    },
+    "Share…" : {
+
+    },
+    "Sheets" : {
+
+    },
+    "Shortcuts" : {
+
+    },
+    "Show Data Folder" : {
+
+    },
+    "Show More" : {
+
+    },
+    "Show Sidebar" : {
+
+    },
+    "Show in Create" : {
+
+    },
+    "Show in Finder" : {
+
+    },
+    "Show in menu bar" : {
+
+    },
+    "Show in the Queue" : {
+
+    },
+    "Show the video in Finder" : {
+
+    },
+    "Shows the choices" : {
+
+    },
+    "Shows the controls" : {
+
+    },
+    "Sign In Again" : {
+
+    },
+    "Silent" : {
+
+    },
+    "Sort" : {
+
+    },
+    "Source" : {
+
+    },
+    "Source on Higgsfield" : {
+
+    },
+    "Spend the credits of your higgsfield.ai plan. You sign in on Higgsfield's own page through its MCP server, so Jutsu Studio never sees your password." : {
+
+    },
+    "Spending" : {
+
+    },
+    "Spent" : {
+
+    },
+    "Star" : {
+
+    },
+    "Star the drafts to render as finals" : {
+
+    },
+    "Starred" : {
+
+    },
+    "Starred prompts stay" : {
+
+    },
+    "Start Anyway" : {
+
+    },
+    "Start a draft from Create. Jobs keep running when the window is closed." : {
+
+    },
+    "Start for %@" : {
+
+    },
+    "Start from a clip" : {
+
+    },
+    "Start this job for %@?" : {
+
+    },
+    "Step %lld of 4, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Step %1$lld of 4, %2$@"
+          }
+        }
+      }
+    },
+    "Stop the sample" : {
+
+    },
+    "Storage" : {
+
+    },
+    "Style" : {
+
+    },
+    "Styles" : {
+
+    },
+    "Subscription credits" : {
+
+    },
+    "Swap Sides" : {
+
+    },
+    "System" : {
+
+    },
+    "System notifications. A paused job waits for you, e.g. for credits or a sign-in." : {
+
+    },
+    "Take the next free slot, ahead of the other waiting jobs" : {
+
+    },
+    "Take the results off this list. They stay in Library › Images." : {
+
+    },
+    "Templates" : {
+
+    },
+    "The JSON sidecar wasn't written" : {
+
+    },
+    "The dashed outline is the new canvas. Higgsfield fills in the area around the result." : {
+
+    },
+    "The file isn't where it was saved. If it's on a drive that isn't connected, connect it to see the image again." : {
+
+    },
+    "The first 5 seconds at 480p without sound, small enough to send in a messenger" : {
+
+    },
+    "The images you generate show here and in Library › Images, also after you switch side or page." : {
+
+    },
+    "The images you generate show here. Click one to pick it, double-click to open it large." : {
+
+    },
+    "The library is in %@. Free up disk space or move the folder aside, then open the app again." : {
+
+    },
+    "The menu bar and the sidebar warn below this many credits." : {
+
+    },
+    "The mode Create starts in when Jutsu Studio opens." : {
+
+    },
+    "The result already has this shape; pick another one." : {
+
+    },
+    "The result is added to the Library, linked to this one." : {
+
+    },
+    "The speech is translated and lip-synced; the picture stays as it is." : {
+
+    },
+    "Their files can't be found right now. Once removed, they aren't listed again when their drive is back." : {
+
+    },
+    "They leave the Queue. What they cost still counts in today's spending." : {
+
+    },
+    "They stay in Library › Images, where you can add them later." : {
+
+    },
+    "This is the price from Higgsfield for the uploaded files. It takes today's spending over your cap." : {
+
+    },
+    "Time since the job was queued or last retried" : {
+
+    },
+    "Tokens: %@. Applies to new results only; a name already in the folder gets -2, -3…" : {
+
+    },
+    "Traits" : {
+
+    },
+    "Try Again" : {
+
+    },
+    "Try again in a moment." : {
+
+    },
+    "Turned off in System Settings" : {
+
+    },
+    "Type shortcut…" : {
+
+    },
+    "Unavailable" : {
+
+    },
+    "Unlimited generations" : {
+
+    },
+    "Unpick" : {
+
+    },
+    "Unstar" : {
+
+    },
+    "Untitled" : {
+
+    },
+    "Updates" : {
+
+    },
+    "Updates are off in development builds." : {
+
+    },
+    "Uploaded image" : {
+
+    },
+    "Uploaded image, picked %lld" : {
+
+    },
+    "Uploads" : {
+
+    },
+    "Upscale before upload" : {
+
+    },
+    "Upscale, reframe, cut out, dub or revoice this result" : {
+
+    },
+    "Upscale…" : {
+
+    },
+    "Use" : {
+
+    },
+    "Use %lld as References" : {
+
+    },
+    "Use Default" : {
+
+    },
+    "Use as Reference" : {
+
+    },
+    "Use as References" : {
+
+    },
+    "Use unlimited generations" : {
+
+    },
+    "Uses the credits you already pay for" : {
+
+    },
+    "Variants" : {
+
+    },
+    "Wait for Higgsfield to take the request" : {
+
+    },
+    "Wait for the images being made" : {
+
+    },
+    "Wait for the images, or cancel the request" : {
+
+    },
+    "Warn below" : {
+
+    },
+    "Welcome to Jutsu Studio" : {
+
+    },
+    "Who they are, how they look and dress" : {
+
+    },
+    "You can put them back from the Trash in Finder." : {
+
+    },
+    "Your Higgsfield connection, where results go and what you hear about." : {
+
+    },
+    "Your password stays on higgsfield.ai" : {
+
+    },
+    "Your plan has unlimited generations for these models right now. When this is on, their jobs use them instead of credits and don't count toward the daily cap. If they run out, Higgsfield charges credits as usual." : {
+
+    },
+    "Your uploads on Higgsfield" : {
+
+    },
+    "a deleted result" : {
+
+    },
+    "billed each" : {
+
+    },
+    "github.com/jutsuhq/jutsu-studio" : {
+
+    },
+    "macOS doesn't show Jutsu Studio notifications." : {
+
+    },
+    "or" : {
+
+    },
+    "up to %lld" : {
+
+    },
+    "Click a shortcut and press the new keys. Escape cancels, Delete removes it. ⌘, (Settings) and the system's shortcuts stay as they are. Keep, Reject and Clear work only in the Library's grid and result page, so they can be a single key." : {
+
+    },
+    "Previous Variant" : {
+
+    },
+    "Next Variant" : {
+
+    },
+    "Rejected" : {
+
+    },
+    "Hide rejected" : {
+
+    },
+    "Show rejected" : {
+
+    },
+    "Couldn't save keep or reject" : {
+
+    },
+    "Couldn't make this variant primary" : {
+
+    },
+    "%@ %lld Results" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$lld Results"
+          }
+        }
+      }
+    },
+    "Hide Variants" : {
+
+    },
+    "Make Primary" : {
+
+    },
+    "Show %lld Variants" : {
+
+    },
+    "Compare Variants" : {
+
+    },
+    "%@ %lld results" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$lld results"
+          }
+        }
+      }
+    },
+    "%lld variants" : {
+
+    },
+    "Primary" : {
+
+    },
+    "Kept" : {
+
+    },
+    "Previous variant on the right (↑)" : {
+
+    },
+    "Next variant on the right (↓)" : {
+
+    },
+    "Details…" : {
+
+    },
+    "Make Video…" : {
+
+    },
+    "Make Video" : {
+
+    },
+    "Make Video from %lld…" : {
+
+    },
+    "How should %@ use these images?" : {
+
+    },
+    "How should %@ use this image?" : {
+
+    },
+    "A start or end frame makes the clip from the image alone, without a source video." : {
+
+    },
+    "References show the model what to draw from." : {
+
+    },
+    "No prompt" : {
+
+    },
+    "Made from" : {
+
+    },
+    "Used in" : {
+
+    },
+    "No video has been made from this image yet." : {
+
+    },
+    "Video" : {
+
+    },
+    "Open this video" : {
+
+    },
+    "This video is no longer in the library" : {
+
+    },
+    "Show this image" : {
+
+    },
+    "Remove Output" : {
+
+    },
+    "Crop" : {
+
+    },
+    "Original frame" : {
+
+    },
+    "Format" : {
+
+    },
+    "Size" : {
+
+    },
+    "Full size" : {
+
+    },
+    "Color" : {
+
+    },
+    "Background" : {
+
+    },
+    "Preset" : {
+
+    },
+    "Frame %@" : {
+
+    },
+    "Center" : {
+
+    },
+    "Delete Set" : {
+
+    },
+    "Exported files and the library's versions stay where they are." : {
+
+    },
+    "Set name" : {
+
+    },
+    "The set's versions are fixed when it is first exported." : {
+
+    },
+    "Frame %@…" : {
+
+    },
+    "Frame…" : {
+
+    },
+    "Add Image Output" : {
+
+    },
+    "Add Video Output" : {
+
+    },
+    "What this round is for, what changed" : {
+
+    },
+    "Where the client reviews it (text only)" : {
+
+    },
+    "New Set from This One" : {
+
+    },
+    "Delete…" : {
+
+    },
+    "Retry %lld Failed" : {
+
+    },
+    "Export %lld Pending" : {
+
+    },
+    "Exported" : {
+
+    },
+    "Export…" : {
+
+    },
+    "Some files weren't exported" : {
+
+    },
+    "Choose a folder for the delivery. Files made by others are never replaced." : {
+
+    },
+    "Waiting" : {
+
+    },
+    "Select videos or images in the Library and choose New Delivery Set to fix their versions for a delivery." : {
+
+    },
+    "Couldn't save the delivery set" : {
+
+    },
+    "Couldn't delete the delivery set" : {
+
+    },
+    "Couldn't make the delivery set" : {
+
+    },
+    "Edit in…" : {
+
+    },
+    "Open a copy in another app; the original stays as it is" : {
+
+    },
+    "Import as New Version…" : {
+
+    },
+    "Bring an edited file back as this item's next version, linked to the one it was made from" : {
+
+    },
+    "Edit" : {
+
+    },
+    "Choose the app to edit a copy in. The original stays as it is; bring the edit back with Import as New Version or by dropping it on the card." : {
+
+    },
+    "Can't open a copy to edit" : {
+
+    },
+    "Import" : {
+
+    },
+    "Choose the edited file. It is copied into the library as a new version." : {
+
+    },
+    "Can't import the edited file" : {
+
+    },
+    "Items" : {
+
+    },
+    "Outputs" : {
+
+    },
+    "Note" : {
+
+    },
+    "Review link" : {
+
+    },
+    "Zoom" : {
+
+    },
+    "Across" : {
+
+    },
+    "Up and down" : {
+
+    },
+    "Take this item out of the set" : {
+
+    },
+    "Can't open this delivery set" : {
+
+    },
+    "No delivery set selected" : {
+
+    },
+    "Named sets of exact versions, exported in several formats at once" : {
+
+    },
+    "Write only what isn't exported as the set is now: new outputs, a fixed crop, failed or skipped files" : {
+
+    },
+    "Start the next round with the items' newest versions" : {
+
+    },
+    "The output's part of the file names; empty uses its format" : {
+
+    },
+    "Remove this output" : {
+
+    },
+    "What transparent areas become: only PNG keeps transparency" : {
+
+    }
+  },
+  "version" : "1.0"
+}

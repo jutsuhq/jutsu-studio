@@ -1,0 +1,456 @@
+{
+  "tool": "ai_influencer_get_options",
+  "arguments": {
+    "tier": "normal"
+  },
+  "answer": {
+    "tiers": [
+      "normal",
+      "freak",
+      "total",
+      "insects",
+      "frogs",
+      "cats",
+      "dogs",
+      "capybaras",
+      "birds"
+    ],
+    "groups": [
+      {
+        "id": "gender",
+        "label": "Gender",
+        "max": 1,
+        "options": [
+          {
+            "id": "female",
+            "label": "Female",
+            "tiers": [
+              "normal",
+              "freak",
+              "total",
+              "insects",
+              "frogs",
+              "cats",
+              "dogs",
+              "capybaras",
+              "birds"
+            ],
+            "slot": null
+          },
+          {
+            "id": "male",
+            "label": "Male",
+            "tiers": [
+              "normal",
+              "freak",
+              "total",
+              "insects",
+              "frogs",
+              "cats",
+              "dogs",
+              "capybaras",
+              "birds"
+            ],
+            "slot": null
+          },
+          {
+            "id": "trans_man",
+            "label": "Trans man",
+            "tiers": [
+              "normal",
+              "freak",
+              "total",
+              "insects",
+              "frogs",
+              "cats",
+              "dogs",
+              "capybaras",
+              "birds"
+            ],
+            "slot": null
+          },
+          {
+            "id": "trans_woman",
+            "label": "Trans woman",
+            "tiers": [
+              "normal",
+              "freak",
+              "total",
+              "insects",
+              "frogs",
+              "cats",
+              "dogs",
+              "capybaras",
+              "birds"
+            ],
+            "slot": null
+          },
+          {
+            "id": "non_binary",
+            "label": "Non-binary",
+            "tiers": [
+              "normal",
+              "freak",
+              "total",
+              "insects",
+              "frogs",
+              "cats",
+              "dogs",
+              "capybaras",
+              "birds"
+            ],
+            "slot": null
+          }
+        ]
+      },
+      {
+        "id": "ethnicity_origin_base",
+        "label": "Ethnicity",
+        "max": 1,
+        "options": [
+          {
+            "id": "african",
+            "label": "African",
+            "tiers": [
+              "normal",
+              "freak",
+              "total"
+            ],
+            "slot": null
+          },
+          {
+            "id": "east_asian",
+            "label": "Asian",
+            "tiers": [
+              "normal",
+              "freak",
+              "total"
+            ],
+            "slot": null
+          },
+          {
+            "id": "european",
+            "label": "European",
+            "tiers": [
+              "normal",
+              "freak",
+              "total"
+            ],
+            "slot": null
+          },
+          {
+            "id": "indian",
+            "label": "Indian",
+            "tiers": [
+              "normal",
+              "freak",
+              "total"
+            ],
+            "slot": null
+          },
+          {
+            "id": "middle_eastern",
+            "label": "Middle Eastern",
+            "tiers": [
+              "normal",
+              "freak",
+              "total"
+            ],
+            "slot": null
+          },
+          {
+            "id": "latin_american",
+            "label": "Mixed",
+            "tiers": [
+              "normal",
+              "freak",
+              "total"
+            ],
+            "slot": null
+          }
+        ]
+      },
+      {
+        "id": "proportions",
+        "label": "Proportions",
+        "max": 2,
+        "options": [
+          {
+            "id": "pr_longlimbs",
+            "label": "Long limbs",
+            "tiers": [
+              "normal",
+              "freak",
+              "total",
+              "insects",
+              "frogs",
+              "cats",
+              "dogs",
+              "capybaras",
+              "birds"
+            ],
+            "slot": null
+          },
+          {
+            "id": "pr_shortlegs",
+            "label": "Short legs",
+            "tiers": [
+              "normal",
+              "freak",
+              "total",
+              "insects",
+              "frogs",
+              "cats",
+              "dogs",
+              "capybaras",
+              "birds"
+            ],
+            "slot": null
+          },
+          {
+            "id": "pr_shoulders",
+            "label": "Broad shoulders",
+            "tiers": [
+              "normal",
+              "freak",
+              "total",
+              "insects",
+              "frogs",
+              "cats",
+              "dogs",
+              "capybaras",
+              "birds"
+            ],
+            "slot": null
+          },
+          {
+            "id": "pr_waist",
+            "label": "Tiny waist",
+            "tiers": [
+              "normal",
+              "freak",
+              "total",
+              "insects",
+              "frogs",
+              "cats",
+              "dogs",
+              "capybaras",
+              "birds"
+            ],
+            "slot": null
+          }
+        ]
+      },
+      {
+        "id": "freak_face",
+        "label": "Features",
+        "max": 4,
+        "options": [
+          {
+            "id": "fn_freckles",
+            "label": "Freckles",
+            "tiers": [
+              "normal",
+              "freak",
+              "total"
+            ],
+            "slot": "marks"
+          },
+          {
+            "id": "fn_dimples",
+            "label": "Dimples",
+            "tiers": [
+              "normal",
+              "freak",
+              "total"
+            ],
+            "slot": "cheeks"
+          },
+          {
+            "id": "fn_eyebags",
+            "label": "Heavy eye bags",
+            "tiers": [
+              "normal",
+              "freak",
+              "total"
+            ],
+            "slot": "eyes"
+          },
+          {
+            "id": "fn_cheekbones",
+            "label": "High cheekbones",
+            "tiers": [
+              "normal",
+              "freak",
+              "total"
+            ],
+            "slot": "cheeks"
+          },
+          {
+            "id": "fn_fulllips",
+            "label": "Full lips",
+            "tiers": [
+              "normal",
+              "freak",
+              "total"
+            ],
+            "slot": "lips"
+          },
+          {
+            "id": "fn_thickbrows",
+            "label": "Thick brows",
+            "tiers": [
+              "normal",
+              "freak",
+              "total"
+            ],
+            "slot": "brows"
+          },
+          {
+            "id": "fn_mole",
+            "label": "Beauty mark",
+            "tiers": [
+              "normal",
+              "freak",
+              "total"
+            ],
+            "slot": "marks"
+          },
+          {
+            "id": "fn_tinynose",
+            "label": "Tiny nose",
+            "tiers": [
+              "normal",
+              "freak",
+              "total"
+            ],
+            "slot": "nose"
+          },
+          {
+            "id": "fn_widemouth",
+            "label": "Wide mouth",
+            "tiers": [
+              "normal",
+              "freak",
+              "total"
+            ],
+            "slot": "lips"
+          },
+          {
+            "id": "fn_pointychin",
+            "label": "Pointy chin",
+            "tiers": [
+              "normal",
+              "freak",
+              "total"
+            ],
+            "slot": "chin"
+          }
+        ]
+      },
+      {
+        "id": "accessory",
+        "label": "Accessories",
+        "max": 3,
+        "options": [
+          {
+            "id": "acc_none",
+            "label": "None",
+            "tiers": [
+              "normal",
+              "freak",
+              "total",
+              "insects",
+              "frogs",
+              "cats",
+              "dogs",
+              "capybaras",
+              "birds"
+            ],
+            "slot": null
+          },
+          {
+            "id": "acc_glasses",
+            "label": "Glasses",
+            "tiers": [
+              "normal",
+              "freak",
+              "total",
+              "insects",
+              "frogs",
+              "cats",
+              "dogs",
+              "capybaras",
+              "birds"
+            ],
+            "slot": null
+          },
+          {
+            "id": "acc_headphones",
+            "label": "Headphones",
+            "tiers": [
+              "normal",
+              "freak",
+              "total",
+              "insects",
+              "frogs",
+              "cats",
+              "dogs",
+              "capybaras",
+              "birds"
+            ],
+            "slot": null
+          },
+          {
+            "id": "acc_jewelry",
+            "label": "Jewelry",
+            "tiers": [
+              "normal",
+              "freak",
+              "total",
+              "insects",
+              "frogs",
+              "cats",
+              "dogs",
+              "capybaras",
+              "birds"
+            ],
+            "slot": null
+          },
+          {
+            "id": "acc_hat",
+            "label": "Hat",
+            "tiers": [
+              "normal",
+              "freak",
+              "total",
+              "insects",
+              "frogs",
+              "cats",
+              "dogs",
+              "capybaras",
+              "birds"
+            ],
+            "slot": null
+          },
+          {
+            "id": "acc_bag",
+            "label": "Bag",
+            "tiers": [
+              "normal",
+              "freak",
+              "total",
+              "insects",
+              "frogs",
+              "cats",
+              "dogs",
+              "capybaras",
+              "birds"
+            ],
+            "slot": null
+          }
+        ]
+      }
+    ]
+  }
+}

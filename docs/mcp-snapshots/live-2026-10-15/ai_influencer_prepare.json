@@ -1,0 +1,72 @@
+{
+  "tool": "ai_influencer_prepare",
+  "arguments": {
+    "batch_size": 1
+  },
+  "answer": {
+    "params": {
+      "tier": "normal",
+      "selection": {
+        "gender": [
+          "female"
+        ],
+        "body_type": [
+          "body_athletic"
+        ],
+        "hair": [
+          "hair_pigtails"
+        ],
+        "hair_colour": [
+          "hc_blonde"
+        ],
+        "aesthetic": [
+          "retro"
+        ],
+        "ethnicity_origin_base": [
+          "latin_american"
+        ],
+        "age": [
+          "mature"
+        ],
+        "skin_tone": [
+          "st_light"
+        ],
+        "height": [
+          "h_tall"
+        ],
+        "proportions": [
+          "pr_shortlegs"
+        ],
+        "freak_head": [
+          "head_heart"
+        ],
+        "freak_neck": [
+          "neck_short"
+        ],
+        "eye_shape": [
+          "es_monolid"
+        ],
+        "eye_color": [
+          "eye_brown"
+        ],
+        "freak_face": [
+          "fn_fulllips"
+        ],
+        "facial_hair": [
+          "fh_none"
+        ],
+        "distinctive": [
+          "df_ears"
+        ],
+        "accessory": [
+          "acc_jewelry"
+        ]
+      },
+      "brief": "",
+      "medias": [],
+      "batch_size": 1
+    },
+    "credits": 1.125,
+    "submitted": false
+  }
+}

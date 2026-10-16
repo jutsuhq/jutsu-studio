@@ -1,0 +1,34 @@
+name: Feature request
+description: Suggest something Jutsu Studio could do.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What you're trying to do
+      description: The task or workflow, and where the app gets in the way today.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you'd like
+      description: How it could work. Screenshots or mocks welcome.
+    validations:
+      required: true
+  - type: dropdown
+    id: connection
+    attributes:
+      label: Connection
+      description: Some features exist only on an account or only with an API key.
+      options:
+        - Higgsfield account
+        - API key
+        - Both
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: Workarounds you use now, or other approaches you considered.

@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/jutsuhq/jutsu-studio/security/advisories/new
+    about: Report privately, not in a public issue.
+  - name: Higgsfield billing, account or model problems
+    url: https://higgsfield.ai
+    about: Jutsu Studio is unofficial; Higgsfield's own services are supported by Higgsfield.

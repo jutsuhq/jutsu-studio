@@ -1,0 +1,230 @@
+{
+  "updated": "2026-10-15",
+  "notes": [
+    "One entry per video model, in the order the model picker lists them; the first model serving a mode is that mode's default.",
+    "id: stored in jobs, templates and settings; never change an existing one. title, family and detail are the English fallbacks of the keys <id>.title, <id>.family and <id>.detail in Models.xcstrings.",
+    "resolutions: the ones the model renders at, when not all of 480p, 720p and 1080p (also 768p and 2K, which only MiniMax has); the picker offers these and a job asking for another gets the nearest. pricing.json needs each.",
+    "aspectRatios: the frames a REST body may name, for a schema whose aspect_ratio has no 'follow the source' value; the body names the one nearest the source's frame. Left out, so is the field.",
+    "limits: [min, max] over the mode's own (Mode.limits); the server's models_explore answer still overrides them bound by bound.",
+    "controls: draft, clipWithoutSource (length and frame without a source video), generatedAudio, bitrate, frames, quality (Standard/Pro instead of a resolution), characterOrientation, videoBackground, cinemaControls (Cinema Studio's camera, lens, genre, era and the rest; their titles are cinemaStudio4.<field> and cinemaStudio4.<field>.<value> in Models.xcstrings).",
+    "request.shape: the code that encodes the body (genjutsu, seedance, klingMotionControl, klingVideoReference, klingVideoEdit, wanReference, cinemaStudio). request.endpoints: the REST endpoint by the first key that applies: the mode, frames, standard/pro, reference (with media) or text, then default. Every endpoint needs rates in pricing.json. Empty for a model the public REST docs don't list: it runs on the account only, and an API key isn't offered it.",
+    "request.account: the account's generate_video model ID by mode, once its models_explore get schema confirms every field the shape sends (the snapshot tests check it); a model without one runs with an API key only.",
+    "requiresPrompt: a job needs a prompt even with a source.",
+    "credits: the account's fallback estimate, base + perSecond[resolution] x billed seconds, rounded up; modes overrides it for a mode priced apart. The price Create shows is Higgsfield's get_cost quote: before upload for a model sent a length, after upload for one billed by its source (Genjutsu, Edit). The estimate stands in only until then, or when the quote fails. Rates from free get_cost quotes of 2026-10-15 (issue #113). Left out (or a resolution missing), a job the server can't quote shows 'Price unknown'."
+  ],
+  "models": [
+    {
+      "id": "genjutsu",
+      "family": "Genjutsu",
+      "title": "Genjutsu",
+      "detail": "Higgsfield's own",
+      "modes": ["motionTransfer", "restyle", "objectSwap"],
+      "controls": ["draft"],
+      "listPriceIsExact": true,
+      "request": {
+        "shape": "genjutsu",
+        "endpoints": {
+          "motionTransfer": "higgsfield/genjutsu/motion-transfer/v1.0",
+          "restyle": "higgsfield/genjutsu/restyle/v1.0",
+          "objectSwap": "higgsfield/genjutsu/object-swap/v1.0"
+        },
+        "account": {
+          "motionTransfer": "hf_mult_motion_control",
+          "objectSwap": "hf_mult_replace_object"
+        }
+      },
+      "credits": {
+        "perSecond": { "480p": 3, "720p": 7, "1080p": 20 },
+        "modes": { "objectSwap": { "perSecond": { "480p": 3.25, "720p": 7.58, "1080p": 21.66 } } }
+      }
+    },
+    {
+      "id": "seedance25",
+      "family": "Seedance",
+      "title": "Seedance 2.5",
+      "detail": "Seedance 2.5 · follows the prompt",
+      "modes": ["motionTransfer", "edit", "extend"],
+      "limits": { "duration": [4, 30] },
+      "controls": ["draft", "clipWithoutSource", "generatedAudio", "bitrate", "frames"],
+      "billsSourceVideo": true,
+      "request": {
+        "shape": "seedance",
+        "endpoints": {
+          "edit": "bytedance/seedance-2.5/video-edit",
+          "extend": "bytedance/seedance-2.5/video-extend",
+          "frames": "bytedance/seedance-2.5/image-to-video",
+          "reference": "bytedance/seedance-2.5/reference-to-video",
+          "text": "bytedance/seedance-2.5/text-to-video"
+        },
+        "account": {
+          "motionTransfer": "seedance_2_5",
+          "edit": "seedance_2_5",
+          "extend": "seedance_2_5"
+        }
+      },
+      "credits": {
+        "perSecond": { "480p": 3, "720p": 7, "1080p": 16 },
+        "modes": { "edit": { "perSecond": { "480p": 3.58, "720p": 7.58, "1080p": 20.08 } } }
+      }
+    },
+    {
+      "id": "klingMotionControl",
+      "family": "Kling",
+      "title": "Kling 3.0",
+      "detail": "Kling 3.0 · Pro at 1080p",
+      "modes": ["motionTransfer"],
+      "limits": { "referenceImages": [1, 1] },
+      "controls": ["quality", "characterOrientation", "videoBackground"],
+      "request": {
+        "shape": "klingMotionControl",
+        "endpoints": {
+          "standard": "kling-video/v3/motion-control/std",
+          "pro": "kling-video/v3/motion-control/pro"
+        },
+        "account": { "motionTransfer": "kling3_0_motion_control" }
+      },
+      "credits": { "base": 2.5, "perSecond": { "480p": 1.5, "720p": 1.5, "1080p": 2.5 } }
+    },
+    {
+      "id": "klingO3VideoReference",
+      "family": "Kling",
+      "title": "Kling O3",
+      "detail": "Kling O3 · follows the video and the prompt",
+      "modes": ["motionTransfer"],
+      "limits": { "duration": [3, 10], "referenceImages": [0, 4] },
+      "controls": ["quality"],
+      "requiresPrompt": true,
+      "request": {
+        "shape": "klingVideoReference",
+        "endpoints": { "default": "kling-video/o3/video-reference" }
+      }
+    },
+    {
+      "id": "klingO3VideoEdit",
+      "family": "Kling",
+      "title": "Kling O3 Edit",
+      "detail": "Kling O3 · changes the clip as the prompt says",
+      "modes": ["edit"],
+      "limits": { "duration": [3, 15], "referenceImages": [0, 4] },
+      "controls": ["quality"],
+      "requiresPrompt": true,
+      "request": {
+        "shape": "klingVideoEdit",
+        "endpoints": { "default": "kling-video/o3/video-edit" },
+        "account": { "edit": "kling_video_edit" }
+      },
+      "credits": { "perSecond": { "480p": 1.5, "720p": 1.5, "1080p": 2 } }
+    },
+    {
+      "id": "klingMotionControl26",
+      "family": "Kling",
+      "title": "Kling 2.6",
+      "detail": "Kling 2.6 · cheaper motion control",
+      "modes": ["motionTransfer"],
+      "limits": { "referenceImages": [1, 1] },
+      "controls": ["quality", "characterOrientation"],
+      "request": {
+        "shape": "klingMotionControl",
+        "endpoints": {
+          "standard": "kling-video/motion-control/std",
+          "pro": "kling-video/motion-control/pro"
+        }
+      }
+    },
+    {
+      "id": "wan30Reference",
+      "family": "Wan",
+      "title": "Wan 3.0",
+      "detail": "Wan 3.0 · follows the video and the prompt",
+      "modes": ["motionTransfer"],
+      "limits": { "duration": [2, 30], "referenceImages": [0, 10] },
+      "controls": ["generatedAudio"],
+      "requiresPrompt": true,
+      "request": {
+        "shape": "wanReference",
+        "endpoints": { "default": "alibaba/wan-3.0/reference-to-video" },
+        "account": { "motionTransfer": "wan3_0" }
+      },
+      "credits": { "perSecond": { "480p": 1, "720p": 1.75, "1080p": 3.5 } }
+    },
+    {
+      "id": "wan30PrimeReference",
+      "family": "Wan",
+      "title": "Wan 3.0 Prime",
+      "detail": "Wan 3.0 Prime · follows the video and the prompt",
+      "modes": ["motionTransfer"],
+      "limits": { "duration": [2, 30], "referenceImages": [0, 10] },
+      "controls": ["generatedAudio"],
+      "requiresPrompt": true,
+      "request": {
+        "shape": "wanReference",
+        "endpoints": { "default": "alibaba/wan-3.0-prime/reference-to-video" },
+        "account": { "motionTransfer": "wan3_0_prime" }
+      },
+      "credits": { "perSecond": { "480p": 1.5, "720p": 3, "1080p": 6 } }
+    },
+    {
+      "id": "wan27Reference",
+      "family": "Wan",
+      "title": "Wan 2.7",
+      "detail": "Wan 2.7 · 720p and 1080p, up to 10 s",
+      "modes": ["motionTransfer"],
+      "resolutions": ["720p", "1080p"],
+      "aspectRatios": ["16:9", "9:16"],
+      "limits": { "duration": [2, 10], "referenceImages": [0, 4] },
+      "requiresPrompt": true,
+      "request": {
+        "shape": "wanReference",
+        "endpoints": { "default": "wan/v2.7/reference-to-video" }
+      }
+    },
+    {
+      "id": "cinemaStudio4",
+      "family": "Cinema Studio",
+      "title": "Cinema Studio 4.0",
+      "detail": "Cinema Studio 4.0 · directs the shot from the prompt",
+      "modes": ["motionTransfer"],
+      "resolutions": ["480p", "720p"],
+      "aspectRatios": ["21:9", "16:9", "4:3", "1:1", "3:4", "9:16"],
+      "limits": { "duration": [4, 30], "referenceImages": [0, 8] },
+      "controls": ["generatedAudio", "cinemaControls"],
+      "requiresPrompt": true,
+      "request": {
+        "shape": "cinemaStudio",
+        "endpoints": { "default": "higgsfield/cinema-studio/4.0" },
+        "account": { "motionTransfer": "cinematic_studio_video_4_0" }
+      },
+      "credits": { "perSecond": { "480p": 3, "720p": 7 } }
+    },
+    {
+      "id": "minimaxH3Reference",
+      "family": "MiniMax",
+      "title": "MiniMax H3",
+      "detail": "MiniMax H3 · 2K, 5–15 s",
+      "modes": ["motionTransfer"],
+      "resolutions": ["2K"],
+      "limits": { "duration": [5, 15], "referenceImages": [0, 5] },
+      "requiresPrompt": true,
+      "request": {
+        "shape": "wanReference",
+        "endpoints": { "default": "minimax/h3/reference-to-video" },
+        "account": { "motionTransfer": "minimax_h3" }
+      }
+    },
+    {
+      "id": "minimaxH3MaxReference",
+      "family": "MiniMax",
+      "title": "MiniMax H3 Max",
+      "detail": "MiniMax H3 Max · 480p or 768p, on an account",
+      "modes": ["motionTransfer"],
+      "resolutions": ["480p", "768p"],
+      "limits": { "duration": [5, 15], "referenceImages": [0, 5] },
+      "requiresPrompt": true,
+      "request": {
+        "shape": "wanReference",
+        "endpoints": {},
+        "account": { "motionTransfer": "minimax_h3_max" }
+      }
+    }
+  ]
+}

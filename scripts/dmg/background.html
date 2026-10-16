@@ -1,0 +1,118 @@
+<!doctype html>
+<!-- Source of the DMG window background. Render with scripts/dmg/render-background.sh after editing.
+     Finder draws the two icons on top: the app centered at (180, 214) and Applications at (500, 214), 128 pt each,
+     with their names below. Keep these in sync with scripts/dmg/settings.py. -->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face {
+    font-family: "Barlow Condensed";
+    font-weight: 800;
+    src: url("../../JutsuStudio/Resources/Fonts/BarlowCondensed-ExtraBold.ttf");
+  }
+  :root {
+    --violet: #8b5cf6;
+    --fuchsia: #d946ef;
+    --pink: #f472b6;
+  }
+  * { margin: 0; box-sizing: border-box; }
+  html, body { width: 680px; height: 420px; overflow: hidden; }
+  body {
+    position: relative;
+    background: #060607;
+    font-family: -apple-system, "SF Pro Text", system-ui, sans-serif;
+    color: #fff;
+  }
+  /* Soft light from the corners, in the icon's colors. */
+  .aurora {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(420px 260px at 6% 104%, rgba(139, 92, 246, 0.42), transparent 70%),
+      radial-gradient(380px 240px at 98% -6%, rgba(217, 70, 239, 0.32), transparent 70%),
+      radial-gradient(300px 200px at 104% 96%, rgba(244, 114, 182, 0.16), transparent 70%);
+  }
+  /* A faint dot grid that fades toward the edges. */
+  .grid {
+    position: absolute; inset: 0;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.09) 1px, transparent 1.2px);
+    background-size: 22px 22px;
+    -webkit-mask-image: radial-gradient(360px 220px at 50% 52%, #000 30%, transparent 100%);
+  }
+  .title {
+    position: absolute; top: 34px; left: 0; right: 0;
+    text-align: center;
+    font: 800 34px/1 "Barlow Condensed";
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: linear-gradient(90deg, var(--violet), var(--fuchsia) 55%, var(--pink));
+    -webkit-background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 0 18px rgba(217, 70, 239, 0.35));
+  }
+  .hint {
+    position: absolute; top: 78px; left: 0; right: 0;
+    text-align: center;
+    font-size: 13px; font-weight: 500;
+    letter-spacing: 0.01em;
+    color: rgba(255, 255, 255, 0.62);
+  }
+  /* Glow behind the app icon, a quiet ring behind Applications. */
+  .halo {
+    position: absolute; width: 190px; height: 190px; border-radius: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .halo.app {
+    left: 180px; top: 214px;
+    background: radial-gradient(circle, rgba(167, 92, 246, 0.5), rgba(217, 70, 239, 0.18) 45%, transparent 70%);
+  }
+  .halo.apps {
+    left: 500px; top: 214px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.10), transparent 62%);
+  }
+  .arrow {
+    position: absolute; left: 268px; top: 194px; width: 144px; height: 40px;
+    filter: drop-shadow(0 0 8px rgba(217, 70, 239, 0.65));
+  }
+  /* Finder draws icon names in black over a background picture, in Dark mode too, so they sit on frosted glass. */
+  .chip {
+    position: absolute; top: 286px; width: 124px; height: 24px; border-radius: 12px;
+    transform: translateX(-50%);
+    background: linear-gradient(180deg, rgba(248, 245, 255, 0.94), rgba(229, 222, 245, 0.9));
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.7), 0 0 0 1px rgba(139, 92, 246, 0.25),
+      0 8px 22px rgba(0, 0, 0, 0.45), 0 0 18px rgba(217, 70, 239, 0.18);
+  }
+  .chip.app { left: 180px; }
+  .chip.apps { left: 500px; }
+  .footer {
+    position: absolute; bottom: 20px; left: 0; right: 0;
+    text-align: center;
+    font-size: 10.5px;
+    letter-spacing: 0.02em;
+    color: rgba(255, 255, 255, 0.34);
+  }
+</style>
+</head>
+<body>
+  <div class="aurora"></div>
+  <div class="grid"></div>
+  <div class="title">Jutsu Studio</div>
+  <div class="hint">Drag Jutsu Studio into Applications to install</div>
+  <div class="halo app"></div>
+  <div class="halo apps"></div>
+  <svg class="arrow" viewBox="0 0 144 40" fill="none">
+    <defs>
+      <linearGradient id="g" x1="0" x2="144" y1="0" y2="0" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color="#8b5cf6" stop-opacity="0.2"/>
+        <stop offset="0.55" stop-color="#d946ef"/>
+        <stop offset="1" stop-color="#f472b6"/>
+      </linearGradient>
+    </defs>
+    <path d="M6 20 H128" stroke="url(#g)" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 9"/>
+    <path d="M118 9 L134 20 L118 31" stroke="url(#g)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  <div class="chip app"></div>
+  <div class="chip apps"></div>
+  <div class="footer">Open source · MIT License · Not affiliated with Higgsfield AI</div>
+</body>
+</html>
