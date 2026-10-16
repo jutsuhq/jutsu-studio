@@ -26,9 +26,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// Finder's Open With and drops on the Dock icon. On a cold start this runs before any window exists,
-    /// so the files wait in `NavigationModel.pendingOpens` until Create is on screen.
+    /// so the files wait in `NavigationModel.pendingOpens` until Create is on screen. A link in the app's own
+    /// scheme (the sign-in page's "Open Jutsu Studio") only brings the window forward.
     func application(_ application: NSApplication, open urls: [URL]) {
-        environment.navigation.open(urls)
+        let files = urls.filter { !AppLink.isAppLink($0) }
+        if !files.isEmpty { environment.navigation.open(files) }
         system.showMainWindow()
     }
 

@@ -15,8 +15,17 @@
     @Test func errorRedirectShowsAFailurePage() throws {
         let failed = try #require(URL(string: "http://127.0.0.1:1/callback?error=access_denied&state=s"))
         let succeeded = try #require(URL(string: "http://127.0.0.1:1/callback?code=c&state=s"))
-        #expect(LoopbackReceiver.page(for: failed).contains("not completed"))
-        #expect(LoopbackReceiver.page(for: succeeded).contains("Access approved"))
+        #expect(CallbackPage().html(for: failed).contains("not completed"))
+        #expect(CallbackPage().html(for: succeeded).contains("Access approved"))
+    }
+
+    @Test func thePageLinksBackToTheAppAndShowsItsIcon() throws {
+        let succeeded = try #require(URL(string: "http://127.0.0.1:1/callback?code=c&state=s"))
+        let page = CallbackPage(appURL: URL(string: "jutsustudio://"), iconPNG: Data([1, 2, 3]))
+        let html = page.html(for: succeeded)
+        #expect(html.contains(#"<a class="open" href="jutsustudio://">Open Jutsu Studio</a>"#))
+        #expect(html.contains("data:image/png;base64,AQID"))
+        #expect(!CallbackPage().html(for: succeeded).contains(#"class="open""#))
     }
 
     // Real sockets on 127.0.0.1, so these are serialized and use ports outside the registered ones.

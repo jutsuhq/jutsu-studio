@@ -15,25 +15,28 @@
 
         private let ports: [UInt16]
         private let timeout: Duration
+        private let page: CallbackPage
         private let open: @Sendable (URL) async throws -> Void
 
         /// - Parameters:
         ///   - timeout: how long the user has to finish in the browser; then sign-in fails with
         ///     `OAuthError.timedOut`.
+        ///   - page: what the browser tab shows after the redirect.
         ///   - open: opens a URL in the default browser; throws when it can't, which ends the sign-in.
         public init(
             ports: [UInt16] = ClientRegistration.loopbackPorts, timeout: Duration = Self.defaultTimeout,
-            open: @escaping @Sendable (URL) async throws -> Void
+            page: CallbackPage = CallbackPage(), open: @escaping @Sendable (URL) async throws -> Void
         ) {
             self.ports = ports
             self.timeout = timeout
+            self.page = page
             self.open = open
         }
 
         public func authorize(
             makeURL: @Sendable (_ redirectURI: String) throws -> URL
         ) async throws -> AuthorizationRedirect {
-            let receiver = try await LoopbackReceiver.listen(onFirstFreeOf: ports)
+            let receiver = try await LoopbackReceiver.listen(onFirstFreeOf: ports, page: page)
             defer { receiver.stop() }
             let redirectURI = ClientRegistration.redirectURI(port: receiver.port)
             let url = try makeURL(redirectURI)
@@ -49,21 +52,27 @@
     /// One listener on `127.0.0.1:port` that answers every `GET /callback` and hands the expected one over.
     final class LoopbackReceiver: @unchecked Sendable {  // listener and connections are driven on `queue`
         let port: UInt16
+        private let page: CallbackPage
         private let listener: NWListener
         private let queue = DispatchQueue(label: "com.jutsustudio.oauth-redirect")
         private var connections: [ObjectIdentifier: NWConnection] = [:]
         let redirects = RedirectWaiter()
 
-        private init(port: UInt16, listener: NWListener) {
+        private init(port: UInt16, page: CallbackPage, listener: NWListener) {
             self.port = port
+            self.page = page
             self.listener = listener
         }
 
         /// Tries `ports` in order and returns the first receiver that is listening.
-        static func listen(onFirstFreeOf ports: [UInt16]) async throws -> LoopbackReceiver {
+        static func listen(
+            onFirstFreeOf ports: [UInt16], page: CallbackPage = CallbackPage()
+        ) async throws
+            -> LoopbackReceiver
+        {
             for port in ports {
                 do {
-                    return try await listen(on: port)
+                    return try await listen(on: port, page: page)
                 } catch {
                     logger.info("Port \(port) unavailable: \(String(describing: error), privacy: .private)")
                 }
@@ -71,11 +80,11 @@
             throw OAuthError.redirectUnavailable
         }
 
-        private static func listen(on port: UInt16) async throws -> LoopbackReceiver {
+        private static func listen(on port: UInt16, page: CallbackPage) async throws -> LoopbackReceiver {
             guard let endpointPort = NWEndpoint.Port(rawValue: port) else { throw OAuthError.redirectUnavailable }
             let parameters = NWParameters.tcp
             parameters.requiredLocalEndpoint = .hostPort(host: .ipv4(.loopback), port: endpointPort)
-            let receiver = LoopbackReceiver(port: port, listener: try NWListener(using: parameters))
+            let receiver = LoopbackReceiver(port: port, page: page, listener: try NWListener(using: parameters))
             try await receiver.start()
             return receiver
         }
@@ -159,7 +168,7 @@
                 guard redirects.accepts(url) else {
                     return Self.respond(to: connection, status: "400 Bad Request", body: "Not this sign-in")
                 }
-                Self.respond(to: connection, status: "200 OK", body: Self.page(for: url))
+                Self.respond(to: connection, status: "200 OK", body: page.html(for: url))
                 redirects.offer(url)
             }
         }
@@ -184,30 +193,6 @@
                 completion: .contentProcessed { _ in connection.cancel() })
         }
 
-        /// What the browser tab shows after the redirect: the outcome and a hint to go back to the app.
-        static func page(for callback: URL) -> String {
-            let items = URLComponents(url: callback, resolvingAgainstBaseURL: false)?.queryItems ?? []
-            let failed = items.contains { $0.name == "error" }
-            // The app still checks `state` and exchanges the code, so success here is only the approval.
-            let title = failed ? "Sign-in was not completed" : "Access approved"
-            let detail =
-                failed
-                ? "Return to Jutsu Studio to try again, or connect with an API key instead."
-                : "Jutsu Studio finishes signing in. You can close this tab."
-            return """
-                <!doctype html><html lang="en"><head><meta charset="utf-8"><title>Jutsu Studio</title>
-                <meta name="viewport" content="width=device-width,initial-scale=1">
-                <style>
-                body{margin:0;min-height:100vh;display:grid;place-items:center;background:#060607;color:#fff;
-                font:15px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif}
-                main{text-align:center;padding:24px}
-                .mark{width:56px;height:56px;margin:0 auto 20px;border-radius:14px;
-                background:linear-gradient(135deg,#8b5cf6,#d946ef 55%,#f472b6)}
-                h1{margin:0 0 6px;font-size:22px}p{margin:0;color:rgba(255,255,255,.6)}
-                </style></head><body><main><div class="mark"></div>
-                <h1>\(title)</h1><p>\(detail)</p></main></body></html>
-                """
-        }
     }
 
     /// A flag that can be claimed once, from any thread.
