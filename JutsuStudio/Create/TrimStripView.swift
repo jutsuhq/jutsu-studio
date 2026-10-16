@@ -111,7 +111,7 @@ struct TrimStripView: View {
             .foregroundStyle(form.canAddRange ? Theme.accent : Theme.faint)
             .pointerCursor()
             .disabled(!form.canAddRange)
-            .hoverHint("Cut another 4–30 s range from this clip; each range is queued as its own job")
+            .hoverHint("Add a 4–30 s range")
             .fixedSize()
         }
     }

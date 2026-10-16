@@ -68,7 +68,7 @@ struct CreatePanel: View {
                     } else {
                         if form.showsFrames {
                             FramesSection(
-                                form: $form, unavailableReason: context.unavailableReason(for: .seedanceFrames),
+                                form: $form, unavailableReason: context.unavailableHint(for: .seedanceFrames),
                                 onPick: { onPick(.frame($0)) })
                         }
                         referencesSection
@@ -330,7 +330,7 @@ extension CreatePanel {
                 )
                 // Until the connection's capabilities are read, the jobs make one.
                 .disabled(reason != nil || context.capabilities == nil)
-                .hoverHint("Same prompt and inputs, each its own result, billed each")
+                .hoverHint("Number of variants")
             }
             if let reason {
                 Text(reason)

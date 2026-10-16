@@ -166,7 +166,7 @@ private struct MotionClipTile: View {
         .buttonStyle(.plain)
         .pointerCursor()
         .onHover { isHovering = $0 }
-        .hoverHint("Use this clip as the source video")
+        .hoverHint("Use as source")
         .accessibilityLabel("\(preset.name), use as source")
     }
 }

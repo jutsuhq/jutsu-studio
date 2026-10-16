@@ -56,7 +56,7 @@ struct GenerateReferenceSheet: View {
                 localized: "Every image is saved to Library › Images. Pick the ones to add to the references."),
             isBusy: isBusy,
             closeHint: isGenerating
-                ? String(localized: "Wait for the images, or cancel the request") : String(localized: "Close"),
+                ? String(localized: "Wait for the images") : String(localized: "Close"),
             closesOnEscape: previewed == nil,
             onClose: close
         ) {
@@ -193,7 +193,7 @@ struct GenerateReferenceSheet: View {
         .buttonStyle(.primaryAction)
         .keyboardShortcut(previewed == nil ? .defaultAction : nil)
         .disabled(isBusy)
-        .hoverHint(isGenerating ? String(localized: "Wait for the images being made") : "")
+        .hoverHint(isGenerating ? String(localized: "Wait for the images") : "")
     }
 }
 

@@ -212,7 +212,7 @@ struct LibrarySelectionBar<Actions: View>: View {
             Button("Done", action: onDone)
                 .buttonStyle(.secondaryAction)
                 .keyboardShortcut(.cancelAction)
-                .hoverHint("Clear the selection (Esc)")
+                .hoverHint("Clear selection (Esc)")
         }
     }
 }

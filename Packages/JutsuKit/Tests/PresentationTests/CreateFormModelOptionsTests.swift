@@ -113,6 +113,15 @@ import Testing
                 == "Kling keeps the source's sound on the server only with an API key, not on the account")
     }
 
+    /// The control's tooltip gives the reason in a few words, only where there is one.
+    @Test func unsentParametersHaveAShortHint() {
+        for parameter in ModelParameter.allCases {
+            #expect(Self.apiKey.unavailableHint(for: parameter) == nil)
+        }
+        #expect(Self.account.unavailableHint(for: .klingOrientation) == "Only with an API key")
+        #expect(Self.account.unavailableHint(for: .klingVideoBackground) == "Not available for this account")
+    }
+
     // MARK: Frames
 
     @Test func framesRunOnImageToVideoAndSetReferencesAside() throws {

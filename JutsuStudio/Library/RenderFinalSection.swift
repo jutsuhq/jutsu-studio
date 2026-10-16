@@ -91,7 +91,7 @@ struct RenderFinalSection: View {
                 .frame(maxWidth: .infinity)
         }
         .buttonStyle(.secondaryAction)
-        .hoverHint("This final is in the Queue. It shows here once it is done.")
+        .hoverHint("Show in Queue")
     }
 }
 

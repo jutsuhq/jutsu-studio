@@ -26,7 +26,7 @@ struct CreateCharacterSheet: View {
             formWidth: 400,
             isBusy: isBusy,
             closeHint: isBusy
-                ? String(localized: "Wait for Higgsfield to take the request") : String(localized: "Close"),
+                ? String(localized: "Wait for Higgsfield") : String(localized: "Close"),
             onClose: { dismiss() }
         ) {
             CreateCharacterForm()

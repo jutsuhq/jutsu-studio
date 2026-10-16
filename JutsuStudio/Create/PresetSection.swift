@@ -164,7 +164,7 @@ private struct PresetTile: View {
         .onHover { isHovering = $0 }
         // A selected style that left the catalog can still be taken out of a batch.
         .disabled(!item.isAvailable && !isSelected)
-        .hoverHint(item.isAvailable ? "" : "No longer in the style catalog")
+        .hoverHint(item.isAvailable ? "" : "No longer available")
         .accessibilityLabel(item.isAvailable ? item.name : String(localized: "\(item.name), unavailable"))
         .accessibilityAddTraits(isSelected ? .isSelected : [])
         // Outside the button so an unavailable favorite can still be unstarred.

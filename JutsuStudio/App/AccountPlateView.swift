@@ -55,7 +55,7 @@ struct AccountPlateView: View {
         .buttonStyle(.plain)
         .pointerCursor()
         .onHover { isHovered = $0 }
-        .hoverHint(plate.warning == nil ? "Your Higgsfield plan · open Settings" : "Top up your plan on higgsfield.ai")
+        .hoverHint(plate.warning == nil ? "Open Settings" : "Top up on higgsfield.ai")
         .accessibilityLabel(plate.accessibilityLabel)
         .accessibilityHint("Opens Settings")
     }

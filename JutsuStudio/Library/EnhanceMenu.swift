@@ -41,7 +41,7 @@ struct EnhanceMenu: View {
             .menuStyle(.button)
             .buttonStyle(.secondaryAction)
             .disabled(reason != nil)
-            .hoverHint(reason ?? String(localized: "Upscale, reframe, cut out, dub or revoice this result"))
+            .hoverHint(reason ?? String(localized: "Upscale, reframe, dub and more"))
             .sheet(item: $request) { EnhanceSheet(item: item, kind: $0.kind, action: $0.action) }
         }
     }

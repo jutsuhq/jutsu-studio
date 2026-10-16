@@ -44,7 +44,6 @@ struct LibraryCardMenu: View {
             Button(item.isStarred ? "Unstar" : "Star", systemImage: item.isStarred ? "star.slash" : "star") {
                 actions.setStarred(!item.isStarred, [item])
             }
-            .help(LibraryStar.help(isStarred: item.isStarred, syncsLike: environment.syncsLike(item)))
         }
         if item.outputFile != nil || item.needsImport {
             Button("Compare…", systemImage: "rectangle.split.2x1") { actions.compare(item) }
@@ -193,7 +192,7 @@ struct LibraryBulkButtons: View {
                 NSWorkspace.shared.activateFileViewerSelecting(bulk.files)
             }
             Button("Copy Videos", systemImage: "doc.on.doc") { NSPasteboard.general.copyFiles(bulk.files) }
-                .hoverHint("Copy the video files to paste them into a folder or another app")
+                .hoverHint("Copy videos")
             ShareFilesLink(files: bulk.files)
         }
         if !bulk.deletable.isEmpty {

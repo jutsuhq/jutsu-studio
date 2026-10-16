@@ -36,7 +36,7 @@ struct SignInSheet: View {
                     } label: {
                         Label(copied ? "Copied" : "Copy Link", systemImage: copied ? "checkmark" : "doc.on.doc")
                     }
-                    .hoverHint("Paste it into any browser on this Mac.")
+                    .hoverHint("Copy sign-in link")
                 }
                 Spacer()
                 Button("Cancel", role: .cancel) { connection.cancelSignIn() }

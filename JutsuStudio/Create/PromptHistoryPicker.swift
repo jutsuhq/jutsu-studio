@@ -30,7 +30,7 @@ struct PromptClearButton: View {
     var body: some View {
         Button("Clear Prompt", systemImage: "xmark", action: clear)
             .buttonStyle(.iconAction)
-            .hoverHint("Clear the prompt")
+            .hoverHint("Clear prompt")
     }
 }
 
@@ -114,7 +114,7 @@ private struct PromptHistoryPicker: View {
             }
             .buttonStyle(.iconAction)
             .foregroundStyle(item.isStarred ? Theme.accent : Theme.muted)
-            .hoverHint(item.isStarred ? "Unstar" : "Star to keep it on top")
+            .hoverHint(item.isStarred ? "Unstar" : "Star")
         }
         .padding(Theme.Spacing.small)
         .well()

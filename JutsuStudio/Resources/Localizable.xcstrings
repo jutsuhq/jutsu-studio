@@ -323,12 +323,6 @@
     "Any resolution" : {
 
     },
-    "As in image keeps the way the character faces in the image; as in video follows the video" : {
-
-    },
-    "Ask Higgsfield for this job again; it may still finish without a new charge" : {
-
-    },
     "Asking Higgsfield for the price…" : {
 
     },
@@ -382,9 +376,6 @@
 
     },
     "Cache" : {
-
-    },
-    "Camera, lens, genre, era and the rest; on Auto, Cinema Studio picks them from the prompt" : {
 
     },
     "Can't be found" : {
@@ -495,9 +486,6 @@
 
     },
     "Cancel Job" : {
-
-    },
-    "Cancel the jobs Higgsfield hasn't started; one it is generating can't be canceled" : {
 
     },
     "Canceled" : {
@@ -647,9 +635,6 @@
     "Connection" : {
 
     },
-    "Continue this paused job" : {
-
-    },
     "Continue this result past its last frame, with Seedance 2.5" : {
 
     },
@@ -681,9 +666,6 @@
 
     },
     "Copy Videos" : {
-
-    },
-    "Copy the job's IDs to send to Higgsfield support" : {
 
     },
     "Couldn't move the image to the Trash" : {
@@ -787,9 +769,6 @@
 
     },
     "Download and install automatically" : {
-
-    },
-    "Download the result again; it is already paid for" : {
 
     },
     "Download to Library" : {
@@ -1071,9 +1050,6 @@
     "Higgsfield's sign-in page is open. Approve access for Jutsu Studio and you'll be brought back here automatically." : {
 
     },
-    "High bitrate keeps more detail in the encoded video; Standard makes a smaller file" : {
-
-    },
     "Hover to preview a motion, click to use it." : {
 
     },
@@ -1166,9 +1142,6 @@
     "Keyboard" : {
 
     },
-    "Kling puts the character into the source video's scene instead of the reference image's" : {
-
-    },
     "Language" : {
 
     },
@@ -1185,12 +1158,6 @@
 
     },
     "Load More" : {
-
-    },
-    "Load the newest videos from Higgsfield" : {
-
-    },
-    "Load the newest videos from Higgsfield (%@)" : {
 
     },
     "Loading the sample…" : {
@@ -1212,9 +1179,6 @@
 
     },
     "Made by %@" : {
-
-    },
-    "Make reference images from a prompt" : {
 
     },
     "Making the images…" : {
@@ -1401,22 +1365,10 @@
     "Open report" : {
 
     },
-    "Open the Image side of Create, where the results are" : {
-
-    },
-    "Open the full report on Higgsfield" : {
-
-    },
-    "Open the result in Library" : {
-
-    },
     "Open the result to finalize this draft in 1080p" : {
 
     },
     "Open the result to render its final" : {
-
-    },
-    "Open these inputs in Create; a new generation is charged again" : {
 
     },
     "Opens Settings" : {
@@ -1476,9 +1428,6 @@
     "Pick a voice to see the price." : {
 
     },
-    "Pick it to add to the references" : {
-
-    },
     "Pick one to add its images as references, up to %lld." : {
 
     },
@@ -1507,9 +1456,6 @@
 
     },
     "Playback position" : {
-
-    },
-    "Predict each variant's hook, engagement and sustain, free" : {
 
     },
     "Prepared sources" : {
@@ -1624,9 +1570,6 @@
     "Remove drafts" : {
 
     },
-    "Remove every job here from the Queue" : {
-
-    },
     "Remove from Library" : {
 
     },
@@ -1634,9 +1577,6 @@
 
     },
     "Remove from favorites" : {
-
-    },
-    "Remove from the Queue; what it cost still counts in today's spending" : {
 
     },
     "Remove range %@" : {
@@ -1723,9 +1663,6 @@
     "Review price" : {
 
     },
-    "Run again with the same inputs — a new job, charged again" : {
-
-    },
     "Run next" : {
 
     },
@@ -1786,9 +1723,6 @@
     "Secret" : {
 
     },
-    "Seedance starts the clip on the start frame and, if there is one, ends it on the end frame" : {
-
-    },
     "Select" : {
 
     },
@@ -1796,9 +1730,6 @@
 
     },
     "Selected" : {
-
-    },
-    "Send this job again with the same inputs" : {
 
     },
     "Send with AirDrop, Messages, Mail or another app" : {
@@ -1841,9 +1772,6 @@
 
     },
     "Show in the Queue" : {
-
-    },
-    "Show the video in Finder" : {
 
     },
     "Shows the choices" : {
@@ -1937,12 +1865,6 @@
     "System notifications. A paused job waits for you, e.g. for credits or a sign-in." : {
 
     },
-    "Take the next free slot, ahead of the other waiting jobs" : {
-
-    },
-    "Take the results off this list. They stay in Library › Images." : {
-
-    },
     "Templates" : {
 
     },
@@ -1950,9 +1872,6 @@
 
     },
     "The dashed outline is the new canvas. Higgsfield fills in the area around the result." : {
-
-    },
-    "The file isn't where it was saved. If it's on a drive that isn't connected, connect it to see the image again." : {
 
     },
     "The first 5 seconds at 480p without sound, small enough to send in a messenger" : {
@@ -1992,9 +1911,6 @@
 
     },
     "This is the price from Higgsfield for the uploaded files. It takes today's spending over your cap." : {
-
-    },
-    "Time since the job was queued or last retried" : {
 
     },
     "Tokens: %@. Applies to new results only; a name already in the folder gets -2, -3…" : {
@@ -2048,9 +1964,6 @@
     "Upscale before upload" : {
 
     },
-    "Upscale, reframe, cut out, dub or revoice this result" : {
-
-    },
     "Upscale…" : {
 
     },
@@ -2076,15 +1989,6 @@
 
     },
     "Variants" : {
-
-    },
-    "Wait for Higgsfield to take the request" : {
-
-    },
-    "Wait for the images being made" : {
-
-    },
-    "Wait for the images, or cancel the request" : {
 
     },
     "Warn below" : {
@@ -2290,9 +2194,6 @@
     "Set name" : {
 
     },
-    "The set's versions are fixed when it is first exported." : {
-
-    },
     "Frame %@…" : {
 
     },
@@ -2426,6 +2327,84 @@
 
     },
     "What transparent areas become: only PNG keeps transparency" : {
+
+    },
+    "Cancel unstarted jobs" : {
+
+    },
+    "Wait for Higgsfield" : {
+
+    },
+    "Clear list" : {
+
+    },
+    "First and last frame" : {
+
+    },
+    "Versions locked after export" : {
+
+    },
+    "Versions lock on first export" : {
+
+    },
+    "Upscale, reframe, dub and more" : {
+
+    },
+    "Add to references" : {
+
+    },
+    "Wait for the images" : {
+
+    },
+    "Show images in Create" : {
+
+    },
+    "File missing or drive disconnected" : {
+
+    },
+    "Clear verdict" : {
+
+    },
+    "Clear %lld verdicts" : {
+
+    },
+    "Refresh (%@)" : {
+
+    },
+    "Use the video's scene" : {
+
+    },
+    "Follow the image or video" : {
+
+    },
+    "Video bitrate" : {
+
+    },
+    "Camera, lens, genre and more" : {
+
+    },
+    "Remove all from Queue" : {
+
+    },
+    "Time since queued or retried" : {
+
+    },
+    "Copy job IDs" : {
+
+    },
+    "Duplicate job" : {
+
+    },
+    "Remove from Queue" : {
+
+    },
+    "Open in Create" : {
+
+    },
+    "Predict virality" : {
+
+    },
+    "Open report on Higgsfield" : {
 
     }
   },

@@ -126,7 +126,7 @@ struct CreateStage: View {
             Label(backToLibrary ? "Back to Clips" : "Remove Video", systemImage: "xmark")
         }
         .buttonStyle(.iconAction)
-        .hoverHint(backToLibrary ? "Remove this video and pick another clip" : "Remove this video")
+        .hoverHint(backToLibrary ? "Back to clips" : "Remove video")
     }
 
     private var emptyStage: some View {

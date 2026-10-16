@@ -110,7 +110,7 @@ struct ImageDetailsSheet: View {
         .buttonStyle(.plain)
         .pointerCursor()
         .disabled(video.availability == .unavailable)
-        .hoverHint(video.availability == .unavailable ? "This video is no longer in the library" : "Open this video")
+        .hoverHint(video.availability == .unavailable ? "No longer in the library" : "Open video")
     }
 
     /// "soul · 15 Oct 2026".

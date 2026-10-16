@@ -147,7 +147,7 @@ private struct ProblemsSection: View {
                 Button("Clear all") { isConfirmingClear = true }
                     .buttonStyle(.link)
                     .font(.system(size: 11, weight: .semibold))
-                    .hoverHint(String(localized: "Remove every job here from the Queue"))
+                    .hoverHint(String(localized: "Remove all from Queue"))
             }
             .padding(.top, 18)
             .confirmationDialog("Clear the jobs that didn't finish?", isPresented: $isConfirmingClear) {
@@ -265,7 +265,7 @@ private struct JobRowContent: View {
                         .font(.system(size: 11.5, weight: .medium))
                         .monospacedDigit()
                         .foregroundStyle(Theme.faint)
-                        .hoverHint(String(localized: "Time since the job was queued or last retried"))
+                        .hoverHint(String(localized: "Time since queued or retried"))
                 }
                 HStack(spacing: 6) {
                     ForEach(model.actions, id: \.self) { action in
@@ -277,7 +277,7 @@ private struct JobRowContent: View {
                         } label: {
                             Label("Copy IDs", systemImage: "number")
                         }
-                        .hoverHint(String(localized: "Copy the job's IDs to send to Higgsfield support"))
+                        .hoverHint(String(localized: "Copy job IDs"))
                     }
                     Button {
                         duplicate?()
@@ -285,15 +285,13 @@ private struct JobRowContent: View {
                         Image(systemName: "plus.square.on.square")
                     }
                     .disabled(duplicate == nil)
-                    .hoverHint(String(localized: "Run again with the same inputs — a new job, charged again"))
+                    .hoverHint(String(localized: "Duplicate job"))
                     .accessibilityLabel("Duplicate")
                     if let remove {
                         Button(action: remove) {
                             Image(systemName: "xmark")
                         }
-                        .hoverHint(
-                            String(localized: "Remove from the Queue; what it cost still counts in today's spending")
-                        )
+                        .hoverHint(String(localized: "Remove from Queue"))
                         .accessibilityLabel("Remove")
                     }
                 }
@@ -342,35 +340,34 @@ private struct JobRowContent: View {
                 .hoverHint(help)
         case .retry:
             Button("Retry", systemImage: "arrow.clockwise") { perform(.retry) }
-                .hoverHint(String(localized: "Send this job again with the same inputs"))
+                .hoverHint(String(localized: "Retry"))
         case .retryDownload:
             Button("Retry download", systemImage: "arrow.down.circle") { perform(.retry) }
-                .hoverHint(String(localized: "Download the result again; it is already paid for"))
+                .hoverHint(String(localized: "Retry download"))
         case .checkAgain:
             Button("Check again", systemImage: "arrow.clockwise") { perform(.checkAgain) }
-                .hoverHint(
-                    String(localized: "Ask Higgsfield for this job again; it may still finish without a new charge"))
+                .hoverHint(String(localized: "Check again"))
         case .generateAgain:
             editButton(
                 "Generate again", systemImage: "arrow.triangle.2.circlepath",
-                help: String(localized: "Open these inputs in Create; a new generation is charged again"))
+                help: String(localized: "Open in Create"))
         case .resume:
             Button("Resume", systemImage: "play.fill") { perform(.resume) }
-                .hoverHint(String(localized: "Continue this paused job"))
+                .hoverHint(String(localized: "Resume"))
         case .runNext:
             Button("Run next", systemImage: "arrow.up.to.line") { perform(.runNext) }
-                .hoverHint(String(localized: "Take the next free slot, ahead of the other waiting jobs"))
+                .hoverHint(String(localized: "Run next"))
         case .confirmPrice:
             ConfirmPriceButton(price: model.cost) { perform(.resume) }
         case .edit:
-            editButton("Edit", systemImage: "pencil", help: "Open these inputs in Create")
+            editButton("Edit", systemImage: "pencil", help: String(localized: "Open in Create"))
         case .showInFinder(let url):
             Button {
                 NSWorkspace.shared.activateFileViewerSelecting([url])
             } label: {
                 Image(systemName: "folder")
             }
-            .hoverHint(String(localized: "Show the video in Finder"))
+            .hoverHint(String(localized: "Show in Finder"))
             .accessibilityLabel("Show in Finder")
         case .openInLibrary:
             Button {
@@ -378,7 +375,7 @@ private struct JobRowContent: View {
             } label: {
                 Image(systemName: "arrow.right")
             }
-            .hoverHint(String(localized: "Open the result in Library"))
+            .hoverHint(String(localized: "Open in Library"))
             .accessibilityLabel("Open in Library")
         }
     }
@@ -415,7 +412,7 @@ private struct ConfirmPriceButton: View {
         } label: {
             Label("Review price", systemImage: "play.fill")
         }
-        .hoverHint("Higgsfield priced this job higher than the estimate")
+        .hoverHint("Price above estimate")
         .confirmationDialog("Start this job for \(price)?", isPresented: $isConfirming, titleVisibility: .visible) {
             Button("Start for \(price)", action: resume)
             Button("Not now", role: .cancel) {}

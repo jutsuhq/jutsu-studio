@@ -28,7 +28,7 @@ struct ReferencesSection: View {
                     Button("From Higgsfield", systemImage: "icloud.and.arrow.down", action: onBrowseUploads)
                         .buttonStyle(.iconAction)
                         .controlSize(.small)
-                        .hoverHint("Use images you uploaded to Higgsfield before")
+                        .hoverHint("Pick from Higgsfield uploads")
                 }
                 if form.canAddReferences {
                     PasteLinkButton(action: onPasteLink)
@@ -40,7 +40,7 @@ struct ReferencesSection: View {
                         .controlSize(.small)
                         .disabled(generation.disabledReason != nil)
                         .hoverHint(
-                            generation.disabledReason ?? String(localized: "Make reference images from a prompt"))
+                            generation.disabledReason ?? String(localized: "Generate reference images"))
                 }
             }
             if let reason = generation?.disabledReason, form.canAddReferences {
@@ -141,9 +141,7 @@ struct FramesSection: View {
             }
         }
         .disabled(unavailableReason != nil)
-        .hoverHint(
-            unavailableReason.map { Text($0) }
-                ?? Text("Seedance starts the clip on the start frame and, if there is one, ends it on the end frame"))
+        .hoverHint(unavailableReason.map { Text($0) } ?? Text("First and last frame"))
     }
 }
 

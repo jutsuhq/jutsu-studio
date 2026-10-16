@@ -59,11 +59,6 @@ extension AppEnvironment {
         LibraryStarring(likes: generationLikes, owner: provider?.owner)
     }
 
-    /// Whether starring the item also likes it on the connected account.
-    func syncsLike(_ item: LibraryItemModel) -> Bool {
-        libraryStarring.syncsLike(item)
-    }
-
     /// Stars or unstars a result and likes or unlikes it on Higgsfield to match, as `LibraryStarring` does.
     func setStarred(_ isStarred: Bool, for item: LibraryItemModel, record: MaterialRecord?) async throws {
         let store = LibraryRecordStore(records: record.map { [$0] } ?? [], context: modelContainer.mainContext)

@@ -127,7 +127,7 @@ struct LibraryDetail: View {
                 Button("Copy Video", systemImage: "doc.on.doc") {
                     if let url = item.outputFile { NSPasteboard.general.copyFiles([url]) }
                 }
-                .hoverHint("Copy the video file")
+                .hoverHint("Copy video")
             }
             .disabled(item.outputFile == nil)
             .buttonStyle(.iconAction)
@@ -225,7 +225,7 @@ struct LibraryDetail: View {
         }
         .buttonStyle(.secondaryAction)
         .disabled(isJoining)
-        .hoverHint("Save the source selection followed by this extension as one video")
+        .hoverHint("Join into one video")
     }
 
     // MARK: Actions
@@ -294,7 +294,7 @@ extension LibraryDetail {
         .buttonStyle(.iconAction)
         .foregroundStyle(item.isStarred ? Theme.accent : Theme.muted)
         .disabled(record == nil)
-        .hoverHint(LibraryStar.help(isStarred: item.isStarred, syncsLike: environment.syncsLike(item)))
+        .hoverHint(item.isStarred ? "Unstar" : "Star")
     }
 
     /// The Library menu on this page: the star button, the Render final button and Delete from the More menu.

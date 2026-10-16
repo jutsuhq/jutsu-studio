@@ -59,18 +59,18 @@ struct ImageCompareView: View {
             }
             Button("Fit", systemImage: "arrow.up.left.and.arrow.down.right") { state.showFit() }
                 .buttonStyle(.iconAction)
-                .hoverHint("Fit both to the pane")
+                .hoverHint("Fit to pane")
                 .disabled(state.fitsPane && state.zoom == 1)
             Button("Actual Size", systemImage: "1.magnifyingglass") { state.showActualSize() }
                 .buttonStyle(.iconAction)
-                .hoverHint("Show both at 100%")
+                .hoverHint("Show at 100%")
                 .disabled(!state.fitsPane && state.zoom == 1)
             Slider(
                 value: Binding(get: { state.zoom }, set: { state.setZoom($0) }),
                 in: ImageCompareState.minZoom...ImageCompareState.maxZoom
             )
             .frame(width: 140)
-            .hoverHint("Zoom both images together")
+            .hoverHint("Zoom")
             Button("Swap Sides", systemImage: "arrow.left.arrow.right", action: swap)
                 .buttonStyle(.iconAction)
                 .keyboardShortcut(.leftArrow, modifiers: [])
@@ -98,14 +98,14 @@ struct ImageCompareView: View {
         HStack(spacing: 4) {
             Button("Previous Variant", systemImage: "chevron.up") { self.variants?.step(-1) }
                 .keyboardShortcut(.upArrow, modifiers: [])
-                .hoverHint("Previous variant on the right (↑)")
+                .hoverHint("Previous variant (↑)")
             Text(variants.position)
                 .font(.system(size: 12, weight: .semibold))
                 .monospacedDigit()
                 .foregroundStyle(Theme.faint)
             Button("Next Variant", systemImage: "chevron.down") { self.variants?.step(1) }
                 .keyboardShortcut(.downArrow, modifiers: [])
-                .hoverHint("Next variant on the right (↓)")
+                .hoverHint("Next variant (↓)")
         }
         .buttonStyle(.iconAction)
         .padding(.trailing, Theme.Spacing.medium)

@@ -15,14 +15,14 @@ struct QueueControls: View {
                 Label("Pause all", systemImage: "pause.fill")
             }
             .disabled(!environment.canPauseAll)
-            .hoverHint("Pause all: jobs not yet submitted wait; submitted jobs still finish and download")
+            .hoverHint("Pause all")
             Button {
                 environment.runOnAllJobs { await $0.resumeAll() }
             } label: {
                 Label("Resume all", systemImage: "play.fill")
             }
             .disabled(!environment.canResumeAll)
-            .hoverHint("Resume all: the jobs you paused start again")
+            .hoverHint("Resume all")
         }
     }
 }

@@ -207,7 +207,7 @@ enum JobFixture {
 
     @Test func aJobWaitingForASlotOffersRunNextUntilItsSubmitIsSent() {
         var job = JobFixture.job(.waitingForSlot)
-        let cancel = JobRowModel.Action.cancel(isEnabled: true, help: "Cancel, nothing is charged")
+        let cancel = JobRowModel.Action.cancel(isEnabled: true, help: "Cancel job")
         #expect(JobRowModel(job, now: JobFixture.now).actions == [.runNext, cancel])
         job.submitAttempt = SubmitAttempt(isIdempotent: true)
         #expect(JobRowModel(job, now: JobFixture.now).actions == [cancel])
@@ -231,12 +231,12 @@ enum JobFixture {
 
     @Test func processingCancelExplainsWhy() {
         let row = JobRowModel(JobFixture.job(.processing), now: JobFixture.now)
-        #expect(row.actions == [.cancel(isEnabled: false, help: "Already processing, the API can't cancel it")])
+        #expect(row.actions == [.cancel(isEnabled: false, help: "Can't cancel while processing")])
     }
 
     @Test func downloadingCancelSaysItWasCharged() {
         let row = JobRowModel(JobFixture.job(.downloading), now: JobFixture.now)
-        #expect(row.actions == [.cancel(isEnabled: true, help: "Stop the download, the generation is already charged")])
+        #expect(row.actions == [.cancel(isEnabled: true, help: "Stop download")])
     }
 
     /// Only a finished row with a saved video drags it out.
@@ -272,7 +272,7 @@ enum JobFixture {
         #expect(JobRowModel(timedOut, now: JobFixture.now).actions == [.checkAgain])
         #expect(
             JobRowModel(JobFixture.job(.paused(.insufficientFunds)), now: JobFixture.now).actions == [
-                .resume, .cancel(isEnabled: true, help: "Cancel, nothing is charged"),
+                .resume, .cancel(isEnabled: true, help: "Cancel job"),
             ])
     }
 
@@ -351,7 +351,7 @@ enum JobFixture {
                 == .init(text: "Not enough disk space to save the result · free up space, then resume", role: .warning))
         #expect(
             row.actions == [
-                .resume, .cancel(isEnabled: true, help: "Stop the download, the generation is already charged"),
+                .resume, .cancel(isEnabled: true, help: "Stop download"),
             ])
     }
 
@@ -369,7 +369,7 @@ enum JobFixture {
                     text: "Retrying in 30 s · attempt 4 · last error: Higgsfield server error (HTTP 502)",
                     role: .warning))
         #expect(row.statusLabel == "Uploading")
-        #expect(row.actions == [.cancel(isEnabled: true, help: "Cancel, nothing is charged")])
+        #expect(row.actions == [.cancel(isEnabled: true, help: "Cancel job")])
 
         let due = JobRowModel(job, now: JobFixture.now.addingTimeInterval(40))
         #expect(due.note?.text == "Retrying · attempt 4 · last error: Higgsfield server error (HTTP 502)")
@@ -393,7 +393,7 @@ enum JobFixture {
                     text: "Kept failing before it was sent (the model is unavailable on Higgsfield) · not charged, "
                         + "resume to try again",
                     role: .warning))
-        #expect(row.actions == [.resume, .cancel(isEnabled: true, help: "Cancel, nothing is charged")])
+        #expect(row.actions == [.resume, .cancel(isEnabled: true, help: "Cancel job")])
         #expect(
             JobRowModel(JobFixture.job(.paused(.keptFailing)), now: JobFixture.now).note?.text
                 == "Kept failing before it was sent · not charged, resume to try again")
@@ -405,7 +405,7 @@ enum JobFixture {
             job.serverPrice = .usd(9.5, isEstimate: false)
             let row = JobRowModel(job, now: JobFixture.now)
 
-            #expect(row.actions == [.confirmPrice, .cancel(isEnabled: true, help: "Cancel, nothing is charged")])
+            #expect(row.actions == [.confirmPrice, .cancel(isEnabled: true, help: "Cancel job")])
             #expect(row.note?.text == "Price from Higgsfield goes over today's spending cap · confirm to resume")
             #expect(row.cost == "$9.50")
             #expect(row.priceSource == "Price from Higgsfield")

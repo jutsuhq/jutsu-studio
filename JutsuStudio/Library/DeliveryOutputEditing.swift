@@ -24,7 +24,7 @@ struct DeliveryOutputRow: View {
                     .themedField(isFocused: isNaming)
                     .focused($isNaming)
                     .frame(width: 200)
-                    .hoverHint("The output's part of the file names; empty uses its format")
+                    .hoverHint("Part of the file names")
                 Text(DeliveryContent.summary(of: output))
                     .font(.caption)
                     .foregroundStyle(Theme.faint)
@@ -32,7 +32,7 @@ struct DeliveryOutputRow: View {
                 Spacer(minLength: Theme.Spacing.small)
                 Button("Remove Output", systemImage: "trash", action: remove)
                     .buttonStyle(.iconAction)
-                    .hoverHint("Remove this output")
+                    .hoverHint("Remove output")
             }
             FlowLayout(spacing: Theme.Spacing.small) {
                 presetMenus
@@ -65,7 +65,7 @@ struct DeliveryOutputRow: View {
                 options: ImageExportPreset.ColorSpace.allCases.map { ($0, $0.title) })
             if !preset.format.keepsAlpha {
                 ColorPicker("Background", selection: backgroundColor(image.background), supportsOpacity: false)
-                    .hoverHint("What transparent areas become: only PNG keeps transparency")
+                    .hoverHint("Fill for transparent areas")
             }
         case .video:
             FilterMenu(

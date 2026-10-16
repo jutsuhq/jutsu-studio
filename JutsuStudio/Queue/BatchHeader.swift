@@ -36,10 +36,7 @@ struct BatchHeader: View {
                     }
                     .buttonStyle(.secondaryAction)
                     .disabled(isCanceling)
-                    .hoverHint(
-                        String(
-                            localized:
-                                "Cancel the jobs Higgsfield hasn't started; one it is generating can't be canceled"))
+                    .hoverHint(String(localized: "Cancel unstarted jobs"))
                 }
             }
             if batch.isActive {
