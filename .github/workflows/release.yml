@@ -1,10 +1,11 @@
 name: Release
 
 # Pushing a tag vX.Y.Z builds, signs, notarizes and staples the DMG with scripts/release.sh, launches it once
-# (scripts/smoke-launch.sh) and attaches it with the dSYMs, the Sparkle appcast (scripts/appcast.sh) and the Homebrew
-# cask to a draft GitHub release whose notes start from scripts/release-notes.sh. Publish the draft after adding the
-# summary from docs/release-notes-template.md; that also offers the update to installed copies, which read
-# releases/latest/download/appcast.xml. CONTRIBUTING.md#releasing lists the secrets and how to create them.
+# (scripts/smoke-launch.sh) and attaches it with the dSYMs and the Sparkle appcast (scripts/appcast.sh) to a draft
+# GitHub release whose notes start from scripts/release-notes.sh. Publish the draft after adding the summary from
+# docs/release-notes-template.md; that offers the update to installed copies, which read
+# releases/latest/download/appcast.xml, and runs tap.yml for Homebrew. CONTRIBUTING.md#releasing lists the secrets
+# and how to create them.
 on:
   push:
     tags: ["v*.*.*"]
@@ -122,16 +123,6 @@ jobs:
             --title "Jutsu Studio $version" \
             "build/Jutsu-Studio-$version.dmg" "build/Jutsu-Studio-$version.dmg.sha256" \
             "build/Jutsu-Studio-$version-dSYMs.zip" build/appcast.xml
-
-      # The tap is a separate repo the owner updates by hand from this file (CONTRIBUTING.md#releasing).
-      - name: Attach the Homebrew cask
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          version=${GITHUB_REF_NAME#v}
-          scripts/update-cask.sh "$version" "build/Jutsu-Studio-$version.dmg.sha256"
-          cat packaging/homebrew/jutsu-studio.rb
-          gh release upload "$GITHUB_REF_NAME" packaging/homebrew/jutsu-studio.rb
 
       - name: Remove the keychain and the key
         if: always()

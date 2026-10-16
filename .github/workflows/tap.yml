@@ -1,0 +1,67 @@
+name: Homebrew tap
+
+# Publishing a release (the draft from release.yml) writes its cask to jutsuhq/homebrew-tap: the template in
+# packaging/homebrew with the release's version and DMG checksum. `brew install jutsuhq/tap/jutsu-studio` then
+# installs it and `brew upgrade --greedy` offers it. Run it by hand with a tag to write that release's cask again.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Published release tag, e.g. v0.1.1
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: homebrew-tap
+  cancel-in-progress: false
+
+jobs:
+  tap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Holds TAP_DEPLOY_KEY, a deploy key with write access to jutsuhq/homebrew-tap only.
+    environment: homebrew-tap
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Write the cask to the tap
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+          TAP_DEPLOY_KEY: ${{ secrets.TAP_DEPLOY_KEY }}
+        run: |
+          [[ $TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::Not a release tag: $TAG"; exit 1; }
+          [[ -n $TAP_DEPLOY_KEY ]] || { echo "::error::secret TAP_DEPLOY_KEY is not set"; exit 1; }
+          state=$(gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json isDraft,isPrerelease --jq '.isDraft or .isPrerelease')
+          [[ $state == false ]] || { echo "::error::$TAG is a draft or a prerelease"; exit 1; }
+          version=${TAG#v}
+          gh release download "$TAG" -R "$GITHUB_REPOSITORY" -p "Jutsu-Studio-$version.dmg.sha256" -D "$RUNNER_TEMP"
+
+          umask 077
+          printf '%s\n' "$TAP_DEPLOY_KEY" >"$RUNNER_TEMP/tap-key"
+          # GitHub's host keys from its API over HTTPS, rather than trusting the first answer.
+          gh api meta --jq '.ssh_keys[] | "github.com " + .' >"$RUNNER_TEMP/known_hosts"
+          export GIT_SSH_COMMAND="ssh -i $RUNNER_TEMP/tap-key -o IdentitiesOnly=yes -o UserKnownHostsFile=$RUNNER_TEMP/known_hosts"
+          git clone -q --depth 1 git@github.com:jutsuhq/homebrew-tap.git "$RUNNER_TEMP/tap"
+
+          cask=$RUNNER_TEMP/tap/Casks/jutsu-studio.rb
+          # The template's first line says it is the template; the tap's copy is the cask itself.
+          sed '1{/^# Template/d;}' packaging/homebrew/jutsu-studio.rb >"$cask"
+          CASK=$cask scripts/update-cask.sh "$version" "$RUNNER_TEMP/Jutsu-Studio-$version.dmg.sha256"
+          cat "$cask"
+
+          cd "$RUNNER_TEMP/tap"
+          if git diff --quiet; then
+            echo "The tap already has the cask of $TAG"
+          else
+            git -c user.name=jutsuhq -c user.email=342892879+jutsuhq@users.noreply.github.com \
+              commit -qam "Update Jutsu Studio to $version"
+            git push -q origin HEAD:main
+          fi
+          rm -f "$RUNNER_TEMP/tap-key"

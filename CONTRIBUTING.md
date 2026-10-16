@@ -91,16 +91,11 @@ Move `sparkle-key.txt` to the Trash afterwards and keep a backup of the key some
 
 ### Homebrew cask
 
-[packaging/homebrew/jutsu-studio.rb](packaging/homebrew/jutsu-studio.rb) is the template of the cask; [scripts/update-cask.sh](scripts/update-cask.sh) sets its `version` and `sha256` (`scripts/update-cask.sh X.Y.Z build/Jutsu-Studio-X.Y.Z.dmg.sha256`). The release workflow runs it and attaches the result, `jutsu-studio.rb`, to the draft release; nothing is pushed to the tap. Keep the template's `version` and `sha256` at the latest published release.
+Jutsu Studio installs with `brew install jutsuhq/tap/jutsu-studio` from the tap [jutsuhq/homebrew-tap](https://github.com/jutsuhq/homebrew-tap). [packaging/homebrew/jutsu-studio.rb](packaging/homebrew/jutsu-studio.rb) is the template of its cask. Publishing a release runs [the tap workflow](.github/workflows/tap.yml): it takes the template from the release's commit, sets `version` and `sha256` to the release's with [scripts/update-cask.sh](scripts/update-cask.sh), and pushes it to the tap's `Casks/jutsu-studio.rb`. To write a release's cask again, run the workflow by hand with its tag (`gh workflow run tap.yml -f tag=vX.Y.Z`).
 
-The tap is a separate repo, created once:
+The workflow pushes with the deploy key in the secret `TAP_DEPLOY_KEY` of the `homebrew-tap` environment (deployments from `main` and `v*` tags). The key has write access to the tap only: to replace it, add a new public key under the tap's Settings → Deploy keys with write access, set its private half with `gh secret set TAP_DEPLOY_KEY --env homebrew-tap < key` and delete the old key.
 
-1. Create the public repo `jutsuhq/homebrew-tap` (the `homebrew-` prefix lets users write `jutsuhq/tap`).
-2. Copy the template to `Casks/jutsu-studio.rb` in it and push.
-3. Check it on a Mac: `brew install --cask jutsuhq/tap/jutsu-studio`, then `brew audit --cask --online jutsuhq/tap/jutsu-studio`.
-4. Add `brew install --cask jutsuhq/tap/jutsu-studio` to the README's download instructions.
-
-After publishing each release, download its `jutsu-studio.rb`, replace `Casks/jutsu-studio.rb` in the tap with it and push; `brew upgrade` then offers the new version. Commit the same `version` and `sha256` to the template here.
+The cask says `auto_updates true`, because Sparkle updates the app: `brew upgrade` skips it and `brew upgrade --greedy` updates it. Check a change to the template with `brew style --cask` and `brew audit --cask --online` on the tapped cask.
 
 ### One-time setup
 
