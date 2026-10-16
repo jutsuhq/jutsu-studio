@@ -13,7 +13,9 @@ cask "jutsu-studio" do
     strategy :github_latest
   end
 
-  depends_on macos: ">= :sonoma"
+  # Sparkle updates the app itself; `brew upgrade` leaves it alone unless run with --greedy.
+  auto_updates true
+  depends_on macos: :sonoma
 
   app "Jutsu Studio.app"
 

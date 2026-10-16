@@ -47,7 +47,13 @@ Higgsfield's web app is made for one generation at a time in a browser tab. Juts
 
 ## 🚀 Quick Start
 
-**1. Download** — grab `Jutsu-Studio-<version>.dmg` from the [latest release](https://github.com/jutsuhq/jutsu-studio/releases/latest), open it and drag Jutsu Studio to Applications. *(macOS 14 Sonoma or later, Apple silicon and Intel.)*
+**1. Install** — with [Homebrew](https://brew.sh):
+
+```bash
+brew install jutsuhq/tap/jutsu-studio
+```
+
+or grab `Jutsu-Studio-<version>.dmg` from the [latest release](https://github.com/jutsuhq/jutsu-studio/releases/latest), open it and drag Jutsu Studio to Applications. *(macOS 14 Sonoma or later, Apple silicon and Intel.)*
 
 **2. Connect Higgsfield** — either **Connect your Higgsfield account** to spend your plan's credits (OAuth in your browser through Higgsfield's MCP server; the app never sees your password), or paste an API key from the [Higgsfield console](https://console.higgsfield.ai) to pay as you go. Tokens and keys live in your macOS Keychain. Generations are billed to **your own Higgsfield account**; Jutsu Studio is free and takes no cut.
 

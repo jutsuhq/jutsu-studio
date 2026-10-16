@@ -7,7 +7,7 @@ usage() {
 Usage: scripts/update-cask.sh <version> <sha256 | path to Jutsu-Studio-<version>.dmg.sha256>
 
 Rewrites `version` and `sha256` in packaging/homebrew/jutsu-studio.rb (or $CASK) in place.
-Copy the result into the tap; CONTRIBUTING.md#releasing has the steps.
+The tap workflow (.github/workflows/tap.yml) runs it on a copy for each published release.
 USAGE
 }
 
