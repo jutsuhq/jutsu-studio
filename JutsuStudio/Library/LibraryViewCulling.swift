@@ -250,10 +250,10 @@ struct LibraryCardMarks: ViewModifier {
             }
             .overlay(alignment: .top) {
                 if isCurrent {
-                    // Around the tile only: around the whole card it also took in the title and detail lines.
-                    RoundedRectangle(cornerRadius: Theme.Radius.media + 4, style: .continuous)
+                    // On the tile's edge, where a selected or hovered card's border is, so the two never show as a
+                    // double ring; around the whole card it also bent around the title and detail lines.
+                    RoundedRectangle(cornerRadius: Theme.Radius.media, style: .continuous)
                         .strokeBorder(Theme.accent, lineWidth: 2)
-                        .padding(-4)
                         .aspectRatio(LibraryThumbnail.tileAspect, contentMode: .fit)
                         .allowsHitTesting(false)
                 }
