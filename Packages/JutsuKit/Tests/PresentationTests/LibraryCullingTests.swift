@@ -315,3 +315,17 @@ enum CatalogFixture {
         #expect(VariantCompare(Array(images.prefix(1))) == nil)
     }
 }
+
+struct CullingToggleTests {
+    @Test func theLitVerdictPressedAgainTakesItBack() {
+        #expect(CullingAction.reject.toggled(against: [.rejected]) == .clear)
+        #expect(CullingAction.keep.toggled(against: [.kept, .kept]) == .clear)
+    }
+
+    @Test func anotherVerdictOrAMixedSelectionIsSet() {
+        #expect(CullingAction.reject.toggled(against: [.kept]) == .reject)
+        #expect(CullingAction.reject.toggled(against: [.rejected, .unreviewed]) == .reject)
+        #expect(CullingAction.keep.toggled(against: []) == .keep)
+        #expect(CullingAction.clear.toggled(against: [.unreviewed]) == .clear)
+    }
+}

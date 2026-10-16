@@ -55,12 +55,14 @@ extension LibraryView {
     }
 
     /// Culls the result the large viewer shows, then steps to the next one, so a series is culled from here too.
+    /// Taking a verdict back (Clear, or the lit Keep or Reject again) stays on it.
     func cullShown(
         _ action: CullingAction, _ item: LibraryItemModel, among items: [LibraryItemModel],
         index: LibraryCatalogIndex
     ) {
-        cull(action, [item.id], index: index)
-        let leaves = action == .reject && !filter.showsRejected
+        let applied = cull(action, [item.id], index: index)
+        guard applied != .clear else { return }
+        let leaves = applied == .reject && !filter.showsRejected
         if let next = LibraryCursor.advanced(after: item.id, in: items.map(\.id), leaves: leaves) {
             selection = next
             cursor = next

@@ -68,15 +68,21 @@ extension LibraryView {
             return
         }
         guard let current = cursor else { return }
-        cull(action, layout.itemIDs(ofCard: current), index: layout.index)
-        let leaves = action == .reject && !filter.showsRejected
+        let applied = cull(action, layout.itemIDs(ofCard: current), index: layout.index)
+        // Taking a verdict back stays on the card; a verdict moves on to the next one.
+        guard applied != .clear else { return }
+        let leaves = applied == .reject && !filter.showsRejected
         cursor = LibraryCursor.advanced(after: current, in: layout.rows.map(\.id), leaves: leaves)
     }
 
-    /// Records the change for ⌘Z and saves it to the catalog.
-    func cull(_ action: CullingAction, _ ids: [UUID], index: LibraryCatalogIndex) {
-        guard let writes = cullingHistory.apply(action, to: ids, in: index) else { return }
+    /// Records the change for ⌘Z and saves it to the catalog. Returns what was done: Keep or Reject pressed again
+    /// on results that already have it clears it (`CullingAction.toggled`).
+    @discardableResult
+    func cull(_ action: CullingAction, _ ids: [UUID], index: LibraryCatalogIndex) -> CullingAction {
+        let applied = action.toggled(against: ids.map(index.culling(of:)))
+        guard let writes = cullingHistory.apply(applied, to: ids, in: index) else { return applied }
         saveCulling(writes)
+        return applied
     }
 
     /// Takes back the last keep, reject or clear; the card it touched becomes the current one again.
