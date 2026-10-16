@@ -78,6 +78,10 @@ targets:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSApplicationCategoryType: public.app-category.video
+        # The sign-in page's "Open Jutsu Studio" button (AppLink); Debug has a scheme of its own.
+        CFBundleURLTypes:
+          - CFBundleURLName: $(PRODUCT_BUNDLE_IDENTIFIER)
+            CFBundleURLSchemes: [$(APP_URL_SCHEME)]
         # Sparkle. The appcast is a release asset, so `latest/download` follows the newest published release; each
         # update is checked against this EdDSA key and the app's own code signature before it is installed.
         SUFeedURL: https://github.com/jutsuhq/jutsu-studio/releases/latest/download/appcast.xml
@@ -104,6 +108,7 @@ targets:
         PRODUCT_NAME: Jutsu Studio
         PRODUCT_BUNDLE_IDENTIFIER: com.jutsustudio.JutsuStudio
         APP_DISPLAY_NAME: Jutsu Studio
+        APP_URL_SCHEME: jutsustudio
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
       # Debug gets its own bundle ID, so its own sandbox container (job store, UserDefaults) and name: a Debug
       # launch must never resume the release build's paid jobs or change its settings. Release stays as it is.
@@ -111,3 +116,4 @@ targets:
         Debug:
           PRODUCT_BUNDLE_IDENTIFIER: com.jutsustudio.JutsuStudio.debug
           APP_DISPLAY_NAME: Jutsu Studio Debug
+          APP_URL_SCHEME: jutsustudio-debug

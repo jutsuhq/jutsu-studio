@@ -22,6 +22,10 @@ struct MainWindow: View {
         }
         .frame(minWidth: 960, minHeight: 600)
         .background(Theme.background)
+        // Signing out (usually from Settings) leads to sign-in, not to Settings over the onboarding.
+        .onChange(of: connection.state.isConnected) { wasConnected, isConnected in
+            if wasConnected, !isConnected { navigation.selection = .create }
+        }
         .sheet(isPresented: signInSheetPresented) {
             SignInSheet()
                 .preferredColorScheme(.dark)

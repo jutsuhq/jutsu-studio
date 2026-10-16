@@ -42,7 +42,8 @@ struct HiggsfieldConnectionServices: ConnectionServices {
         // The browser keeps focus after the redirect; bring the app back for the result.
         defer { Task { @MainActor in NSApp.activate() } }
         // A browser that doesn't open doesn't end the sign-in: the sheet offers the link to open again or copy.
-        let presenter = LoopbackAuthorizationPresenter { url in
+        let page = await MainActor.run { CallbackPage(appURL: AppLink.url, iconPNG: AppLink.iconPNG()) }
+        let presenter = LoopbackAuthorizationPresenter(page: page) { url in
             // `NSWorkspace.open` would hand any scheme to its app; discovery already demands https.
             guard url.scheme?.lowercased() == "https" else { throw SignInError.invalidResponse }
             await show(url)
