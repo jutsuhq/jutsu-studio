@@ -1,7 +1,7 @@
 # Template for the cask in the owner's tap. scripts/update-cask.sh rewrites version and sha256 for each release.
 cask "jutsu-studio" do
-  version "0.1.0"
-  sha256 "ef077a7e34aa547b6520333bc3aa713052cb377eefaadf094091cc6ff72e00d1"
+  version "0.1.1"
+  sha256 "3a9d58b82d33d7cbb824ce23df84a3630933a58b97fe1368dfc40415f1e63f8f"
 
   url "https://github.com/jutsuhq/jutsu-studio/releases/download/v#{version}/Jutsu-Studio-#{version}.dmg"
   name "Jutsu Studio"
