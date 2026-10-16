@@ -248,11 +248,13 @@ struct LibraryCardMarks: ViewModifier {
                 }
                 .padding(8)
             }
-            .overlay {
+            .overlay(alignment: .top) {
                 if isCurrent {
+                    // Around the tile only: around the whole card it also took in the title and detail lines.
                     RoundedRectangle(cornerRadius: Theme.Radius.media + 4, style: .continuous)
                         .strokeBorder(Theme.accent, lineWidth: 2)
                         .padding(-4)
+                        .aspectRatio(LibraryThumbnail.tileAspect, contentMode: .fit)
                         .allowsHitTesting(false)
                 }
             }
