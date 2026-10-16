@@ -38,6 +38,13 @@ public enum CullingAction: String, Sendable, Hashable, CaseIterable {
         }
     }
 
+    /// What pressing it does to results that have the verdicts `current`: Keep or Reject on results that all have
+    /// that verdict already takes it back, like a toggle, so a rejected result can be brought back where it shows.
+    public func toggled(against current: [Culling]) -> CullingAction {
+        guard self != .clear, !current.isEmpty, current.allSatisfy({ $0 == result }) else { return self }
+        return .clear
+    }
+
     /// The action a key press in the grid or the large viewer runs; `nil` for any other key.
     public static func pressed(_ press: Shortcut, assigned: [ShortcutAction: Shortcut]) -> CullingAction? {
         allCases.first { assigned[$0.shortcut] == press }

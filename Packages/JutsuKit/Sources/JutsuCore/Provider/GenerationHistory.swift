@@ -144,18 +144,6 @@ public struct HistoryImageItem: Sendable, Hashable, Identifiable {
         self.pixelSize = pixelSize
     }
 
-    /// "16:9"; `nil` when the provider didn't state the size.
-    public var aspectRatio: String? {
-        guard let pixelSize, pixelSize.width > 0, pixelSize.height > 0 else { return nil }
-        let divisor = [pixelSize.width, pixelSize.height].reduce(0) { Self.gcd($0, $1) }
-        guard divisor > 0 else { return nil }
-        return "\(pixelSize.width / divisor):\(pixelSize.height / divisor)"
-    }
-
-    private static func gcd(_ a: Int, _ b: Int) -> Int {
-        var a = a
-        var b = b
-        while b != 0 { (a, b) = (b, a % b) }
-        return a
-    }
+    /// "16:9" (`PixelSize.aspectLabel`); `nil` when the provider didn't state the size.
+    public var aspectRatio: String? { pixelSize?.aspectLabel }
 }

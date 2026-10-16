@@ -50,7 +50,8 @@ struct SavedImageCard: View {
     var body: some View {
         ImageCardFrame(
             title: image.prompt, detail: imageCardDetail(model: image.model, date: image.createdAt),
-            aspectRatio: image.aspectRatio, isStarred: image.isStarred, isOnAccountOnly: false,
+            aspectRatio: image.aspectRatio.map(PixelSize.aspectLabel(of:)), isStarred: image.isStarred,
+            isOnAccountOnly: false,
             isSelected: isSelected, picture: picture
         ) {
             if !isAvailable {
