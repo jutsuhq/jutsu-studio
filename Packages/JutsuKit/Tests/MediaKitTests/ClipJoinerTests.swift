@@ -51,8 +51,9 @@ import Testing
         let sound = try #require(try await asset.loadTracks(withMediaType: .audio).first)
         let pictureRange = try await picture.load(.timeRange)
         let soundRange = try await sound.load(.timeRange)
-        // One second of each, less the extension's first frame of 0.2 s.
-        #expect(abs(pictureRange.duration.seconds - 1.8) < 0.05)
+        // One second of each, less the extension's first frame of 0.2 s. Within one frame (0.1 s): some encoders
+        // (GitHub's macOS runners) end the last frame 0.1 s off, while a repeated seam frame would add 0.2 s.
+        #expect(abs(pictureRange.duration.seconds - 1.8) < 0.11)
         // Within one frame (0.1 s at the joined rate) of the picture at both ends.
         #expect(abs(soundRange.start.seconds - pictureRange.start.seconds) < 0.1)
         #expect(abs(soundRange.end.seconds - pictureRange.end.seconds) < 0.1)
