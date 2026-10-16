@@ -15,6 +15,10 @@ enum Higgsfield {
     static let mcpEndpoint = URL(string: "https://mcp.higgsfield.ai/mcp")!
     // swiftlint:disable:next force_unwrapping
     static let consoleURL = URL(string: "https://console.higgsfield.ai")!
+    /// `docs/oauth-client.json` as GitHub Pages serves it; the sign-in's `client_id` (CONTRIBUTING, "OAuth client
+    /// metadata"). The authorization server downloads it, so moving or removing it breaks every new sign-in.
+    // swiftlint:disable:next force_unwrapping
+    static let clientMetadataDocument = URL(string: "https://jutsuhq.github.io/jutsu-studio/oauth-client.json")!
 }
 
 /// `KeychainStore.activeConnection` as the `CredentialVault` the connection store writes to.
@@ -73,7 +77,8 @@ enum AccountAuthorization {
         if let clientID {
             id = clientID
         } else {
-            id = try await ClientRegistration().clientID(at: server, reusing: previous?.tokenSet)
+            id = try await ClientRegistration(metadataDocumentURL: Higgsfield.clientMetadataDocument)
+                .clientID(at: server, reusing: previous?.tokenSet)
         }
         return OAuthClient(server: server, clientID: id, resource: discovered.resource.resource)
     }

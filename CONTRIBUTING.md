@@ -44,15 +44,9 @@ The scripts use an installed, working Swift toolchain and fall back to Xcode's b
 
 ## OAuth client metadata
 
-Optional. By default, account sign-in registers the app dynamically (ARCHITECTURE §5.2), so nothing has to be hosted.
+Account sign-in identifies the app with the Client ID Metadata Document in `docs/oauth-client.json` (ARCHITECTURE §5.2). GitHub Pages publishes the `docs/` folder of `main` on jutsuhq/jutsu-studio (Settings → Pages → Deploy from a branch, `main` / `docs`), and the authorization server downloads it from `https://jutsuhq.github.io/jutsu-studio/oauth-client.json` during every sign-in. If that URL stops resolving, new sign-ins fail; keep Pages on and the file in place. `curl -fsS https://jutsuhq.github.io/jutsu-studio/oauth-client.json` checks it.
 
-The app can instead identify itself with the Client ID Metadata Document in `docs/oauth-client.json`. During sign-in the authorization server downloads `https://jutsuhq.github.io/jutsu-studio/oauth-client.json`, so that URL has to resolve before this is turned on:
-
-1. Publish the `docs/` folder of `main` with GitHub Pages (Settings → Pages → Deploy from a branch, `main` / `docs`). A private repository needs a plan that allows Pages.
-2. Check that `curl -fsS https://jutsuhq.github.io/jutsu-studio/oauth-client.json` returns the file.
-3. Pass that URL as `metadataDocumentURL` to `ClientRegistration` in `AccountAuthorization.client`.
-
-Turning it on before the URL resolves makes every sign-in fail.
+Servers that don't support metadata documents get dynamic registration instead (`ClientRegistration`).
 
 When changing `docs/oauth-client.json`, keep its `client_id` equal to its own URL and its `redirect_uris` equal to `ClientRegistration.redirectURI`.
 
