@@ -68,15 +68,21 @@ extension LibraryView {
             return
         }
         guard let current = cursor else { return }
-        cull(action, layout.itemIDs(ofCard: current), index: layout.index)
-        let leaves = action == .reject && !filter.showsRejected
+        let applied = cull(action, layout.itemIDs(ofCard: current), index: layout.index)
+        // Taking a verdict back stays on the card; a verdict moves on to the next one.
+        guard applied != .clear else { return }
+        let leaves = applied == .reject && !filter.showsRejected
         cursor = LibraryCursor.advanced(after: current, in: layout.rows.map(\.id), leaves: leaves)
     }
 
-    /// Records the change for ⌘Z and saves it to the catalog.
-    func cull(_ action: CullingAction, _ ids: [UUID], index: LibraryCatalogIndex) {
-        guard let writes = cullingHistory.apply(action, to: ids, in: index) else { return }
+    /// Records the change for ⌘Z and saves it to the catalog. Returns what was done: Keep or Reject pressed again
+    /// on results that already have it clears it (`CullingAction.toggled`).
+    @discardableResult
+    func cull(_ action: CullingAction, _ ids: [UUID], index: LibraryCatalogIndex) -> CullingAction {
+        let applied = action.toggled(against: ids.map(index.culling(of:)))
+        guard let writes = cullingHistory.apply(applied, to: ids, in: index) else { return applied }
         saveCulling(writes)
+        return applied
     }
 
     /// Takes back the last keep, reject or clear; the card it touched becomes the current one again.
@@ -219,7 +225,17 @@ struct CullingButtons: View {
                 .labelStyle(.iconOnly)
                 .foregroundStyle(isCurrent ? Theme.accent : Theme.text)
                 .accessibilityAddTraits(isCurrent ? .isSelected : [])
-                .hoverHint(count > 1 ? String(localized: "\(action.title) \(count) results") : action.title)
+                .hoverHint(hint(for: action))
+        }
+    }
+
+    /// "Keep", "Reject 3 results", "Clear verdict".
+    private func hint(for action: CullingAction) -> String {
+        switch (action, count > 1) {
+        case (.clear, false): String(localized: "Clear verdict")
+        case (.clear, true): String(localized: "Clear \(count) verdicts")
+        case (_, false): action.title
+        case (_, true): String(localized: "\(action.title) \(count) results")
         }
     }
 }
@@ -248,11 +264,13 @@ struct LibraryCardMarks: ViewModifier {
                 }
                 .padding(8)
             }
-            .overlay {
+            .overlay(alignment: .top) {
                 if isCurrent {
-                    RoundedRectangle(cornerRadius: Theme.Radius.media + 4, style: .continuous)
+                    // On the tile's edge, where a selected or hovered card's border is, so the two never show as a
+                    // double ring; around the whole card it also bent around the title and detail lines.
+                    RoundedRectangle(cornerRadius: Theme.Radius.media, style: .continuous)
                         .strokeBorder(Theme.accent, lineWidth: 2)
-                        .padding(-4)
+                        .aspectRatio(LibraryThumbnail.tileAspect, contentMode: .fit)
                         .allowsHitTesting(false)
                 }
             }

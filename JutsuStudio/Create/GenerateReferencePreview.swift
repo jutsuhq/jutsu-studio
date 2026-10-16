@@ -64,7 +64,7 @@ struct GeneratedImagePreview: View {
                     .disabled(image.isPicked || (number == nil && !canPick))
                     .hoverHint(
                         number == nil
-                            ? String(localized: "Pick it to add to the references") : String(localized: "Unpick"))
+                            ? String(localized: "Add to references") : String(localized: "Unpick"))
                 }
             }
             .padding(24)

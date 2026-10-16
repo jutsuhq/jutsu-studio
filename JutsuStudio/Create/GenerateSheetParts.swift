@@ -180,7 +180,7 @@ struct RequestRow: View {
                 Button("Cancel", action: onCancel)
                     .buttonStyle(.secondaryAction)
                     .controlSize(.small)
-                    .hoverHint("A request Higgsfield hasn't started yet isn't charged")
+                    .hoverHint("Cancel request")
             }
         }
         .padding(.horizontal, Theme.Spacing.medium)

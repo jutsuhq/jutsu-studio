@@ -69,7 +69,7 @@ struct BatchComparison: View {
                 Button("Delete Unstarred…", systemImage: "trash") { deleteUnstarred(unstarred) }
                     .buttonStyle(.secondaryAction)
                     .disabled(unstarred.isEmpty)
-                    .hoverHint("Keep the starred results and delete the rest of this batch")
+                    .hoverHint("Delete unstarred")
             }
             VStack(alignment: .leading, spacing: 4) {
                 Text(batch.title)
@@ -97,7 +97,7 @@ struct BatchComparison: View {
             if cell.item.canRenderFinal {
                 Button("Pick winner", systemImage: "trophy") { open(cell.id) }
                     .buttonStyle(.secondaryAction)
-                    .hoverHint("Open this result to render its final")
+                    .hoverHint("Open to render final")
             } else {
                 Button("Open", systemImage: "arrow.right") { open(cell.id) }
                     .buttonStyle(.secondaryAction)

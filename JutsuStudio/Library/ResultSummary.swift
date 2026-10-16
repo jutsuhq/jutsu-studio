@@ -122,7 +122,7 @@ extension ResultSummary {
             Button("Save Inputs…", systemImage: "square.and.arrow.down") { save(files) }
                 .buttonStyle(.iconAction)
                 .controlSize(.small)
-                .hoverHint("Save the source video and reference images to a folder on this Mac")
+                .hoverHint("Save inputs")
         }
     }
 

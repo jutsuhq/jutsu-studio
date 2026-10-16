@@ -19,7 +19,7 @@ struct ImageRequestsSection: View {
                 }
                 .buttonStyle(.link)
                 .font(.system(size: 11, weight: .semibold))
-                .hoverHint(String(localized: "Open the Image side of Create, where the results are"))
+                .hoverHint(String(localized: "Show images in Create"))
             }
             .padding(.top, 18)
             ForEach(generator.runs) { run in

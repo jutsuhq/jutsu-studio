@@ -84,7 +84,8 @@ public enum LibraryMediaItem: Sendable, Hashable, Identifiable {
     public var aspectRatio: String? {
         switch self {
         case .video: nil
-        case .localImage(let image): image.aspectRatio
+        // Saved before labels were rounded, a stored ratio can still be "73:55".
+        case .localImage(let image): image.aspectRatio.map(PixelSize.aspectLabel(of:))
         case .remoteImage(let image): image.aspectRatio
         }
     }

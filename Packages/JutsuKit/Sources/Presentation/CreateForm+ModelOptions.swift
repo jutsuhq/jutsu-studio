@@ -138,6 +138,20 @@ extension CreateForm {
 }
 
 extension CreateContext {
+    /// `unavailableReason(for:)` short enough for the tooltip of the control that sets `parameter`.
+    public func unavailableHint(for parameter: ModelParameter) -> String? {
+        guard unavailableReason(for: parameter) != nil else { return nil }
+        let isAccount = connection.kind == .account
+        if parameter == .klingVideoBackground {
+            return isAccount
+                ? String(localized: "Not available for this account", bundle: .module)
+                : String(localized: "Only on a Higgsfield account", bundle: .module)
+        }
+        return isAccount
+            ? String(localized: "Only with an API key", bundle: .module)
+            : String(localized: "Not available with this API key", bundle: .module)
+    }
+
     /// Why this connection can't send `parameter`; `nil` when it can, or while the capabilities are unknown.
     public func unavailableReason(for parameter: ModelParameter) -> String? {
         guard let capabilities, !capabilities.parameters.contains(parameter) else { return nil }

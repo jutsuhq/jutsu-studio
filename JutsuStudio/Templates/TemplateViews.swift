@@ -46,7 +46,7 @@ struct TemplatesMenu: View {
         .buttonStyle(.secondaryAction)
         .menuIndicator(.hidden)
         .fixedSize()
-        .hoverHint("Start from saved inputs, or save these")
+        .hoverHint("Templates")
         .templateNameAlert(
             String(localized: "Save as Template"), isPresented: $isNaming, name: $name,
             confirmTitle: String(localized: "Save")

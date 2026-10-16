@@ -22,7 +22,7 @@ struct PasteLinkButton: View {
         Button("Paste URL…", systemImage: "link", action: action)
             .buttonStyle(.iconAction)
             .controlSize(.small)
-            .hoverHint("Download a video or image from a link")
+            .hoverHint("Download from a link")
     }
 }
 

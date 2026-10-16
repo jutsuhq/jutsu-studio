@@ -161,7 +161,7 @@ private struct CreateImageStage: View {
             }
             .buttonStyle(.link)
             .font(.system(size: 11, weight: .semibold))
-            .hoverHint(String(localized: "Take the results off this list. They stay in Library › Images."))
+            .hoverHint(String(localized: "Clear list"))
         }
         .frame(height: 72)
     }

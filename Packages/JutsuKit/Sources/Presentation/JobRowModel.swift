@@ -184,11 +184,7 @@ public struct JobRowModel: Sendable, Hashable, Identifiable {
 
     static func statusHint(_ state: JobState) -> String? {
         guard state == .waitingForSlot else { return nil }
-        return String(
-            localized: """
-                Its files are uploaded. Its price is checked and it's sent to Higgsfield once a slot is free; \
-                Settings › Output › Parallel jobs sets how many run at once.
-                """, bundle: .module)
+        return String(localized: "Sent once a slot is free", bundle: .module)
     }
 
     static func stage(_ state: JobState) -> Stage? {
@@ -231,22 +227,17 @@ public struct JobRowModel: Sendable, Hashable, Identifiable {
                 ? String(localized: "taking longer than usual", bundle: .module)
                 : String(localized: "usually \(approximate(typical.total))", bundle: .module),
             fraction: min(max(elapsed / typical.total, 0), 1), isOverdue: isOverdue,
-            help: String(
-                localized: "Estimate from \(typical.sampleCount) similar past jobs; Higgsfield doesn't report progress",
-                bundle: .module))
+            help: String(localized: "Estimate from \(typical.sampleCount) past jobs", bundle: .module))
     }
 
     private static func cancel(_ state: JobState) -> Action {
         if state == .downloading || state == .paused(.notEnoughDiskSpace) {
-            return .cancel(
-                isEnabled: true,
-                help: String(localized: "Stop the download, the generation is already charged", bundle: .module))
+            return .cancel(isEnabled: true, help: String(localized: "Stop download", bundle: .module))
         }
         if state.isCancellable {
-            return .cancel(isEnabled: true, help: String(localized: "Cancel, nothing is charged", bundle: .module))
+            return .cancel(isEnabled: true, help: String(localized: "Cancel job", bundle: .module))
         }
-        return .cancel(
-            isEnabled: false, help: String(localized: "Already processing, the API can't cancel it", bundle: .module))
+        return .cancel(isEnabled: false, help: String(localized: "Can't cancel while processing", bundle: .module))
     }
 }
 

@@ -164,7 +164,7 @@ private struct SidebarToggle: View {
         }
         .buttonStyle(.plain)
         .onHover { isHovering = $0 }
-        .hoverHint(isCollapsed ? "Show Sidebar (⌃⌘S)" : "Hide Sidebar (⌃⌘S)")
+        .hoverHint(isCollapsed ? "Show sidebar (⌃⌘S)" : "Hide sidebar (⌃⌘S)")
         .accessibilityLabel(isCollapsed ? "Show Sidebar" : "Hide Sidebar")
     }
 }
