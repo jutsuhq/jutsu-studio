@@ -5,7 +5,7 @@
 **The unofficial open-source Mac app for Higgsfield.**
 Make video and images with Genjutsu, Seedance, Kling and Higgsfield's other models in a native studio, and keep every file on your disk.
 
-[Download for macOS](https://github.com/jutsuhq/jutsu-studio/releases/latest) · [Quick start](#quick-start) · [Features](docs/features.md)
+[Download for macOS](https://github.com/jutsuhq/jutsu-studio/releases/latest) · [Quick start](#quick-start) · [Features](docs/features.md) · [Website](https://jutsustudio.com/) · [Higgsfield prices](https://jutsustudio.com/higgsfield-pricing/)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-8b5cf6.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-macOS-000000?logo=apple&logoColor=white)](#quick-start)
@@ -67,6 +67,14 @@ or grab `Jutsu-Studio-<version>.dmg` from the [latest release](https://github.co
 - Your library, history and settings stay on your machine (a local SwiftData store and your Movies folder).
 - Open source under MIT, so you can audit every line yourself.
 - Found a vulnerability? Report it privately as described in [SECURITY.md](SECURITY.md).
+
+## Guides
+
+- [Is there a Higgsfield desktop app?](https://jutsustudio.com/blog/higgsfield-desktop-app/): the official options and where an unofficial Mac app fits
+- [Higgsfield credits explained](https://jutsustudio.com/blog/higgsfield-credits-explained/): what a credit buys on each model and plan
+- [Higgsfield API vs MCP vs CLI](https://jutsustudio.com/blog/higgsfield-api-mcp-cli/): which one to use and how each is billed
+- [Higgsfield price table and calculator](https://jutsustudio.com/higgsfield-pricing/): per-second rates for every video model
+- [All guides](https://jutsustudio.com/blog/)
 
 ## Contributing
 
