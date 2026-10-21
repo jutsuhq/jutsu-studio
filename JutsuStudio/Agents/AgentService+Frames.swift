@@ -44,8 +44,9 @@ extension AgentService {
             guard case .video(let item)? = byID[id].flatMap(MaterialLibrary.row), let source = item.spec.source else {
                 throw .badRequest("frames: compare_source is a video's source clip; this item has none")
             }
-            guard source.fileURL.isFileURL else {
-                throw .badRequest("frames: this item's source clip is only on Higgsfield, not on this Mac")
+            // A source only on Higgsfield (a history item's) is read from its HTTPS link, as the Library plays it.
+            guard source.fileURL.isFileURL || source.fileURL.scheme == "https" else {
+                throw .badRequest("frames: this item's source clip can't be read from this Mac")
             }
             compare = FrameClip(
                 url: source.fileURL, bookmark: source.bookmark, offset: source.range.lowerBound,
@@ -129,7 +130,7 @@ extension AgentService {
     nonisolated private static func open(_ clip: FrameClip, times: [Double]) async throws -> OpenClip {
         let access = SecurityScopedAccess(url: clip.url, bookmark: clip.bookmark)
         let url = access.url
-        guard FileManager.default.isReadableFile(atPath: url.path(percentEncoded: false)) else {
+        guard !url.isFileURL || FileManager.default.isReadableFile(atPath: url.path(percentEncoded: false)) else {
             throw unreadable(clip, because: "it was moved or deleted, or Jutsu Studio may no longer read it")
         }
         let isImage = FrameGrab.isImage(url)
