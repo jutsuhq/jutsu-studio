@@ -257,6 +257,46 @@ struct AgentGuardTests {
         #expect(try await ledger.total(on: harness.clock.now, unit: .usdCents) == AgentSpendTotal(reserved: 130))
     }
 
+    /// A submit cut off without an idempotency key may have been charged: the retry, a new attempt, reserves anew,
+    /// and the old reservation keeps counting, through the next launch too.
+    @Test func aRetryKeepsTheChargeOfASubmitThatMayHaveBeenSent() async throws {
+        let harness = Harness()
+        let ledger = ledger(harness)
+        await harness.provider.setIdempotent(false)
+        await harness.provider.script(submit: [.hang])
+        let first = try await harness.makeEngine(agentPolicy: policy(ledger))
+        let job = try await first.enqueue(makeSpec(), agent: origin())
+        await eventually { harness.log.count("submit") == 1 }
+        await first.stop()
+
+        let second = try await harness.makeEngine(agentPolicy: policy(ledger))
+        await harness.repository.wait(for: job.id, .failed(reason: .submitCutOff))
+        try await second.retry(job.id)
+        await harness.repository.wait(for: job.id, .done)
+        await second.stop()
+        _ = try await harness.makeEngine(agentPolicy: policy(ledger))
+
+        #expect(harness.log.count("submit") == 2)
+        #expect(try await ledger.total(on: harness.clock.now, unit: .usdCents) == AgentSpendTotal(spent: 260))
+    }
+
+    /// A submit without an idempotency key that may have been taken is sent again as a new submit: its reservation
+    /// keeps counting next to the new one's, through the next launch too.
+    @Test func aNewSubmitKeepsTheChargeOfTheOneBefore() async throws {
+        let harness = Harness()
+        let ledger = ledger(harness)
+        await harness.provider.setIdempotent(false)
+        await harness.provider.script(submit: [.fail(.network)])
+        let first = try await harness.makeEngine(agentPolicy: policy(ledger))
+        let job = try await first.enqueue(makeSpec(), agent: origin())
+        await harness.repository.wait(for: job.id, .done)
+        await first.stop()
+        _ = try await harness.makeEngine(agentPolicy: policy(ledger))
+
+        #expect(harness.log.count("submit") == 2)
+        #expect(try await ledger.total(on: harness.clock.now, unit: .usdCents) == AgentSpendTotal(spent: 260))
+    }
+
     @Test func variantsKeepTheAgentButNotTheReservation() async throws {
         let harness = Harness()
         let ledger = ledger(harness)

@@ -100,6 +100,22 @@ extension JobEngine {
         }
     }
 
+    /// Keeps counting, at the amount reserved, a reservation the job lets go of: a retry starts a new attempt, and a
+    /// new submit reserves anew. A reservation that certainly sent nothing is released and taken off the job when
+    /// that is known (`settleFailedSubmit`, `beginSubmit`), so one the job still holds may have reached the provider
+    /// (cut off, unanswered, a submit without an idempotency key) and may have been charged. Settling it also keeps
+    /// the launch from giving it back once no job holds it (`reconcileAgentReservations`). Throws when the ledger
+    /// can't be written, so the job keeps holding it.
+    func keepAgentSpend(_ reservation: UUID?, of id: UUID) async throws {
+        guard let reservation, let ledger = agentPolicy?.ledger else { return }
+        do {
+            try await ledger.settle(reservation, amount: nil)
+        } catch {
+            log.error("Job \(id): an agent's earlier charge can't be recorded", detail: String(describing: error))
+            throw error
+        }
+    }
+
     /// Replaces the reservation of an answered submit with what it charged, else keeps the reserved amount.
     func settleAgentSpend(of job: Job, charged: Cost?) async {
         guard let reservation = job.agent?.reservation, let ledger = agentPolicy?.ledger else { return }
@@ -131,14 +147,18 @@ extension JobEngine {
     }
 
     /// Marks the submit as begun and saves its marker with the agent's reservation. A stopping engine sends
-    /// nothing new, and anything that stops the send here releases the reservation, as nothing was sent. The
-    /// caller finishes the submit once this returns.
+    /// nothing new, and anything that stops the send here releases the reservation, as nothing was sent. A
+    /// reservation of an earlier submit the job still holds keeps counting (`keepAgentSpend`). The caller finishes
+    /// the submit once this returns.
     func beginSubmit(_ id: UUID, isIdempotent: Bool, reservation: UUID?) async throws {
         guard !Task.isCancelled, submits.begin(id) else {
             await releaseAgentSpend(reservation, of: id)
             throw CancellationError()
         }
         do {
+            if let reservation, let earlier = jobs[id]?.agent?.reservation, earlier != reservation {
+                try await keepAgentSpend(earlier, of: id)
+            }
             try await save(id) {
                 $0.submitAttempt = SubmitAttempt(isIdempotent: isIdempotent)
                 if let reservation { $0.agent?.reservation = reservation }

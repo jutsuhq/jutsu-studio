@@ -182,7 +182,9 @@ public actor JobEngine {
     /// A failed or canceled job whose generation finished downloads that paid result again, and one that failed at
     /// the deadline is checked again (`checkAgain`): submitting it again could pay for a second generation. Any
     /// other runs again from the start as a new attempt, with a new idempotency key unless a submit of it may have
-    /// reached the server. Generating a paid job again is a new job, queued with `enqueue`.
+    /// reached the server. Generating a paid job again is a new job, queued with `enqueue`. An agent's reservation of
+    /// the last attempt keeps counting at its reserved amount, as that submit may have been charged; a ledger that
+    /// can't record that throws, and the job stays as it is.
     public func retry(_ id: UUID) async throws {
         let job = try await loadJob(id)
         switch job.state {
@@ -194,6 +196,8 @@ public actor JobEngine {
         if job.hasPaidOutput {
             try await apply(.retryDownload, to: id) { $0.retriedAt = now }
         } else {
+            // The new attempt reserves anew; what the last one may have been charged keeps counting.
+            try await keepAgentSpend(job.agent?.reservation, of: id)
             try await apply(.retry, to: id) {
                 $0.retriedAt = now
                 $0.inputs = nil
