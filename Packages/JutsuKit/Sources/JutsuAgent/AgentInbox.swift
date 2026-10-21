@@ -13,6 +13,10 @@ public struct AgentInbox: Sendable {
     public static let folderName = "inbox"
     /// The largest file an agent can hand over: 4 GiB, a long 4K source video. Each one is a full copy while it waits.
     public static let maxFileSize: Int64 = 4 << 30
+    /// What an upload must leave free on the inbox's volume: about 2 GB, room for the results the app downloads.
+    public static let minFreeSpace: Int64 = 2_000_000_000
+    /// The most the waiting uploads may take together: 8 GiB, two of the largest files.
+    public static let maxStoredSize: Int64 = 8 << 30
 
     public let folder: URL
 
@@ -35,6 +39,35 @@ public struct AgentInbox: Sendable {
             guard errno == EEXIST else { throw POSIXError.current }
         }
         throw POSIXError(.EEXIST)
+    }
+
+    /// Why an upload of `size` bytes is refused: it would leave less than `minFreeSpace` on the volume (`freeSpace`,
+    /// `nil` when unknown, which doesn't refuse it), or take the inbox (`stored`, what it holds now) past
+    /// `maxStoredSize`. `nil` when it fits.
+    public static func roomProblem(size: Int64, freeSpace: Int64?, stored: Int64) -> String? {
+        if let freeSpace, freeSpace - size < minFreeSpace {
+            return "The Mac would have less than 2 GB free with it."
+        }
+        if stored + size > maxStoredSize {
+            return "Files from agents waiting in Jutsu Studio would take more than 8 GiB with it."
+        }
+        return nil
+    }
+
+    /// The bytes the upload folders hold now, partial files included; 0 when the inbox can't be read.
+    public func storedSize() -> Int64 {
+        guard
+            let files = FileManager.default.enumerator(
+                at: folder, includingPropertiesForKeys: [.fileSizeKey, .isRegularFileKey])
+        else { return 0 }
+        var total: Int64 = 0
+        for case let file as URL in files {
+            guard let values = try? file.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey]),
+                values.isRegularFile == true
+            else { continue }
+            total += Int64(values.fileSize ?? 0)
+        }
+        return total
     }
 
     /// The upload folder `path` is in, when it is one of this inbox's: `inbox/<UUID>/name`, nothing else.

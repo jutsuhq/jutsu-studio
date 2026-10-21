@@ -198,6 +198,42 @@ final class Switch: @unchecked Sendable {
         #expect((try? FileManager.default.contentsOfDirectory(atPath: inbox)) ?? [] == [])
     }
 
+    /// An upload must leave about 2 GB free on the volume and keep the inbox within 8 GiB; an unknown free space
+    /// refuses nothing.
+    @Test func anUploadNeedsRoomOnTheVolumeAndInTheInbox() {
+        let size: Int64 = 1 << 30
+        let room = AgentInbox.minFreeSpace + size
+        #expect(AgentInbox.roomProblem(size: size, freeSpace: room, stored: 0) == nil)
+        #expect(AgentInbox.roomProblem(size: size, freeSpace: nil, stored: 0) == nil)
+        #expect(AgentInbox.roomProblem(size: size, freeSpace: room - 1, stored: 0) != nil)
+        #expect(AgentInbox.roomProblem(size: size, freeSpace: room, stored: AgentInbox.maxStoredSize - size) == nil)
+        #expect(AgentInbox.roomProblem(size: size, freeSpace: room, stored: AgentInbox.maxStoredSize - size + 1) != nil)
+    }
+
+    @Test func anUploadWithoutRoomIsRefusedForGood() async throws {
+        let server = AgentServer(socket: try temporarySocket(), isAllowed: { true }, freeSpace: { _ in 1 << 30 }) { _ in
+            AgentResponse()
+        }
+        try server.start()
+        defer { server.stop() }
+        let source = try file("bytes")
+        let refused = try await exchange(server.socket) {
+            try $0.upload(UploadCommand(name: "clip.mov", size: 5), from: source)
+        }
+        #expect(refused.error?.code == .fileRefused)
+        #expect(refused.error?.retryable == false)
+        let inbox = server.inbox.folder.path(percentEncoded: false)
+        #expect((try? FileManager.default.contentsOfDirectory(atPath: inbox)) ?? [] == [])
+    }
+
+    @Test func theInboxCountsWhatItsUploadsHold() throws {
+        let inbox = AgentInbox(socket: try temporarySocket())
+        #expect(inbox.storedSize() == 0)
+        try Data(count: 3).write(to: try inbox.makeUploadFolder().appending(path: "a.png"))
+        try Data(count: 5).write(to: try inbox.makeUploadFolder().appending(path: ".partial"))
+        #expect(inbox.storedSize() == 8)
+    }
+
     @Test func placingAFileNeverReplacesOne() throws {
         let inbox = AgentInbox(socket: try temporarySocket())
         let folder = try inbox.makeUploadFolder()

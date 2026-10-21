@@ -1,4 +1,5 @@
 import Foundation
+import JobEngine
 import JutsuAgent
 import JutsuCore
 import Presentation
@@ -78,6 +79,7 @@ final class AgentService {
                 guard let self else { throw AgentError.agentsOff }
                 try self.admit(upload)
             },
+            freeSpace: URLSessionDownloader.freeSpace(for:),
             handle: { [weak self] request async throws(AgentError) -> AgentResponse in
                 guard let self else { throw AgentError.agentsOff }
                 return try await self.run(request.command, client: request.client)

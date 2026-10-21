@@ -19,19 +19,25 @@ public final class AgentServer {
     private let gate: UploadGate
     private let handle: Handler
     private let answerDeadline: Duration
+    private let freeSpace: @Sendable (URL) -> Int64?
     private var listener: AgentListener?
     private var connections: [ObjectIdentifier: AgentSocketConnection] = [:]
 
-    /// - Parameter answerDeadline: what a command's answer waits for its work at most (`AgentProtocol.answerDeadline`).
+    /// - Parameters:
+    ///   - answerDeadline: what a command's answer waits for its work at most (`AgentProtocol.answerDeadline`).
+    ///   - freeSpace: the bytes free on the volume of the given file, `nil` when unknown; an upload must leave
+    ///     `AgentInbox.minFreeSpace` (`AgentInbox.roomProblem`).
     public init(
         socket: URL, isAllowed: @escaping @MainActor () -> Bool, gate: @escaping UploadGate = { _, _ in },
-        answerDeadline: Duration = AgentProtocol.answerDeadline, handle: @escaping Handler
+        answerDeadline: Duration = AgentProtocol.answerDeadline,
+        freeSpace: @escaping @Sendable (URL) -> Int64? = { _ in nil }, handle: @escaping Handler
     ) {
         self.socket = socket
         inbox = AgentInbox(socket: socket)
         self.isAllowed = isAllowed
         self.gate = gate
         self.answerDeadline = answerDeadline
+        self.freeSpace = freeSpace
         self.handle = handle
     }
 
@@ -158,6 +164,11 @@ public final class AgentServer {
             guard isAllowed() else { throw .agentsOff }
             if let problem = UploadCommand.problem(name: upload.name, size: upload.size) { throw .badRequest(problem) }
             try gate(upload, client)
+            if let problem = AgentInbox.roomProblem(
+                size: upload.size, freeSpace: freeSpace(inbox.folder), stored: inbox.storedSize())
+            {
+                throw .noRoom(upload.name, problem)
+            }
         } catch {
             return .refused(error)
         }
@@ -228,6 +239,13 @@ private final class AnswerRace {
 }
 
 extension AgentError {
+    /// Not retried as it is: the room comes back only once files are removed or the waiting jobs take theirs.
+    static func noRoom(_ name: String, _ problem: String) -> AgentError {
+        AgentError(
+            .fileRefused, message: "Jutsu Studio didn't take \(name): \(problem)", retryable: false,
+            next: "Ask the person to free space on the Mac or let queued jobs start, or send a smaller file.")
+    }
+
     static func couldNotStore(_ name: String, _ error: any Error) -> AgentError {
         AgentError(
             .fileRefused, message: "Jutsu Studio couldn't store \(name): \(error.localizedDescription)",
