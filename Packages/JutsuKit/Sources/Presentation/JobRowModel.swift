@@ -102,6 +102,10 @@ public struct JobRowModel: Sendable, Hashable, Identifiable {
     public var timeEstimate: TimeEstimate?
     /// The prompt on one line; `nil` when there is none.
     public var prompt: String?
+    /// "Agent · claude-code" for a job an AI agent queued; `nil` for the person's own.
+    public var origin: String?
+    /// "Allowed up to $2.00", the most the agent agreed to pay; `nil` for the person's own jobs.
+    public var originDetail: String?
 
     /// - Parameters:
     ///   - now: for the relative time; finished jobs count from `finishedAt`.
@@ -134,7 +138,7 @@ public struct JobRowModel: Sendable, Hashable, Identifiable {
         }
         note = Self.note(
             state, providerKind: job.providerKind, charged: isCharged, rejection: job.rejection,
-            retrying: job.retrying)
+            retrying: job.retrying, agentHold: job.agent?.hold)
         if note == nil, isWorking, let retrying = job.retrying { note = Self.retryNote(retrying, now: now) }
         if note == nil, let missing = job.missingVariants, missing > 0 { note = Self.missingVariantsNote(missing) }
         actions = Self.actions(job)
@@ -149,6 +153,25 @@ public struct JobRowModel: Sendable, Hashable, Identifiable {
         let prompt = job.spec.prompt.split(whereSeparator: \.isNewline).joined(separator: " ")
             .trimmingCharacters(in: .whitespaces)
         self.prompt = prompt.isEmpty ? nil : prompt
+        if let agent = job.agent {
+            origin = Self.originText(agent)
+            let allowed = Self.moneyText(agent.maxCost)
+            originDetail = String(localized: "Allowed up to \(allowed)", bundle: .module)
+        }
+    }
+
+    /// "Agent · claude-code", or "Agent" when the client gave no name.
+    static func originText(_ agent: AgentOrigin) -> String {
+        guard let client = agent.client, !client.isEmpty else { return String(localized: "Agent", bundle: .module) }
+        return String(localized: "Agent · \(client)", bundle: .module)
+    }
+
+    /// "$2.00" or "40 cr".
+    static func moneyText(_ money: AgentMoney) -> String {
+        switch money.unit {
+        case .usdCents: CostText.dollars(Decimal(money.amount) / 100)
+        case .credits: CostText.credits(Decimal(money.amount))
+        }
     }
 
     // MARK: Rules
@@ -207,7 +230,7 @@ public struct JobRowModel: Sendable, Hashable, Identifiable {
             return job.hasPaidOutput ? [.retryDownload, .generateAgain] : [.retry]
         case .rejected:
             return [.edit]
-        case .paused(.priceAboveCap):
+        case .paused(.priceAboveCap), .paused(.agentLimit):
             return [.confirmPrice, cancel(job.state)]
         case .paused:
             return [.resume, cancel(job.state)]
@@ -246,7 +269,7 @@ extension JobRowModel {
 
     static func note(
         _ state: JobState, providerKind: ProviderKind, charged: Bool, rejection: Rejection? = nil,
-        retrying: RetryStatus? = nil
+        retrying: RetryStatus? = nil, agentHold: AgentHold? = nil
     ) -> Note? {
         switch state {
         case .failed(let reason):
@@ -262,6 +285,7 @@ extension JobRowModel {
                     ? String(localized: "Download canceled · charged", bundle: .module)
                     : String(localized: "Not charged", bundle: .module), role: .faint)
         case .paused(let reason):
+            if reason == .agentLimit { return agentNote(agentHold) }
             return pausedNote(reason, providerKind: providerKind, retrying: retrying)
         default:
             return nil
@@ -290,6 +314,8 @@ extension JobRowModel {
                 text: String(
                     localized: "Not enough disk space to save the result · free up space, then resume",
                     bundle: .module), role: .warning)
+        case .agentLimit:
+            return agentNote(nil)
         case .byUser:
             return Note(
                 text: String(localized: "Paused by you · nothing is submitted until you resume", bundle: .module),
@@ -309,6 +335,26 @@ extension JobRowModel {
                     bundle: .module),
                 role: .warning)
         }
+    }
+
+    /// Why the spending guard stopped an agent's job; only the person resumes it.
+    static func agentNote(_ hold: AgentHold?) -> Note {
+        let text =
+            switch hold {
+            case .unknownPrice?:
+                String(localized: "An agent's job at a price not known yet · confirm to send it", bundle: .module)
+            case .overMaxCost?:
+                String(localized: "Costs more than the agent was allowed · confirm to send it", bundle: .module)
+            case .overDailyBudget?:
+                String(localized: "Over today's agent budget · confirm to send it", bundle: .module)
+            case .ledgerUnavailable?:
+                String(
+                    localized: "Agent spending couldn't be read · nothing was sent, confirm to send it", bundle: .module
+                )
+            case nil:
+                String(localized: "Stopped by the agent spending limits · confirm to send it", bundle: .module)
+            }
+        return Note(text: text, role: .warning)
     }
 
     private static var notCharged: String { String(localized: "not charged", bundle: .module) }

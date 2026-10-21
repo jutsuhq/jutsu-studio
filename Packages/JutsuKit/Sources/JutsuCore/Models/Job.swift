@@ -74,6 +74,9 @@ public struct Job: Codable, Sendable, Hashable, Identifiable {
     /// Variants its submit asked for (`JobSpec.variants`) that the answer started no job for; `nil` when it started
     /// them all, and in jobs stored before variants existed. Set on the job that sent the submit.
     public var missingVariants: Int?
+    /// The agent that queued the job, and what it may spend; `nil` for a job the person queued, and in jobs stored
+    /// before agents existed.
+    public var agent: AgentOrigin?
 
     public init(
         id: UUID = UUID(), spec: JobSpec, providerKind: ProviderKind, owner: String? = nil, parentID: UUID? = nil,

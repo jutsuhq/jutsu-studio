@@ -1,0 +1,238 @@
+import Foundation
+import JutsuCore
+import Testing
+
+@testable import Presentation
+
+/// An agent's video becomes the same job the Create form makes, by the same rules, and is refused where the form
+/// would quietly fit it.
+@Suite struct AgentVideoOrderTests {
+    let context = CreateFixture.apiKey
+    let base = CreateForm(mode: .restyle, resolution: .p720)
+
+    func order(
+        model: String? = nil, start: TimeInterval? = 1, end: TimeInterval? = 6, images: Int = 1,
+        configure: (inout AgentVideoOrder) -> Void = { _ in }
+    ) -> AgentVideoOrder {
+        var order = AgentVideoOrder(
+            mode: "motion_transfer", model: model, prompt: "Image 1 dances",
+            source: AgentVideoOrder.Source(video: CreateFixture.video(duration: 14.2), start: start, end: end),
+            images: (0..<images).map { LocalImage(fileURL: CreateFixture.image($0)) })
+        configure(&order)
+        return order
+    }
+
+    func refusal(_ order: AgentVideoOrder, in context: CreateContext? = nil) -> String? {
+        if case .failure(let refusal) = order.spec(from: base, in: context ?? self.context) {
+            refusal.message
+        } else {
+            nil
+        }
+    }
+
+    @Test func theJobIsWhatTheCreateFormWouldQueue() throws {
+        let spec = try order().spec(from: base, in: context).get()
+
+        var form = CreateForm(mode: .motionTransfer, resolution: .p720)
+        form.setSource(CreateFixture.video(duration: 14.2))
+        form.ranges = [1...6]
+        form.addReferences(CreateFixture.references([CreateFixture.image(0)]))
+        form.prompt = "Image 1 dances"
+        #expect(form.makeSpecs(isDraft: false, in: context) == [spec])
+        #expect(spec.source?.range == 1...6)
+        #expect(spec.model == .genjutsu)
+    }
+
+    /// The form keeps a range inside the model's window by moving it; an agent's range is refused instead.
+    @Test func aRangeOutsideTheModelsWindowIsRefusedNotMoved() throws {
+        let limits = VideoModel.genjutsu.limits(for: .motionTransfer, hasSource: true)
+        let long = CreateFixture.video(duration: limits.duration.upperBound + 20)
+        let tooLong = order {
+            $0.source = AgentVideoOrder.Source(video: long, start: 0, end: limits.duration.upperBound + 5)
+        }
+        #expect(refusal(tooLong)?.contains("too long") == true)
+        let tooShort = order(start: 0, end: max(0.5, limits.duration.lowerBound - 1))
+        #expect(refusal(tooShort)?.contains("too short") == true)
+        #expect(refusal(order(start: 0, end: 20))?.contains("past the clip") == true)
+    }
+
+    /// The form drops references over the limit; an agent's are refused.
+    @Test func tooManyImagesAreRefusedNotDropped() {
+        let most = VideoModel.genjutsu.limits(for: .motionTransfer, hasSource: true).referenceImages.upperBound
+        #expect(refusal(order(images: most + 1))?.contains("at most \(most)") == true)
+        #expect(refusal(order(images: 0))?.contains("at least") == true)
+    }
+
+    @Test func modelsThatCantDoItAreRefused() throws {
+        #expect(refusal(order(model: "nope"))?.contains("no model nope") == true)
+        let other = try #require(VideoModel.allCases.first { !$0.serves(.motionTransfer) })
+        #expect(refusal(order(model: other.rawValue))?.contains("doesn't do motion_transfer") == true)
+        #expect(refusal(order { $0.mode = "dance" })?.contains("mode is one of") == true)
+    }
+
+    @Test func aDraftOrResolutionTheModelLacksIsRefused() throws {
+        if let noDraft = VideoModel.allCases.first(where: { !$0.offersDraft && $0.serves(.motionTransfer) }) {
+            #expect(
+                refusal(order(model: noDraft.rawValue, images: 1) { $0.isDraft = true })?.contains("no drafts") == true)
+        }
+        let missing = try #require(Resolution.allCases.first { !VideoModel.genjutsu.resolutions.contains($0) })
+        #expect(refusal(order { $0.resolution = missing.rawValue })?.contains("renders at") == true)
+        #expect(refusal(order { $0.resolution = "8K" })?.contains("renders at") == true)
+    }
+
+    @Test func aLengthOutsideTheWindowIsRefused() throws {
+        let model = try #require(VideoModel.allCases.first { $0.makesClipsWithoutSource })
+        let window = model.limits(for: .motionTransfer, hasSource: false).duration
+        var noSource = order(model: model.rawValue)
+        noSource.source = nil
+        noSource.length = window.upperBound + 1
+        #expect(refusal(noSource)?.contains("length is") == true)
+        noSource.length = window.lowerBound
+        #expect(refusal(noSource) == nil)
+        // With a source the range sets the length.
+        #expect(refusal(order { $0.length = 5 })?.contains("only for a clip without a source") == true)
+    }
+
+    @Test func otherFieldsAreCheckedByName() {
+        #expect(refusal(order { $0.audio = "loud" })?.contains("audio is one of") == true)
+        #expect(refusal(order { $0.aspectRatio = "16:9" })?.contains("without a source") == true)
+        #expect(refusal(order { $0.aspectRatio = "2:1" })?.contains("aspect_ratio is one of") == true)
+        // The connection's capabilities aren't known here, so it makes one video per job.
+        #expect(refusal(order { $0.variants = 3 }) != nil)
+        #expect(refusal(order(), in: CreateContext(connection: .none))?.contains("isn't connected") == true)
+    }
+
+    @Test func aQuoteStandsInForTheFiles() throws {
+        let quote = AgentVideoOrder(
+            mode: "motion_transfer", source: AgentVideoOrder.quoteSource(start: nil, end: 8),
+            images: AgentVideoOrder.quoteImages(2))
+        let spec = try quote.spec(from: base, in: context).get()
+        #expect(spec.duration == 8)
+        #expect(spec.references.count == 2)
+        #expect(spec.source?.fileURL.path(percentEncoded: false).hasPrefix("/quote/") == true)
+    }
+
+    @Test func modeNamesRoundTrip() {
+        for mode in Mode.allCases {
+            #expect(AgentVideoOrder.modes[AgentVideoOrder.name(of: mode)] == mode)
+        }
+    }
+}
+
+@MainActor
+@Suite struct AgentRequestLogTests {
+    let folder = FileManager.default.temporaryDirectory.appendingPathComponent("requests-\(UUID().uuidString)")
+
+    func record(
+        _ id: String, _ fingerprint: String = "f1", jobs: [UUID] = [UUID()], at date: Date = .now
+    )
+        -> AgentRequestLog.Record
+    {
+        AgentRequestLog.Record(requestID: id, fingerprint: fingerprint, jobIDs: jobs, createdAt: date)
+    }
+
+    @Test func aRequestIsNewKnownOrAConflictAndSurvivesARelaunch() throws {
+        let job = UUID()
+        let log = AgentRequestLog(folder: folder)
+        #expect(try log.lookup("r1", fingerprint: "f1") == .new)
+        try log.add(record("r1", jobs: [job]))
+
+        let reopened = AgentRequestLog(folder: folder)
+        #expect(try reopened.lookup("r1", fingerprint: "f1") == .known([job]))
+        #expect(try reopened.lookup("r1", fingerprint: "f2") == .conflict)
+        try reopened.remove("r1")
+        #expect(try AgentRequestLog(folder: folder).lookup("r1", fingerprint: "f2") == .new)
+    }
+
+    /// An unreadable record refuses requests rather than forgetting which were made, which could pay twice.
+    @Test func anUnreadableFileRefusesEveryRequest() throws {
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try Data("{".utf8).write(to: folder.appendingPathComponent("agent-requests.json"))
+        let log = AgentRequestLog(folder: folder)
+        #expect(throws: LogWriteError.self) { try log.lookup("r1", fingerprint: "f1") }
+        #expect(throws: LogWriteError.self) { try log.add(record("r1")) }
+    }
+
+    @Test func oldRequestsAreForgotten() throws {
+        let log = AgentRequestLog(folder: nil)
+        try log.add(record("old", at: .now.addingTimeInterval(-40 * 86_400)))
+        try log.add(record("new"))
+        #expect(try log.lookup("old", fingerprint: "f1") == .new)
+        #expect(try log.lookup("new", fingerprint: "f1") != .new)
+    }
+}
+
+@Suite struct AgentJobTests {
+    func agentJob(_ state: JobState, hold: AgentHold? = nil, cost: Cost = .usd(1.3, isEstimate: false)) -> Job {
+        var job = Job(
+            spec: JobSpec(mode: .motionTransfer, source: nil, resolution: .p720), providerKind: .apiKey, cost: cost)
+        job.state = state
+        job.agent = AgentOrigin(
+            client: "claude-code", requestID: "r1", maxCost: AgentMoney(250, .usdCents), hold: hold)
+        return job
+    }
+
+    @Test func theQueueRowSaysWhichAgentAndWhatItMaySpend() {
+        let row = JobRowModel(agentJob(.preparing), now: .now)
+        #expect(row.origin == "Agent · claude-code")
+        #expect(row.originDetail == "Allowed up to \(CostText.dollars(2.5))")
+        #expect(
+            JobRowModel(
+                Job(spec: agentJob(.preparing).spec, providerKind: .apiKey, cost: .usd(1, isEstimate: false)),
+                now: .now
+            ).origin == nil)
+    }
+
+    @Test func aHeldJobWaitsForThePersonsConfirmation() {
+        let row = JobRowModel(agentJob(.paused(.agentLimit), hold: .overMaxCost), now: .now)
+        #expect(row.note?.text.contains("allowed") == true)
+        #expect(row.actions.first == .confirmPrice)
+        for hold in [AgentHold.unknownPrice, .overDailyBudget, .ledgerUnavailable] {
+            #expect(JobRowModel(agentJob(.paused(.agentLimit), hold: hold), now: .now).note != nil)
+        }
+    }
+
+    @Test func agentsSeeStableNamesAndWhoMustAct() {
+        let held = AgentJobStatus(agentJob(.paused(.agentLimit), hold: .overDailyBudget))
+        #expect(held.state == "paused" && held.pauseReason == "agent_limit" && held.hold == "over_daily_budget")
+        #expect(held.needsPerson)
+        #expect(held.price == AgentMoney(130, .usdCents) && held.isPriceExact)
+        let byUser = AgentJobStatus(agentJob(.paused(.byUser)))
+        #expect(!byUser.needsPerson && byUser.hold == nil)
+        #expect(AgentJobStatus(agentJob(.waitingForSlot, cost: .unknownUSD)).price == nil)
+        #expect(AgentJobStatus(agentJob(.failed(reason: .outcomeUnknown))).error != nil)
+    }
+
+    @Test func agentsActOnlyOnTheirOwnJobsAndNeverRetryWhatMayBeCharged() {
+        let own = agentJob(.failed(reason: .generationFailed))
+        #expect(AgentJobRules.retryRefusal(own) == nil)
+        var maybeCharged = agentJob(.failed(reason: .outcomeUnknown))
+        maybeCharged.submitAttempt = SubmitAttempt(isIdempotent: false)
+        #expect(AgentJobRules.retryRefusal(maybeCharged) != nil)
+        var persons = own
+        persons.agent = nil
+        #expect(AgentJobRules.retryRefusal(persons) != nil)
+        #expect(AgentJobRules.cancelRefusal(persons) != nil)
+        #expect(AgentJobRules.runNextRefusal(persons) != nil)
+    }
+
+    /// A wait ends once settled, or when its time is up; it never stops anything itself.
+    @Test func aWaitEndsWhenSettledOrTimedOut() async {
+        var sleeps = 0
+        let settledAtOnce = await agentWait(seconds: 50, isSettled: { true }, sleep: { _ in sleeps += 1 })
+        #expect(!settledAtOnce && sleeps == 0)
+
+        var checks = 0
+        let settledLater = await agentWait(
+            seconds: 50,
+            isSettled: {
+                checks += 1
+                return checks == 3
+            }, sleep: { _ in sleeps += 1 })
+        #expect(!settledLater && sleeps == 2)
+
+        sleeps = 0
+        let timedOut = await agentWait(seconds: 2, milliseconds: 500, isSettled: { false }, sleep: { _ in sleeps += 1 })
+        #expect(timedOut && sleeps == 4)
+    }
+}

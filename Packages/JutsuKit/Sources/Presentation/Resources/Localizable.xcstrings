@@ -1,6 +1,21 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Agent" : {
+
+    },
+    "Agent spending couldn't be read · nothing was sent, confirm to send it" : {
+
+    },
+    "Agent · %@" : {
+
+    },
+    "Allowed up to %@" : {
+
+    },
+    "An agent's job at a price not known yet · confirm to send it" : {
+
+    },
     "Checking the image models…" : {
 
     },
@@ -1129,6 +1144,9 @@
     "Convert this video first" : {
 
     },
+    "Costs more than the agent was allowed · confirm to send it" : {
+
+    },
     "Credits" : {
 
     },
@@ -1750,6 +1768,9 @@
     "Out of plan credits · top up, then resume" : {
 
     },
+    "Over today's agent budget · confirm to send it" : {
+
+    },
     "Over today's cap, you'll be asked to confirm" : {
 
     },
@@ -2171,6 +2192,9 @@
 
     },
     "Start frame" : {
+
+    },
+    "Stopped by the agent spending limits · confirm to send it" : {
 
     },
     "Stored in" : {

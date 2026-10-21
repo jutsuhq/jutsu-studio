@@ -625,7 +625,10 @@ struct Harness {
     }
 
     /// - Parameter readSpend: replaces the fixed `spendStatus`, e.g. to count what the repository holds.
-    func makeEngine(readSpend: (@Sendable (Job) async throws -> SpendStatus?)? = nil) async throws -> JobEngine {
+    /// - Parameter agentPolicy: the agent spend ledger and budgets; `nil` sends no agent's job.
+    func makeEngine(
+        readSpend: (@Sendable (Job) async throws -> SpendStatus?)? = nil, agentPolicy: AgentSpendPolicy? = nil
+    ) async throws -> JobEngine {
         let settings = EngineSettings(
             outputDirectory: outputDirectory, maxConcurrency: maxConcurrency, jitter: 0, uploadMaxAge: 3600,
             generationDeadline: generationDeadline)
@@ -634,7 +637,7 @@ struct Harness {
             media: FakeMedia(
                 log: log, audio: audio, progressSteps: progressSteps, imageSize: imageSize, outputMedia: outputMedia),
             connectivity: connectivity, settings: settings, downloader: downloader, clock: clock,
-            spendStatus: readSpend ?? { [spendStatus] _ in spendStatus })
+            spendStatus: readSpend ?? { [spendStatus] _ in spendStatus }, agentPolicy: agentPolicy)
         try await engine.start()
         return engine
     }

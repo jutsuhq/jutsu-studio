@@ -72,7 +72,10 @@ public struct AppConnection: Sendable {
 
     /// Sends `command` and returns the app's answer, or an error saying why the app couldn't be reached.
     public func send(_ command: AgentCommand, client: String?) async -> AgentResponse {
-        let timeout = timeout
+        // A `jobs` wait runs on the app's side; the answer may come only once it is over.
+        var wait = Duration.zero
+        if case .jobs(let fields) = command { wait = .seconds(fields.waitSeconds) }
+        let timeout = timeout + wait
         let response = await exchange { socket in
             try AgentClient(socket: socket, timeout: timeout).send(
                 AgentRequest(command, id: UUID().uuidString, client: client))

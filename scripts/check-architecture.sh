@@ -19,7 +19,7 @@ allowed() {
         JobEngine) echo "Foundation FoundationNetworking JutsuCore HiggsfieldCore os" ;;
         Presentation) echo "Foundation JutsuCore Observation" ;;
         # The helper links these two: nothing of the app, and no AppKit (it starts the app through its own target).
-        JutsuAgent) echo "Foundation Darwin Dispatch" ;;
+        JutsuAgent) echo "Foundation Darwin Dispatch CryptoKit" ;;
         JutsuMCP) echo "Foundation JutsuAgent HiggsfieldMCP" ;;
     esac
 }

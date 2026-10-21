@@ -37,6 +37,10 @@ final class AppEnvironment {
     let characterBuilder: CharacterBuilder
     /// Score Variants in batch comparison: its runs, which outlive the comparison, and why a score is missing.
     let variantScorer: VariantScorer
+    /// What agents' jobs took from the daily agent budget, apart from the job store (`AgentSpendPolicy`).
+    let agentSpend: AgentSpendFile
+    /// The `create_video` requests agents sent, so the same one sent again returns its job.
+    let agentRequests: AgentRequestLog
     /// The models the connection runs video jobs on, from the last capabilities read on Create; Genjutsu alone
     /// until they are known. The menu bar's New from Template applies against these.
     var lastOfferedModels: Set<VideoModel> = [.genjutsu]
@@ -70,12 +74,6 @@ final class AppEnvironment {
             outputDirectory: outputFolder.url(of: .videos),
             outputNamePattern: AppSettings.outputNamePattern(in: defaults),
             maxConcurrency: AppSettings.maxConcurrency(in: defaults, for: nil))
-        // The login keychain isn't per container like the defaults are, so a Debug build keeps its own item.
-        #if DEBUG
-            let vault = KeychainVault(store: .developmentConnection)
-        #else
-            let vault = KeychainVault(store: .activeConnection)
-        #endif
         let metadata = UserDefaultsMetadataStore(defaults: defaults)
         self.layout = layout
         self.outputFolder = outputFolder
@@ -101,58 +99,22 @@ final class AppEnvironment {
         self.characterBuilder = characterBuilder
         Self.saveCharacterSheets(of: characterBuilder, into: imageLibrary)
         variantScorer = VariantScorer(spend: imageSpend, spendStatus: spending.status(for:))
+        let agentSpend = AgentSpendFile(file: layout.root.appending(path: "agent-spend.json"))
+        self.agentSpend = agentSpend
+        agentRequests = AgentRequestLog(folder: layout.root)
         engine = JobEngine(
             provider: nil, repository: store, uploadCache: store,
             media: MediaPreparer(workingDirectory: layout.sourcesFolder), connectivity: PathConnectivity(),
             settings: settings, presetName: { PresetCatalog.cachedName(of: $0, in: layout.presetCacheFolder) },
-            spendStatus: { job in try await spending.status(excluding: job) })
-        connection = ConnectionStore(vault: vault, metadata: metadata, services: HiggsfieldConnectionServices())
+            spendStatus: { job in try await spending.status(excluding: job) },
+            agentPolicy: Self.agentPolicy(ledger: agentSpend, defaults: defaults))
+        connection = ConnectionStore(
+            vault: Self.connectionVault(), metadata: metadata, services: HiggsfieldConnectionServices())
         connection.onCredentialChange = { [weak self] credential in
             await self?.use(credential)
         }
         modelConstraints.onChange = { [weak self] table in
             self?.useModelConstraints(table)
-        }
-    }
-
-    /// The app can't run without its store: on failure the user sees why and where it lives, then it quits.
-    static func launch() -> AppEnvironment {
-        // Both builds' containers link Movies to the real ~/Movies; a Debug build downloads next to, not into,
-        // the release build's results.
-        #if DEBUG
-            let layout = FileLayout(
-                defaultOutputFolder: URL.moviesDirectory.appending(
-                    path: "Jutsu Studio Debug", directoryHint: .isDirectory))
-        #else
-            let layout = FileLayout()
-        #endif
-        do {
-            return try AppEnvironment(layout: layout)
-        } catch {
-            logger.fault("Can't open the library: \(String(describing: error), privacy: .private)")
-            showLibraryFailure(error, dataFolder: layout.root)
-            exit(EXIT_FAILURE)
-        }
-    }
-
-    /// Runs before any window exists, so it is a modal alert. "Show Data Folder" leaves it up.
-    private static func showLibraryFailure(_ error: any Error, dataFolder: URL) {
-        NSApp.activate()
-        let alert = NSAlert()
-        alert.alertStyle = .critical
-        alert.messageText = String(localized: "Jutsu Studio can't open its library")
-        let folder = dataFolder.path(percentEncoded: false)
-        alert.informativeText =
-            "\(error.localizedDescription)\n\n"
-            + String(
-                localized: """
-                    The library is in \(folder). Free up disk space or move the folder aside, \
-                    then open the app again.
-                    """)
-        alert.addButton(withTitle: String(localized: "Quit"))
-        alert.addButton(withTitle: String(localized: "Show Data Folder"))
-        while alert.runModal() == .alertSecondButtonReturn {
-            NSWorkspace.shared.activateFileViewerSelecting([dataFolder])
         }
     }
 
@@ -327,5 +289,66 @@ final class AppEnvironment {
             logger.error("Can't load stored jobs: \(String(describing: error), privacy: .private)")
             return []
         }
+    }
+}
+
+// Launch.
+extension AppEnvironment {
+    /// The app can't run without its store: on failure the user sees why and where it lives, then it quits.
+    static func launch() -> AppEnvironment {
+        // Both builds' containers link Movies to the real ~/Movies; a Debug build downloads next to, not into,
+        // the release build's results.
+        #if DEBUG
+            let layout = FileLayout(
+                defaultOutputFolder: URL.moviesDirectory.appending(
+                    path: "Jutsu Studio Debug", directoryHint: .isDirectory))
+        #else
+            let layout = FileLayout()
+        #endif
+        do {
+            return try AppEnvironment(layout: layout)
+        } catch {
+            logger.fault("Can't open the library: \(String(describing: error), privacy: .private)")
+            showLibraryFailure(error, dataFolder: layout.root)
+            exit(EXIT_FAILURE)
+        }
+    }
+
+    /// Runs before any window exists, so it is a modal alert. "Show Data Folder" leaves it up.
+    private static func showLibraryFailure(_ error: any Error, dataFolder: URL) {
+        NSApp.activate()
+        let alert = NSAlert()
+        alert.alertStyle = .critical
+        alert.messageText = String(localized: "Jutsu Studio can't open its library")
+        let folder = dataFolder.path(percentEncoded: false)
+        alert.informativeText =
+            "\(error.localizedDescription)\n\n"
+            + String(
+                localized: """
+                    The library is in \(folder). Free up disk space or move the folder aside, \
+                    then open the app again.
+                    """)
+        alert.addButton(withTitle: String(localized: "Quit"))
+        alert.addButton(withTitle: String(localized: "Show Data Folder"))
+        while alert.runModal() == .alertSecondButtonReturn {
+            NSWorkspace.shared.activateFileViewerSelecting([dataFolder])
+        }
+    }
+
+    /// The login keychain isn't per container like the defaults are, so a Debug build keeps its own item.
+    private static func connectionVault() -> KeychainVault {
+        #if DEBUG
+            KeychainVault(store: .developmentConnection)
+        #else
+            KeychainVault(store: .activeConnection)
+        #endif
+    }
+
+    /// The engine reads the daily agent budget off the main actor, from the person's current settings.
+    private static func agentPolicy(ledger: AgentSpendFile, defaults: UserDefaults) -> AgentSpendPolicy {
+        // UserDefaults is safe to read from any thread.
+        nonisolated(unsafe) let defaults = defaults
+        return AgentSpendPolicy(
+            ledger: ledger, dailyLimit: { AgentPreferences(defaults: defaults).dailyBudget(for: $0) })
     }
 }

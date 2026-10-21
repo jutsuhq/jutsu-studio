@@ -25,12 +25,24 @@ public enum AgentCommand: Equatable, Sendable {
     case show(ShowCommand)
     /// A file for the inbox, its bytes after the line. Only the helper sends it, for a tool that takes a file.
     case upload(UploadCommand)
+    /// What a video would cost, without queueing it.
+    case quote(QuoteCommand)
+    /// Queues a video, idempotent by its request ID.
+    case createVideo(CreateVideoCommand)
+    /// The state of jobs, optionally once they settle.
+    case jobs(JobsCommand)
+    /// Cancel, retry or run a job next, or pause or resume the queue.
+    case jobAction(JobActionCommand)
 
     public var name: String {
         switch self {
         case .capabilities: "capabilities"
         case .show: "show"
         case .upload: "upload"
+        case .quote: "quote"
+        case .createVideo: "create_video"
+        case .jobs: "jobs"
+        case .jobAction: "job_action"
         }
     }
 }
@@ -67,6 +79,10 @@ public struct AgentRequest: Codable, Equatable, Sendable {
         case "capabilities": command = .capabilities(try CapabilitiesCommand(from: decoder))
         case "show": command = .show(try ShowCommand(from: decoder))
         case "upload": command = .upload(try UploadCommand(from: decoder))
+        case "quote": command = .quote(try QuoteCommand(from: decoder))
+        case "create_video": command = .createVideo(try CreateVideoCommand(from: decoder))
+        case "jobs": command = .jobs(try JobsCommand(from: decoder))
+        case "job_action": command = .jobAction(try JobActionCommand(from: decoder))
         default: throw AgentError.unknownCommand(name)
         }
     }
@@ -81,6 +97,10 @@ public struct AgentRequest: Codable, Equatable, Sendable {
         case .capabilities(let fields): try fields.encode(to: encoder)
         case .show(let fields): try fields.encode(to: encoder)
         case .upload(let fields): try fields.encode(to: encoder)
+        case .quote(let fields): try fields.encode(to: encoder)
+        case .createVideo(let fields): try fields.encode(to: encoder)
+        case .jobs(let fields): try fields.encode(to: encoder)
+        case .jobAction(let fields): try fields.encode(to: encoder)
         }
     }
 }
@@ -93,16 +113,27 @@ public struct AgentResponse: Codable, Equatable, Sendable {
     public var shown: AgentShown?
     /// upload: where the app put the file, a path inside its inbox.
     public var uploaded: String?
+    public var quote: AgentQuote?
+    /// create_video: the jobs the request queued.
+    public var created: AgentCreated?
+    public var jobs: AgentJobs?
+    /// job_action: what was done.
+    public var acted: AgentActed?
     public var error: AgentError?
 
     public init(
         id: String? = nil, capabilities: AgentCapabilities? = nil, shown: AgentShown? = nil, uploaded: String? = nil,
+        quote: AgentQuote? = nil, created: AgentCreated? = nil, jobs: AgentJobs? = nil, acted: AgentActed? = nil,
         error: AgentError? = nil
     ) {
         self.id = id
         self.capabilities = capabilities
         self.shown = shown
         self.uploaded = uploaded
+        self.quote = quote
+        self.created = created
+        self.jobs = jobs
+        self.acted = acted
         self.error = error
     }
 }

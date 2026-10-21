@@ -152,7 +152,9 @@ actor FakeApp {
         var server = server()
         _ = try await reply(&server, "initialize", ["protocolVersion": "2025-11-25"])
         let tools = try #require(try await reply(&server, "tools/list")["result"]?["tools"]?.arrayValue)
-        #expect(tools.map { $0["name"]?.stringValue } == ["capabilities", "show"])
+        #expect(
+            tools.map { $0["name"]?.stringValue }
+                == ["capabilities", "quote", "create_video", "jobs", "job_action", "show"])
         #expect(tools.compactMap { $0["name"]?.stringValue } == AgentCapabilities.ToolGroup.all.flatMap(\.tools))
         for tool in tools {
             #expect(tool["inputSchema"]?["type"] == "object")
@@ -161,14 +163,26 @@ actor FakeApp {
             #expect(tool["outputSchema"]?["type"] == "object")
             #expect(tool["outputSchema"]?["properties"]?["error"] != nil)
             #expect(tool["outputSchema"]?["required"] == nil)
-            #expect(tool["annotations"]?["destructiveHint"] == false)
-            #expect(tool["annotations"]?["openWorldHint"] == false)
+            #expect(tool["annotations"]?["readOnlyHint"] != nil)
+            #expect(tool["annotations"]?["idempotentHint"] != nil)
             #expect(tool["description"]?.stringValue?.isEmpty == false)
             #expect(tool["title"]?.stringValue?.isEmpty == false)
         }
-        #expect(tools[0]["annotations"]?["readOnlyHint"] == true)
-        #expect(tools[1]["annotations"]?["readOnlyHint"] == false)
-        #expect(tools[1]["annotations"]?["idempotentHint"] == true)
+        let hints = Dictionary(uniqueKeysWithValues: tools.map { ($0["name"]?.stringValue ?? "", $0["annotations"]) })
+        for name in ["capabilities", "quote", "jobs"] {
+            #expect(hints[name]??["readOnlyHint"] == true, "\(name)")
+            #expect(hints[name]??["destructiveHint"] == false, "\(name)")
+        }
+        #expect(hints["create_video"]??["readOnlyHint"] == false)
+        #expect(hints["create_video"]??["idempotentHint"] == true)
+        #expect(hints["create_video"]??["destructiveHint"] == false)
+        #expect(hints["job_action"]??["readOnlyHint"] == false)
+        #expect(hints["job_action"]??["idempotentHint"] == false)
+        #expect(hints["show"]??["readOnlyHint"] == false)
+        #expect(hints["show"]??["idempotentHint"] == true)
+        #expect(hints["show"]??["openWorldHint"] == false)
+        let create = try #require(tools.first { $0["name"] == "create_video" })
+        #expect(create["inputSchema"]?["required"] == ["request_id", "mode", "max_cost"])
         // The same list twice, byte for byte.
         let again = try #require(try await reply(&server, "tools/list")["result"]?["tools"]?.arrayValue)
         #expect(again == tools)

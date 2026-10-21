@@ -25,6 +25,8 @@ public actor JobEngine {
     let clock: any EngineClock
     let presetName: @Sendable (UUID) -> String?
     let spendStatus: @Sendable (Job) async throws -> SpendStatus?
+    /// `nil` sends nothing an agent queued: its jobs pause at submit (`AgentHold.ledgerUnavailable`).
+    let agentPolicy: AgentSpendPolicy?
     var settings: EngineSettings
     let limiter: SlotLimiter
     let log = EngineLog()
@@ -75,13 +77,17 @@ public actor JobEngine {
     ///   - downloader: `nil` uses `URLSessionDownloader`, capped at `settings.maxDownloadBytes`.
     ///   - spendStatus: today's spend without the given job, and the cap of its connection; checked on enqueue
     ///     and when the provider quotes a price right before submit. `nil` skips the check.
+    ///   - agentPolicy: the agent spend ledger and daily budgets the spending guard of agents' jobs checks
+    ///     (`clearAgentSpend`).
     public init(
         provider: (any GenerationProvider)?, repository: any JobRepository, uploadCache: any UploadCache,
         media: any MediaPreparing, connectivity: any Connectivity, settings: EngineSettings,
         downloader: (any Downloader)? = nil, clock: any EngineClock = SystemClock(),
         presetName: @escaping @Sendable (UUID) -> String? = { _ in nil },
-        spendStatus: @escaping @Sendable (Job) async throws -> SpendStatus? = { _ in nil }
+        spendStatus: @escaping @Sendable (Job) async throws -> SpendStatus? = { _ in nil },
+        agentPolicy: AgentSpendPolicy? = nil
     ) {
+        self.agentPolicy = agentPolicy
         self.presetName = presetName
         self.spendStatus = spendStatus
         self.provider = provider
@@ -194,6 +200,9 @@ public actor JobEngine {
                 $0.submitAttempt = nil
                 $0.serverPrice = nil
                 $0.approvedPrice = nil
+                $0.agent?.approvedByPerson = false
+                $0.agent?.hold = nil
+                $0.agent?.reservation = nil
                 $0.submittedAt = nil
                 $0.processingAt = nil
                 $0.promotedAt = nil
@@ -219,11 +228,19 @@ public actor JobEngine {
 
     /// Continues a paused job from the start of its pipeline; prepared files and uploads are cached. A job paused
     /// for `notEnoughDiskSpace` continues its download from the partial file instead.
-    /// Resuming a job paused for `priceAboveCap` agrees to the price the provider quoted, so ask first.
+    /// Resuming a job paused for `priceAboveCap` agrees to the price the provider quoted, so ask first. Resuming an
+    /// agent's job paused for `agentLimit` is the person agreeing to send it past the agent's limits at its price,
+    /// which their own daily cap then counts as agreed too; only the person does this, never an agent.
     public func resume(_ id: UUID) async throws {
         let job = try await loadJob(id)
         if job.state == .paused(.priceAboveCap) {
-            try await apply(.resume, to: id) { $0.approvedPrice = $0.serverPrice }
+            try await apply(.resume, to: id) { $0.approvedPrice = $0.serverPrice ?? $0.cost }
+        } else if job.state == .paused(.agentLimit) {
+            try await apply(.resume, to: id) {
+                $0.approvedPrice = $0.serverPrice ?? $0.cost
+                $0.agent?.approvedByPerson = true
+                $0.agent?.hold = nil
+            }
         } else if case .paused = job.state {
             try await apply(.resume, to: id)
         } else if !job.state.isActive {
@@ -306,20 +323,6 @@ public actor JobEngine {
         gate.open()
     }
 
-    public func setMaxConcurrency(_ limit: Int) async {
-        await limiter.setLimit(limit)
-    }
-
-    /// Downloads that start after this call land in `directory`; finished files stay where they are.
-    public func setOutputDirectory(_ directory: URL) {
-        settings.outputDirectory = directory
-    }
-
-    /// Results placed after this call use `pattern`; files already in the library keep their names.
-    public func setOutputNamePattern(_ pattern: OutputNamePattern) {
-        settings.outputNamePattern = pattern
-    }
-
     private func followConnectivity() async {
         let updates = connectivity.updates()
         // The first value is the current state; wait for it so nothing starts while offline.
@@ -335,6 +338,22 @@ public actor JobEngine {
     private func setOnline(_ online: Bool) {
         isOnline = online
         gate.open()
+    }
+}
+// Settings that apply from the next job on.
+extension JobEngine {
+    public func setMaxConcurrency(_ limit: Int) async {
+        await limiter.setLimit(limit)
+    }
+
+    /// Downloads that start after this call land in `directory`; finished files stay where they are.
+    public func setOutputDirectory(_ directory: URL) {
+        settings.outputDirectory = directory
+    }
+
+    /// Results placed after this call use `pattern`; files already in the library keep their names.
+    public func setOutputNamePattern(_ pattern: OutputNamePattern) {
+        settings.outputNamePattern = pattern
     }
 }
 // Stopping, as on quit.

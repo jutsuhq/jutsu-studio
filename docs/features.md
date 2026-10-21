@@ -129,8 +129,12 @@ Images and videos share one persistent material catalog. It retains versions, th
 
 - Lets an AI agent on your Mac, such as Claude Code, work with the app through the bundled `jutsu` helper, a Model Context Protocol server. Add it with the line Settings › Agents shows.
 - Off until you turn on Allow agents. Turning it off refuses the agent's next request and stops nothing already running.
-- A daily agent budget, apart from the daily cap: dollars with an API key, credits with an account. 0 by default.
-- For now an agent can read what the app offers (the connection, credits, budget and models) and open a page or a job for you. It can't start jobs, spend, delete anything or see your key or sign-in.
+- An agent can read what the app offers (the connection, credits, budget and models), get a price, queue videos from its own files, follow its jobs, cancel, retry or move up its own jobs, pause or resume the queue, and open a page or a job for you. It can't delete anything or see your key or sign-in.
+- Its videos are the jobs Create would make from the same settings; a request Create would quietly adjust is refused with the reason instead.
+- Sending the same request again returns the job it already made, so a lost answer never queues or pays twice.
+- A daily agent budget: dollars with an API key, credits with an account. 0 by default. Your own daily cap still applies.
+- Every agent job names the most it may cost. A job over that, over today's agent budget or at a price not known yet waits in the Queue until you confirm it; an agent can't send it on its own.
+- Queue rows show which agent queued a job and what it was allowed to spend.
 
 ## Connection and privacy
 

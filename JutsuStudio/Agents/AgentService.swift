@@ -23,10 +23,14 @@ final class AgentService {
 
     private(set) var status = Status.idle
 
-    @ObservationIgnored private let environment: AppEnvironment
+    @ObservationIgnored let environment: AppEnvironment
     @ObservationIgnored private let system: SystemIntegration
-    @ObservationIgnored private let preferences: AgentPreferences
-    @ObservationIgnored private var server: AgentServer?
+    @ObservationIgnored let preferences: AgentPreferences
+    @ObservationIgnored var server: AgentServer?
+    /// `create_video` requests being queued, by request ID: the same one sent meanwhile waits for it.
+    @ObservationIgnored var creating:
+        [String: (fingerprint: String, task: Task<Result<AgentCreated, AgentError>, Never>)] =
+            [:]
 
     init(environment: AppEnvironment, system: SystemIntegration, preferences: AgentPreferences = AgentPreferences()) {
         self.environment = environment
@@ -64,9 +68,9 @@ final class AgentService {
         let preferences = preferences
         let server = AgentServer(
             socket: socket, isAllowed: { preferences.isAllowed },
-            gate: { _, _ throws(AgentError) in
-                // No tool takes files yet; the inbox stays empty until one does and checks its request first.
-                throw AgentError(.fileRefused, message: "No tool in this version takes files.", retryable: false)
+            gate: { [weak self] upload, _ throws(AgentError) in
+                guard let self else { throw AgentError.agentsOff }
+                try self.admit(upload)
             },
             handle: { [weak self] request async throws(AgentError) -> AgentResponse in
                 guard let self else { throw AgentError.agentsOff }
@@ -76,6 +80,7 @@ final class AgentService {
             try server.start()
             self.server = server
             status = .listening(socket)
+            Task { await sweepInbox() }
         } catch {
             logger.error("Can't listen for agents: \(String(describing: error), privacy: .private)")
             status = .failed(error.localizedDescription)
@@ -90,7 +95,7 @@ final class AgentService {
     private func run(_ command: AgentCommand, client: String?) async throws(AgentError) -> AgentResponse {
         switch command {
         case .capabilities(let fields):
-            return AgentResponse(capabilities: try capabilities(fields))
+            return AgentResponse(capabilities: try await capabilities(fields))
         case .show(let fields):
             let shown = try await show(fields)
             logger.info(
@@ -99,12 +104,27 @@ final class AgentService {
         case .upload:
             // The server takes uploads itself; one never reaches the handler.
             throw AgentError.badRequest("upload is sent with its bytes")
+        case .quote(let fields):
+            return AgentResponse(quote: try await quote(fields))
+        case .createVideo(let fields):
+            let created = try await createVideo(fields, client: client)
+            logger.info(
+                "Agent \(client ?? "unnamed", privacy: .private) queued \(created.jobs.count, privacy: .public) job(s), known: \(created.known, privacy: .private)"
+            )
+            return AgentResponse(created: created)
+        case .jobs(let fields):
+            return AgentResponse(jobs: try await jobs(fields))
+        case .jobAction(let fields):
+            let acted = try await act(fields)
+            logger.info(
+                "Agent \(client ?? "unnamed", privacy: .private) ran \(fields.action.rawValue, privacy: .public)")
+            return AgentResponse(acted: acted)
         }
     }
 
     // MARK: Commands
 
-    private func capabilities(_ fields: CapabilitiesCommand) throws(AgentError) -> AgentCapabilities {
+    private func capabilities(_ fields: CapabilitiesCommand) async throws(AgentError) -> AgentCapabilities {
         let state = environment.connection.state
         let connection: AgentCapabilities.Connection
         var budget: AgentCapabilities.Budget?
@@ -117,10 +137,10 @@ final class AgentService {
             connection = AgentCapabilities.Connection(kind: .account, plan: account.plan, credits: account.credits)
         }
         if let kind = state.kind {
-            // Nothing spends yet, so nothing is taken from the budget.
+            let taken = try await agentSpendToday(for: kind)
             budget = AgentCapabilities.Budget(
-                unit: kind == .apiKey ? .usdCents : .credits, dailyLimit: preferences.dailyBudget(for: kind),
-                spentToday: 0)
+                unit: Self.unit(for: kind), dailyLimit: preferences.dailyBudget(for: kind), spentToday: taken.spent,
+                reservedToday: taken.reserved)
         }
         var answer = AgentCapabilities(appVersion: Self.appVersion, connection: connection, budget: budget)
         if fields.models {
@@ -141,12 +161,32 @@ final class AgentService {
             models = [model]
         }
         let offered = environment.lastOfferedModels
+        let constraints = environment.navigation.modelConstraints
         return models.map { model in
             AgentCapabilities.Model(
-                id: model.rawValue, title: model.title, modes: model.modes.map(\.rawValue),
+                id: model.rawValue, title: model.title, modes: model.modes.map(AgentVideoOrder.name(of:)),
                 resolutions: model.resolutions.map(\.rawValue),
-                available: connection != nil && offered.contains(model))
+                available: connection != nil && offered.contains(model),
+                details: id == nil ? nil : Self.details(of: model, constraints: constraints))
         }
+    }
+
+    /// A model's limits in each of its modes, as a job on it takes them.
+    private static func details(
+        of model: VideoModel, constraints: ModelConstraintTable
+    ) -> AgentCapabilities.ModelDetails {
+        let modes = model.modes.map { mode in
+            let hasSource = !model.makesClipsWithoutSource || mode != .motionTransfer
+            let limits = model.limits(for: mode, hasSource: hasSource, constraints: constraints)
+            return AgentCapabilities.ModeDetails(
+                mode: AgentVideoOrder.name(of: mode), minSeconds: limits.duration.lowerBound,
+                maxSeconds: limits.duration.upperBound, minImages: limits.referenceImages.lowerBound,
+                maxImages: limits.referenceImages.upperBound, needsStyle: limits.requiresPreset,
+                needsSource: hasSource)
+        }
+        return AgentCapabilities.ModelDetails(
+            modes: modes, hasDraft: model.offersDraft, makesClipsWithoutSource: model.makesClipsWithoutSource,
+            needsPrompt: model.descriptor.requiresPrompt)
     }
 
     private func show(_ fields: ShowCommand) async throws(AgentError) -> AgentShown {
@@ -180,7 +220,7 @@ final class AgentService {
         return shown
     }
 
-    private func job(_ id: UUID) async -> Job? {
+    func job(_ id: UUID) async -> Job? {
         if let job = environment.liveJobs.job(id) { return job }
         return try? await environment.store.job(id: id)
     }

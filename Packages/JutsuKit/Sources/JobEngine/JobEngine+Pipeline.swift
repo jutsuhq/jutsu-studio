@@ -186,10 +186,11 @@ extension JobEngine {
         let isIdempotent = try await provider.submitIsIdempotent(job.spec)
         // A pause or cancel that lands here must not leave a submit marker for a request never sent.
         try Task.checkCancellation()
+        // An agent's job passes its spending guard and reserves its price before anything is sent.
+        guard case .send(let reservation) = try await clearAgentSpend(job.id, inputs: inputs) else { return }
         // A stopping engine sends nothing new; the job submits on the next start.
-        guard submits.begin(job.id) else { throw CancellationError() }
+        try await beginSubmit(job.id, isIdempotent: isIdempotent, reservation: reservation)
         defer { submits.finish(job.id) }
-        try await save(job.id) { $0.submitAttempt = SubmitAttempt(isIdempotent: isIdempotent) }
         var remote: RemoteJob
         do {
             remote = try await provider.submit(job.spec, inputs: inputs, idempotencyKey: job.idempotencyKey)
@@ -211,6 +212,7 @@ extension JobEngine {
         if sender.spec.variants > 1 || !variants.isEmpty {
             share = await startVariants(variants, of: sender, inputs: inputs, paidWithUnlimited: paidWithUnlimited)
         }
+        await settleAgentSpend(of: sender, charged: charged)
         try await record(.submitted, to: job.id) { [remote, share] in
             share?.apply(to: &$0)
             // Sent without the allowance, or the answer says it cost credits: the cap counts it from now on.

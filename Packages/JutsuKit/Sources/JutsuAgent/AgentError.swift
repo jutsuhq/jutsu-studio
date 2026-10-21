@@ -20,6 +20,20 @@ public struct AgentError: Error, Codable, Equatable, Sendable {
         public static let socketPathTooLong = Code(rawValue: "socket_path_too_long")
         /// The same request ID came with other parameters.
         public static let requestConflict = Code(rawValue: "request_conflict")
+        /// The request ID was already used with these parameters: its files aren't needed again, the job exists.
+        public static let requestKnown = Code(rawValue: "request_known")
+        /// Nothing is connected to Higgsfield.
+        public static let notConnected = Code(rawValue: "not_connected")
+        /// The request breaks the model's rules or limits; the message says which.
+        public static let invalidRequest = Code(rawValue: "invalid_request")
+        /// Over the person's own daily spend cap: only they can raise it or start the job.
+        public static let overCap = Code(rawValue: "over_cap")
+        /// Only the person can do this, in the app.
+        public static let needsPerson = Code(rawValue: "needs_person")
+        /// The job is in a state the action doesn't apply to.
+        public static let notApplicable = Code(rawValue: "not_applicable")
+        /// The app failed to do it; the message says why.
+        public static let failed = Code(rawValue: "failed")
     }
 
     public var code: Code
@@ -58,6 +72,16 @@ public struct AgentError: Error, Codable, Equatable, Sendable {
             .badRequest, message: "Malformed request: \(reason).", retryable: false,
             next: "Fix the arguments as the message says and call the tool again.")
     }
+
+    public static func invalidRequest(_ reason: String) -> AgentError {
+        AgentError(
+            .invalidRequest, message: reason, retryable: false,
+            next: "Change the request as the message says; capabilities with models true lists each model's limits.")
+    }
+
+    public static let requestConflict = AgentError(
+        .requestConflict, message: "This request_id was already used with other parameters.", retryable: false,
+        next: "Use a new request_id for a different request, or send exactly the same parameters to get its job.")
 
     public static func socketPathTooLong(_ socket: URL) -> AgentError {
         let path = socket.path(percentEncoded: false)

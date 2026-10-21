@@ -21,14 +21,27 @@ public struct MCPServer {
     static let handshakeVersions = Array(protocolVersions.dropFirst())
 
     public typealias Send = @Sendable (AgentCommand, _ client: String?) async -> AgentResponse
+    /// Hands the agent's file at `path` to the app for `request` and returns its path in the app's inbox.
+    public typealias Stage =
+        @Sendable (_ path: String, UploadRequest, _ client: String?) async -> Result<
+            String, AgentError
+        >
 
     let version: String
     let send: Send
+    let stage: Stage
     /// Set by `initialize`: the negotiated version and the client's name, for the requests without `_meta` after it.
     private var session: (version: String, client: String?)?
 
-    public init(version: String, send: @escaping Send) {
+    public init(
+        version: String,
+        stage: @escaping Stage = { path, _, _ in
+            .failure(AgentError(.fileRefused, message: "This helper can't send \(path).", retryable: false))
+        },
+        send: @escaping Send
+    ) {
         self.version = version
+        self.stage = stage
         self.send = send
     }
 
@@ -211,12 +224,40 @@ public struct MCPServer {
         }
         let response: AgentResponse
         switch tool.command(arguments) {
+        case .success(.createVideo(let command)): response = await createVideo(command, client: client)
         case .success(let command): response = await send(command, client)
         case .failure(let error): response = AgentResponse(error: error)
         }
         return .success(Self.toolResult(response, structured: Self.isStructured(version)))
     }
 
+    /// Hands the request's files to the app, each checked against the request ID before a byte is sent, then sends the
+    /// command naming their copies. A request the app already queued with these parameters (`request_known`) needs no
+    /// file again: the command goes without them and gets the jobs it queued before.
+    private func createVideo(_ command: CreateVideoCommand, client: String?) async -> AgentResponse {
+        let request = UploadRequest(
+            command: "create_video", requestID: command.requestID, fingerprint: command.fingerprint)
+        var staged = command
+        do throws(AgentError) {
+            if let path = command.video.source?.path {
+                staged.video.source?.path = try await stage(path, request, client).get()
+            }
+            staged.video.images = []
+            for path in command.video.images {
+                staged.video.images.append(try await stage(path, request, client).get())
+            }
+        } catch  where error.code == .requestKnown {
+            staged.video.source?.path = nil
+            staged.video.images = []
+        } catch {
+            return AgentResponse(error: error)
+        }
+        return await send(.createVideo(staged), client)
+    }
+}
+
+// Tool results, names and encoding.
+extension MCPServer {
     /// The app's answer as tool output: its JSON as text for every client, and as structured content for those that
     /// read it. A success is the result itself (the capabilities, what `show` opened); a failure is
     /// `{"error": {code, message, retryable, next}}` with `isError`, so the model sees what to do next.
@@ -228,6 +269,14 @@ public struct MCPServer {
             answer = encoded(capabilities)
         } else if let shown = response.shown {
             answer = encoded(shown)
+        } else if let quote = response.quote {
+            answer = encoded(quote)
+        } else if let created = response.created {
+            answer = encoded(created)
+        } else if let jobs = response.jobs {
+            answer = encoded(jobs)
+        } else if let acted = response.acted {
+            answer = encoded(acted)
         } else {
             answer = ["error": encoded(AgentError.lostAnswer)]
         }
@@ -263,13 +312,20 @@ public struct MCPServer {
     }
 
     static let instructions = """
-        Drives the Jutsu Studio app on this Mac, which makes AI videos and images with Higgsfield. Call capabilities \
-        first: it says how the app is connected (an API key paying in USD, or an account paying in credits), the \
-        credits when known, today's agent budget and the tools this version offers. Agents are off until the person \
-        turns on Settings › Agents › Allow agents in Jutsu Studio; until then every tool returns the error \
-        agents_off, and only the person can turn it on. show opens a page, or a job's row or result, for the person \
-        to see. A failed call returns error with code, message, retryable and next: follow next. Nothing here \
-        deletes anything or spends money.
+        Drives the Jutsu Studio app on this Mac, which makes AI videos with Higgsfield. Call capabilities first: it \
+        says how the app is connected (an API key paying in USD, or an account paying in credits), today's agent \
+        budget (dailyLimit, spentToday, reservedToday, remaining, in usd_cents or credits) and the tools this \
+        version offers; models: true lists the video models, model: an ID gives that model's limits. Agents are off \
+        until the person turns on Settings › Agents › Allow agents; until then every tool returns agents_off. \
+        To make a video: quote it (free), then create_video with a new request_id and max_cost, the most you agree \
+        to pay. Sending the same request_id and parameters again returns the same job and never pays twice; reuse \
+        a request_id only to retry. Then follow it with jobs, wait_seconds up to 50; a wait that runs out stops \
+        nothing. Jutsu Studio checks every job right before it is paid for: a price above max_cost, above what is \
+        left of the daily agent budget or not known pauses the job (paused, agent_limit) until the person confirms \
+        it in the Queue; the person's own daily cap applies too. job_action cancels, retries or runs a job next, or \
+        pauses or resumes the queue; it never resumes a job waiting for the person, and nothing here deletes \
+        anything. show opens a page or a job for the person to see. A failed call returns error with code, message, \
+        retryable and next: follow next.
         """
 
     // MARK: Encoding

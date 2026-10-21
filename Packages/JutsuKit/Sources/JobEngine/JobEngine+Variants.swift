@@ -60,6 +60,13 @@ extension JobEngine {
             job.inputs = inputs
             job.remote = remote
             job.submittedAt = now
+            // The sender's reservation pays for the whole submit.
+            job.agent = sender.agent.map {
+                var origin = $0
+                origin.reservation = nil
+                origin.hold = nil
+                return origin
+            }
             do {
                 try await repository.save(job)
             } catch {

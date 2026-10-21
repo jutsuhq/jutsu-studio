@@ -35,7 +35,16 @@ let usage = """
 switch CommandLine.arguments.dropFirst().first {
 case "mcp":
     let connection = AppConnection(location: location, launcher: WorkspaceLauncher())
-    var server = MCPServer(version: version) { await connection.send($0, client: $1) }
+    var server = MCPServer(
+        version: version,
+        stage: { path, request, client in
+            do throws(AgentError) {
+                return .success(try await connection.stage(path, for: request, client: client))
+            } catch {
+                return .failure(error)
+            }
+        },
+        send: { await connection.send($0, client: $1) })
     // One JSON-RPC message per line until the client closes stdin.
     while let line = readLine(strippingNewline: true) {
         guard !line.isEmpty, let reply = await server.reply(to: Data(line.utf8)) else { continue }

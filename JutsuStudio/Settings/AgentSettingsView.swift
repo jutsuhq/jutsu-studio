@@ -21,8 +21,8 @@ struct AgentSettingsView: View {
                 title: "Agents",
                 footer: String(
                     localized: """
-                        Lets an AI agent on this Mac, such as Claude Code, see what the app offers and open its \
-                        pages. Agents never see your API key or sign-in and can't delete anything. Turning this off \
+                        Lets an AI agent on this Mac, such as Claude Code, make videos within the budget below, \
+                        follow their jobs and open the app's pages. Agents never see your API key or sign-in and can't delete anything. Turning this off \
                         refuses their next request and stops nothing already running.
                         """)
             ) {
@@ -36,8 +36,8 @@ struct AgentSettingsView: View {
                 title: "Daily agent budget",
                 footer: String(
                     localized: """
-                        What agents may spend a day, apart from the daily cap. 0 lets them look but not spend. \
-                        No tool spends in this version.
+                        What agents may spend a day; your daily cap still applies. 0 lets them look but not spend. \
+                        A job over its limits waits in the Queue for you to confirm.
                         """)
             ) {
                 budgetRow(String(localized: "With an API key (USD)"), kind: .apiKey, text: $centsText, isFirst: true)

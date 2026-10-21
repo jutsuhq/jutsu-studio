@@ -27,15 +27,19 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
         public var unit: AgentBudgetUnit
         /// Settings › Agents › Daily agent budget; 0 until the person sets one.
         public var dailyLimit: Int
-        /// Taken today by agents' jobs, those in flight included.
+        /// Charged today for agents' jobs.
         public var spentToday: Int
+        /// Held today for agents' submits sent and not answered yet; counts against the budget like a charge.
+        public var reservedToday: Int
         public var remaining: Int
 
-        public init(unit: AgentBudgetUnit, dailyLimit: Int, spentToday: Int) {
+        public init(unit: AgentBudgetUnit, dailyLimit: Int, spentToday: Int, reservedToday: Int = 0) {
             self.unit = unit
             self.dailyLimit = max(0, dailyLimit)
             self.spentToday = max(0, spentToday)
-            remaining = max(0, self.dailyLimit - self.spentToday)
+            self.reservedToday = max(0, reservedToday)
+            let (taken, overflow) = self.spentToday.addingReportingOverflow(self.reservedToday)
+            remaining = overflow ? 0 : max(0, self.dailyLimit - taken)
         }
     }
 
@@ -50,7 +54,11 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
         }
 
         /// Every tool this version offers, in the order `tools/list` gives them.
-        public static let all = [ToolGroup(name: "app", tools: ["capabilities", "show"])]
+        public static let all = [
+            ToolGroup(name: "app", tools: ["capabilities"]),
+            ToolGroup(name: "video", tools: ["quote", "create_video", "jobs", "job_action"]),
+            ToolGroup(name: "window", tools: ["show"]),
+        ]
     }
 
     /// A video model, compact: what an agent needs to pick one.
@@ -61,13 +69,58 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
         public var resolutions: [String]
         /// Whether the connection runs it now.
         public var available: Bool
+        /// Only for the one model asked for: what a job on it takes.
+        public var details: ModelDetails?
 
-        public init(id: String, title: String, modes: [String], resolutions: [String], available: Bool) {
+        public init(
+            id: String, title: String, modes: [String], resolutions: [String], available: Bool,
+            details: ModelDetails? = nil
+        ) {
             self.id = id
             self.title = title
             self.modes = modes
             self.resolutions = resolutions
             self.available = available
+            self.details = details
+        }
+    }
+
+    /// A model's limits in one mode.
+    public struct ModeDetails: Codable, Equatable, Sendable {
+        public var mode: String
+        /// Seconds of source one job takes, or a clip without a source runs; for Extend also what it adds.
+        public var minSeconds: Double
+        public var maxSeconds: Double
+        public var minImages: Int
+        public var maxImages: Int
+        public var needsStyle: Bool
+        public var needsSource: Bool
+
+        public init(
+            mode: String, minSeconds: Double, maxSeconds: Double, minImages: Int, maxImages: Int, needsStyle: Bool,
+            needsSource: Bool
+        ) {
+            self.mode = mode
+            self.minSeconds = minSeconds
+            self.maxSeconds = maxSeconds
+            self.minImages = minImages
+            self.maxImages = maxImages
+            self.needsStyle = needsStyle
+            self.needsSource = needsSource
+        }
+    }
+
+    public struct ModelDetails: Codable, Equatable, Sendable {
+        public var modes: [ModeDetails]
+        public var hasDraft: Bool
+        public var makesClipsWithoutSource: Bool
+        public var needsPrompt: Bool
+
+        public init(modes: [ModeDetails], hasDraft: Bool, makesClipsWithoutSource: Bool, needsPrompt: Bool) {
+            self.modes = modes
+            self.hasDraft = hasDraft
+            self.makesClipsWithoutSource = makesClipsWithoutSource
+            self.needsPrompt = needsPrompt
         }
     }
 
