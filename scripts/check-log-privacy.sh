@@ -110,7 +110,7 @@ for my $file (@ARGV) {
 
     # EngineLog logs its message as public: it must be a literal, and what it interpolates must be safe.
     next unless $file =~ m{/(?:JobEngine|Presentation)/};
-    while ($text =~ /\blog\.(?:error|fault)\(\s*/g) {
+    while ($text =~ /\blog\.(?:notice|error|fault)\(\s*/g) {
         my $at = pos($text);
         if (substr($text, $at, 1) ne "\"" || substr($text, $at, 3) eq "\"\"\"") {
             print "$file:" . line_of($text, $at) . ": EngineLog message is not a one-line string literal\n";

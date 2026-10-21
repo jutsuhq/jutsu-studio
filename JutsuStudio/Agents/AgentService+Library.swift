@@ -364,8 +364,6 @@ extension AgentService {
         }
     }
 
-    // MARK: export
-
     // MARK: Helpers
 
     func materials() async throws(AgentError) -> [Material] {

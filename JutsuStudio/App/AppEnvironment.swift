@@ -127,11 +127,9 @@ final class AppEnvironment {
     private static func agentImageQueue(
         folder: URL, generator: ReferenceGenerator, ledger: AgentSpendFile, defaults: UserDefaults
     ) -> AgentImageQueue {
-        // UserDefaults is safe to read from any thread.
-        nonisolated(unsafe) let budgetDefaults = defaults
-        return AgentImageQueue(
+        AgentImageQueue(
             folder: folder, generator: generator, ledger: ledger,
-            dailyLimit: { AgentPreferences(defaults: budgetDefaults).dailyBudget(for: $0) })
+            dailyLimit: { AgentPreferences(defaults: defaults).dailyBudget(for: $0) })
     }
 
     /// Hands the restored connection to the engine, then resumes the jobs of the last session. Runs once, and never

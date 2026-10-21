@@ -434,11 +434,6 @@ public struct AgentJob: Codable, Equatable, Sendable {
         case requestID = "requestId"
         case client, mode, model, folder, files, set, next, createdAt, finishedAt
     }
-
-    /// Settled: finished, waiting for someone, or not known. A `jobs` wait ends once every job named is.
-    public var isSettled: Bool {
-        ["done", "failed", "rejected", "canceled", "paused", "unknown"].contains(state)
-    }
 }
 
 public struct AgentCreated: Codable, Equatable, Sendable {

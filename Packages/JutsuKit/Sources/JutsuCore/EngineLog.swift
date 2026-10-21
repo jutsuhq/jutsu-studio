@@ -17,6 +17,13 @@ public struct EngineLog: Sendable {
         #endif
     }
 
+    /// Something worth knowing that isn't a failure, such as a job held for the person.
+    public func notice(_ message: String) {
+        #if canImport(os)
+            logger.notice("\(message, privacy: .public)")
+        #endif
+    }
+
     public func error(_ message: String, detail: String = "") {
         #if canImport(os)
             logger.error("\(message, privacy: .public) \(detail, privacy: .private)")

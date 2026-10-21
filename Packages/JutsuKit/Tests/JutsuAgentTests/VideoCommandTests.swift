@@ -69,14 +69,6 @@ import Testing
         let huge = AgentCapabilities.Budget(unit: .credits, dailyLimit: 100, spentToday: .max, reservedToday: .max)
         #expect(huge.remaining == 0)
     }
-
-    @Test func settledStatesEndAWait() {
-        let job = { (state: String) in
-            AgentJob(id: UUID(), state: state, mode: "restyle", model: "genjutsu", createdAt: .now)
-        }
-        #expect(job("paused").isSettled && job("done").isSettled && job("failed").isSettled)
-        #expect(!job("processing").isSettled && !job("waiting_for_slot").isSettled)
-    }
 }
 
 @Suite struct InboxSweepTests {

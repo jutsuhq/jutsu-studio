@@ -67,7 +67,7 @@ extension JobEngine {
     }
 
     private func holdAgentJob(_ id: UUID, _ hold: AgentHold, inputs: RemoteInputs) async throws -> AgentClearance {
-        log.error("Job \(id): an agent's job is held, \(hold.rawValue)")
+        log.notice("Job \(id): an agent's job is held, \(hold.rawValue)")
         try await apply(.paused(.agentLimit), to: id) {
             $0.inputs = inputs
             $0.agent?.hold = hold
