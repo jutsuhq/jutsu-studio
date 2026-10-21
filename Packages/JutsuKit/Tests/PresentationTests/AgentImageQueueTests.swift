@@ -198,7 +198,7 @@ struct AgentImageQueueTests {
         #expect(ImageModel(id: "g", title: "G", aspectRatios: ["1:1"], input: .optional).inputLimit == 1)
     }
 
-    /// A record of one input keeps the shape records had before there were several; more are kept in order.
+    /// A record of one input holds only `input`, as a 0.2.0 record does; several are kept in order.
     @Test func severalInputsAreRecordedAndSentInOrder() async throws {
         let generator = generator()
         let queue = queue(generator)
@@ -212,7 +212,7 @@ struct AgentImageQueueTests {
         #expect(await provider.submitted.first?.inputImages.count == 3)
         let single = try create(
             queue, AgentImageOrder(model: "edit", prompt: "one", aspectRatio: nil, count: nil, inputs: [picture]))
-        #expect(queue.record(single)?.moreInputs == nil)
+        #expect(queue.record(single)?.severalInputs == nil)
         #expect(queue.record(single)?.inputs == [picture])
     }
 

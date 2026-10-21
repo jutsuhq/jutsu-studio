@@ -84,7 +84,7 @@ import Testing
         }
         let one = try sent(image(["input": .string(paths[0])]))
         #expect(try sent(image(["inputs": [.string(paths[0])]])).fingerprint == one.fingerprint)
-        // The wire keeps one input as `input`, as before.
+        // One input goes on the wire as `input`, as 0.2.0 sends it.
         let line = String(decoding: try AgentWire.line(AgentRequest(.createImage(one))), as: UTF8.self)
         #expect(line.contains("\"input\":") && !line.contains("\"inputs\""))
         let decoded = AgentWire.request(from: try AgentWire.line(AgentRequest(.createImage(one)))).request

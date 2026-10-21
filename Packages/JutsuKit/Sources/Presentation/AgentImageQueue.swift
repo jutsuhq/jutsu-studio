@@ -91,7 +91,7 @@ public final class AgentImageQueue {
         let record = AgentImageRecord(
             id: id, origin: origin, providerKind: provider.kind, owner: provider.owner, model: draft.model,
             prompt: draft.prompt, aspectRatio: draft.aspectRatio, count: draft.count, input: draft.inputs.first,
-            moreInputs: draft.inputs.count > 1 ? draft.inputs : nil, state: .pricing, priceIsKnown: false,
+            severalInputs: draft.inputs.count > 1 ? draft.inputs : nil, state: .pricing, priceIsKnown: false,
             createdAt: now())
         do {
             try save(record)
@@ -242,7 +242,7 @@ extension AgentImageQueue {
             generator.finish(id, .failed(Self.notRecorded))
             return nil
         }
-        guard let (price, isKnown) = await quote(request, of: record, provider: provider) else { return nil }
+        guard let (price, isKnown) = await quoteOrFail(request, of: record, provider: provider) else { return nil }
         let status: SpendStatus?
         do {
             status = try await generator.spendStatus(provider.kind)
@@ -271,20 +271,18 @@ extension AgentImageQueue {
 
     /// The provider's quote for the request, else the model's list price as an estimate; and whether it is exact.
     /// A quote that turns the request down, such as more input images than a model whose catalog states no limit
-    /// takes, fails it (`nil`): it comes before anything is reserved or sent, so the refusal costs nothing.
-    private func quote(
+    /// takes, fails the request (`nil`): it comes before anything is reserved or sent, so the refusal costs nothing.
+    private func quoteOrFail(
         _ request: ImageRequest, of record: AgentImageRecord, provider: any ImageProvider
     ) async -> (Cost, Bool)? {
         do {
             let price = try await provider.imageEstimate(request)
             return (price, !price.isEstimate && !price.isUnknownPrice)
-        } catch let error as ProviderError {
-            if case .validation = error {
+        } catch {
+            if let error = error as? ProviderError, case .validation = error {
                 generator.finish(record.id, .failed(ReferenceGenerator.message(error)))
                 return nil
             }
-            return (Self.listPrice(of: record) ?? .unknownCredits, false)
-        } catch {
             return (Self.listPrice(of: record) ?? .unknownCredits, false)
         }
     }

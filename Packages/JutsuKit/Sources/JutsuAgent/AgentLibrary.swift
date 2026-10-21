@@ -55,8 +55,8 @@ public struct AgentImageRequest: Codable, Equatable, Hashable, Sendable {
         self.elements = elements
     }
 
-    /// One input goes as `input`, as before there were several, so a request sent again after an update keeps its
-    /// fingerprint; several go as `inputs`.
+    /// One input goes as `input` and several as `inputs`: a request of one input encodes as 0.2.0 encodes it, so its
+    /// fingerprint matches the one 0.2.0 recorded.
     private enum CodingKeys: String, CodingKey {
         case model, prompt, aspectRatio, count, input, inputs, elements
     }

@@ -50,7 +50,7 @@ final class AppEnvironment {
     /// The connection's capabilities as `capabilities()` last read them; `nil` until then and after the provider
     /// changes, so another account's never answer. Agents' `capabilities` answers from it rather than calling the
     /// provider.
-    var lastCapabilities: Capabilities?
+    private(set) var lastCapabilities: Capabilities?
     /// The provider of the active connection; `nil` while disconnected.
     private(set) var provider: (any GenerationProvider)? = nil
     /// Goes up whenever `provider` is replaced, a new sign-in to the same account included. Provider-backed

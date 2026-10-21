@@ -13,7 +13,7 @@ extension Tool {
         guard let prompt = try given.string("prompt") else {
             throw .badRequest("create_image needs prompt, the image to make")
         }
-        // input is the one-image form of inputs, kept for agents that learnt it first.
+        // input is the one-image form of inputs; an agent sends one or the other.
         let input = try given.string("input")
         var inputs = try given.strings("inputs")
         if let input {

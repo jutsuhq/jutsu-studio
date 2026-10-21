@@ -109,10 +109,10 @@ public struct AgentImageRecord: Codable, Sendable, Hashable, Identifiable {
     public var prompt: String
     public var aspectRatio: String
     public var count: Int
-    /// The first image to edit; a request of one image keeps only this, as records did before there were several.
+    /// The first image to edit. A request of one image keeps only this, which is all a 0.2.0 record holds.
     public var input: LocalImage?
-    /// Every image to edit, in order, when there are more than one.
-    public var moreInputs: [LocalImage]?
+    /// Every image to edit, in order, when there are several; `nil` for one or none.
+    public var severalInputs: [LocalImage]?
     public var state: State
     public var hold: Hold?
     /// The price the guard last saw.
@@ -127,7 +127,7 @@ public struct AgentImageRecord: Codable, Sendable, Hashable, Identifiable {
     public var finishedAt: Date?
 
     /// The images to edit, in order.
-    public var inputs: [LocalImage] { moreInputs ?? input.map { [$0] } ?? [] }
+    public var inputs: [LocalImage] { severalInputs ?? input.map { [$0] } ?? [] }
 
     var draft: ReferenceGenerator.Draft {
         ReferenceGenerator.Draft(model: model, prompt: prompt, aspectRatio: aspectRatio, count: count, inputs: inputs)
