@@ -129,12 +129,15 @@ Images and videos share one persistent material catalog. It retains versions, th
 
 - Lets an AI agent on your Mac, such as Claude Code, work with the app through the bundled `jutsu` helper, a Model Context Protocol server. Add it with the line Settings › Agents shows.
 - Off until you turn on Allow agents. Turning it off refuses the agent's next request and stops nothing already running.
-- An agent can read what the app offers (the connection, credits, budget and models), get a price, queue videos from its own files, follow its jobs, cancel, retry or move up its own jobs, pause or resume the queue, and open a page or a job for you. It can't delete anything or see your key or sign-in.
-- Its videos are the jobs Create would make from the same settings; a request Create would quietly adjust is refused with the reason instead.
+- An agent can read what the app offers (the connection, credits, budget, video and image models, styles and voices), get a price, queue videos and images from its own files, follow its jobs, cancel, retry or move up its own jobs, pause or resume the queue, and open a page or a job for you.
+- In the Library it can search results, keep, reject or star them, queue Enhance operations (except Topaz upscales, whose price is known only after they run), create, list and export delivery sets, and export takes for editing into the output folder's Exports folder. Exports never replace a file.
+- It can't delete anything or see your key or sign-in. Reject only hides a result.
+- Its videos and images are what Create would make from the same settings; a request Create would quietly adjust is refused with the reason instead.
 - Sending the same request again returns the job it already made, so a lost answer never queues or pays twice.
 - A daily agent budget: dollars with an API key, credits with an account. 0 by default. Your own daily cap still applies.
-- Every agent job names the most it may cost. A job over that, over today's agent budget or at a price not known yet waits in the Queue until you confirm it; an agent can't send it on its own.
-- Queue rows show which agent queued a job and what it was allowed to spend.
+- Every agent job and image request names the most it may cost. One over that, over today's agent budget or your cap, or at a price not known yet waits in the Queue until you confirm or send it; an agent can't send it on its own.
+- Queue rows and image requests show which agent asked for them and what it was allowed to spend.
+- A skill for Claude Code and other agents, [skills/jutsu-studio](../skills/jutsu-studio/SKILL.md), explains the working order and the rules.
 
 ## Connection and privacy
 
