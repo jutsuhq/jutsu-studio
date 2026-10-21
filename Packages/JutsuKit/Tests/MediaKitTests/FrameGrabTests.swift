@@ -12,7 +12,11 @@ import UniformTypeIdentifiers
         defer { try? FileManager.default.removeItem(at: directory) }
         let video = try await Fixtures.makeVideo(in: directory, width: 640, height: 360, seconds: 2)
         #expect(try await FrameGrab.duration(of: video) == 2)
-        let frames = try await FrameGrab.frames(of: video, at: [0, 0.6, 1.4])
+        var frames: [CGImage] = []
+        try await FrameGrab.frames(of: video, at: [0, 0.6, 1.4]) { index, image in
+            #expect(index == frames.count)
+            frames.append(image)
+        }
         #expect(frames.map(\.width) == [640, 640, 640])
         let image = try #require(Fixtures.makeImage(in: directory, width: 360, height: 640, type: .png))
         #expect(FrameGrab.isImage(image))
@@ -37,5 +41,22 @@ import UniformTypeIdentifiers
         #expect(Fixtures.imageSize(at: png).map { [$0.width, $0.height] } == [64, 48])
         #expect(throws: CocoaError.self) { try FrameGrab.writePNG(still, to: png) }
         #expect(throws: CocoaError.self) { try FrameGrab.writePNG(still, to: image) }
+    }
+
+    /// A frame is decoded at most `maximumSide` long, and the sheet keeps only a copy at its cell height.
+    @Test func framesAreBoundedAndTheSheetsCopyIsSmall() async throws {
+        let directory = try Fixtures.makeDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let video = try await Fixtures.makeVideo(in: directory, width: 2880, height: 1620, seconds: 1)
+        var sizes: [[Int]] = []
+        try await FrameGrab.frames(of: video, at: [0.5]) { _, image in sizes.append([image.width, image.height]) }
+        #expect(sizes == [[2048, 1152]])
+        // A time at the very end, which frames lets through, is the last frame.
+        try await FrameGrab.frames(of: video, at: [1.0]) { _, _ in }
+        let image = try #require(Fixtures.makeImage(in: directory, width: 1280, height: 720, type: .png))
+        let still = try FrameGrab.still(at: image)
+        let small = try #require(FrameGrab.scaled(still, toHeight: FrameGrab.sheetCellHeight))
+        #expect((small.width, small.height) == (640, 360))
+        #expect(FrameGrab.scaled(small, toHeight: 720) === small)
     }
 }

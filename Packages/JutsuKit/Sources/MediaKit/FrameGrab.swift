@@ -20,28 +20,50 @@ public enum FrameGrab {
         return duration
     }
 
-    /// The frames of the video at `times`, in seconds from its start, oriented for display; the exact frame, not the
-    /// nearest keyframe. `sending`: `CGImage` isn't `Sendable`.
-    public static func frames(of url: URL, at times: [Double]) async throws -> sending [CGImage] {
+    /// The longest side a frame is taken at: a 4K frame decoded whole is 33 MB, and an agent reads detail well below
+    /// this.
+    public static let maximumSide = 2048
+
+    /// The frames of the video at `times`, in seconds from its start, oriented for display and at most `maximumSide`
+    /// on their longest side; the exact frame, not the nearest keyframe. Each goes to `each` with its index as soon as
+    /// it is decoded, so a caller that writes it out keeps none of them.
+    public static func frames(
+        of url: URL, at times: [Double], _ each: (Int, CGImage) throws -> Void
+    ) async throws {
         let generator = AVAssetImageGenerator(asset: AVURLAsset(url: url))
         generator.appliesPreferredTrackTransform = true
         generator.requestedTimeToleranceBefore = .zero
         generator.requestedTimeToleranceAfter = .zero
-        var images: [CGImage] = []
-        for time in times {
+        generator.maximumSize = CGSize(width: maximumSide, height: maximumSide)
+        for (index, time) in times.enumerated() {
             try Task.checkCancellation()
             let (image, _) = try await generator.image(
                 at: CMTime(seconds: time, preferredTimescale: ThumbnailStrip.preferredTimescale))
-            images.append(image)
+            try each(index, image)
         }
-        return images
     }
 
-    /// The image at `url`, upright.
-    public static func still(at url: URL) throws -> CGImage {
+    /// `image` scaled to `height` keeping its shape, for a contact sheet: a small copy to keep while the frames are
+    /// taken, instead of the frame itself. The image itself when it is no taller.
+    public static func scaled(_ image: CGImage, toHeight height: Int) -> CGImage? {
+        guard image.height > height, height > 0 else { return image }
+        let width = max(1, Int((Double(image.width) * Double(height) / Double(image.height)).rounded()))
+        guard
+            let context = CGContext(
+                data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
+                space: CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return nil }
+        context.interpolationQuality = .high
+        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        return context.makeImage()
+    }
+
+    /// The image at `url`, upright, at most `maxPixelSize` on its longest side.
+    public static func still(at url: URL, maxPixelSize: Int = 8192) throws -> CGImage {
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceThumbnailMaxPixelSize: 8192,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
         ]
         guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
             let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
@@ -49,9 +71,12 @@ public enum FrameGrab {
         return image
     }
 
+    /// The height of a contact sheet's cells.
+    public static let sheetCellHeight = 360
+
     /// One image of `rows`, each frame scaled to `cellHeight` keeping its shape, `gap` pixels apart on black: a row
     /// per clip, a column per time. `nil` when there is nothing to draw.
-    public static func sheet(_ rows: [[CGImage]], cellHeight: Int = 360, gap: Int = 8) -> CGImage? {
+    public static func sheet(_ rows: [[CGImage]], cellHeight: Int = sheetCellHeight, gap: Int = 8) -> CGImage? {
         let scaled = rows.map { row in
             row.map { image in
                 let width = Double(image.width) * Double(cellHeight) / Double(max(1, image.height))
