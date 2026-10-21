@@ -15,10 +15,13 @@ import Testing
 
     /// The three models stored jobs, templates and settings name keep their IDs, order and behaviour.
     @Test func theFirstModelsKeepTheirIDsAndOrder() {
-        #expect(Array(VideoModel.allCases.prefix(3)) == [.genjutsu, .seedance25, .klingMotionControl])
-        #expect(VideoModel.allCases.prefix(3).map(\.rawValue) == ["genjutsu", "seedance25", "klingMotionControl"])
-        #expect(VideoModel.allCases.prefix(3).map(\.title) == ["Genjutsu", "Seedance 2.5", "Kling 3.0"])
-        #expect(VideoModel.allCases.prefix(3).map(\.family) == ["Genjutsu", "Seedance", "Kling"])
+        let first: [VideoModel] = [.genjutsu, .seedance25, .klingMotionControl]
+        let stored = VideoModel.allCases.filter(first.contains)
+        #expect(stored == first)
+        #expect(VideoModel.allCases.first == .genjutsu)
+        #expect(stored.map(\.rawValue) == ["genjutsu", "seedance25", "klingMotionControl"])
+        #expect(stored.map(\.title) == ["Genjutsu", "Seedance 2.5", "Kling 3.0"])
+        #expect(stored.map(\.family) == ["Genjutsu", "Seedance", "Kling"])
         #expect(VideoModel.genjutsu.detail == "Higgsfield's own")
         #expect(VideoModel.genjutsu.offersDraft && VideoModel.seedance25.offersDraft)
         #expect(!VideoModel.klingMotionControl.offersDraft)
@@ -73,14 +76,35 @@ import Testing
         _ = try Pricing.bundled()
     }
 
-    /// MiniMax H3 Max isn't in the public REST docs: it has no endpoint, so no tariff, and runs on the account only.
+    /// MiniMax H3 Max isn't in the public REST docs, nor is Genjutsu Lite's request schema: they have no endpoint, so
+    /// no tariff, and run on the account only.
     @Test func aModelWithoutEndpointsRunsOnTheAccountOnly() throws {
         let max = try #require(VideoModel(rawValue: "minimaxH3MaxReference"))
+        let lite = try #require(VideoModel(rawValue: "genjutsuLite"))
         #expect(!max.runsWithAPIKey)
         #expect(max.endpointID(for: .motionTransfer, resolution: .p768, hasMedia: true).isEmpty)
         #expect(max.accountModelID(for: .motionTransfer) == "minimax_h3_max")
         #expect(!Pricing.tariffs.contains { $0.0.isEmpty })
-        #expect(VideoModel.allCases.filter { !$0.runsWithAPIKey } == [max])
+        #expect(VideoModel.allCases.filter { !$0.runsWithAPIKey } == [lite, max])
+    }
+
+    /// Genjutsu Lite: Genjutsu's request and draft for Motion and Swap (no Restyle) on models of its own, up to 15 s.
+    @Test func genjutsuLiteIsGenjutsusSecondModel() throws {
+        let lite = try #require(VideoModel(rawValue: "genjutsuLite"))
+        #expect(VideoModel.allCases.prefix(2) == [.genjutsu, lite])
+        #expect(lite.title == "Genjutsu Lite")
+        #expect(lite.family == VideoModel.genjutsu.family)
+        #expect(lite.modes == [.motionTransfer, .objectSwap])
+        #expect(lite.descriptor.shape == .genjutsu)
+        #expect(lite.offersDraft && lite.resolutions == Resolution.standard)
+        #expect(lite.accountModelID(for: .motionTransfer) == "hf_mult_motion_control_flash")
+        #expect(lite.accountModelID(for: .objectSwap) == "hf_mult_replace_object_flash")
+        for mode in lite.modes {
+            #expect(lite.limits(for: mode).duration == 4...15)
+            #expect(lite.limits(for: mode).referenceImages == VideoModel.genjutsu.limits(for: mode).referenceImages)
+        }
+        // Genjutsu stays each of its modes' default.
+        #expect(Mode.motionTransfer.defaultModel == .genjutsu && Mode.objectSwap.defaultModel == .genjutsu)
     }
 
     @Test func eachModeDefaultsToTheFirstModelServingIt() {

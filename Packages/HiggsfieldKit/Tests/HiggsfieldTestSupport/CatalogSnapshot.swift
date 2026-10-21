@@ -163,12 +163,38 @@ public enum CatalogSnapshot {
     }
 
     /// The snapshot's `models_explore {action: "get", model_id: id}` answer (its `structuredContent`), for every
-    /// listed video and image model.
+    /// listed video and image model, and for the models released after it (`laterModels`).
     public static func model(_ id: String) throws -> JSONValue {
+        if let text = laterModels[id] { return try value(text) }
         guard let model = snapshot?["models"]?["get"]?[id]?["structuredContent"], model.objectValue != nil else {
             throw MissingModel(id: id)
         }
         return model
+    }
+
+    /// `models_explore get` of the models the snapshot of 2026-10-15 predates, by ID: the fields a request is checked
+    /// against, as the live catalog of 2026-10-21 lists them. Genjutsu Lite (issue #15) takes Genjutsu's inputs: the
+    /// `image_references` and `video_references` roles and `resolution` 480p, 720p or 1080p.
+    static let laterModels: [String: String] = [
+        "hf_mult_motion_control_flash": genjutsuLite(id: "hf_mult_motion_control_flash"),
+        "hf_mult_replace_object_flash": genjutsuLite(id: "hf_mult_replace_object_flash"),
+    ]
+
+    private static func genjutsuLite(id: String) -> String {
+        #"""
+        {
+          "aspect_ratios": [],
+          "id": "\#(id)",
+          "medias": [
+            {"name": "medias", "roles": ["image_references", "video_references"], "type": "image"}
+          ],
+          "name": "Genjutsu Lite",
+          "output_type": "video",
+          "parameters": [
+            {"default": "720p", "name": "resolution", "options": ["480p", "720p", "1080p"], "required": "optional", "type": "string"}
+          ]
+        }
+        """#
     }
 
     /// `generate_video`'s own `params`, which no model schema lists.

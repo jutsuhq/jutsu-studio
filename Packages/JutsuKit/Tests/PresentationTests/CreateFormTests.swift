@@ -162,7 +162,8 @@ enum CreateFixture {
         form.model = .seedance25
         #expect(form.makeSpecs(isDraft: false).map(\.model) == [.seedance25])
         form.mode = .objectSwap
-        #expect(form.modelOptions(in: context) == [.genjutsu])
+        #expect(form.modelOptions(in: context) == VideoModel.allCases.filter { $0.serves(.objectSwap) })
+        #expect(form.modelOptions(in: context).map(\.rawValue) == ["genjutsu", "genjutsuLite"])
         #expect(form.makeSpecs(isDraft: false).map(\.model) == [.genjutsu])
         form.mode = .motionTransfer
         #expect(form.selectedModel == .seedance25)

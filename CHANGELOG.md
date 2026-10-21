@@ -4,6 +4,10 @@ Notable changes to Jutsu Studio. Versions follow [Semantic Versioning](https://s
 
 ## [Unreleased]
 
+### Added
+
+- Genjutsu Lite, a cheaper Genjutsu for motion transfer and object swap (up to 15 s), picked next to Genjutsu in Create on a Higgsfield account. Templates, drafts, finals and agents can use it; with an API key it isn't offered yet, and what was saved with it runs on Genjutsu.
+
 ## [0.1.0] - 2026-10-14
 
 The first public release.

@@ -1442,6 +1442,39 @@
         }
       }
     },
+    "genjutsuLite.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Genjutsu Lite · cheaper, up to 15 s"
+          }
+        }
+      }
+    },
+    "genjutsuLite.family" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Genjutsu"
+          }
+        }
+      }
+    },
+    "genjutsuLite.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Genjutsu Lite"
+          }
+        }
+      }
+    },
     "klingMotionControl.detail" : {
       "extractionState" : "manual",
       "localizations" : {

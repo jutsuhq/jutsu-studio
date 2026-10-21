@@ -2333,6 +2333,9 @@
         }
       }
     },
+    "These inputs use %@, which this connection doesn't offer." : {
+
+    },
     "These scores bring today to %@ against your %@ cap." : {
       "localizations" : {
         "en" : {

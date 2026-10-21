@@ -1,6 +1,8 @@
 {
   "sources": [
     "https://open.higgsfield.ai/models/higgsfield/genjutsu/motion-transfer/v1.0",
+    "https://open.higgsfield.ai/models/higgsfield/genjutsu-light/motion-transfer/v1.0",
+    "https://open.higgsfield.ai/models/higgsfield/genjutsu-light/object-swap/v1.0",
     "https://open.higgsfield.ai/models/bytedance/seedance-2.5/reference-to-video",
     "https://open.higgsfield.ai/models/bytedance/seedance-2.5/image-to-video",
     "https://open.higgsfield.ai/models/bytedance/seedance-2.5/video-edit",
@@ -19,12 +21,14 @@
     "https://open.higgsfield.ai/pricing",
     "https://dash.higgsfield.ai/api/v2/pricing/models/?page_size=50"
   ],
-  "updated": "2026-10-15",
+  "updated": "2026-10-21",
   "currency": "USD",
   "unit": "second of the job's source selection (or of the clip asked for; for video-extend, of the source selection plus the added part), rounded up; rates before discounts",
   "unpriced": "null where no page states the rate at that resolution: the job shows 'Price unknown' until the server's estimate for the uploaded files",
   "upTo": "{\"upTo\": rate} where a page gives only a range over all settings: the top of the range, so the price is never shown lower than it can be; the job shows 'up to' that price until the server's estimate for the uploaded files",
   "rateSources": {
+    "higgsfield/genjutsu-light/motion-transfer/v1.0": "the pricing feed, 2026-10-21: per second at each resolution, 480p 0.05, 720p 0.10, 1080p 0.20. Genjutsu Lite runs on an account only until its REST request schema is published, so no job is priced by it yet",
+    "higgsfield/genjutsu-light/object-swap/v1.0": "same feed and rates, 2026-10-21; account only for now, as for motion transfer",
     "alibaba/wan-3.0/reference-to-video": "open.higgsfield.ai/pricing and its feed dash.higgsfield.ai/api/v2/pricing/models, 2026-10-15: original_amount per second at each resolution, 480p 0.05, 720p 0.10, 1080p 0.20 (60% off until 2026-11-01, then 50%)",
     "alibaba/wan-3.0-prime/reference-to-video": "same feed, 2026-10-15: original_amount per second at each resolution, 480p 0.068, 720p 0.14, 1080p 0.28 (60% off until 2026-11-01, then 40%)",
     "higgsfield/cinema-studio/4.0": "same feed, 2026-10-15: from 0.2057 (480p, 4 s) to 0.4623 (720p, 30 s) per second, no discount; only that range is published, so both resolutions take its top",
@@ -36,6 +40,8 @@
     "higgsfield/genjutsu/motion-transfer/v1.0": { "480p": 0.318, "720p": 0.681, "1080p": 1.632 },
     "higgsfield/genjutsu/object-swap/v1.0": { "480p": 0.318, "720p": 0.681, "1080p": 1.632 },
     "higgsfield/genjutsu/restyle/v1.0": { "480p": 0.318, "720p": 0.681, "1080p": 1.632 },
+    "higgsfield/genjutsu-light/motion-transfer/v1.0": { "480p": 0.05, "720p": 0.1, "1080p": 0.2 },
+    "higgsfield/genjutsu-light/object-swap/v1.0": { "480p": 0.05, "720p": 0.1, "1080p": 0.2 },
     "bytedance/seedance-2.5/text-to-video": { "480p": 0.2056, "720p": 0.4622, "1080p": 1.1372 },
     "bytedance/seedance-2.5/reference-to-video": { "480p": 0.2056, "720p": 0.4622, "1080p": 1.1372 },
     "bytedance/seedance-2.5/image-to-video": { "480p": 0.2056, "720p": 0.4622, "1080p": 1.1372 },

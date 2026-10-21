@@ -156,12 +156,14 @@ struct CreateView: View {
         }
         guard !Task.isCancelled, navigation.pendingEdit == spec else { return }
         let (parentID, models) = (navigation.pendingEditParent, loader.capabilities?.models)
-        navigation.replaceDraft { form in
+        let fallback = navigation.replaceDraft { form in
             form.load(spec, source: video, parentID: parentID)
-            form.fitModel(to: models)
+            return form.fitModel(to: models)
         }
         navigation.pendingEdit = nil
         navigation.pendingEditParent = nil
+        // A missing source is the one to fix first; the model the form fell back to shows in its picker.
+        alert = fallback
         if video == nil, spec.source != nil {
             alert = UserMessage(
                 title: String(localized: "Can't open the source video"),
