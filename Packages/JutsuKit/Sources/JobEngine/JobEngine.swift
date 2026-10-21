@@ -47,8 +47,9 @@ public actor JobEngine {
     /// Jobs with a change being saved, and the writers waiting for their turn (`writing`).
     var writeTurns = WriteTurns()
     var isStarted = false
-    /// Jobs `importFinished` is downloading; their partial files aren't leftovers.
-    var importing: Set<UUID> = []
+    /// Jobs `importFinished` is downloading, and the downloads, which a second import of the same job waits for;
+    /// their partial files aren't leftovers.
+    var importing: [UUID: Task<Job, any Error>] = [:]
     var progressCoalescer = ProgressCoalescer()
     /// Enqueues not finished yet, by request, so an equal one sent meanwhile gets the same job (`enqueue`).
     var enqueuing: [EnqueueRequest: Task<Job, any Error>] = [:]
