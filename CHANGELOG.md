@@ -4,9 +4,22 @@ Notable changes to Jutsu Studio. Versions follow [Semantic Versioning](https://s
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-21
+
 ### Added
 
+- An MCP server for AI agents (Claude Code, Codex, Cursor, Claude Desktop), bundled in the app at `Contents/Helpers/jutsu`. Agents can quote, queue and follow videos and images, search and mark the Library, build and export Delivery Sets, and open the app's screens. Agents are off until allowed in Settings › Agents, and their spending is held to a daily agent budget the person sets, with every job above it waiting in the Queue for the person.
 - Genjutsu Lite, a cheaper Genjutsu for motion transfer and object swap (up to 15 s), picked next to Genjutsu in Create on a Higgsfield account. Templates, drafts, finals and agents can use it; with an API key it isn't offered yet, and what was saved with it runs on Genjutsu.
+
+### Changed
+
+- The Keep or Reject button pressed again takes the verdict back, image frames are named by their usual aspect ratio (4:3, not 73:55), the current card's ring no longer bends around its title, and every control has a short tooltip.
+
+## [0.1.1] - 2026-10-16
+
+### Changed
+
+- Account sign-in identifies Jutsu Studio by its published client metadata, so Higgsfield's consent page shows "Jutsu Studio"; the page after approving access has an Open Jutsu Studio button, and signing out goes straight to the sign-in screen.
 
 ## [0.1.0] - 2026-10-14
 
@@ -25,5 +38,7 @@ The first public release.
 - The restyle preset gallery with search, favorites and recents.
 - Menu bar status, Dock badge, notifications and open at login.
 
-[Unreleased]: https://github.com/jutsuhq/jutsu-studio/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/jutsuhq/jutsu-studio/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/jutsuhq/jutsu-studio/compare/v0.1.1...v0.2.0
+[0.1.1]: https://github.com/jutsuhq/jutsu-studio/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/jutsuhq/jutsu-studio/releases/tag/v0.1.0
