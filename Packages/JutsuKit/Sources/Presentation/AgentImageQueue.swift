@@ -242,7 +242,7 @@ extension AgentImageQueue {
             generator.finish(id, .failed(Self.notRecorded))
             return nil
         }
-        let (price, isKnown) = await quote(request, of: record, provider: provider)
+        guard let (price, isKnown) = await quote(request, of: record, provider: provider) else { return nil }
         let status: SpendStatus?
         do {
             status = try await generator.spendStatus(provider.kind)
@@ -270,12 +270,20 @@ extension AgentImageQueue {
     }
 
     /// The provider's quote for the request, else the model's list price as an estimate; and whether it is exact.
+    /// A quote that turns the request down, such as more input images than a model whose catalog states no limit
+    /// takes, fails it (`nil`): it comes before anything is reserved or sent, so the refusal costs nothing.
     private func quote(
         _ request: ImageRequest, of record: AgentImageRecord, provider: any ImageProvider
-    ) async -> (Cost, Bool) {
+    ) async -> (Cost, Bool)? {
         do {
             let price = try await provider.imageEstimate(request)
             return (price, !price.isEstimate && !price.isUnknownPrice)
+        } catch let error as ProviderError {
+            if case .validation = error {
+                generator.finish(record.id, .failed(ReferenceGenerator.message(error)))
+                return nil
+            }
+            return (Self.listPrice(of: record) ?? .unknownCredits, false)
         } catch {
             return (Self.listPrice(of: record) ?? .unknownCredits, false)
         }

@@ -42,7 +42,8 @@ says rather than guessing.
    (`{amount, unit}`, `usd` or `credits`, matching the connection) no lower than the quote. Use a cheap draft mode when
    it fits the task (`draft: true` on models that have one, a lower resolution, fewer variants), and make the full
    version once the person likes the draft. `create_image` takes several `inputs` to edit, up to the model's
-   `maxInputs`.
+   `maxInputs`; with `maxInputsNote` that is only a bound, and Higgsfield's quote refuses (for free) what the model
+   doesn't take.
    - **Characters by name.** `elements` lists the account's characters, environments and props. Pass their names in
      `elements` to `create_video`, `quote` or `create_image`: their images go first, in order, then your own files.
      The answer's `references` gives each image's `@ImageN` tag; name them that way in the prompt.

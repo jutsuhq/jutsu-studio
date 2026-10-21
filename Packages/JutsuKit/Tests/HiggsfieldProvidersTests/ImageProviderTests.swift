@@ -192,16 +192,22 @@ extension Network {
                     == ["soul_2", "soul_cinematic", "gpt_image_2", "nano_banana", "grok_image", "grok_image_2_0"])
         }
 
-        /// How many images a model edits comes from its `medias` entry's `max`; one where the catalog names none.
+        /// How many images a model edits comes from its `medias` entry's `max`. Where the catalog names none, as
+        /// `models_explore list` does for GPT Image 2 and Nano Banana Pro, the bound: `get_cost` refuses the rest.
         @Test func theCatalogsMaximumIsHowManyInputsAModelTakes() {
             let listed = [
                 AccountImageModel(
                     id: "nano_banana", name: "Nano Banana", aspectRatios: ["1:1"], imageRole: "image_references",
                     maxImages: 8),
-                AccountImageModel(id: "soul_2", name: "Soul 2", aspectRatios: ["1:1"], imageRole: "image"),
+                AccountImageModel(
+                    id: "soul_2", name: "Soul 2", aspectRatios: ["1:1"], imageRole: "image", maxImages: 1),
+                AccountImageModel(id: "gpt_image_2", name: "GPT Image 2", aspectRatios: ["1:1"], imageRole: "image"),
                 AccountImageModel(id: "soul_cast", name: "Soul Cast", aspectRatios: ["1:1"]),
             ]
-            #expect(HiggsfieldProviders.AccountImages.models(listed).map(\.inputLimit) == [8, 1, 0])
+            let models = HiggsfieldProviders.AccountImages.models(listed)
+            #expect(models.map(\.inputLimit) == [8, 1, ImageModel.inputBound, 0])
+            #expect(models.map(\.inputLimitIsBound) == [false, false, true, false])
+            #expect(ImageModel.inputBound == 14)
         }
 
         @Test func anAccountListingNoneOfTheCuratedModelsOffersItsFirst() {

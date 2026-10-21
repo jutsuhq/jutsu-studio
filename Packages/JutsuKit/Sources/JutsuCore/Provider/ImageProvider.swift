@@ -20,14 +20,18 @@ public struct ImageModel: Codable, Sendable, Hashable, Identifiable {
     /// The frames the model takes, as "W:H".
     public var aspectRatios: [String]
     public var input: Input
-    /// The most input images one request takes, where the model's catalog says; `nil` takes one. 0 with `none`.
+    /// The most input images one request takes, where the model's catalog says; `nil` takes one, unless
+    /// `unstatedInputLimit` is set. 0 with `none`.
     public var maxInputs: Int?
+    /// For a model that takes images but whose catalog states no most: how many may be sent anyway, `inputBound`.
+    /// The provider's own quote then refuses more than the model takes, before anything is sent or paid.
+    public var unstatedInputLimit: Int?
     /// The public list price of one image, labelled as an estimate; `nil` when none is known.
     public var listPrice: Cost?
 
     public init(
         id: String, title: String, variantCounts: [Int] = [1], aspectRatios: [String], input: Input = .none,
-        listPrice: Cost? = nil, maxInputs: Int? = nil
+        listPrice: Cost? = nil, maxInputs: Int? = nil, unstatedInputLimit: Int? = nil
     ) {
         self.id = id
         self.title = title
@@ -36,12 +40,23 @@ public struct ImageModel: Codable, Sendable, Hashable, Identifiable {
         self.input = input
         self.listPrice = listPrice
         self.maxInputs = maxInputs
+        self.unstatedInputLimit = unstatedInputLimit
     }
 
-    /// How many input images one request may send: none for a text-only model, else the catalog's limit, or one
-    /// where it says none.
+    /// The most input images any request sends, where a model's catalog states no limit of its own: as many as
+    /// Nano Banana Pro takes, the most of the account's models. The same as `AgentImageRequest.maxInputs`.
+    public static let inputBound = 14
+
+    /// How many input images one request may send: none for a text-only model, else the catalog's limit, else
+    /// `unstatedInputLimit`, else one.
     public var inputLimit: Int {
-        input == .none ? 0 : max(1, maxInputs ?? 1)
+        input == .none ? 0 : max(1, maxInputs ?? unstatedInputLimit ?? 1)
+    }
+
+    /// The limit is a bound rather than the model's own: its catalog states none, and the provider's quote refuses
+    /// what the model doesn't take.
+    public var inputLimitIsBound: Bool {
+        input != .none && maxInputs == nil && unstatedInputLimit != nil
     }
 
     /// The ratio of `aspectRatios` closest to `width` × `height`; the first one when the size is unusable.

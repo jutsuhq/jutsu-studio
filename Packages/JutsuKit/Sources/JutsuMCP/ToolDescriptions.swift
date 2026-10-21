@@ -16,8 +16,8 @@ extension Tool {
             its limits per mode (seconds, images, whether it needs a style or a source, and maxVariants, the most \
             variants takes there on this connection, with variantsUnavailable saying why it is 1). image_models: true adds the \
             image models create_image takes (counts, aspect ratios, whether input images are needed, maxInputs, the \
-            most inputs it takes), styles: true Restyle's style IDs, voices: true Change Voice's voices. Free, and \
-            never shows a credential.
+            most inputs it takes, with maxInputsNote when that is a bound because the catalog states none), \
+            styles: true Restyle's style IDs, voices: true Change Voice's voices. Free, and never shows a credential.
             """
         case .quote:
             """

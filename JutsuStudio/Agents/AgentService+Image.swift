@@ -149,7 +149,8 @@ extension AgentService {
                 }
             return AgentCapabilities.ImageModel(
                 id: model.id, title: model.title, counts: model.variantCounts, aspectRatios: model.aspectRatios,
-                input: input, maxInputs: model.inputLimit)
+                input: input, maxInputs: min(model.inputLimit, AgentImageRequest.maxInputs),
+                maxInputsNote: model.inputLimitIsBound ? AgentCapabilities.ImageModel.boundNote : nil)
         }
     }
 }

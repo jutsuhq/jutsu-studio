@@ -6,7 +6,7 @@ Notable changes to Jutsu Studio. Versions follow [Semantic Versioning](https://s
 
 ### Added
 
-- Agents can give `create_image` several input images (`inputs`); `input` still takes one.
+- Agents can give `create_image` several input images (`inputs`), up to the model's limit, or 14 where Higgsfield's catalog states none; `input` still takes one.
 - Agents can read Library items in full with `library_get`: the whole prompt, the inputs in the order sent and the settings.
 - Agents can take still frames of a result or a file with `frames`, and compare it with another clip or its own source on a contact sheet, written into the Exports folder. Free and local.
 - Agents can list your Higgsfield history in `library_search` and download results into the Library with `library_download`. Free; it never spends credits.

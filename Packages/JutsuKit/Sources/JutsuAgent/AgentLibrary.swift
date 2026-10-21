@@ -27,9 +27,9 @@ extension AgentFields {
 public struct AgentImageRequest: Codable, Equatable, Hashable, Sendable {
     /// More than any model makes, so the model's own counts refuse the rest with a reason.
     public static let maxCount = 16
-    /// A bound of the protocol, above every model's own limit (`capabilities` imageModels `maxInputs`), which refuses
-    /// the rest with a reason.
-    public static let maxInputs = 16
+    /// A bound of the protocol: the most a model may take where its catalog states no limit (`capabilities`
+    /// imageModels `maxInputs` with `maxInputsNote`); a model's own limit refuses the rest with a reason.
+    public static let maxInputs = 14
 
     /// An image model ID from `capabilities` (`imageModels`); left out, the connection's first.
     public var model: String?

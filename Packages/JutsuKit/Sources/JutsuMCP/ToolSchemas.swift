@@ -57,7 +57,7 @@ extension Tool {
                         "counts": ["type": "array", "items": ["type": "integer"]],
                         "aspectRatios": ["type": "array", "items": ["type": "string"]],
                         "input": ["type": "string", "enum": ["none", "optional", "required"]],
-                        "maxInputs": ["type": "integer"],
+                        "maxInputs": ["type": "integer"], "maxInputsNote": ["type": "string"],
                     ],
                 ],
             ]

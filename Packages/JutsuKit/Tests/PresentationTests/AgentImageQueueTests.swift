@@ -272,6 +272,29 @@ struct AgentImageQueueTests {
         #expect(await provider.submitted.isEmpty)
     }
 
+    /// A model whose catalog states no limit takes up to the bound; Higgsfield's quote refuses more than it takes.
+    /// The quote comes before anything is reserved or sent, so the refusal fails the request and costs nothing.
+    @Test func aQuoteThatRefusesTheInputsFailsTheRequestBeforeAnythingIsSent() async throws {
+        await provider.set(estimate: .failure(.validation(field: nil, message: "This model takes at most 4 images.")))
+        let open = ImageModel(
+            id: "open", title: "Open", aspectRatios: ["1:1"], input: .optional,
+            unstatedInputLimit: ImageModel.inputBound)
+        let generator = generator()
+        generator.useModels([soul, edit, open])
+        let queue = queue(generator)
+        let pictures = (1...6).map { LocalImage(fileURL: URL(fileURLWithPath: "/tmp/agent-input-\($0).png")) }
+        let id = try create(
+            queue, AgentImageOrder(model: "open", prompt: "x", aspectRatio: nil, count: nil, inputs: pictures))
+
+        await eventually { queue.record(id)?.state == .failed }
+
+        #expect(queue.record(id)?.error?.contains("at most 4 images") == true)
+        #expect(queue.record(id)?.mayHaveBeenSent == false)
+        #expect(await provider.submitted.isEmpty)
+        #expect(await ledger.spends.isEmpty)
+        #expect(open.inputLimit == 14 && open.inputLimitIsBound)
+    }
+
     @Test func overTheDailyAgentBudgetIsHeld() async throws {
         let queue = queue(generator(), limit: 5)
         let id = try create(queue, order())

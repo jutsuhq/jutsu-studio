@@ -158,9 +158,12 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
         public var input: String
         /// The most images `create_image` takes as `inputs`; 0 when it edits none.
         public var maxInputs: Int
+        /// Set when `maxInputs` is the protocol's bound rather than the model's own: its catalog states no limit.
+        public var maxInputsNote: String?
 
         public init(
-            id: String, title: String, counts: [Int], aspectRatios: [String], input: String, maxInputs: Int = 0
+            id: String, title: String, counts: [Int], aspectRatios: [String], input: String, maxInputs: Int = 0,
+            maxInputsNote: String? = nil
         ) {
             self.id = id
             self.title = title
@@ -168,7 +171,14 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
             self.aspectRatios = aspectRatios
             self.input = input
             self.maxInputs = maxInputs
+            self.maxInputsNote = maxInputsNote
         }
+
+        /// `maxInputsNote` for a model whose catalog states no limit.
+        public static let boundNote =
+            "Higgsfield's catalog states no limit for this model, so up to \(AgentImageRequest.maxInputs) are taken; "
+            + "Higgsfield's own quote, made before anything is sent, refuses more than the model takes, and that costs "
+            + "nothing."
     }
 
     /// A Restyle style, by the ID `create_video` takes as `style`.
