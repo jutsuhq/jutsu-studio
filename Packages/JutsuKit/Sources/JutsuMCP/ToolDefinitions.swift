@@ -20,6 +20,7 @@ extension Tool {
         case .quote: "Quote a video"
         case .createVideo: "Create a video"
         case .createImage: "Create images"
+        case .elements: "Characters and elements"
         case .jobs: "Jobs"
         case .jobAction: "Act on a job or the queue"
         case .librarySearch: "Search the Library"
@@ -73,6 +74,11 @@ extension Tool {
                     "description": "Images on this Mac to edit, in order, up to the model's maxInputs.",
                 ],
                 "input": ["type": "string", "description": "One image to edit: the same as inputs with one item."],
+                "elements": [
+                    "type": "array", "maxItems": .number(Double(AgentElementNames.maxNames)),
+                    "items": ["type": "string", "maxLength": .number(Double(AgentElementNames.maxNameLength))],
+                    "description": "The account's elements by name, from the elements tool; their images go first.",
+                ],
             ]
             schema["required"] = ["request_id", "prompt", "max_cost"]
         case .librarySearch:
@@ -201,6 +207,13 @@ extension Tool {
                 "compare_source": ["type": "boolean", "description": "The item's own source clip."],
             ]
             schema["required"] = ["times"]
+        case .elements:
+            schema["properties"] = [
+                "query": ["type": "string", "maxLength": 200, "description": "Words of the name."],
+                "category": ["type": "string", "enum": .array(ElementsCommand.categories.map { .string($0) })],
+                "limit": ["type": "integer", "minimum": 1, "maximum": .number(Double(ElementsCommand.maxLimit))],
+                "cursor": ["type": "string", "description": "nextCursor of the page before."],
+            ]
         // Exactly one of the two, said in words and checked on the call: some model APIs refuse oneOf at the top of
         // an input schema.
         case .show:
@@ -253,6 +266,11 @@ extension Tool {
             "aspect_ratio": ["type": "string", "description": "A clip without a source: 16:9, 9:16, 1:1…"],
             "audio": ["type": "string", "enum": .array(AgentVideoRequest.audioOptions.map { .string($0) })],
             "variants": ["type": "integer", "minimum": 1, "description": "Videos one submit makes, where offered."],
+            "elements": [
+                "type": "array", "maxItems": .number(Double(AgentElementNames.maxNames)),
+                "items": ["type": "string", "maxLength": .number(Double(AgentElementNames.maxNameLength))],
+                "description": "The account's elements by name, from the elements tool; their images go first.",
+            ],
         ]
         if !files {
             properties["image_count"] = [
@@ -266,6 +284,9 @@ extension Tool {
         switch self {
         case .capabilities, .quote, .jobs, .libraryGet:
             ["readOnlyHint": true, "destructiveHint": false, "idempotentHint": true, "openWorldHint": false]
+        // Reads the account's elements on Higgsfield.
+        case .elements:
+            ["readOnlyHint": true, "destructiveHint": false, "idempotentHint": true, "openWorldHint": true]
         // refresh_higgsfield reads the account's history from Higgsfield.
         case .librarySearch:
             ["readOnlyHint": true, "destructiveHint": false, "idempotentHint": true, "openWorldHint": true]

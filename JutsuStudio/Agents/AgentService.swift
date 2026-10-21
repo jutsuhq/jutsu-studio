@@ -133,6 +133,8 @@ final class AgentService {
             return AgentResponse(library: try await librarySearch(fields))
         case .libraryGet(let fields):
             return AgentResponse(details: try await libraryGet(fields))
+        case .elements(let fields):
+            return AgentResponse(elements: try await elements(fields))
         case .libraryDownload(let fields):
             return AgentResponse(downloads: try await libraryDownload(fields))
         case .libraryMark(let fields):

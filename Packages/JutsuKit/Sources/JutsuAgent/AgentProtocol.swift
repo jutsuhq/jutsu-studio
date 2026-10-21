@@ -46,6 +46,8 @@ public enum AgentCommand: Equatable, Sendable {
     case librarySearch(LibrarySearchCommand)
     /// The full details of Library items by ID.
     case libraryGet(LibraryGetCommand)
+    /// The account's reference elements by name.
+    case elements(ElementsCommand)
     /// Downloads results of the Higgsfield history into the Library.
     case libraryDownload(LibraryDownloadCommand)
     /// Sets the culling verdict and the star of Library items.
@@ -71,6 +73,7 @@ public enum AgentCommand: Equatable, Sendable {
         case .createImage: "create_image"
         case .librarySearch: "library_search"
         case .libraryGet: "library_get"
+        case .elements: "elements"
         case .libraryDownload: "library_download"
         case .libraryMark: "library_mark"
         case .enhance: "enhance"
@@ -120,6 +123,7 @@ public struct AgentRequest: Codable, Equatable, Sendable {
         case "create_image": command = .createImage(try .checked(from: decoder))
         case "library_search": command = .librarySearch(try .checked(from: decoder))
         case "library_get": command = .libraryGet(try .checked(from: decoder))
+        case "elements": command = .elements(try .checked(from: decoder))
         case "library_download": command = .libraryDownload(try .checked(from: decoder))
         case "library_mark": command = .libraryMark(try .checked(from: decoder))
         case "enhance": command = .enhance(try .checked(from: decoder))
@@ -147,6 +151,7 @@ public struct AgentRequest: Codable, Equatable, Sendable {
         case .createImage(let fields): try fields.encode(to: encoder)
         case .librarySearch(let fields): try fields.encode(to: encoder)
         case .libraryGet(let fields): try fields.encode(to: encoder)
+        case .elements(let fields): try fields.encode(to: encoder)
         case .libraryDownload(let fields): try fields.encode(to: encoder)
         case .libraryMark(let fields): try fields.encode(to: encoder)
         case .enhance(let fields): try fields.encode(to: encoder)
@@ -176,6 +181,7 @@ public struct AgentResponse: Codable, Equatable, Sendable {
     /// library_get: the items in full.
     public var details: AgentLibraryDetailsPage?
     public var downloads: AgentDownloads?
+    public var elements: AgentElementsPage?
     /// library_mark: the items as they are now.
     public var marked: AgentMarked?
     public var delivery: AgentDelivery?
@@ -187,7 +193,8 @@ public struct AgentResponse: Codable, Equatable, Sendable {
         id: String? = nil, capabilities: AgentCapabilities? = nil, shown: AgentShown? = nil, uploaded: String? = nil,
         quote: AgentQuote? = nil, created: AgentCreated? = nil, jobs: AgentJobs? = nil, acted: AgentActed? = nil,
         library: AgentLibraryPage? = nil, details: AgentLibraryDetailsPage? = nil, marked: AgentMarked? = nil,
-        downloads: AgentDownloads? = nil, delivery: AgentDelivery? = nil, exported: AgentExported? = nil,
+        downloads: AgentDownloads? = nil, elements: AgentElementsPage? = nil, delivery: AgentDelivery? = nil,
+        exported: AgentExported? = nil,
         frames: AgentFrames? = nil, error: AgentError? = nil
     ) {
         self.id = id
@@ -201,6 +208,7 @@ public struct AgentResponse: Codable, Equatable, Sendable {
         self.library = library
         self.details = details
         self.downloads = downloads
+        self.elements = elements
         self.marked = marked
         self.delivery = delivery
         self.exported = exported

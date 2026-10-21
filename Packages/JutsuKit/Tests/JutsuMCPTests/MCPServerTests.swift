@@ -155,7 +155,8 @@ actor FakeApp {
         #expect(
             tools.map { $0["name"]?.stringValue }
                 == [
-                    "capabilities", "quote", "create_video", "jobs", "job_action", "create_image", "library_search",
+                    "capabilities", "quote", "create_video", "jobs", "job_action", "create_image", "elements",
+                    "library_search",
                     "library_get", "library_download", "library_mark", "enhance", "delivery_set", "export", "frames",
                     "show",
                 ])
@@ -173,7 +174,7 @@ actor FakeApp {
             #expect(tool["title"]?.stringValue?.isEmpty == false)
         }
         let hints = Dictionary(uniqueKeysWithValues: tools.map { ($0["name"]?.stringValue ?? "", $0["annotations"]) })
-        for name in ["capabilities", "quote", "jobs", "library_search", "library_get"] {
+        for name in ["capabilities", "quote", "jobs", "elements", "library_search", "library_get"] {
             #expect(hints[name]??["readOnlyHint"] == true, "\(name)")
             #expect(hints[name]??["destructiveHint"] == false, "\(name)")
         }

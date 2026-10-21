@@ -5,7 +5,9 @@ import JutsuAgent
 // The parsers of create_image and the Library tools, kept apart from the video tools in Tools.swift.
 extension Tool {
     static func createImage(_ given: Arguments, workingDirectory: URL) throws(AgentError) -> AgentCommand {
-        try given.allow(["request_id", "model", "prompt", "aspect_ratio", "count", "inputs", "input", "max_cost"])
+        try given.allow([
+            "request_id", "model", "prompt", "aspect_ratio", "count", "inputs", "input", "elements", "max_cost",
+        ])
         let requestID = try given.requestID()
         let maxCost = try given.maxCost()
         guard let prompt = try given.string("prompt") else {
@@ -22,7 +24,7 @@ extension Tool {
         }
         var image = AgentImageRequest(
             model: try given.string("model"), prompt: prompt, aspectRatio: try given.string("aspect_ratio"),
-            count: try given.int("count"), inputs: inputs)
+            count: try given.int("count"), inputs: inputs, elements: try given.strings("elements"))
         if let problem = image.problem { throw .badRequest("create_image: \(problem)") }
         image.inputs = image.inputs.map { Inbox.resolve($0, from: workingDirectory).path(percentEncoded: false) }
         let fingerprint = try Self.fingerprint("create_image", image, files: image.inputs, maxCost)
@@ -63,6 +65,15 @@ extension Tool {
         let command = LibraryGetCommand(ids: try given.ids("ids"))
         if let problem = command.problem { throw .badRequest("library_get: \(problem)") }
         return .libraryGet(command)
+    }
+
+    static func elements(_ given: Arguments) throws(AgentError) -> AgentCommand {
+        try given.allow(["query", "category", "limit", "cursor"])
+        let command = ElementsCommand(
+            query: try given.string("query"), category: try given.string("category"), limit: try given.int("limit"),
+            cursor: try given.string("cursor"))
+        if let problem = command.problem { throw .badRequest("elements: \(problem)") }
+        return .elements(command)
     }
 
     static func libraryDownload(_ given: Arguments) throws(AgentError) -> AgentCommand {

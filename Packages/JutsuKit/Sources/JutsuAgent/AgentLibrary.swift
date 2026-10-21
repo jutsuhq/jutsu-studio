@@ -40,21 +40,25 @@ public struct AgentImageRequest: Codable, Equatable, Hashable, Sendable {
     public var count: Int?
     /// For `create_image`: the images to edit, in order, paths in the app's inbox.
     public var inputs: [String]
+    /// The account's reference elements by name (`elements`): their images go first, before `inputs`.
+    public var elements: [String]
 
     public init(
-        model: String? = nil, prompt: String, aspectRatio: String? = nil, count: Int? = nil, inputs: [String] = []
+        model: String? = nil, prompt: String, aspectRatio: String? = nil, count: Int? = nil, inputs: [String] = [],
+        elements: [String] = []
     ) {
         self.model = model
         self.prompt = prompt
         self.aspectRatio = aspectRatio
         self.count = count
         self.inputs = inputs
+        self.elements = elements
     }
 
     /// One input goes as `input`, as before there were several, so a request sent again after an update keeps its
     /// fingerprint; several go as `inputs`.
     private enum CodingKeys: String, CodingKey {
-        case model, prompt, aspectRatio, count, input, inputs
+        case model, prompt, aspectRatio, count, input, inputs, elements
     }
 
     public init(from decoder: any Decoder) throws {
@@ -67,6 +71,7 @@ public struct AgentImageRequest: Codable, Equatable, Hashable, Sendable {
         let inputs = try container.decodeIfPresent([String].self, forKey: .inputs)
         if input != nil, inputs != nil { throw AgentError.badRequest(Self.bothInputs) }
         self.inputs = inputs ?? input.map { [$0] } ?? []
+        elements = try container.decodeIfPresent([String].self, forKey: .elements) ?? []
     }
 
     public func encode(to encoder: any Encoder) throws {
@@ -80,6 +85,7 @@ public struct AgentImageRequest: Codable, Equatable, Hashable, Sendable {
         case 1: try container.encode(inputs[0], forKey: .input)
         default: try container.encode(inputs, forKey: .inputs)
         }
+        if !elements.isEmpty { try container.encode(elements, forKey: .elements) }
     }
 
     public static let bothInputs = "send inputs, the images in order, or input, one image; not both"
@@ -95,6 +101,7 @@ public struct AgentImageRequest: Codable, Equatable, Hashable, Sendable {
         if let path = inputs.first(where: { !AgentVideoRequest.isValidPath($0) }) {
             return "inputs has a path that isn't one: \(path.prefix(80))"
         }
+        if let problem = AgentElementNames.problem(elements) { return problem }
         return nil
     }
 }

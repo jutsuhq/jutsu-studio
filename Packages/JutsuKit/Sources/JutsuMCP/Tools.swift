@@ -10,6 +10,7 @@ enum Tool: String, CaseIterable {
     case jobs
     case jobAction = "job_action"
     case createImage = "create_image"
+    case elements
     case librarySearch = "library_search"
     case libraryGet = "library_get"
     case libraryDownload = "library_download"
@@ -39,6 +40,7 @@ enum Tool: String, CaseIterable {
             case .jobAction: .success(try Self.jobAction(given))
             case .librarySearch: .success(try Self.librarySearch(given))
             case .libraryGet: .success(try Self.libraryGet(given))
+            case .elements: .success(try Self.elements(given))
             case .libraryDownload: .success(try Self.libraryDownload(given))
             case .libraryMark: .success(try Self.libraryMark(given))
             case .enhance: .success(try Self.enhance(given))
@@ -162,7 +164,7 @@ enum Tool: String, CaseIterable {
     /// What `quote` and `create_video` both take.
     static let videoKeys: Set<String> = [
         "mode", "model", "prompt", "source", "images", "style", "resolution", "draft", "length", "aspect_ratio",
-        "audio", "variants",
+        "audio", "variants", "elements",
     ]
 
     /// What makes two `create_video` requests the same: the parameters, the files by path and size, and the most the
@@ -341,7 +343,7 @@ struct Arguments {
             mode: mode, model: try string("model"), prompt: try string("prompt"), source: source,
             images: try strings("images"), style: style, resolution: try string("resolution"),
             draft: try bool("draft"), length: try number("length"), aspectRatio: try string("aspect_ratio"),
-            audio: try string("audio"), variants: try int("variants"))
+            audio: try string("audio"), variants: try int("variants"), elements: try strings("elements"))
     }
 
     /// `max_cost` as whole units: dollars become cents, rounded down so the job never costs more than was said.

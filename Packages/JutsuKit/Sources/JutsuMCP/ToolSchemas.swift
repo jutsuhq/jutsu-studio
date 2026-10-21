@@ -83,6 +83,27 @@ extension Tool {
             properties["requestId"] = ["type": "string"]
             properties["known"] = ["type": "boolean"]
             properties["jobs"] = ["type": "array", "items": Self.jobSchema]
+            properties["references"] = [
+                "type": "array",
+                "items": [
+                    "type": "object",
+                    "properties": [
+                        "tag": ["type": "string"], "element": ["type": "string"], "file": ["type": "string"],
+                    ],
+                ],
+            ]
+        case .elements:
+            properties["items"] = [
+                "type": "array",
+                "items": [
+                    "type": "object",
+                    "properties": [
+                        "id": ["type": "string"], "name": ["type": "string"], "category": ["type": "string"],
+                        "imageCount": ["type": "integer"],
+                    ],
+                ],
+            ]
+            properties["nextCursor"] = ["type": "string"]
         case .jobs:
             properties["jobs"] = ["type": "array", "items": Self.jobSchema]
             properties["timedOut"] = ["type": "boolean"]

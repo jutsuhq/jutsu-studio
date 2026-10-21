@@ -62,12 +62,13 @@ extension AgentService {
             throw AgentError(.notApplicable, message: blocker, retryable: true, next: "Try again in a moment.")
         }
         try Self.checkUnit(of: fields.maxCost, on: kind)
-        var inputs: [LocalImage] = []
-        for path in fields.image.inputs { inputs.append(LocalImage(fileURL: try inboxFile(path))) }
+        var files: [LocalImage] = []
+        for path in fields.image.inputs { files.append(LocalImage(fileURL: try inboxFile(path))) }
+        let elements = try await elementImages(fields.image.elements)
         let image = fields.image
         let order = AgentImageOrder(
             model: image.model, prompt: image.prompt, aspectRatio: image.aspectRatio, count: image.count,
-            inputs: inputs)
+            inputs: elements.flatMap(\.images) + files)
         let id = UUID()
         try recordRequest(fields.requestID, fingerprint: fields.fingerprint, jobIDs: [id])
         let origin = AgentOrigin(
@@ -83,7 +84,9 @@ extension AgentService {
                 : AgentError.invalidRequest(error.message)
         }
         let jobs = await imageJob(id).map { [$0] } ?? []
-        return AgentCreated(requestID: fields.requestID, known: false, jobs: jobs)
+        return AgentCreated(
+            requestID: fields.requestID, known: false, jobs: jobs,
+            references: Self.references(elements: elements, files: files))
     }
 
     /// An agent's image request as `jobs` lists it; `nil` when there is no such request.

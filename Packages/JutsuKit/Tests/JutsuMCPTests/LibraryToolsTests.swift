@@ -191,6 +191,43 @@ import Testing
         }
     }
 
+    /// Elements by name, in create_video, quote and create_image; a request without them keeps its wire shape.
+    @Test func elementsAreNamesCheckedBeforeTheApp() throws {
+        guard case .success(.elements(let list)) = command(.elements, ["query": "mara", "category": "character"])
+        else {
+            Issue.record("no elements")
+            return
+        }
+        #expect(list.query == "mara" && list.category == "character")
+        guard case .success(.createImage(let made)) = command(.createImage, image(["elements": ["Mara", "Roof"]]))
+        else {
+            Issue.record("no create_image with elements")
+            return
+        }
+        #expect(made.image.elements == ["Mara", "Roof"])
+        let plain = try AgentWire.line(AgentRequest(.quote(QuoteCommand(video: AgentVideoRequest(mode: "restyle")))))
+        #expect(!String(decoding: plain, as: UTF8.self).contains("elements"))
+        let quote: [String: JSONValue] = ["mode": "motion_transfer", "elements": ["Mara"]]
+        guard case .success(.quote(let quoted)) = command(.quote, quote) else {
+            Issue.record("no quote with elements")
+            return
+        }
+        #expect(quoted.video.elements == ["Mara"])
+        for (tool, bad) in [
+            (Tool.elements, ["category": "pet"]), (.elements, ["limit": 51]),
+            (.quote, ["mode": "restyle", "elements": ["a", "b", "c", "d", "e"]]),
+            (.quote, ["mode": "restyle", "elements": ["Mara", "mara"]]),
+            (.quote, ["mode": "restyle", "elements": [" "]]),
+            (.createImage, image(["elements": "Mara"])),
+        ] as [(Tool, [String: JSONValue])] {
+            guard case .failure(let error) = command(tool, bad) else {
+                Issue.record("taken: \(bad)")
+                continue
+            }
+            #expect(error.code == .badRequest)
+        }
+    }
+
     @Test func libraryDownloadTakesUpToTwentyItemIDs() {
         let id = UUID().uuidString
         guard case .success(.libraryDownload(let download)) = command(.libraryDownload, ["ids": [.string(id)]]) else {

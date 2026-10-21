@@ -61,7 +61,10 @@ extension AgentService {
             }
             source = AgentVideoOrder.quoteSource(start: given.start, end: end)
         }
-        let order = Self.order(video, source: source, images: AgentVideoOrder.quoteImages(video.referenceCount))
+        // An element's images count as the references they become; reading them is free.
+        let elementImages = try await namedElements(video.elements).reduce(0) { $0 + $1.images.count }
+        let order = Self.order(
+            video, source: source, images: AgentVideoOrder.quoteImages(video.referenceCount + elementImages))
         let (spec, paysUnlimited) = try await spec(for: order)
         let kind = environment.connection.state.kind
         var taken: AgentSpendTotal?
@@ -183,8 +186,10 @@ extension AgentService {
             try Self.checkUnit(of: fields.maxCost, on: kind)
             var source: AgentVideoOrder.Source?
             if let given = video.source { source = try await sourceClip(given) }
-            var images: [LocalImage] = []
-            for path in video.images { images.append(LocalImage(fileURL: try inboxFile(path))) }
+            var files: [LocalImage] = []
+            for path in video.images { files.append(LocalImage(fileURL: try inboxFile(path))) }
+            let elements = try await elementImages(video.elements)
+            let images = elements.flatMap(\.images) + files
             if let style = video.style,
                 let refusal = PresetCatalog.agentStyleRefusal(style, in: environment.layout.presetCacheFolder)
             {
@@ -198,7 +203,9 @@ extension AgentService {
                 maxCost: AgentMoney(fields.maxCost.amount, Self.unit(of: fields.maxCost.unit)))
             do {
                 let job = try await environment.engine.enqueue(spec, id: jobID, agent: origin)
-                return AgentCreated(requestID: fields.requestID, known: false, jobs: [Self.agentJob(job)])
+                return AgentCreated(
+                    requestID: fields.requestID, known: false, jobs: [Self.agentJob(job)],
+                    references: Self.references(elements: elements, files: files))
             } catch {
                 try? environment.agentRequests.remove(fields.requestID)
                 throw Self.agentError(enqueueing: error)

@@ -36,19 +36,30 @@ extension Tool {
             most you agree to pay: right before the job is paid for, a price above it, above what is left of the \
             daily agent budget or not known pauses the job (state paused, pauseReason agent_limit) until the person \
             confirms it in the app; so does a job the plan's unlimited generations would pay for while the person \
-            doesn't let agents use them (hold unlimited_not_allowed). Files (source.path, images) are paths on this Mac, copied into the app. Returns \
-            the job; follow it with jobs.
+            doesn't let agents use them (hold unlimited_not_allowed). Files (source.path, images) are paths on this \
+            Mac, copied into the app. elements names the account's characters and other reference elements (from \
+            the elements tool, account only): their images are added first, in the element's order, then images; \
+            the answer's references lists every image sent with its @ImageN tag, the N the prompt names it by. \
+            Returns the job; follow it with jobs.
             """
         case .createImage:
             """
             Makes images in Jutsu Studio, built exactly as the Image side of Create would: model (an ID from \
             capabilities with image_models; the first when left out), prompt, aspect_ratio, count, and inputs, \
             images on this Mac to edit, in order, for models that take them (up to the model's maxInputs; input is \
-            the same with one image, never both). request_id and max_cost work as in create_video: the \
+            the same with one image, never both); elements adds the account's reference elements by name, their \
+            images first, and references in the answer tags each image @ImageN. request_id and max_cost work as in create_video: the \
             same request_id with the same parameters returns the same request and never pays twice. Right before it \
             is sent, a price above max_cost, above what is left of the daily agent budget, over the person's daily \
             cap or not known holds it (state paused, needsPerson) until the person sends it from the Queue. Follow \
             it with jobs: results lists the images' paths once they are saved in Library › Images.
+            """
+        case .elements:
+            """
+            The account's reference elements, characters, environments and props, as References › From Higgsfield \
+            lists them: id, name (what create_video's and create_image's elements take), category and imageCount when \
+            known. query (words of the name), category, limit up to 50; pass nextCursor back as cursor for the next \
+            page. Account connection only. Read-only and free.
             """
         case .jobs:
             """
