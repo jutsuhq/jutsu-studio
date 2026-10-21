@@ -20,12 +20,14 @@ public struct ImageModel: Codable, Sendable, Hashable, Identifiable {
     /// The frames the model takes, as "W:H".
     public var aspectRatios: [String]
     public var input: Input
+    /// The most input images one request takes, where the model's catalog says; `nil` takes one. 0 with `none`.
+    public var maxInputs: Int?
     /// The public list price of one image, labelled as an estimate; `nil` when none is known.
     public var listPrice: Cost?
 
     public init(
         id: String, title: String, variantCounts: [Int] = [1], aspectRatios: [String], input: Input = .none,
-        listPrice: Cost? = nil
+        listPrice: Cost? = nil, maxInputs: Int? = nil
     ) {
         self.id = id
         self.title = title
@@ -33,6 +35,13 @@ public struct ImageModel: Codable, Sendable, Hashable, Identifiable {
         self.aspectRatios = aspectRatios
         self.input = input
         self.listPrice = listPrice
+        self.maxInputs = maxInputs
+    }
+
+    /// How many input images one request may send: none for a text-only model, else the catalog's limit, or one
+    /// where it says none.
+    public var inputLimit: Int {
+        input == .none ? 0 : max(1, maxInputs ?? 1)
     }
 
     /// The ratio of `aspectRatios` closest to `width` × `height`; the first one when the size is unusable.

@@ -218,27 +218,30 @@ public final class ReferenceGenerator {
         var prompt: String
         var aspectRatio: String
         var count: Int
-        var input: LocalImage?
+        /// The images to edit, in order: the form's one, or an agent's several.
+        var inputs: [LocalImage]
     }
 
     func draft(source: PixelSize?, mode: Mode) -> Draft? {
         guard blocker == nil, let model, let ratio = aspectRatio(source: source, mode: mode) else { return nil }
         return Draft(
-            model: model, prompt: prompt, aspectRatio: ratio, count: count, input: sendsInput ? inputImage : nil)
+            model: model, prompt: prompt, aspectRatio: ratio, count: count,
+            inputs: sendsInput ? inputImage.map { [$0] } ?? [] : [])
     }
 
-    /// `draft` as a request, its input uploaded through `upload` unless the same image already was.
+    /// `draft` as a request, its inputs uploaded in order through `upload`, except the image uploaded last when it
+    /// is one of them.
     func request(_ draft: Draft, upload: (LocalImage) async throws -> RemoteAsset) async throws -> ImageRequest {
         var inputs: [RemoteAsset] = []
-        if let input = draft.input {
+        for input in draft.inputs {
             if let uploaded, uploaded.image == input {
-                inputs = [uploaded.asset]
+                inputs.append(uploaded.asset)
             } else {
                 let generation = generation
                 let asset = try await upload(input)
                 // An upload that outlived its connection is the old account's media: never offered to the new one.
                 if generation == self.generation { uploaded = (input, asset) }
-                inputs = [asset]
+                inputs.append(asset)
             }
         }
         return ImageRequest(

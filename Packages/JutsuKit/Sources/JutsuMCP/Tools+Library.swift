@@ -5,18 +5,27 @@ import JutsuAgent
 // The parsers of create_image and the Library tools, kept apart from the video tools in Tools.swift.
 extension Tool {
     static func createImage(_ given: Arguments, workingDirectory: URL) throws(AgentError) -> AgentCommand {
-        try given.allow(["request_id", "model", "prompt", "aspect_ratio", "count", "input", "max_cost"])
+        try given.allow(["request_id", "model", "prompt", "aspect_ratio", "count", "inputs", "input", "max_cost"])
         let requestID = try given.requestID()
         let maxCost = try given.maxCost()
         guard let prompt = try given.string("prompt") else {
             throw .badRequest("create_image needs prompt, the image to make")
         }
+        // input is the one-image form of inputs, kept for agents that learnt it first.
+        let input = try given.string("input")
+        var inputs = try given.strings("inputs")
+        if let input {
+            guard inputs.isEmpty, given.values["inputs"] == nil || given.values["inputs"] == .null else {
+                throw .badRequest("create_image: \(AgentImageRequest.bothInputs)")
+            }
+            inputs = [input]
+        }
         var image = AgentImageRequest(
             model: try given.string("model"), prompt: prompt, aspectRatio: try given.string("aspect_ratio"),
-            count: try given.int("count"), input: try given.string("input"))
+            count: try given.int("count"), inputs: inputs)
         if let problem = image.problem { throw .badRequest("create_image: \(problem)") }
-        image.input = image.input.map { Inbox.resolve($0, from: workingDirectory).path(percentEncoded: false) }
-        let fingerprint = try Self.fingerprint("create_image", image, files: [image.input].compactMap(\.self), maxCost)
+        image.inputs = image.inputs.map { Inbox.resolve($0, from: workingDirectory).path(percentEncoded: false) }
+        let fingerprint = try Self.fingerprint("create_image", image, files: image.inputs, maxCost)
         return .createImage(
             CreateImageCommand(requestID: requestID, fingerprint: fingerprint, image: image, maxCost: maxCost))
     }

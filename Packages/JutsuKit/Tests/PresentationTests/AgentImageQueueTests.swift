@@ -103,7 +103,7 @@ actor MemoryLedger: AgentSpendLedger {
 private let soul = ImageModel(
     id: "soul", title: "Soul 2", variantCounts: [1, 4], aspectRatios: ["1:1", "16:9"],
     listPrice: .usd(Decimal(string: "0.02")!, isEstimate: true))
-private let edit = ImageModel(id: "edit", title: "Edit", aspectRatios: ["1:1"], input: .required)
+private let edit = ImageModel(id: "edit", title: "Edit", aspectRatios: ["1:1"], input: .required, maxInputs: 3)
 private let picture = LocalImage(fileURL: URL(fileURLWithPath: "/tmp/agent-input.png"))
 
 @MainActor
@@ -135,7 +135,7 @@ struct AgentImageQueueTests {
     }
 
     func order(_ prompt: String = "a red fox", count: Int? = nil, model: String? = nil) -> AgentImageOrder {
-        AgentImageOrder(model: model, prompt: prompt, aspectRatio: nil, count: count, input: nil)
+        AgentImageOrder(model: model, prompt: prompt, aspectRatio: nil, count: count)
     }
 
     nonisolated static func upload(_ provider: ImageFake) -> @Sendable (LocalImage) async throws -> RemoteAsset {
@@ -170,9 +170,50 @@ struct AgentImageQueueTests {
         #expect(refusal(order(model: "nope"))?.contains("no image model nope") == true)
         #expect(refusal(order("  ")) != nil)
         #expect(refusal(order(count: 3))?.contains("1, 4") == true)
-        #expect(refusal(order(model: "edit"))?.contains("send input") == true)
-        #expect(refusal(AgentImageOrder(model: nil, prompt: "x", aspectRatio: "21:9", count: nil, input: nil)) != nil)
+        #expect(refusal(order(model: "edit"))?.contains("send inputs") == true)
+        #expect(refusal(AgentImageOrder(model: nil, prompt: "x", aspectRatio: "21:9", count: nil)) != nil)
         #expect(refusal(order(), saved: true) != nil)
+    }
+
+    /// Several images go in order, up to the model's own limit from its catalog; a text-only model takes none.
+    @Test func inputsKeepTheirOrderUpToTheModelsLimit() throws {
+        let models = [soul, edit]
+        let pictures = (1...4).map { LocalImage(fileURL: URL(fileURLWithPath: "/tmp/agent-input-\($0).png")) }
+        func draft(_ model: String, _ inputs: [LocalImage]) -> Result<ReferenceGenerator.Draft, AgentImageRefusal> {
+            AgentImageOrder(model: model, prompt: "x", aspectRatio: nil, count: nil, inputs: inputs)
+                .draft(models: models, modelsAreSaved: false)
+        }
+        #expect(try draft("edit", Array(pictures.prefix(3))).get().inputs == Array(pictures.prefix(3)))
+        guard case .failure(let over) = draft("edit", pictures) else {
+            Issue.record("four inputs on a model that takes three")
+            return
+        }
+        #expect(over.message.contains("at most 3 input images"))
+        guard case .failure(let textOnly) = draft("soul", [pictures[0]]) else {
+            Issue.record("an input on a text-only model")
+            return
+        }
+        #expect(textOnly.message.contains("leave out inputs"))
+        #expect(soul.inputLimit == 0)
+        #expect(ImageModel(id: "g", title: "G", aspectRatios: ["1:1"], input: .optional).inputLimit == 1)
+    }
+
+    /// A record of one input keeps the shape records had before there were several; more are kept in order.
+    @Test func severalInputsAreRecordedAndSentInOrder() async throws {
+        let generator = generator()
+        let queue = queue(generator)
+        let pictures = (1...3).map { LocalImage(fileURL: URL(fileURLWithPath: "/tmp/agent-input-\($0).png")) }
+        let id = try create(
+            queue, AgentImageOrder(model: "edit", prompt: "swap", aspectRatio: nil, count: nil, inputs: pictures))
+        await eventually { queue.record(id)?.state == .finished }
+        let record = try #require(queue.record(id))
+        #expect(record.inputs == pictures)
+        #expect(record.input == pictures[0])
+        #expect(await provider.submitted.first?.inputImages.count == 3)
+        let single = try create(
+            queue, AgentImageOrder(model: "edit", prompt: "one", aspectRatio: nil, count: nil, inputs: [picture]))
+        #expect(queue.record(single)?.moreInputs == nil)
+        #expect(queue.record(single)?.inputs == [picture])
     }
 
     @Test func theVisibleFormIsNeverTouched() throws {

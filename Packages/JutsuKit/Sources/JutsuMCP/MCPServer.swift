@@ -256,15 +256,18 @@ public struct MCPServer: Sendable {
         return await send(.createVideo(staged), client)
     }
 
-    /// `create_image` likewise: its input is handed over first, unless the app already took the request.
+    /// `create_image` likewise: its inputs are handed over first, in order, unless the app already took the request.
     private func createImage(_ command: CreateImageCommand, client: String?) async -> AgentResponse {
         let request = UploadRequest(
             command: "create_image", requestID: command.requestID, fingerprint: command.fingerprint)
         var staged = command
         do throws(AgentError) {
-            if let path = command.image.input { staged.image.input = try await stage(path, request, client).get() }
+            staged.image.inputs = []
+            for path in command.image.inputs {
+                staged.image.inputs.append(try await stage(path, request, client).get())
+            }
         } catch  where error.code == .requestKnown {
-            staged.image.input = nil
+            staged.image.inputs = []
         } catch {
             return AgentResponse(error: error)
         }

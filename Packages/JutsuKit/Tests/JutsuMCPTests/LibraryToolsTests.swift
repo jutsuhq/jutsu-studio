@@ -57,10 +57,49 @@ import Testing
             Issue.record("create_image wasn't sent")
             return
         }
-        #expect(command.image.input == "/tmp/inbox/1/fox.png")
+        #expect(command.image.inputs == ["/tmp/inbox/1/fox.png"])
         #expect(command.image.count == 4)
         #expect(command.fingerprint == staged.first?.request.fingerprint)
         #expect(command.maxCost == AgentAmount(40, .credits))
+    }
+
+    /// inputs are staged and sent in order; input is the same request with one image, so it keeps its fingerprint.
+    @Test func severalInputsAreStagedInOrderAndInputIsTheirOneItemForm() async throws {
+        let paths = try ["a.png", "b.png", "c.png"].map { try file($0) }
+        let result = try await call("create_image", .object(image(["inputs": .array(paths.map { .string($0) })])))
+        #expect(result["isError"] == false)
+        #expect(await inbox.staged.map(\.path) == paths)
+        guard case .createImage(let staged)? = await app.calls.first?.0 else {
+            Issue.record("create_image wasn't sent")
+            return
+        }
+        #expect(staged.image.inputs.count == 3)
+        #expect(staged.image.inputs.allSatisfy { $0.hasPrefix("/tmp/inbox/") })
+
+        func sent(_ arguments: [String: JSONValue]) throws -> CreateImageCommand {
+            guard case .success(.createImage(let command)) = self.command(.createImage, arguments) else {
+                throw AgentError.badRequest("not a create_image")
+            }
+            return command
+        }
+        let one = try sent(image(["input": .string(paths[0])]))
+        #expect(try sent(image(["inputs": [.string(paths[0])]])).fingerprint == one.fingerprint)
+        // The wire keeps one input as `input`, as before.
+        let line = String(decoding: try AgentWire.line(AgentRequest(.createImage(one))), as: UTF8.self)
+        #expect(line.contains("\"input\":") && !line.contains("\"inputs\""))
+        let decoded = AgentWire.request(from: try AgentWire.line(AgentRequest(.createImage(one)))).request
+        #expect(try decoded.get().command == .createImage(one))
+
+        for bad in [
+            image(["input": .string(paths[0]), "inputs": [.string(paths[1])]]),
+            image(["inputs": .array((0...16).map { .string("/tmp/\($0).png") })]), image(["inputs": "a.png"]),
+        ] {
+            guard case .failure(let error) = command(.createImage, bad) else {
+                Issue.record("taken: \(bad)")
+                continue
+            }
+            #expect(error.code == .badRequest)
+        }
     }
 
     @Test func aConflictingImageRequestStopsBeforeAnyByteOrCommand() async throws {

@@ -12,9 +12,10 @@ enum AccountImages {
     /// `generate_image`'s `count`.
     static let variantCounts = [1, 2, 3, 4]
 
-    /// Each model with the frames it lists, taking an image to edit when it names a role for one, in the order the
-    /// account lists them. A model that lists no frame (an animation tool) isn't offered, nor a second model by the
-    /// same name: Higgsfield lists Soul 2.0 as both `soul_2` and `soul_v2`.
+    /// Each model with the frames it lists, taking images to edit when it names a role for them (as many as its
+    /// `medias` entry's `max`, else one), in the order the account lists them. A model that lists no frame (an
+    /// animation tool) isn't offered, nor a second model by the same name: Higgsfield lists Soul 2.0 as both `soul_2`
+    /// and `soul_v2`.
     static func models(_ listed: [AccountImageModel]) -> [ImageModel] {
         var names = Set<String>()
         let usable = listed.filter { !$0.aspectRatios.isEmpty && names.insert($0.name).inserted }
@@ -23,7 +24,7 @@ enum AccountImages {
         return offered.map { model in
             ImageModel(
                 id: model.id, title: model.name, variantCounts: variantCounts, aspectRatios: model.aspectRatios,
-                input: model.imageRole == nil ? .none : .optional)
+                input: model.imageRole == nil ? .none : .optional, maxInputs: model.maxImages)
         }
     }
 

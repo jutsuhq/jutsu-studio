@@ -43,8 +43,9 @@ extension Tool {
             offers. models: true adds the video models \
             (id, title, modes, resolutions, whether the connection runs it); model: an ID returns only that one, with \
             its limits per mode (seconds, images, whether it needs a style or a source). image_models: true adds the \
-            image models create_image takes (counts, aspect ratios, whether an input image is needed), styles: true \
-            Restyle's style IDs, voices: true Change Voice's voices. Free, and never shows a credential.
+            image models create_image takes (counts, aspect ratios, whether input images are needed, maxInputs, the \
+            most inputs it takes), styles: true Restyle's style IDs, voices: true Change Voice's voices. Free, and \
+            never shows a credential.
             """
         case .quote:
             """
@@ -70,8 +71,9 @@ extension Tool {
         case .createImage:
             """
             Makes images in Jutsu Studio, built exactly as the Image side of Create would: model (an ID from \
-            capabilities with image_models; the first when left out), prompt, aspect_ratio, count, and input, an \
-            image on this Mac to edit for models that take one. request_id and max_cost work as in create_video: the \
+            capabilities with image_models; the first when left out), prompt, aspect_ratio, count, and inputs, \
+            images on this Mac to edit, in order, for models that take them (up to the model's maxInputs; input is \
+            the same with one image, never both). request_id and max_cost work as in create_video: the \
             same request_id with the same parameters returns the same request and never pays twice. Right before it \
             is sent, a price above max_cost, above what is left of the daily agent budget, over the person's daily \
             cap or not known holds it (state paused, needsPerson) until the person sends it from the Queue. Follow \
@@ -184,7 +186,12 @@ extension Tool {
                     "type": "integer", "minimum": 1, "maximum": .number(Double(AgentImageRequest.maxCount)),
                     "description": "Images to make, one the model offers; 1 when left out.",
                 ],
-                "input": ["type": "string", "description": "An image on this Mac to edit, for models that take one."],
+                "inputs": [
+                    "type": "array", "maxItems": .number(Double(AgentImageRequest.maxInputs)),
+                    "items": ["type": "string"],
+                    "description": "Images on this Mac to edit, in order, up to the model's maxInputs.",
+                ],
+                "input": ["type": "string", "description": "One image to edit: the same as inputs with one item."],
             ]
             schema["required"] = ["request_id", "prompt", "max_cost"]
         case .librarySearch:

@@ -142,15 +142,20 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
         /// How many images one request can make.
         public var counts: [Int]
         public var aspectRatios: [String]
-        /// "none", "optional" or "required": whether it edits an input image.
+        /// "none", "optional" or "required": whether it edits input images.
         public var input: String
+        /// The most images `create_image` takes as `inputs`; 0 when it edits none.
+        public var maxInputs: Int
 
-        public init(id: String, title: String, counts: [Int], aspectRatios: [String], input: String) {
+        public init(
+            id: String, title: String, counts: [Int], aspectRatios: [String], input: String, maxInputs: Int = 0
+        ) {
             self.id = id
             self.title = title
             self.counts = counts
             self.aspectRatios = aspectRatios
             self.input = input
+            self.maxInputs = maxInputs
         }
     }
 

@@ -23,10 +23,13 @@ extension AgentFields {
 // MARK: create_image
 
 /// The image an agent asks for, made as the Image side of Create would make it: a model of the connection, a frame
-/// it takes, a count it makes and an optional image to edit.
+/// it takes, a count it makes and the images to edit, in order.
 public struct AgentImageRequest: Codable, Equatable, Hashable, Sendable {
     /// More than any model makes, so the model's own counts refuse the rest with a reason.
     public static let maxCount = 16
+    /// A bound of the protocol, above every model's own limit (`capabilities` imageModels `maxInputs`), which refuses
+    /// the rest with a reason.
+    public static let maxInputs = 16
 
     /// An image model ID from `capabilities` (`imageModels`); left out, the connection's first.
     public var model: String?
@@ -35,18 +38,51 @@ public struct AgentImageRequest: Codable, Equatable, Hashable, Sendable {
     public var aspectRatio: String?
     /// Images the request makes; 1 when left out.
     public var count: Int?
-    /// For `create_image`: the image to edit, a path in the app's inbox.
-    public var input: String?
+    /// For `create_image`: the images to edit, in order, paths in the app's inbox.
+    public var inputs: [String]
 
     public init(
-        model: String? = nil, prompt: String, aspectRatio: String? = nil, count: Int? = nil, input: String? = nil
+        model: String? = nil, prompt: String, aspectRatio: String? = nil, count: Int? = nil, inputs: [String] = []
     ) {
         self.model = model
         self.prompt = prompt
         self.aspectRatio = aspectRatio
         self.count = count
-        self.input = input
+        self.inputs = inputs
     }
+
+    /// One input goes as `input`, as before there were several, so a request sent again after an update keeps its
+    /// fingerprint; several go as `inputs`.
+    private enum CodingKeys: String, CodingKey {
+        case model, prompt, aspectRatio, count, input, inputs
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        model = try container.decodeIfPresent(String.self, forKey: .model)
+        prompt = try container.decode(String.self, forKey: .prompt)
+        aspectRatio = try container.decodeIfPresent(String.self, forKey: .aspectRatio)
+        count = try container.decodeIfPresent(Int.self, forKey: .count)
+        let input = try container.decodeIfPresent(String.self, forKey: .input)
+        let inputs = try container.decodeIfPresent([String].self, forKey: .inputs)
+        if input != nil, inputs != nil { throw AgentError.badRequest(Self.bothInputs) }
+        self.inputs = inputs ?? input.map { [$0] } ?? []
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(model, forKey: .model)
+        try container.encode(prompt, forKey: .prompt)
+        try container.encodeIfPresent(aspectRatio, forKey: .aspectRatio)
+        try container.encodeIfPresent(count, forKey: .count)
+        switch inputs.count {
+        case 0: break
+        case 1: try container.encode(inputs[0], forKey: .input)
+        default: try container.encode(inputs, forKey: .inputs)
+        }
+    }
+
+    public static let bothInputs = "send inputs, the images in order, or input, one image; not both"
 
     /// Shared by the helper and the app.
     public var problem: String? {
@@ -55,7 +91,10 @@ public struct AgentImageRequest: Codable, Equatable, Hashable, Sendable {
         if prompt.unicodeScalars.count > 10_000 { return "prompt is at most 10 000 characters" }
         if let aspectRatio, aspectRatio.utf8.count > 16 { return "aspect_ratio is a ratio such as 16:9" }
         if let count, !(1...Self.maxCount).contains(count) { return "count is 1 to \(Self.maxCount)" }
-        if let input, !AgentVideoRequest.isValidPath(input) { return "input is a file path" }
+        if inputs.count > Self.maxInputs { return "inputs takes at most \(Self.maxInputs) images" }
+        if let path = inputs.first(where: { !AgentVideoRequest.isValidPath($0) }) {
+            return "inputs has a path that isn't one: \(path.prefix(80))"
+        }
         return nil
     }
 }

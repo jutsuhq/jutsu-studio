@@ -294,7 +294,7 @@ extension AgentService {
                     return files.compactMap { $0?.path(percentEncoded: false) }
                 }
                 + ((try? environment.agentImages.records()) ?? []).filter { !$0.isOver }
-                .compactMap { $0.input?.fileURL.path(percentEncoded: false) }
+                .flatMap { $0.inputs.map { $0.fileURL.path(percentEncoded: false) } }
             let removed = inbox.sweep(keeping: Set(kept), before: now.addingTimeInterval(-86_400))
             if removed > 0 { logger.info("Removed \(removed, privacy: .private) old agent upload(s)") }
         } catch {

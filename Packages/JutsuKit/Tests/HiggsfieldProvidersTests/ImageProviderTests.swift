@@ -192,6 +192,18 @@ extension Network {
                     == ["soul_2", "soul_cinematic", "gpt_image_2", "nano_banana", "grok_image", "grok_image_2_0"])
         }
 
+        /// How many images a model edits comes from its `medias` entry's `max`; one where the catalog names none.
+        @Test func theCatalogsMaximumIsHowManyInputsAModelTakes() {
+            let listed = [
+                AccountImageModel(
+                    id: "nano_banana", name: "Nano Banana", aspectRatios: ["1:1"], imageRole: "image_references",
+                    maxImages: 8),
+                AccountImageModel(id: "soul_2", name: "Soul 2", aspectRatios: ["1:1"], imageRole: "image"),
+                AccountImageModel(id: "soul_cast", name: "Soul Cast", aspectRatios: ["1:1"]),
+            ]
+            #expect(HiggsfieldProviders.AccountImages.models(listed).map(\.inputLimit) == [8, 1, 0])
+        }
+
         @Test func anAccountListingNoneOfTheCuratedModelsOffersItsFirst() {
             let listed = (1...8).map {
                 AccountImageModel(id: "model_\($0)", name: "Model \($0)", aspectRatios: ["1:1"])

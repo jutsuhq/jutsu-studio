@@ -10,7 +10,7 @@ private let logger = Logger(subsystem: "com.jutsustudio", category: "Agents")
 // form, and sent through Generate…'s own runs behind the agents' spending guard (`AgentImageQueue`).
 extension AgentService {
     func createImage(_ fields: CreateImageCommand, client: String?) async throws(AgentError) -> AgentCreated {
-        let files = [fields.image.input].compactMap(\.self)
+        let files = fields.image.inputs
         if let running = creatingImages[fields.requestID] {
             guard running.fingerprint == fields.fingerprint else {
                 discard(files)
@@ -62,11 +62,12 @@ extension AgentService {
             throw AgentError(.notApplicable, message: blocker, retryable: true, next: "Try again in a moment.")
         }
         try Self.checkUnit(of: fields.maxCost, on: kind)
-        let input = try fields.image.input.map { path throws(AgentError) in LocalImage(fileURL: try inboxFile(path)) }
+        var inputs: [LocalImage] = []
+        for path in fields.image.inputs { inputs.append(LocalImage(fileURL: try inboxFile(path))) }
         let image = fields.image
         let order = AgentImageOrder(
             model: image.model, prompt: image.prompt, aspectRatio: image.aspectRatio, count: image.count,
-            input: input)
+            inputs: inputs)
         let id = UUID()
         try recordRequest(fields.requestID, fingerprint: fields.fingerprint, jobIDs: [id])
         let origin = AgentOrigin(
@@ -145,7 +146,7 @@ extension AgentService {
                 }
             return AgentCapabilities.ImageModel(
                 id: model.id, title: model.title, counts: model.variantCounts, aspectRatios: model.aspectRatios,
-                input: input)
+                input: input, maxInputs: model.inputLimit)
         }
     }
 }

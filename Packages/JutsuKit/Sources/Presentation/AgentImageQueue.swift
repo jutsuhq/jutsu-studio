@@ -90,8 +90,9 @@ public final class AgentImageQueue {
         let draft = try order.draft(models: generator.models, modelsAreSaved: generator.modelsAreSaved).get()
         let record = AgentImageRecord(
             id: id, origin: origin, providerKind: provider.kind, owner: provider.owner, model: draft.model,
-            prompt: draft.prompt, aspectRatio: draft.aspectRatio, count: draft.count, input: draft.input,
-            state: .pricing, priceIsKnown: false, createdAt: now())
+            prompt: draft.prompt, aspectRatio: draft.aspectRatio, count: draft.count, input: draft.inputs.first,
+            moreInputs: draft.inputs.count > 1 ? draft.inputs : nil, state: .pricing, priceIsKnown: false,
+            createdAt: now())
         do {
             try save(record)
         } catch {
