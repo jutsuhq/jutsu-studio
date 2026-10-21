@@ -21,6 +21,20 @@ public enum AgentElementLookup {
         case missing
     }
 
+    /// The account's elements, page after page until the last or `maxPages`: a name is known to be one element only
+    /// once they are all read, as a second one of that name may be on a later page.
+    public static func all(in source: any AccountElements) async throws -> [AccountElement] {
+        var elements: [AccountElement] = []
+        var cursor: HistoryCursor?
+        for _ in 0..<maxPages {
+            let read = try await source.elements(after: cursor)
+            elements += read.items
+            cursor = read.nextCursor
+            if cursor == nil { break }
+        }
+        return elements
+    }
+
     /// The element named `name`, in any case, among `elements`.
     public static func find(_ name: String, in elements: [AccountElement]) -> Found {
         let wanted = name.trimmingCharacters(in: .whitespaces).lowercased()

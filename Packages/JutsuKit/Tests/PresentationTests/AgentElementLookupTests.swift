@@ -4,6 +4,25 @@ import Testing
 
 @testable import Presentation
 
+/// Elements a page at a time, recording the cursors asked for.
+private struct PagedElements: AccountElements {
+    let pages: [AccountElementPage]
+    let asked = Box<[HistoryCursor?]>([])
+
+    var owner: String? { "user_1" }
+
+    func elements(after cursor: HistoryCursor?) async throws -> AccountElementPage {
+        asked.update { $0.append(cursor) }
+        return pages[asked.value.count - 1]
+    }
+
+    func elementImages(_ element: AccountElement) async throws -> AccountElement { element }
+
+    func createElement(name: String, category: ElementCategory, images: [RemoteAsset]) async throws -> AccountElement {
+        AccountElement(id: "el-new", name: name, category: category)
+    }
+}
+
 /// The account's elements as agents name them.
 @Suite struct AgentElementLookupTests {
     let mara = AccountElement(id: "el-1", name: "Mara Vance", category: .character)
@@ -22,6 +41,22 @@ import Testing
         var twin = mara
         twin.id = "el-3"
         #expect(AgentElementLookup.find("Mara Vance", in: [mara, twin]) == .ambiguous(count: 2))
+    }
+
+    /// A twin on a later page still makes the name ambiguous: every page is read before a name is decided.
+    @Test func everyPageIsReadSoATwinOnALaterPageIsFound() async throws {
+        var twin = mara
+        twin.id = "el-3"
+        let pages = [
+            AccountElementPage(items: [mara], nextCursor: HistoryCursor("2")),
+            AccountElementPage(items: [roof], nextCursor: HistoryCursor("3")),
+            AccountElementPage(items: [twin], nextCursor: nil),
+        ]
+        let source = PagedElements(pages: pages)
+        let all = try await AgentElementLookup.all(in: source)
+        #expect(source.asked.value == [nil, HistoryCursor("2"), HistoryCursor("3")])
+        #expect(AgentElementLookup.find("Mara Vance", in: all) == .ambiguous(count: 2))
+        #expect(AgentElementLookup.find("roof", in: all) == .element(roof))
     }
 
     @Test func theElementsImagesComeFirstThenTheAgentsFilesEachWithItsTag() {

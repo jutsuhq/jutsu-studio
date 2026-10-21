@@ -27,23 +27,13 @@ extension AgentService {
         return AgentElementsPage(items: items, nextCursor: cursor?.value)
     }
 
-    /// The elements named, each with all its images, in the order named.
+    /// The elements named, each with all its images, in the order named. Every page is read first, so a name two
+    /// elements share is refused however far apart they are listed.
     func namedElements(_ names: [String]) async throws(AgentError) -> [AccountElement] {
         guard !names.isEmpty else { return [] }
         let source = try elementSource()
-        var listed: [AccountElement] = []
-        var cursor: HistoryCursor?
+        let listed = try await Self.reading { try await AgentElementLookup.all(in: source) }
         var found: [AccountElement] = []
-        for _ in 0..<AgentElementLookup.maxPages {
-            let page = try await Self.reading { try await source.elements(after: cursor) }
-            listed += page.items
-            cursor = page.nextCursor
-            let ready = names.allSatisfy {
-                if case .element = AgentElementLookup.find($0, in: listed) { return true }
-                return false
-            }
-            if cursor == nil || ready { break }
-        }
         for name in names {
             switch AgentElementLookup.find(name, in: listed) {
             case .element(let element):
