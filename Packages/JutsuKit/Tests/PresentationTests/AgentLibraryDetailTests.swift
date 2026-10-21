@@ -27,6 +27,7 @@ import Testing
         let detail = try #require(details.first)
         // Rejected, yet named by ID, so it is there; the prompt isn't cut.
         #expect(detail.hit.culling == .rejected)
+        #expect(detail.hit.jobID == swap.id)
         #expect(detail.hit.prompt == swap.current.video?.spec.prompt)
         #expect(!detail.hit.isPromptTruncated)
         #expect(detail.inputs.map(\.role) == [.source, .reference, .reference])
@@ -81,6 +82,7 @@ import Testing
         #expect(missing == [unknown])
         let detail = try #require(details.last)
         #expect(detail.hit.isOnHiggsfield && detail.hit.file == nil)
+        #expect(detail.hit.jobID == nil)
         #expect(detail.hit.prompt == "a long history prompt")
         #expect(detail.hit.mode == "motion_transfer")
         #expect(detail.settings.resolution == "480p")

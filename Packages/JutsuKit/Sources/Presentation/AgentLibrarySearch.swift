@@ -67,7 +67,7 @@ public struct AgentLibraryHit: Sendable, Hashable {
     /// Which version is current, from 1.
     public var version: Int
     public var versionCount: Int
-    /// The job that made a video; `nil` for an image.
+    /// The job that made a video; `nil` for an image and a video only on Higgsfield.
     public var jobID: UUID?
     /// A result of the account's Higgsfield history with no file on this Mac yet.
     public var isOnHiggsfield = false
@@ -141,7 +141,9 @@ public enum AgentLibrarySearch {
                 duration: item.job.outputDuration, price: item.isFromHiggsfield ? nil : item.job.price,
                 culling: index.culling(of: material.id), isStarred: item.isStarred, createdAt: row.createdAt,
                 prompt: prompt.text, isPromptTruncated: prompt.isTruncated, versionID: version.id, version: position,
-                versionCount: material.versions.count, jobID: item.job.id, isOnHiggsfield: item.historyItem != nil)
+                versionCount: material.versions.count,
+                // A history row's job is made up for the Library, not one `jobs` or `show` knows.
+                jobID: item.historyItem == nil ? item.job.id : nil, isOnHiggsfield: item.historyItem != nil)
         case .localImage(let image):
             return AgentLibraryHit(
                 id: material.id, isVideo: false, file: image.fileURL, model: image.model, mode: nil,

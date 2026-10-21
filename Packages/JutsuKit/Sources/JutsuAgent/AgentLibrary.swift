@@ -246,7 +246,7 @@ public struct AgentLibraryItem: Codable, Equatable, Sendable {
     /// 1 for the original; the current version's place among the item's versions.
     public var version: Int
     public var versionCount: Int
-    /// The video job that made it, when it was one (`jobs`, `show`).
+    /// The video job that made it, when it was one (`jobs`, `show`); left out for a video only on Higgsfield.
     public var jobID: UUID?
     /// true for a result of the account's Higgsfield history with no file on this Mac yet; left out otherwise.
     // swiftlint:disable:next discouraged_optional_boolean
