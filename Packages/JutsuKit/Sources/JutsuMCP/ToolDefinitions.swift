@@ -39,7 +39,8 @@ extension Tool {
             account) with the account's plan and credits when known, today's agent budget in whole units \
             (usd_cents with an API key, credits on an account: dailyLimit, spentToday, reservedToday for submits \
             not answered yet, remaining, and unlimitedAllowed, whether the person lets agents use the plan's unlimited \
-            generations) and the tool groups this version offers. models: true adds the video models \
+            generations, false for the rest of the day once one was charged anyway) and the tool groups this version \
+            offers. models: true adds the video models \
             (id, title, modes, resolutions, whether the connection runs it); model: an ID returns only that one, with \
             its limits per mode (seconds, images, whether it needs a style or a source). image_models: true adds the \
             image models create_image takes (counts, aspect ratios, whether an input image is needed), styles: true \

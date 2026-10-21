@@ -121,10 +121,14 @@ public struct AgentSpendTotal: Sendable, Hashable {
     public var spent: Int
     /// Held for submits sent and not answered yet, or never known to be answered.
     public var reserved: Int
+    /// A submit sent for the plan's unlimited allowance was charged anyway (`AgentSpend.paysUnlimited`): agents' jobs
+    /// for the allowance keep every limit for the rest of the day.
+    public var unlimitedCharged: Bool
 
-    public init(spent: Int = 0, reserved: Int = 0) {
+    public init(spent: Int = 0, reserved: Int = 0, unlimitedCharged: Bool = false) {
         self.spent = spent
         self.reserved = reserved
+        self.unlimitedCharged = unlimitedCharged
     }
 
     public var taken: Int { AgentMoney.sum(spent, reserved) }
@@ -147,14 +151,25 @@ public struct AgentSpend: Codable, Sendable, Hashable, Identifiable {
     public var parts: Int?
     /// The parts that ended without being billed (`AgentSpendLedger.unbill`), each once.
     public var unbilled: [String]?
+    /// Sent for the plan's unlimited allowance, reserving 0; settled above 0, the allowance didn't pay for it
+    /// (`AgentSpendTotal.unlimitedCharged`). `nil` for any other submit.
+    // swiftlint:disable:next discouraged_optional_boolean
+    public var paysUnlimited: Bool?
 
-    public init(id: UUID = UUID(), jobID: UUID, money: AgentMoney, at: Date, isSettled: Bool = false) {
+    public init(
+        id: UUID = UUID(), jobID: UUID, money: AgentMoney, at: Date, isSettled: Bool = false,
+        paysUnlimited: Bool = false
+    ) {
         self.id = id
         self.jobID = jobID
         self.money = money
         self.at = at
         self.isSettled = isSettled
+        self.paysUnlimited = paysUnlimited ? true : nil
     }
+
+    /// Sent for the allowance, and charged anyway.
+    public var isUnlimitedCharged: Bool { paysUnlimited == true && isSettled && money.amount > 0 }
 
     /// The most parts an entry is split into: far above any request, and small enough that `counted` can't overflow.
     public static let maxParts = 1_000

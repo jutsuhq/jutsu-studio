@@ -160,7 +160,8 @@ final class AgentService {
             let taken = try await agentSpendToday(for: kind)
             budget = AgentCapabilities.Budget(
                 unit: Self.unit(for: kind), dailyLimit: preferences.dailyBudget(for: kind), spentToday: taken.spent,
-                reservedToday: taken.reserved, unlimitedAllowed: preferences.allowsUnlimited)
+                reservedToday: taken.reserved,
+                unlimitedAllowed: preferences.allowsUnlimited && !taken.unlimitedCharged)
         }
         var answer = AgentCapabilities(appVersion: Self.appVersion, connection: connection, budget: budget)
         if fields.models {

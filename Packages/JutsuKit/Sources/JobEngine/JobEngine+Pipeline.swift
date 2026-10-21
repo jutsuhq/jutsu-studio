@@ -212,7 +212,9 @@ extension JobEngine {
         if sender.spec.variants > 1 || !variants.isEmpty {
             share = await startVariants(variants, of: sender, inputs: inputs, paidWithUnlimited: paidWithUnlimited)
         }
-        await settleAgentSpend(of: sender, charged: charged)
+        // Sent for the allowance and not paid by it: the charge counts, or the job's price when the answer can't say.
+        let unpaid = sender.spec.usesUnlimited && !paidWithUnlimited
+        await settleAgentSpend(of: sender, charged: charged ?? (unpaid ? sender.price : nil))
         try await record(.submitted, to: job.id) { [remote, share] in
             share?.apply(to: &$0)
             // Sent without the allowance, or the answer says it cost credits: the cap counts it from now on.

@@ -92,6 +92,7 @@ public actor AgentSpendFile: AgentSpendLedger {
     {
         entries.reduce(into: AgentSpendTotal()) { total, entry in
             guard entry.money.unit == unit, calendar.isDate(entry.at, inSameDayAs: day) else { return }
+            if entry.isUnlimitedCharged { total.unlimitedCharged = true }
             if entry.isSettled {
                 total.spent = AgentMoney.sum(total.spent, entry.counted)
             } else {

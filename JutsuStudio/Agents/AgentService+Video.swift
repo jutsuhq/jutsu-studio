@@ -60,23 +60,24 @@ extension AgentService {
         }
         let order = Self.order(video, source: source, images: AgentVideoOrder.quoteImages(video.referenceCount))
         let (spec, paysUnlimited) = try await spec(for: order)
-        // The plan's unlimited allowance pays it: nothing counts against the budget or the cap.
-        let cost: Cost? = paysUnlimited ? .credits(0, isEstimate: false) : await environment.estimate(spec)
         let kind = environment.connection.state.kind
+        var taken: AgentSpendTotal?
+        if let kind { taken = try await agentSpendToday(for: kind) }
+        // The plan's unlimited allowance pays it: nothing counts against the budget or the cap. Once the allowance
+        // didn't pay for an agent's job today, the guard checks the job at its price like any other.
+        let unlimited = paysUnlimited && !(preferences.allowsUnlimited && taken?.unlimitedCharged == true)
+        let cost: Cost? = unlimited ? .credits(0, isEstimate: false) : await environment.estimate(spec)
         let money = cost.flatMap(AgentMoney.init)
         let price = money.map { AgentAmount($0.amount, Self.unit(of: $0.unit)) }
         var remaining: Int?
-        if let kind {
-            let taken = try await agentSpendToday(for: kind)
-            remaining = taken.remaining(of: preferences.dailyBudget(for: kind))
-        }
+        if let kind, let taken { remaining = taken.remaining(of: preferences.dailyBudget(for: kind)) }
         let isExact = cost.map { !$0.isEstimate && !$0.isUnknownPrice } ?? false
         return AgentQuote(
             price: price, isExact: isExact, mode: video.mode, model: spec.model.rawValue,
             resolution: spec.resolution.rawValue, duration: spec.duration, remainingToday: remaining,
             paysUnlimited: paysUnlimited,
             blocker: Self.quoteBlocker(
-                price: money, remaining: remaining, paysUnlimited: paysUnlimited,
+                price: money, remaining: remaining, paysUnlimited: unlimited,
                 unlimitedAllowed: preferences.allowsUnlimited))
     }
 

@@ -348,6 +348,32 @@ struct AgentGuardTests {
         #expect(try await ledger.total(on: harness.clock.now, unit: .usdCents) == AgentSpendTotal())
     }
 
+    /// The allowance didn't pay for a job sent for it: what it was charged counts, and for the rest of the day agents'
+    /// jobs for the allowance keep every limit, so with no budget the next one waits for the person.
+    @Test func anUnlimitedJobChargedAnywayCountsAndEndsUnlimitedForTheDay() async throws {
+        let harness = Harness()
+        await harness.provider.payUnlimited(true, answer: (paid: false, charged: .usd(2, isEstimate: false)))
+        let ledger = ledger(harness)
+        let engine = try await harness.makeEngine(agentPolicy: policy(ledger, limit: 0, unlimited: true))
+
+        let first = try await engine.enqueue(makeSpec(), agent: origin(maxCents: 0))
+        await harness.repository.wait(for: first.id, .done)
+        #expect(
+            try await ledger.total(on: harness.clock.now, unit: .usdCents)
+                == AgentSpendTotal(spent: 200, unlimitedCharged: true))
+
+        let second = try await engine.enqueue(makeSpec(), agent: origin(request: "r-2"))
+        let paused = try #require(await harness.repository.wait(for: second.id, .paused(.agentLimit)))
+        #expect(paused.agent?.hold == .overDailyBudget)
+        #expect(harness.log.count("submit") == 1)
+
+        let tomorrow = AgentSpendFile(
+            file: file, now: { [clock = harness.clock] in clock.now.addingTimeInterval(86_400) })
+        #expect(
+            try await !tomorrow.total(on: harness.clock.now.addingTimeInterval(86_400), unit: .usdCents)
+                .unlimitedCharged)
+    }
+
     /// The setting only covers the allowance: a job it doesn't pay for keeps every limit.
     @Test func lettingAgentsUseUnlimitedLeavesOtherJobsWithinTheBudget() async throws {
         let harness = Harness()

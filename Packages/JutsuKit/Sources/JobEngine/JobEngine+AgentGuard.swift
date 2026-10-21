@@ -16,6 +16,8 @@ extension JobEngine {
     /// reservation, written to the ledger before anything is sent. A job the plan's unlimited allowance pays for
     /// skips the cap and the budget, which don't count it, but goes out only when the person lets agents use the
     /// allowance (`AgentSpendPolicy.allowsUnlimited`); it reserves 0, and the charge the answer reports replaces that.
+    /// Once such a job was charged anyway today (`AgentSpendTotal.unlimitedCharged`), the allowance is no longer
+    /// trusted to pay: until the day ends, agents' jobs for it keep the cap, `max_cost` and the budget like any other.
     /// Over any limit, or when the ledger can't be read or written, the job pauses (`priceAboveCap` or `agentLimit`)
     /// and only the person resumes it. A submit that may already have reached the server is resent with the
     /// reservation it holds and no new check.
@@ -23,7 +25,17 @@ extension JobEngine {
         let job = try await loadJob(id)
         guard let origin = job.agent, job.submitAttempt == nil else { return .send(reservation: nil) }
         guard let agentPolicy else { return try await holdAgentJob(id, .ledgerUnavailable, inputs: inputs) }
-        let unlimited = job.spec.usesUnlimited
+        let allowsUnlimited = agentPolicy.allowsUnlimited()
+        var unlimited = job.spec.usesUnlimited
+        if unlimited, allowsUnlimited {
+            do {
+                unlimited = try await !agentPolicy.ledger.total(on: clock.now, unit: origin.maxCost.unit)
+                    .unlimitedCharged
+            } catch {
+                log.error("Job \(id): the agent spend ledger can't be read", detail: String(describing: error))
+                return try await holdAgentJob(id, .ledgerUnavailable, inputs: inputs)
+            }
+        }
         if !unlimited, let status = try await spendStatus(job), let cap = status.cap,
             Budget.allows(cost: job.price, committedToday: status.committedToday, cap: cap) != .allowed,
             !Self.covers(job.approvedPrice, job.price)
@@ -34,12 +46,12 @@ extension JobEngine {
         let decision = AgentSpendDecision.decide(
             price: job.price, isKnown: job.agentPriceIsKnown, origin: origin,
             dailyLimit: agentPolicy.dailyLimit(job.providerKind), paysUnlimited: unlimited,
-            allowsUnlimited: agentPolicy.allowsUnlimited())
+            allowsUnlimited: allowsUnlimited)
         switch decision {
         case .hold(let hold):
             return try await holdAgentJob(id, hold, inputs: inputs)
         case .send(let money, let limit):
-            let spend = AgentSpend(jobID: id, money: money, at: clock.now)
+            let spend = AgentSpend(jobID: id, money: money, at: clock.now, paysUnlimited: unlimited)
             let fits: Bool
             do {
                 fits = try await agentPolicy.ledger.reserve(spend, dailyLimit: limit)

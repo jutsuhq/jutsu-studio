@@ -27,6 +27,7 @@ says rather than guessing.
 - **Unlimited generations.** A video the plan's unlimited generations would pay for (`quote` says `paysUnlimited`)
   costs the budget nothing, but runs on its own only while the person lets agents use them
   (`capabilities` › `budget.unlimitedAllowed`); otherwise it is held for the person (`hold: unlimited_not_allowed`).
+  If one is charged anyway, `unlimitedAllowed` turns false for the rest of the day and such videos keep every limit.
 
 ## How to work
 

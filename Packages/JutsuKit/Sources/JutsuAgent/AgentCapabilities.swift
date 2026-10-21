@@ -34,6 +34,8 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
         public var remaining: Int
         /// Settings › Agents › Let agents use unlimited generations. Off, a job the plan's unlimited allowance would pay
         /// for waits for the person (hold unlimited_not_allowed); on, it runs without counting against the budget.
+        /// `false` for the rest of the day once the allowance didn't pay for an agent's job sent for it: such jobs then
+        /// keep every limit, as any other.
         public var unlimitedAllowed: Bool
 
         public init(
