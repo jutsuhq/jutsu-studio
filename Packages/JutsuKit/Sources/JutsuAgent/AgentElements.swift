@@ -92,7 +92,9 @@ public enum AgentElementNames {
         if names.contains(where: { $0.trimmingCharacters(in: .whitespaces).isEmpty || $0.count > maxNameLength }) {
             return "elements are names from the elements tool, 1 to \(maxNameLength) characters"
         }
-        if Set(names.map { $0.lowercased() }).count != names.count { return "elements names an element twice" }
+        // Trimmed, as the lookup compares them.
+        let trimmed = names.map { $0.trimmingCharacters(in: .whitespaces).lowercased() }
+        if Set(trimmed).count != names.count { return "elements names an element twice" }
         return nil
     }
 }

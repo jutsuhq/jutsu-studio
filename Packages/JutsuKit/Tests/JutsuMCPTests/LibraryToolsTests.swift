@@ -217,6 +217,8 @@ import Testing
             (Tool.elements, ["category": "pet"]), (.elements, ["limit": 51]),
             (.quote, ["mode": "restyle", "elements": ["a", "b", "c", "d", "e"]]),
             (.quote, ["mode": "restyle", "elements": ["Mara", "mara"]]),
+            // The lookup trims names, so these are one element twice.
+            (.quote, ["mode": "restyle", "elements": ["Mara", "Mara "]]),
             (.quote, ["mode": "restyle", "elements": [" "]]),
             (.createImage, image(["elements": "Mara"])),
         ] as [(Tool, [String: JSONValue])] {
