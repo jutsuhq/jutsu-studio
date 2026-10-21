@@ -1,11 +1,31 @@
 import Foundation
 import JutsuCore
 
+/// What an agent's request adds to a submit (`AgentImageQueue`): its spending guard, and how the submit went.
+struct AgentImageSubmit {
+    enum Outcome {
+        /// Stopped before the submit went out.
+        case notSent
+        /// The provider turned it down, so it never started.
+        case refused
+        /// Cut off or unanswered: it may have started.
+        case unknown
+        case accepted
+    }
+
+    /// Runs once the request is built, right before its price is written and it is sent: the price to send it at,
+    /// or `nil` when the guard held or failed it and nothing may go out.
+    var clear: (ImageRequest) async -> Cost?
+    var answered: (Outcome) async -> Void
+}
+
 /// Sending a request and following its jobs until they end.
 extension ReferenceGenerator {
+    /// - Parameter agent: an agent's request: its spending guard runs once the request is built, and is told how the
+    ///   submit went; `nil` for the person's own.
     func submit(
         _ id: UUID, draft: Draft, cost: Cost, provider: any ImageProvider,
-        upload: (LocalImage) async throws -> RemoteAsset
+        upload: (LocalImage) async throws -> RemoteAsset, agent: AgentImageSubmit? = nil
     ) async {
         defer { submits[id] = nil }
         let request: ImageRequest
@@ -15,12 +35,23 @@ extension ReferenceGenerator {
         } catch {
             return finish(id, error is CancellationError ? .canceled : .failed(Self.message(error)))
         }
+        var cost = cost
+        if let agent {
+            // The guard holds or fails the run itself when it lets nothing through.
+            guard let cleared = await agent.clear(request) else { return }
+            cost = cleared
+            if Task.isCancelled {
+                await agent.answered(.notSent)
+                return finish(id, .canceled)
+            }
+        }
         do {
             try spend.add(
                 ImageCharge(
                     id: id, date: now(), cost: cost, providerKind: provider.kind, model: draft.model.title,
                     images: draft.count))
         } catch {
+            await agent?.answered(.notSent)
             return finish(id, .failed(ImageSpendLog.notSent(error)))
         }
         let jobs: [RemoteJob]
@@ -28,9 +59,26 @@ extension ReferenceGenerator {
             jobs = try await provider.submitImages(request, idempotencyKey: id)
         } catch {
             // A submit cut off or unanswered may have started the request, so its price keeps counting.
-            if Self.wasRefused(error) { spend.remove(id) } else { spend.settle(id) }
+            if Self.wasRefused(error) {
+                spend.remove(id)
+                await agent?.answered(.refused)
+            } else {
+                spend.settle(id)
+                await agent?.answered(.unknown)
+            }
             return finish(id, error is CancellationError ? .canceled : .failed(Self.message(error)))
         }
+        await agent?.answered(.accepted)
+        logJobs(jobs, of: id, draft: draft, request: request, provider: provider)
+        // Cancelled while the answer was on its way: the jobs it started are cancelled in turn.
+        if Task.isCancelled { canceling.insert(id) }
+        follow(id, provider: provider)
+    }
+
+    /// Writes the jobs a submit started to the job log, so they are followed again after a relaunch.
+    private func logJobs(
+        _ jobs: [RemoteJob], of id: UUID, draft: Draft, request: ImageRequest, provider: any ImageProvider
+    ) {
         let date = now()
         jobLog.add(
             jobs.map {
@@ -42,9 +90,6 @@ extension ReferenceGenerator {
                 record.inputImages = draft.input.map { [$0] } ?? []
                 return record
             })
-        // Cancelled while the answer was on its way: the jobs it started are cancelled in turn.
-        if Task.isCancelled { canceling.insert(id) }
-        follow(id, provider: provider)
     }
 
     /// Follows the requests of `provider`'s connection that were still running, as after a relaunch, a new sign-in
@@ -189,20 +234,22 @@ extension ReferenceGenerator {
     }
 
     /// A request cancelled while queued isn't charged; one the provider can't cancel any more is, so its price
-    /// stays counted, as does one that already made images.
+    /// stays counted, as does one that already made images. Each job cancelled is marked so before the run ends, so
+    /// `onRunEnded` sees which ones went unbilled.
     private func cancelJobs(of run: UUID, provider: any ImageProvider) async {
         var refused = false
         for record in jobLog.records where record.runID == run && record.state == .pending {
             do {
                 try await provider.cancelImages(record.job)
+                jobLog.update(record.id, state: .canceled)
             } catch {
                 refused = true
             }
         }
         let made = jobLog.records.contains { $0.runID == run && $0.state == .completed }
         if refused || made { spend.settle(run) } else { spend.remove(run) }
-        jobLog.forget(run: run)
         finish(run, made ? .finished : .canceled)
+        jobLog.forget(run: run)
     }
 
     private static func failure(of records: [ImageJobRecord]) -> String? {

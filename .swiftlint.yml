@@ -1,6 +1,7 @@
 # Semantic rules only. Formatting belongs to swift-format (.swift-format), so the two never disagree.
 included:
   - JutsuStudio
+  - JutsuCLI
   - Packages/JutsuKit/Sources
   - Packages/JutsuKit/Tests
   - Packages/HiggsfieldKit/Sources

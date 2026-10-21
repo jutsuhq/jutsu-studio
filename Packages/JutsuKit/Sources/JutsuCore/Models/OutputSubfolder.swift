@@ -7,6 +7,8 @@ public enum OutputSubfolder: String, CaseIterable, Sendable {
     case videos = "Videos"
     /// Images made with Generate… and character sheets (`SavedImage`).
     case images = "Images"
+    /// Takes exported for editing and delivery sets an agent exported (`export`, `delivery_set`).
+    case exports = "Exports"
 
     /// This folder inside `outputFolder`.
     public func url(in outputFolder: URL) -> URL {

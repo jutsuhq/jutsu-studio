@@ -6,9 +6,14 @@ import SwiftUI
 struct ImageRunRow: View {
     let run: ImageRun
     let onCancel: () -> Void
+    /// For an agent's request the spending guard held: the person's decision.
+    var onReview: (() -> Void)?
 
     var body: some View {
-        RequestRow(title: run.title, status: status, onCancel: onCancel)
+        RequestRow(
+            title: run.title, status: status,
+            subtitle: run.agentTitle.map { title in run.agentDetail.map { "\(title) · \($0)" } ?? title },
+            onCancel: onCancel, onReview: onReview)
     }
 
     private var status: RequestRow.Status {
@@ -18,6 +23,7 @@ struct ImageRunRow: View {
         case .failed(let message): .failed(message)
         case .canceled: .canceled
         case .interrupted(let message): .failed(message)
+        case .held(let message): .waiting(message)
         }
     }
 }

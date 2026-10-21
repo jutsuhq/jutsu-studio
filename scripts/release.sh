@@ -183,6 +183,11 @@ ARCHS_BUILT=$(lipo -archs "$APP/Contents/MacOS/Jutsu Studio")
 # Captured first: `grep -q` stops reading at the first match, and pipefail would turn codesign's SIGPIPE into a failure.
 SIGNATURE=$(codesign --display --verbose=2 "$APP" 2>&1)
 [[ $SIGNATURE == *flags=*runtime* ]] || die "app is not signed with the hardened runtime."
+# The `jutsu` helper agents run, signed on its own with the hardened runtime, as notarization requires.
+HELPER="$APP/Contents/Helpers/jutsu"
+[[ -x $HELPER ]] || die "the app has no '$HELPER'."
+HELPER_SIGNATURE=$(codesign --display --verbose=2 "$HELPER" 2>&1)
+[[ $HELPER_SIGNATURE == *flags=*runtime* ]] || die "the jutsu helper is not signed with the hardened runtime."
 BUNDLE_VERSION=$(plutil -extract CFBundleShortVersionString raw -o - "$APP/Contents/Info.plist")
 [[ $BUNDLE_VERSION == "$VERSION" ]] || die "app reports version $BUNDLE_VERSION, expected $VERSION."
 BUNDLE_BUILD=$(plutil -extract CFBundleVersion raw -o - "$APP/Contents/Info.plist")

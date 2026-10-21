@@ -211,14 +211,14 @@ extension UserDefaultsBackedTests {
         }
 
         @Test(arguments: [
-            ("/Users/me/Movies/Jutsu Studio", "~/Movies/Jutsu Studio"),
-            ("/Users/me/Library/Containers/com.jutsustudio/Data/Movies/Jutsu Studio", "~/Movies/Jutsu Studio"),
-            ("/Users/me/Library/Preferences", "~/Library/Preferences"),
+            ("/home/me/Movies/Jutsu Studio", "~/Movies/Jutsu Studio"),
+            ("/home/me/Library/Containers/com.jutsustudio/Data/Movies/Jutsu Studio", "~/Movies/Jutsu Studio"),
+            ("/home/me/Library/Preferences", "~/Library/Preferences"),
             ("/Volumes/Media/Renders", "/Volumes/Media/Renders"),
-            ("/Users/me", "~"),
+            ("/home/me", "~"),
         ])
         func displayPath(path: String, expected: String) {
-            #expect(AppSettings.displayPath(path) == expected)
+            #expect(AppSettings.displayPath(path, home: "/home/me") == expected)
         }
     }
 }

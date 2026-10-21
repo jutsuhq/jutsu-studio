@@ -14,6 +14,11 @@ extension JobEngine {
         _ error: ProviderError, of job: Job, inputs: RemoteInputs, isIdempotent: Bool
     ) async throws -> Bool {
         if !(isIdempotent && Self.mayHaveBeenTaken(error)) { try await save(job.id) { $0.submitAttempt = nil } }
+        // Only a refusal certainly sent nothing to pay for: an agent's reservation for it goes back to the budget.
+        if !Self.mayHaveBeenTaken(error), let reservation = jobs[job.id]?.agent?.reservation {
+            await releaseAgentSpend(reservation, of: job.id)
+            try await save(job.id) { $0.agent?.reservation = nil }
+        }
         return try await uploadsAfterRefusal(error, of: job, inputs: inputs)
     }
 

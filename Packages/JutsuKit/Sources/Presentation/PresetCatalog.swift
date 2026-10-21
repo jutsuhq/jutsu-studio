@@ -50,12 +50,21 @@ public final class PresetCatalog {
         cachedPresets(in: cacheFolder)?.first { $0.id == id }
     }
 
+    /// Why an agent's job can't take `id` as its style: it isn't in the catalog Create last read, so the job could
+    /// only fail later. `nil` when it is.
+    public nonisolated static func agentStyleRefusal(_ id: UUID, in cacheFolder: URL) -> String? {
+        guard cachedPreset(id: id, in: cacheFolder) == nil else { return nil }
+        return "There's no style \(id.uuidString) in the catalog Jutsu Studio has. Call capabilities with styles "
+            + "true for the style IDs."
+    }
+
     /// Async and nonisolated, so the caller's actor isn't blocked by the read.
     private nonisolated static func readCache(in cacheFolder: URL) async -> [StylePreset]? {
         cachedPresets(in: cacheFolder)
     }
 
-    private nonisolated static func cachedPresets(in cacheFolder: URL) -> [StylePreset]? {
+    /// Every preset of the cached catalog; `nil` when nothing is cached.
+    public nonisolated static func cachedPresets(in cacheFolder: URL) -> [StylePreset]? {
         guard let data = try? Data(contentsOf: cacheFolder.appendingPathComponent(cacheFileName)) else { return nil }
         return try? JSONDecoder().decode([StylePreset].self, from: data)
     }

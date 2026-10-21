@@ -55,8 +55,8 @@ private final class FakeTemplateImages: TemplateImages {
         JobTemplate(
             name: name, mode: .motionTransfer,
             references: [
-                LocalImage(fileURL: URL(fileURLWithPath: "/Users/me/a.png"), bookmark: Data([1])),
-                LocalImage(fileURL: URL(fileURLWithPath: "/Users/me/b.png"), prompt: "neon cat"),
+                LocalImage(fileURL: URL(fileURLWithPath: "/home/me/a.png"), bookmark: Data([1])),
+                LocalImage(fileURL: URL(fileURLWithPath: "/home/me/b.png"), prompt: "neon cat"),
             ],
             resolution: .p720)
     }

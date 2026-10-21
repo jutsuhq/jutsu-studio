@@ -12,6 +12,8 @@ extension JobEngine {
         var batchID: UUID?
         var variantGroupID: UUID?
         var missing: Int?
+        /// The jobs the submit started, when more than one: an agent's job is one share of its reservation.
+        var parts: Int?
 
         /// From here on the job is one variant: a retry of it makes one.
         func apply(to job: inout Job) {
@@ -21,6 +23,7 @@ extension JobEngine {
             job.batchID = batchID
             job.variantGroupID = variantGroupID
             job.missingVariants = missing
+            if let parts { job.agent?.paidParts = parts }
             job.spec.variants = 1
         }
     }
@@ -60,6 +63,15 @@ extension JobEngine {
             job.inputs = inputs
             job.remote = remote
             job.submittedAt = now
+            // The sender's reservation pays for the whole submit; this variant is one share of it.
+            job.agent = sender.agent.map {
+                var origin = $0
+                origin.paidBy = $0.reservation
+                origin.paidParts = started
+                origin.reservation = nil
+                origin.hold = nil
+                return origin
+            }
             do {
                 try await repository.save(job)
             } catch {
@@ -75,6 +87,6 @@ extension JobEngine {
         return VariantShare(
             cost: costs[0], serverPrice: quotes?[0], approvedPrice: approvals?[0], batchID: batchID,
             variantGroupID: asked > 1 ? (sender.variantGroupID ?? sender.idempotencyKey) : sender.variantGroupID,
-            missing: started < asked ? asked - started : nil)
+            missing: started < asked ? asked - started : nil, parts: started > 1 ? started : nil)
     }
 }

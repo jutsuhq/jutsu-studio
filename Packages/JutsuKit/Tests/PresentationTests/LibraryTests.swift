@@ -18,7 +18,7 @@ enum LibraryFixture {
         presetName: String? = nil, minutesAgo: Double = 36, queuedMinutesAgo: Double = 60
     ) -> LibraryItemModel {
         let clip = SourceClip(
-            fileURL: URL(fileURLWithPath: "/Users/me/Movies/\(source)"), duration: 30,
+            fileURL: URL(fileURLWithPath: "/home/me/Movies/\(source)"), duration: 30,
             pixelSize: PixelSize(width: 1920, height: 1080), range: range)
         let spec = JobSpec(
             mode: mode, source: clip,
@@ -28,7 +28,7 @@ enum LibraryFixture {
             spec: spec, providerKind: via, cost: cost, createdAt: now.addingTimeInterval(-queuedMinutesAgo * 60))
         job.state = .done
         job.finishedAt = now.addingTimeInterval(-minutesAgo * 60)
-        job.outputFile = URL(fileURLWithPath: "/Users/me/Movies/Jutsu Studio/out.mp4")
+        job.outputFile = URL(fileURLWithPath: "/home/me/Movies/Jutsu Studio/out.mp4")
         job.remote = RemoteJob(requestID: "req-123", correlationID: "corr-9")
         return LibraryItemModel(job: job, presetName: presetName)
     }

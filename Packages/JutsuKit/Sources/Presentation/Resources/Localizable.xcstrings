@@ -1,6 +1,51 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Would use your plan's unlimited generations, which agents may not use · confirm to send it" : {
+
+    },
+    "Waiting for you: it would use your plan's unlimited generations, which agents may not use." : {
+
+    },
+    "Waiting for you: its price isn't known." : {
+
+    },
+    "Waiting for you: it costs more than the agent was allowed." : {
+
+    },
+    "Waiting for you: it's over today's agent budget." : {
+
+    },
+    "Waiting for you: agent spending can't be recorded." : {
+
+    },
+    "Waiting for you: it takes today past your spend cap." : {
+
+    },
+    "Waiting for you: it costs more now than the price you approved." : {
+
+    },
+    "Jutsu Studio lost the record of this request." : {
+
+    },
+    "Jutsu Studio quit while sending this request, so it may have been sent. Its price still counts." : {
+
+    },
+    "Agent" : {
+
+    },
+    "Agent spending couldn't be read · nothing was sent, confirm to send it" : {
+
+    },
+    "Agent · %@" : {
+
+    },
+    "Allowed up to %@" : {
+
+    },
+    "An agent's job at a price not known yet · confirm to send it" : {
+
+    },
     "Checking the image models…" : {
 
     },
@@ -1129,6 +1174,9 @@
     "Convert this video first" : {
 
     },
+    "Costs more than the agent was allowed · confirm to send it" : {
+
+    },
     "Credits" : {
 
     },
@@ -1750,6 +1798,12 @@
     "Out of plan credits · top up, then resume" : {
 
     },
+    "Over today's agent budget · confirm to send it" : {
+
+    },
+    "Costs more now than the price you approved · confirm to send it" : {
+
+    },
     "Over today's cap, you'll be asked to confirm" : {
 
     },
@@ -2171,6 +2225,9 @@
 
     },
     "Start frame" : {
+
+    },
+    "Stopped by the agent spending limits · confirm to send it" : {
 
     },
     "Stored in" : {

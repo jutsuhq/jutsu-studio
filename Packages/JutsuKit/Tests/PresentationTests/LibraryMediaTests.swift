@@ -12,7 +12,7 @@ enum LibraryMediaFixture {
         aspectRatio: String? = "16:9", minutesAgo: Double = 10, isStarred: Bool = false
     ) -> SavedImage {
         SavedImage(
-            fileURL: URL(fileURLWithPath: "/Users/me/Movies/Jutsu Studio/Images/knight.png"), prompt: prompt,
+            fileURL: URL(fileURLWithPath: "/home/me/Movies/Jutsu Studio/Images/knight.png"), prompt: prompt,
             model: model, aspectRatio: aspectRatio, createdAt: now.addingTimeInterval(-minutesAgo * 60),
             remoteURL: URL(string: "https://cdn.example.com/knight.png")!, isStarred: isStarred)
     }

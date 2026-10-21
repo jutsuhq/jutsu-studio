@@ -85,12 +85,12 @@ private let mappedGenerations: [(PastGeneration, HistoryKind?)] = [
     (generation("hf_mult_motion_control", status: "in_progress"), nil),
     (generation("hf_mult_motion_control", output: nil), nil),
     (generation("hf_mult_motion_control", media: [PastMedia(role: .video, id: "video-1", url: nil)]), nil),
-    (generation("hf_mult_motion_control", output: URL(string: "file:///Users/me/Movies/out.mp4")), nil),
+    (generation("hf_mult_motion_control", output: URL(string: "file:///home/me/Movies/out.mp4")), nil),
     (generation("hf_mult_motion_control", output: URL(string: "http://cdn.example/out.mp4")), nil),
     (
         generation(
             "hf_mult_motion_control",
-            media: [PastMedia(role: .video, id: "video-1", url: URL(string: "file:///Users/me/Movies/x.mov"))]),
+            media: [PastMedia(role: .video, id: "video-1", url: URL(string: "file:///home/me/Movies/x.mov"))]),
         nil
     ),
 ]

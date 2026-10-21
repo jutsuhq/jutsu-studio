@@ -220,7 +220,7 @@ final class DeliveryExportModel {
         task?.cancel()
     }
 
-    private static func export(_ task: DeliveryTask, version: MaterialVersion?, into directory: URL) async throws {
+    static func export(_ task: DeliveryTask, version: MaterialVersion?, into directory: URL) async throws {
         guard let version, let file = version.fileURL, version.availability == .available else {
             throw DeliverySetError.sourceUnavailable
         }
@@ -230,7 +230,7 @@ final class DeliveryExportModel {
     }
 
     /// The set's manifest next to its files; the files are delivered either way, so a failure is only logged.
-    private static func writeManifest(of set: DeliverySet, at date: Date, into directory: URL, replacing: Bool) {
+    static func writeManifest(of set: DeliverySet, at date: Date, into directory: URL, replacing: Bool) {
         let file = directory.appending(path: ExportNaming.deliveryManifestName(set: set.name))
         do {
             let manifest = ExportSidecar.Delivery(set: set, exportedAt: date)

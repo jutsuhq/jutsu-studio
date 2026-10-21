@@ -125,6 +125,24 @@ Images and videos share one persistent material catalog. It retains versions, th
 - A Storage tab showing what the library, downloaded inputs and caches take on disk, which moves old drafts to the Trash.
 - Software Update: checks GitHub releases once a day, or with Check for Updates… in the app menu and Settings › General; downloads, verifies and installs the new version and relaunches. Automatic download is optional.
 
+## Agents
+
+- Lets an AI agent on your Mac, such as Claude Code, work with the app through the bundled `jutsu` helper, a Model Context Protocol server. Add it with the line Settings › Agents shows.
+- Off until you turn on Allow agents. Turning it off refuses the agent's next request and stops nothing already running.
+- An agent can read what the app offers (the connection, credits, budget, video and image models, styles and voices), get a price, queue videos and images from its own files, follow its jobs, cancel, retry or move up its own jobs, pause or resume the agents' jobs (never yours, and never your own Pause all), and open a page or a job for you.
+- In the Library it can search results, keep, reject or star them, queue Enhance operations (except Topaz upscales, whose price is known only after they run), create, list and export delivery sets, and export takes for editing into the output folder's Exports folder. Exports never replace a file.
+- An export runs in the app on its own: the agent gets an ID at once and follows it like a job, with each file's result as it is written. It keeps going if the agent goes away. Quitting the app forgets these IDs, and the agent is told to look in the folder or export again.
+- It can't delete anything or see your key or sign-in. Reject only hides a result.
+- Its videos and images are what Create would make from the same settings; a request Create would quietly adjust is refused with the reason instead.
+- Sending the same request again returns the job it already made, so a lost answer never queues or pays twice.
+- A daily agent budget: dollars with an API key, credits with an account. 0 by default. Your own daily cap still applies.
+- The budget and the Settings › Agents switches are kept in the app's preferences, so a program running as you with Full Disk Access could change them. The limits stop agents working through the app's tools, not any program on your Mac.
+- Every agent job and image request names the most it may cost. One over that, over today's agent budget or your cap, or at a price not known yet waits in the Queue until you confirm or send it; an agent can't send it on its own.
+- A job or image request that failed, was refused by moderation or was cancelled before it ran gives its price back to the agent budget, as Higgsfield doesn't bill it; one whose outcome isn't known keeps counting.
+- Let agents use unlimited generations (Settings › Agents, off by default): off, an agent's video that your plan's unlimited generations would pay for waits in the Queue for you like one over the budget; on, it runs without counting against the agent budget. If one is charged anyway, the charge counts against the budget and, for the rest of the day, agents' videos for unlimited generations keep every limit. Image requests never use unlimited generations.
+- Queue rows and image requests show which agent asked for them and what it was allowed to spend.
+- A skill for Claude Code and other agents, [skills/jutsu-studio](../skills/jutsu-studio/SKILL.md), explains the working order and the rules.
+
 ## Connection and privacy
 
 - Two ways to connect: your Higgsfield account (OAuth in your browser; the app never sees your password) or your own API key.

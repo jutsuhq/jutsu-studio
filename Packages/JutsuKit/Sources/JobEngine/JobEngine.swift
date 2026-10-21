@@ -25,6 +25,8 @@ public actor JobEngine {
     let clock: any EngineClock
     let presetName: @Sendable (UUID) -> String?
     let spendStatus: @Sendable (Job) async throws -> SpendStatus?
+    /// `nil` sends nothing an agent queued: its jobs pause at submit (`AgentHold.ledgerUnavailable`).
+    let agentPolicy: AgentSpendPolicy?
     var settings: EngineSettings
     let limiter: SlotLimiter
     let log = EngineLog()
@@ -75,13 +77,17 @@ public actor JobEngine {
     ///   - downloader: `nil` uses `URLSessionDownloader`, capped at `settings.maxDownloadBytes`.
     ///   - spendStatus: today's spend without the given job, and the cap of its connection; checked on enqueue
     ///     and when the provider quotes a price right before submit. `nil` skips the check.
+    ///   - agentPolicy: the agent spend ledger and daily budgets the spending guard of agents' jobs checks
+    ///     (`clearAgentSpend`).
     public init(
         provider: (any GenerationProvider)?, repository: any JobRepository, uploadCache: any UploadCache,
         media: any MediaPreparing, connectivity: any Connectivity, settings: EngineSettings,
         downloader: (any Downloader)? = nil, clock: any EngineClock = SystemClock(),
         presetName: @escaping @Sendable (UUID) -> String? = { _ in nil },
-        spendStatus: @escaping @Sendable (Job) async throws -> SpendStatus? = { _ in nil }
+        spendStatus: @escaping @Sendable (Job) async throws -> SpendStatus? = { _ in nil },
+        agentPolicy: AgentSpendPolicy? = nil
     ) {
+        self.agentPolicy = agentPolicy
         self.presetName = presetName
         self.spendStatus = spendStatus
         self.provider = provider
@@ -123,6 +129,7 @@ public actor JobEngine {
             throw error
         }
         await removeLeftovers(activeJobs: activeJobs, storedIDs: storedIDs)
+        await reconcileAgentReservations()
         for stored in activeJobs {
             let job = jobs[stored.id] ?? adoptingLegacyOwner(stored)
             jobs[job.id] = job
@@ -168,12 +175,16 @@ public actor JobEngine {
         }
         let mayHaveStarted = job.submitAttempt != nil
         try await apply(mayHaveStarted ? .failed(reason: .outcomeUnknown) : .cancel, to: id)
+        // Higgsfield cancelled it while queued, so it isn't billed.
+        if job.state == .queued, job.remote != nil, !mayHaveStarted { await unbillAgentSpend(of: id) }
     }
 
     /// A failed or canceled job whose generation finished downloads that paid result again, and one that failed at
     /// the deadline is checked again (`checkAgain`): submitting it again could pay for a second generation. Any
     /// other runs again from the start as a new attempt, with a new idempotency key unless a submit of it may have
-    /// reached the server. Generating a paid job again is a new job, queued with `enqueue`.
+    /// reached the server. Generating a paid job again is a new job, queued with `enqueue`. An agent's reservation of
+    /// the last attempt keeps counting at its reserved amount, as that submit may have been charged; a ledger that
+    /// can't record that throws, and the job stays as it is.
     public func retry(_ id: UUID) async throws {
         let job = try await loadJob(id)
         switch job.state {
@@ -185,6 +196,8 @@ public actor JobEngine {
         if job.hasPaidOutput {
             try await apply(.retryDownload, to: id) { $0.retriedAt = now }
         } else {
+            // The new attempt reserves anew; what the last one may have been charged keeps counting.
+            try await keepAgentSpend(job.agent?.reservation, of: id)
             try await apply(.retry, to: id) {
                 $0.retriedAt = now
                 $0.inputs = nil
@@ -194,6 +207,7 @@ public actor JobEngine {
                 $0.submitAttempt = nil
                 $0.serverPrice = nil
                 $0.approvedPrice = nil
+                $0.agent?.startOver()
                 $0.submittedAt = nil
                 $0.processingAt = nil
                 $0.promotedAt = nil
@@ -219,49 +233,25 @@ public actor JobEngine {
 
     /// Continues a paused job from the start of its pipeline; prepared files and uploads are cached. A job paused
     /// for `notEnoughDiskSpace` continues its download from the partial file instead.
-    /// Resuming a job paused for `priceAboveCap` agrees to the price the provider quoted, so ask first.
+    /// Resuming a job paused for `priceAboveCap` agrees to the price the provider quoted, so ask first. Resuming an
+    /// agent's job paused for `agentLimit` is the person agreeing to send it past the agent's limits at its price,
+    /// which their own daily cap then counts as agreed too; only the person does this, never an agent.
     public func resume(_ id: UUID) async throws {
         let job = try await loadJob(id)
         if job.state == .paused(.priceAboveCap) {
-            try await apply(.resume, to: id) { $0.approvedPrice = $0.serverPrice }
+            try await apply(.resume, to: id) { $0.approvedPrice = $0.serverPrice ?? $0.cost }
+        } else if job.state == .paused(.agentLimit) {
+            try await apply(.resume, to: id) {
+                $0.approvedPrice = $0.serverPrice ?? $0.cost
+                $0.agent?.approvedByPerson = true
+                $0.agent?.hold = nil
+            }
         } else if case .paused = job.state {
-            try await apply(.resume, to: id)
+            try await apply(.resume, to: id) { $0.agent?.pausedByAgent = nil }
         } else if !job.state.isActive {
             throw JobEngineError.notResumable(job.state)
         }
         startRunner(id)
-    }
-
-    /// Pauses every job not yet submitted with `byUser`, so none takes a slot until `resumeAll`. Submitted
-    /// jobs keep polling and downloading. An upload in progress stops; finished uploads are cached, so a
-    /// resume repeats only the interrupted file. A job whose submit is already sent is left to finish it.
-    public func pauseAll() async {
-        for job in jobs.values where job.state.isPausableByUser && job.submitAttempt == nil {
-            await stopRunner(job.id)
-            guard let current = jobs[job.id], current.state.isPausableByUser, current.submitAttempt == nil else {
-                startRunner(job.id)
-                continue
-            }
-            do {
-                try await apply(.paused(.byUser), to: job.id)
-            } catch {
-                log.error("Job \(job.id): can't pause", detail: String(describing: error))
-                startRunner(job.id)
-            }
-        }
-    }
-
-    /// Resumes the jobs `pauseAll` paused, oldest first. Other pauses stay: a job whose connection is
-    /// still missing pauses for it again, and funds pauses wait for the user's own resume.
-    public func resumeAll() async {
-        let paused = jobs.values.filter { $0.state == .paused(.byUser) }.sorted { $0.createdAt < $1.createdAt }
-        for job in paused {
-            do {
-                try await resume(job.id)
-            } catch {
-                log.error("Job \(job.id): can't resume", detail: String(describing: error))
-            }
-        }
     }
 
     /// Moves a job waiting for a slot ahead of the other waiters, so it takes the next free slot. Saved with the
@@ -306,20 +296,6 @@ public actor JobEngine {
         gate.open()
     }
 
-    public func setMaxConcurrency(_ limit: Int) async {
-        await limiter.setLimit(limit)
-    }
-
-    /// Downloads that start after this call land in `directory`; finished files stay where they are.
-    public func setOutputDirectory(_ directory: URL) {
-        settings.outputDirectory = directory
-    }
-
-    /// Results placed after this call use `pattern`; files already in the library keep their names.
-    public func setOutputNamePattern(_ pattern: OutputNamePattern) {
-        settings.outputNamePattern = pattern
-    }
-
     private func followConnectivity() async {
         let updates = connectivity.updates()
         // The first value is the current state; wait for it so nothing starts while offline.
@@ -335,6 +311,75 @@ public actor JobEngine {
     private func setOnline(_ online: Bool) {
         isOnline = online
         gate.open()
+    }
+}
+// Pause all and Resume all, the person's and an agent's.
+extension JobEngine {
+    /// Pauses every job not yet submitted with `byUser`, so none takes a slot until `resumeAll`. Submitted
+    /// jobs keep polling and downloading. An upload in progress stops; finished uploads are cached, so a
+    /// resume repeats only the interrupted file. A job whose submit is already sent is left to finish it.
+    ///
+    /// `agentsOnly` is an agent's `pause_queue`: it pauses only the jobs agents queued and marks them
+    /// (`AgentOrigin.pausedByAgent`), so the agent's `resumeAll(agentsOnly:)` lifts only its own pause. The person's
+    /// Pause all takes over the jobs an agent paused, so no agent lifts it.
+    public func pauseAll(agentsOnly: Bool = false) async {
+        let pausable = { (job: Job) in
+            job.state.isPausableByUser && job.submitAttempt == nil && (!agentsOnly || job.agent != nil)
+        }
+        for job in jobs.values where pausable(job) {
+            await stopRunner(job.id)
+            guard let current = jobs[job.id], pausable(current) else {
+                startRunner(job.id)
+                continue
+            }
+            do {
+                try await apply(.paused(.byUser), to: job.id) { if agentsOnly { $0.agent?.pausedByAgent = true } }
+            } catch {
+                log.error("Job \(job.id): can't pause", detail: String(describing: error))
+                startRunner(job.id)
+            }
+        }
+        guard !agentsOnly else { return }
+        for job in jobs.values where job.state == .paused(.byUser) && job.agent?.pausedByAgent == true {
+            do {
+                try await save(job.id) { $0.agent?.pausedByAgent = nil }
+            } catch {
+                log.error("Job \(job.id): can't save", detail: String(describing: error))
+            }
+        }
+    }
+
+    /// Resumes the jobs `pauseAll` paused, oldest first. Other pauses stay: a job whose connection is
+    /// still missing pauses for it again, and funds pauses wait for the user's own resume. `agentsOnly`, an agent's
+    /// `resume_queue`, resumes only the jobs an agent's `pauseAll(agentsOnly:)` paused, never the person's own pause.
+    public func resumeAll(agentsOnly: Bool = false) async {
+        let paused = jobs.values.filter {
+            $0.state == .paused(.byUser) && (!agentsOnly || $0.agent?.pausedByAgent == true)
+        }
+        for job in paused.sorted(by: { $0.createdAt < $1.createdAt }) {
+            do {
+                try await resume(job.id)
+            } catch {
+                log.error("Job \(job.id): can't resume", detail: String(describing: error))
+            }
+        }
+    }
+}
+
+// Settings that apply from the next job on.
+extension JobEngine {
+    public func setMaxConcurrency(_ limit: Int) async {
+        await limiter.setLimit(limit)
+    }
+
+    /// Downloads that start after this call land in `directory`; finished files stay where they are.
+    public func setOutputDirectory(_ directory: URL) {
+        settings.outputDirectory = directory
+    }
+
+    /// Results placed after this call use `pattern`; files already in the library keep their names.
+    public func setOutputNamePattern(_ pattern: OutputNamePattern) {
+        settings.outputNamePattern = pattern
     }
 }
 // Stopping, as on quit.

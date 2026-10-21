@@ -33,6 +33,42 @@ struct PauseAllTests {
         #expect(await harness.provider.maxInFlight == 1)
     }
 
+    /// An agent's pause_queue and resume_queue touch only the jobs agents queued, and never lift the person's own
+    /// Pause all, whether it came before the agent's pause or after it.
+    @Test func anAgentsPauseTouchesOnlyAgentsJobsAndNeverLiftsThePersons() async throws {
+        let harness = Harness(maxConcurrency: 1)
+        await harness.provider.hold(.queued)
+        let engine = try await harness.makeEngine()
+        let running = try await engine.enqueue(makeSpec())
+        await harness.repository.wait(for: running.id, .queued)
+        let persons = try await engine.enqueue(makeSpec()).id
+        let origin = AgentOrigin(client: nil, requestID: "r-1", maxCost: AgentMoney(500, .usdCents))
+        let agents = try await engine.enqueue(makeSpec(), agent: origin).id
+        await harness.repository.wait { $0.count(in: .waitingForSlot) == 2 }
+        let state = { (id: UUID) in await harness.repository.job(id: id)?.state }
+
+        await engine.pauseAll(agentsOnly: true)
+        #expect(await state(persons) == .waitingForSlot)
+        #expect(await state(agents) == .paused(.byUser))
+        await engine.resumeAll(agentsOnly: true)
+        await harness.repository.wait { $0.count(in: .waitingForSlot) == 2 }
+
+        await engine.pauseAll()
+        await engine.resumeAll(agentsOnly: true)
+        await quiesce()
+        #expect(await state(persons) == .paused(.byUser))
+        #expect(await state(agents) == .paused(.byUser))
+
+        await engine.resumeAll()
+        await harness.repository.wait { $0.count(in: .waitingForSlot) == 2 }
+        await engine.pauseAll(agentsOnly: true)
+        await engine.pauseAll()
+        await engine.resumeAll(agentsOnly: true)
+        await quiesce()
+        #expect(await state(agents) == .paused(.byUser))
+        #expect(harness.log.count("submit") == 1)
+    }
+
     @Test func pauseByUserSurvivesARestartAndAConnectionChange() async throws {
         let harness = Harness(online: false)
         let first = try await harness.makeEngine()

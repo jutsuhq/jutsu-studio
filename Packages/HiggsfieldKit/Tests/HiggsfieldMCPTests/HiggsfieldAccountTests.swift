@@ -179,7 +179,7 @@ extension Network {
 
         @Test(arguments: [
             JSONValue.object(["error": "Job not found"]), .object(["generation": ["status": "completed"]]),
-            .object(["generation": ["status": "completed", "results": ["rawUrl": "file:///Users/me/Movies/x.mov"]]]),
+            .object(["generation": ["status": "completed", "results": ["rawUrl": "file:///home/me/Movies/x.mov"]]]),
         ])
         func answerWithoutGenerationOrVideoIsUnexpected(answer: JSONValue) async throws {
             let (account, _) = Self.account { _, _ in answer }

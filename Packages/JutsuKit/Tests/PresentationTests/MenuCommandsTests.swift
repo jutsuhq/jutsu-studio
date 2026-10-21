@@ -77,8 +77,8 @@ import Testing
 }
 
 @Suite struct PastedInputTests {
-    let video = URL(fileURLWithPath: "/Users/me/Movies/dance.mov")
-    let image = URL(fileURLWithPath: "/Users/me/Pictures/face.png")
+    let video = URL(fileURLWithPath: "/home/me/Movies/dance.mov")
+    let image = URL(fileURLWithPath: "/home/me/Pictures/face.png")
 
     @Test func copiedFilesWinOverTheirIconImage() {
         #expect(PastedInput(fileURLs: [video, image], hasImage: true) == .files([video, image]))
@@ -103,7 +103,7 @@ import Testing
         return job
     }
 
-    private let file = URL(fileURLWithPath: "/Users/me/Movies/Jutsu Studio/out.mp4")
+    private let file = URL(fileURLWithPath: "/home/me/Movies/Jutsu Studio/out.mp4")
 
     @Test func buttonsFitWhatTheJobCanDoNext() {
         #expect(JobNotification(done(isDraft: true, file: file), kind: .done).category == .draftResult)

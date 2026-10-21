@@ -4,7 +4,7 @@ import Testing
 
 @testable import Presentation
 
-private func file(_ name: String) -> URL { URL(fileURLWithPath: "/Users/me/Desktop/\(name)") }
+private func file(_ name: String) -> URL { URL(fileURLWithPath: "/home/me/Desktop/\(name)") }
 
 @Suite struct OpenedFileKindTests {
     @Test(arguments: ["clip.mov", "clip.MP4", "clip.m4v", "clip.webm"])

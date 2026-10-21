@@ -173,7 +173,7 @@ import Testing
         let bulk = LibraryBulkActions([starred, noFile, remote])
         #expect(bulk.title == "3 selected")
         #expect(bulk.deletable == [starred, noFile])
-        #expect(bulk.files == [URL(fileURLWithPath: "/Users/me/Movies/Jutsu Studio/out.mp4")])
+        #expect(bulk.files == [URL(fileURLWithPath: "/home/me/Movies/Jutsu Studio/out.mp4")])
     }
 
     @Test func starsAllUnlessEveryOneIsStarred() {

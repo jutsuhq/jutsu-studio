@@ -129,7 +129,7 @@ import Testing
             path: "\(other.id.uuidString)_\(other.current.id.uuidString)_abcd1234/other.png")
 
         #expect(
-            OutsideEdit.parent(of: URL(filePath: "/Users/me/Desktop/hero.png"), for: material, root: root)
+            OutsideEdit.parent(of: URL(filePath: "/home/me/Desktop/hero.png"), for: material, root: root)
                 == material.reference)
         #expect(OutsideEdit.parent(of: foreignCopy, for: material, root: root) == material.reference)
         #expect(OutsideEdit.source(of: foreignCopy, in: root) == other.reference)

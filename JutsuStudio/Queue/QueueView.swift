@@ -223,6 +223,13 @@ private struct JobRowContent: View {
                     .monospacedDigit()
                     .lineLimit(1)
                     .hoverHint("\(model.priceSource): \(model.cost)")
+                if let origin = model.origin {
+                    Text(origin)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(Theme.muted)
+                        .lineLimit(1)
+                        .hoverHint(model.originDetail ?? origin)
+                }
                 if isActive, let prompt = model.prompt {
                     Text(prompt)
                         .font(.system(size: 12))
@@ -358,7 +365,9 @@ private struct JobRowContent: View {
             Button("Run next", systemImage: "arrow.up.to.line") { perform(.runNext) }
                 .hoverHint(String(localized: "Run next"))
         case .confirmPrice:
-            ConfirmPriceButton(price: model.cost) { perform(.resume) }
+            ConfirmPriceButton(
+                price: model.cost, reason: job.state == .paused(.agentLimit) ? model.note?.text : nil
+            ) { perform(.resume) }
         case .edit:
             editButton("Edit", systemImage: "pencil", help: String(localized: "Open in Create"))
         case .showInFinder(let url):
@@ -402,6 +411,8 @@ private struct JobRowContent: View {
 /// Resumes a job paused for its server price, after the user agrees to that price.
 private struct ConfirmPriceButton: View {
     let price: String
+    /// Why an agent's job waits for the person; `nil` for a price over the person's own cap.
+    let reason: String?
     let resume: () -> Void
 
     @State private var isConfirming = false
@@ -417,7 +428,13 @@ private struct ConfirmPriceButton: View {
             Button("Start for \(price)", action: resume)
             Button("Not now", role: .cancel) {}
         } message: {
-            Text("This is the price from Higgsfield for the uploaded files. It takes today's spending over your cap.")
+            if let reason {
+                Text("An agent queued this job: \(reason)")
+            } else {
+                Text(
+                    "This is the price from Higgsfield for the uploaded files. It takes today's spending over your cap."
+                )
+            }
         }
     }
 }

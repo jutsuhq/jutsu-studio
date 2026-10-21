@@ -129,23 +129,38 @@ final class EditingExportModel {
             taken.contains($0.lowercased())
         }
         let video = folder.appendingPathComponent(names.video)
+        let sidecar = writesSidecar ? folder.appendingPathComponent(names.sidecar) : nil
         let throttle = ProgressThrottle()
-        try await EditingExporter.export(result, source: item.spec.source, preset: preset, to: video) { value in
+        let sidecarError = try await Self.write(preset, item: item, result: result, to: video, sidecar: sidecar) {
+            value in
             guard throttle.admits(value) else { return }
             Task { @MainActor in self.report(value) }
         }
-        guard writesSidecar else { return video }
-        // The video is done either way; a missing sidecar is reported but doesn't undo it.
-        do {
-            let sidecar = ExportSidecar(
-                job: item.job, presetName: item.presetName, exportPreset: preset, exportedAt: Date())
-            try sidecar.encoded().write(to: folder.appendingPathComponent(names.sidecar), options: .withoutOverwriting)
-        } catch {
-            logger.error("Can't write an export sidecar: \(String(describing: error), privacy: .private)")
+        if let sidecarError {
             message = UserMessage(
-                title: String(localized: "The JSON sidecar wasn't written"), message: error.localizedDescription)
+                title: String(localized: "The JSON sidecar wasn't written"), message: sidecarError.localizedDescription)
         }
         return video
+    }
+
+    /// Encodes the take to `video`, then writes its sidecar when one is asked for; neither replaces a file. The take
+    /// is done either way, so a sidecar that can't be written is returned rather than thrown.
+    static func write(
+        _ preset: ExportPreset, item: LibraryItemModel, result: URL, to video: URL, sidecar: URL?,
+        progress: @escaping @Sendable (Double) -> Void = { _ in }
+    ) async throws -> (any Error)? {
+        try await EditingExporter.export(
+            result, source: item.spec.source, preset: preset, to: video, progress: progress)
+        guard let sidecar else { return nil }
+        do {
+            let content = ExportSidecar(
+                job: item.job, presetName: item.presetName, exportPreset: preset, exportedAt: Date())
+            try content.encoded().write(to: sidecar, options: .withoutOverwriting)
+            return nil
+        } catch {
+            logger.error("Can't write an export sidecar: \(String(describing: error), privacy: .private)")
+            return error
+        }
     }
 
     private static func message(for error: any Error) -> UserMessage {

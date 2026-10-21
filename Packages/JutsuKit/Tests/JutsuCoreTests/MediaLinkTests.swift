@@ -14,7 +14,7 @@ import Testing
     }
 
     @Test(arguments: [
-        "", "clip.mp4", "file:///Users/me/clip.mp4", "ftp://example.com/a.mp4", "https://", "https:///clip.mp4",
+        "", "clip.mp4", "file:///home/me/clip.mp4", "ftp://example.com/a.mp4", "https://", "https:///clip.mp4",
         "https://example.com/a.mp4 https://example.com/b.mp4", "see https://example.com/a.mp4",
     ])
     func refusesWhatIsNotAWebLink(text: String) {

@@ -15,6 +15,7 @@ struct JutsuStudioApp: App {
                 .environment(environment.liveJobs)
                 .environment(environment.navigation)
                 .environment(appDelegate.updater)
+                .environment(appDelegate.agents)
                 .preferredColorScheme(.dark)
                 .tint(Theme.accent)
                 .task { await environment.start() }

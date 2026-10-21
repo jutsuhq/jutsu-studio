@@ -4,7 +4,7 @@ import Testing
 @testable import JutsuCore
 
 struct OutputSubfolderTests {
-    private let output = URL(filePath: "/Users/me/Movies/Jutsu Studio", directoryHint: .isDirectory)
+    private let output = URL(filePath: "/home/me/Movies/Jutsu Studio", directoryHint: .isDirectory)
 
     @Test func eachKindHasAFolderOfItsOwnInsideTheOutputFolder() {
         let folders = OutputSubfolder.allCases.map { $0.url(in: output) }

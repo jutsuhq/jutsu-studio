@@ -8,6 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private(set) lazy var environment = AppEnvironment.launch()
     private(set) lazy var system = SystemIntegration(environment: environment)
     private(set) lazy var updater = SoftwareUpdater()
+    private(set) lazy var agents = AgentService(environment: environment, system: system)
 
     /// The notification delegate has to be in place before launch finishes to receive the click that launched the app.
     func applicationWillFinishLaunching(_ notification: Notification) {
@@ -21,6 +22,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         system.start()
+        agents.start()
         // Resumes the queue even when no window is restored; `start()` runs once.
         Task { await environment.start() }
     }
@@ -61,6 +63,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         environment.navigation.saveDraft()
+        agents.stop()
     }
 
     /// Set once the pending quit was answered, so the stop and its time limit can't both answer it.
