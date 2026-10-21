@@ -225,6 +225,7 @@ public struct MCPServer {
         let response: AgentResponse
         switch tool.command(arguments) {
         case .success(.createVideo(let command)): response = await createVideo(command, client: client)
+        case .success(.createImage(let command)): response = await createImage(command, client: client)
         case .success(let command): response = await send(command, client)
         case .failure(let error): response = AgentResponse(error: error)
         }
@@ -254,6 +255,21 @@ public struct MCPServer {
         }
         return await send(.createVideo(staged), client)
     }
+
+    /// `create_image` likewise: its input is handed over first, unless the app already took the request.
+    private func createImage(_ command: CreateImageCommand, client: String?) async -> AgentResponse {
+        let request = UploadRequest(
+            command: "create_image", requestID: command.requestID, fingerprint: command.fingerprint)
+        var staged = command
+        do throws(AgentError) {
+            if let path = command.image.input { staged.image.input = try await stage(path, request, client).get() }
+        } catch  where error.code == .requestKnown {
+            staged.image.input = nil
+        } catch {
+            return AgentResponse(error: error)
+        }
+        return await send(.createImage(staged), client)
+    }
 }
 
 // Tool results, names and encoding.
@@ -262,24 +278,7 @@ extension MCPServer {
     /// read it. A success is the result itself (the capabilities, what `show` opened); a failure is
     /// `{"error": {code, message, retryable, next}}` with `isError`, so the model sees what to do next.
     static func toolResult(_ response: AgentResponse, structured: Bool) -> JSONValue {
-        let answer: JSONValue
-        if let error = response.error {
-            answer = ["error": encoded(error)]
-        } else if let capabilities = response.capabilities {
-            answer = encoded(capabilities)
-        } else if let shown = response.shown {
-            answer = encoded(shown)
-        } else if let quote = response.quote {
-            answer = encoded(quote)
-        } else if let created = response.created {
-            answer = encoded(created)
-        } else if let jobs = response.jobs {
-            answer = encoded(jobs)
-        } else if let acted = response.acted {
-            answer = encoded(acted)
-        } else {
-            answer = ["error": encoded(AgentError.lostAnswer)]
-        }
+        let answer = response.error.map { ["error": encoded($0)] } ?? success(response)
         let text = (try? AgentWire.line(answer)).map { String(decoding: $0.dropLast(), as: UTF8.self) } ?? "{}"
         var result: [String: JSONValue] = [
             "content": [["type": "text", "text": .string(text)]],
@@ -287,6 +286,18 @@ extension MCPServer {
         ]
         if structured { result["structuredContent"] = answer }
         return .object(result)
+    }
+
+    /// The one answer a successful response carries, else `lost_answer`.
+    private static func success(_ response: AgentResponse) -> JSONValue {
+        let answers: [(any Encodable)?] = [
+            response.capabilities, response.shown, response.quote, response.created, response.jobs, response.acted,
+            response.library, response.marked, response.delivery, response.exported,
+        ]
+        guard let answer = answers.lazy.compactMap(\.self).first else {
+            return ["error": encoded(AgentError.lostAnswer)]
+        }
+        return encoded(answer)
     }
 
     private static func encoded(_ value: some Encodable) -> JSONValue {
@@ -312,20 +323,24 @@ extension MCPServer {
     }
 
     static let instructions = """
-        Drives the Jutsu Studio app on this Mac, which makes AI videos with Higgsfield. Call capabilities first: it \
-        says how the app is connected (an API key paying in USD, or an account paying in credits), today's agent \
-        budget (dailyLimit, spentToday, reservedToday, remaining, in usd_cents or credits) and the tools this \
-        version offers; models: true lists the video models, model: an ID gives that model's limits. Agents are off \
-        until the person turns on Settings › Agents › Allow agents; until then every tool returns agents_off. \
-        To make a video: quote it (free), then create_video with a new request_id and max_cost, the most you agree \
-        to pay. Sending the same request_id and parameters again returns the same job and never pays twice; reuse \
-        a request_id only to retry. Then follow it with jobs, wait_seconds up to 50; a wait that runs out stops \
-        nothing. Jutsu Studio checks every job right before it is paid for: a price above max_cost, above what is \
-        left of the daily agent budget or not known pauses the job (paused, agent_limit) until the person confirms \
-        it in the Queue; the person's own daily cap applies too. job_action cancels, retries or runs a job next, or \
-        pauses or resumes the queue; it never resumes a job waiting for the person, and nothing here deletes \
-        anything. show opens a page or a job for the person to see. A failed call returns error with code, message, \
-        retryable and next: follow next.
+        Drives the Jutsu Studio app on this Mac, which makes AI videos and images with Higgsfield and keeps them in \
+        its Library. Call capabilities first: it says how the app is connected (an API key paying in USD, or an \
+        account paying in credits), today's agent budget (dailyLimit, spentToday, reservedToday, remaining, in \
+        usd_cents or credits) and the tool groups this version offers; models: true lists the video models, model: \
+        an ID gives that model's limits, image_models, styles and voices list what create_image, Restyle and \
+        change_voice take. Agents are off until the person turns on Settings › Agents › Allow agents; until then \
+        every tool returns agents_off. To make a video: quote it (free), then create_video with a new request_id and \
+        max_cost, the most you agree to pay; create_image and enhance take the same two. Use a cheap draft mode \
+        when it fits the task. Sending the same request_id and parameters again returns the same job and never pays \
+        twice; reuse a request_id only to retry. Follow jobs with jobs, wait_seconds up to 50; a wait that runs out \
+        stops nothing. Jutsu Studio checks every paid request right before it is sent: a price above max_cost, \
+        above what is left of the daily agent budget or not known holds it (paused, needsPerson) until the person \
+        decides in the Queue; the person's own daily cap applies too. Tell the person when something waits for \
+        them. library_search finds results (paths on this Mac), library_mark keeps, rejects or stars them, \
+        delivery_set and export write files for delivery or editing, never over a file. job_action cancels, \
+        retries or runs a job next, or pauses or resumes the queue; it never resumes a job waiting for the person, \
+        and nothing here deletes anything. show opens a page or a job for the person to see. A failed call returns \
+        error with code, message, retryable and next: follow next.
         """
 
     // MARK: Encoding

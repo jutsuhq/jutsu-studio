@@ -259,15 +259,18 @@ public struct JobsCommand: Codable, Equatable, Sendable {
     /// Without `ids`: how many of the agents' latest jobs, newest first.
     public var limit: Int?
     public var waitSeconds: Int
+    /// Without `ids`: the `nextCursor` of the page before.
+    public var cursor: String?
 
-    public init(ids: [UUID] = [], limit: Int? = nil, waitSeconds: Int = 0) {
+    public init(ids: [UUID] = [], limit: Int? = nil, waitSeconds: Int = 0, cursor: String? = nil) {
         self.ids = ids
         self.limit = limit
         self.waitSeconds = waitSeconds
+        self.cursor = cursor
     }
 
     private enum CodingKeys: String, CodingKey {
-        case ids, limit, waitSeconds
+        case ids, limit, waitSeconds, cursor
     }
 
     public init(from decoder: any Decoder) throws {
@@ -275,6 +278,13 @@ public struct JobsCommand: Codable, Equatable, Sendable {
         ids = try container.decodeIfPresent([UUID].self, forKey: .ids) ?? []
         limit = try container.decodeIfPresent(Int.self, forKey: .limit)
         waitSeconds = try container.decodeIfPresent(Int.self, forKey: .waitSeconds) ?? 0
+        cursor = try container.decodeIfPresent(String.self, forKey: .cursor)
+        if let cursor {
+            guard ids.isEmpty else { throw AgentError.badRequest("cursor pages the latest jobs; leave out ids") }
+            guard AgentNames.isValidCursor(cursor) else {
+                throw AgentError.badRequest("cursor is a nextCursor from an earlier answer")
+            }
+        }
         guard ids.count <= Self.maxIDs else { throw AgentError.badRequest("ids takes at most \(Self.maxIDs) job IDs") }
         if let limit, !(1...Self.maxLimit).contains(limit) {
             throw AgentError.badRequest("limit is 1 to \(Self.maxLimit)")
@@ -289,6 +299,7 @@ public struct JobsCommand: Codable, Equatable, Sendable {
         if !ids.isEmpty { try container.encode(ids, forKey: .ids) }
         try container.encodeIfPresent(limit, forKey: .limit)
         if waitSeconds > 0 { try container.encode(waitSeconds, forKey: .waitSeconds) }
+        try container.encodeIfPresent(cursor, forKey: .cursor)
     }
 }
 
@@ -380,8 +391,12 @@ public struct AgentJob: Codable, Equatable, Sendable {
     public var charged: Bool
     /// Why it failed, in the person's language.
     public var error: String?
-    /// The finished video's path on the person's Mac.
+    /// The finished video's path on the person's Mac, or an image request's first image.
     public var result: String?
+    /// Every file the job made: an image request's images.
+    public var results: [String]?
+    /// "video", or "image" for a create_image request.
+    public var kind: String
     public var requestID: String?
     public var client: String?
     public var mode: String
@@ -392,8 +407,9 @@ public struct AgentJob: Codable, Equatable, Sendable {
     public init(
         id: UUID, state: String, pauseReason: String? = nil, hold: String? = nil, needsPerson: Bool = false,
         progress: Double? = nil, price: AgentAmount? = nil, isPriceExact: Bool = false, charged: Bool = false,
-        error: String? = nil, result: String? = nil, requestID: String? = nil, client: String? = nil,
-        mode: String, model: String, createdAt: Date, finishedAt: Date? = nil
+        error: String? = nil, result: String? = nil, results: [String]? = nil, kind: String = "video",
+        requestID: String? = nil, client: String? = nil, mode: String, model: String, createdAt: Date,
+        finishedAt: Date? = nil
     ) {
         self.id = id
         self.state = state
@@ -406,6 +422,8 @@ public struct AgentJob: Codable, Equatable, Sendable {
         self.charged = charged
         self.error = error
         self.result = result
+        self.results = results
+        self.kind = kind
         self.requestID = requestID
         self.client = client
         self.mode = mode
@@ -416,6 +434,7 @@ public struct AgentJob: Codable, Equatable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case id, state, pauseReason, hold, needsPerson, progress, price, isPriceExact, charged, error, result
+        case results, kind
         case requestID = "requestId"
         case client, mode, model, createdAt, finishedAt
     }
@@ -448,10 +467,13 @@ public struct AgentJobs: Codable, Equatable, Sendable {
     public var jobs: [AgentJob]
     /// The wait ran out before every job settled; nothing was stopped.
     public var timedOut: Bool
+    /// Without ids: pass as `cursor` for the next, older page; nil on the last one.
+    public var nextCursor: String?
 
-    public init(jobs: [AgentJob], timedOut: Bool = false) {
+    public init(jobs: [AgentJob], timedOut: Bool = false, nextCursor: String? = nil) {
         self.jobs = jobs
         self.timedOut = timedOut
+        self.nextCursor = nextCursor
     }
 }
 

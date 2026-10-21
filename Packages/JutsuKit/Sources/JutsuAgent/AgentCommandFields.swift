@@ -13,20 +13,35 @@ public struct CapabilitiesCommand: Codable, Equatable, Sendable {
     public var models: Bool
     /// Only this model, by its ID; implies `models`.
     public var model: String?
+    /// Lists the connection's image models, which `create_image` takes.
+    public var imageModels: Bool
+    /// Lists Restyle's styles from the catalog Create last read.
+    public var styles: Bool
+    /// Lists the voices Change Voice offers on an account.
+    public var voices: Bool
 
-    public init(models: Bool = false, model: String? = nil) {
+    public init(
+        models: Bool = false, model: String? = nil, imageModels: Bool = false, styles: Bool = false,
+        voices: Bool = false
+    ) {
         self.models = models
         self.model = model
+        self.imageModels = imageModels
+        self.styles = styles
+        self.voices = voices
     }
 
     private enum CodingKeys: String, CodingKey {
-        case models, model
+        case models, model, imageModels, styles, voices
     }
 
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         models = try container.decodeIfPresent(Bool.self, forKey: .models) ?? false
         model = try container.decodeIfPresent(String.self, forKey: .model)
+        imageModels = try container.decodeIfPresent(Bool.self, forKey: .imageModels) ?? false
+        styles = try container.decodeIfPresent(Bool.self, forKey: .styles) ?? false
+        voices = try container.decodeIfPresent(Bool.self, forKey: .voices) ?? false
         if let model, !AgentNames.isValidModelID(model) {
             throw AgentError.badRequest("model is a model ID from capabilities, such as seedance25")
         }
@@ -36,6 +51,9 @@ public struct CapabilitiesCommand: Codable, Equatable, Sendable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         if models { try container.encode(models, forKey: .models) }
         try container.encodeIfPresent(model, forKey: .model)
+        if imageModels { try container.encode(imageModels, forKey: .imageModels) }
+        if styles { try container.encode(styles, forKey: .styles) }
+        if voices { try container.encode(voices, forKey: .voices) }
     }
 }
 
@@ -171,7 +189,7 @@ public enum AgentNames {
         text.utf8.count == 64 && text.utf8.allSatisfy { (0x30...0x39).contains($0) || (0x61...0x66).contains($0) }
     }
 
-    private static func isNameByte(_ byte: UInt8) -> Bool {
+    static func isNameByte(_ byte: UInt8) -> Bool {
         switch byte {
         case 0x30...0x39, 0x41...0x5A, 0x61...0x7A, UInt8(ascii: "."), UInt8(ascii: "_"), UInt8(ascii: "-"): true
         default: false

@@ -154,7 +154,10 @@ actor FakeApp {
         let tools = try #require(try await reply(&server, "tools/list")["result"]?["tools"]?.arrayValue)
         #expect(
             tools.map { $0["name"]?.stringValue }
-                == ["capabilities", "quote", "create_video", "jobs", "job_action", "show"])
+                == [
+                    "capabilities", "quote", "create_video", "jobs", "job_action", "create_image", "library_search",
+                    "library_mark", "enhance", "delivery_set", "export", "show",
+                ])
         #expect(tools.compactMap { $0["name"]?.stringValue } == AgentCapabilities.ToolGroup.all.flatMap(\.tools))
         for tool in tools {
             #expect(tool["inputSchema"]?["type"] == "object")
@@ -169,7 +172,7 @@ actor FakeApp {
             #expect(tool["title"]?.stringValue?.isEmpty == false)
         }
         let hints = Dictionary(uniqueKeysWithValues: tools.map { ($0["name"]?.stringValue ?? "", $0["annotations"]) })
-        for name in ["capabilities", "quote", "jobs"] {
+        for name in ["capabilities", "quote", "jobs", "library_search"] {
             #expect(hints[name]??["readOnlyHint"] == true, "\(name)")
             #expect(hints[name]??["destructiveHint"] == false, "\(name)")
         }
@@ -178,6 +181,14 @@ actor FakeApp {
         #expect(hints["create_video"]??["destructiveHint"] == false)
         #expect(hints["job_action"]??["readOnlyHint"] == false)
         #expect(hints["job_action"]??["idempotentHint"] == false)
+        for name in ["create_image", "enhance"] {
+            #expect(hints[name]??["readOnlyHint"] == false, "\(name)")
+            #expect(hints[name]??["idempotentHint"] == true, "\(name)")
+            #expect(hints[name]??["destructiveHint"] == false, "\(name)")
+        }
+        #expect(hints["library_mark"]??["idempotentHint"] == true)
+        #expect(hints["library_mark"]??["destructiveHint"] == false)
+        for name in ["delivery_set", "export"] { #expect(hints[name]??["destructiveHint"] == false, "\(name)") }
         #expect(hints["show"]??["readOnlyHint"] == false)
         #expect(hints["show"]??["idempotentHint"] == true)
         #expect(hints["show"]??["openWorldHint"] == false)

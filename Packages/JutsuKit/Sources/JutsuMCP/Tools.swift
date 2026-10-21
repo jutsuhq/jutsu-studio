@@ -9,6 +9,12 @@ enum Tool: String, CaseIterable {
     case createVideo = "create_video"
     case jobs
     case jobAction = "job_action"
+    case createImage = "create_image"
+    case librarySearch = "library_search"
+    case libraryMark = "library_mark"
+    case enhance
+    case deliverySet = "delivery_set"
+    case export
     case show
 
     /// The command for these arguments, or the tool error that tells the model what to fix. Checked here before
@@ -25,8 +31,14 @@ enum Tool: String, CaseIterable {
             case .capabilities: .success(try Self.capabilities(given))
             case .quote: .success(try Self.quote(given))
             case .createVideo: .success(try Self.createVideo(given, workingDirectory: workingDirectory))
+            case .createImage: .success(try Self.createImage(given, workingDirectory: workingDirectory))
             case .jobs: .success(try Self.jobs(given))
             case .jobAction: .success(try Self.jobAction(given))
+            case .librarySearch: .success(try Self.librarySearch(given))
+            case .libraryMark: .success(try Self.libraryMark(given))
+            case .enhance: .success(try Self.enhance(given))
+            case .deliverySet: .success(try Self.deliverySet(given))
+            case .export: .success(try Self.export(given))
             case .show: .success(try Self.show(given))
             }
         } catch {
@@ -35,13 +47,16 @@ enum Tool: String, CaseIterable {
     }
 
     private static func capabilities(_ given: Arguments) throws(AgentError) -> AgentCommand {
-        try given.allow(["models", "model"])
+        try given.allow(["models", "model", "image_models", "styles", "voices"])
         let model = try given.string("model")
         if let model, !AgentNames.isValidModelID(model) {
             throw .badRequest("capabilities: model is a model ID, such as seedance25")
         }
         let models = try given.bool("models")
-        return .capabilities(CapabilitiesCommand(models: models || model != nil, model: model))
+        return .capabilities(
+            CapabilitiesCommand(
+                models: models || model != nil, model: model, imageModels: try given.bool("image_models"),
+                styles: try given.bool("styles"), voices: try given.bool("voices")))
     }
 
     private static func quote(_ given: Arguments) throws(AgentError) -> AgentCommand {
@@ -60,10 +75,7 @@ enum Tool: String, CaseIterable {
 
     private static func createVideo(_ given: Arguments, workingDirectory: URL) throws(AgentError) -> AgentCommand {
         try given.allow(videoKeys.union(["request_id", "max_cost"]))
-        guard let requestID = try given.string("request_id") else {
-            throw .badRequest("create_video needs request_id, a new ID of your own for each new request")
-        }
-        guard AgentNames.isValidRequestID(requestID) else { throw .badRequest(AgentNames.requestIDRule) }
+        let requestID = try given.requestID()
         let maxCost = try given.maxCost()
         var video = try given.video()
         if let problem = video.problem { throw .badRequest("create_video: \(problem)") }
@@ -79,7 +91,7 @@ enum Tool: String, CaseIterable {
     }
 
     private static func jobs(_ given: Arguments) throws(AgentError) -> AgentCommand {
-        try given.allow(["ids", "limit", "wait_seconds"])
+        try given.allow(["ids", "limit", "wait_seconds", "cursor"])
         let ids = try given.strings("ids").map { text throws(AgentError) -> UUID in
             guard let id = UUID(uuidString: text) else { throw .badRequest("jobs: ids are job IDs (UUIDs)") }
             return id
@@ -95,7 +107,12 @@ enum Tool: String, CaseIterable {
         guard (0...JobsCommand.maxWaitSeconds).contains(wait) else {
             throw .badRequest("jobs: wait_seconds is 0 to \(JobsCommand.maxWaitSeconds)")
         }
-        return .jobs(JobsCommand(ids: ids, limit: limit, waitSeconds: wait))
+        let cursor = try given.string("cursor")
+        if let cursor {
+            guard ids.isEmpty else { throw .badRequest("jobs: cursor pages the latest jobs; leave out ids") }
+            guard AgentNames.isValidCursor(cursor) else { throw .badRequest("jobs: cursor is a next_cursor from jobs") }
+        }
+        return .jobs(JobsCommand(ids: ids, limit: limit, waitSeconds: wait, cursor: cursor))
     }
 
     private static func jobAction(_ given: Arguments) throws(AgentError) -> AgentCommand {
@@ -160,6 +177,29 @@ enum Tool: String, CaseIterable {
             throw .badRequest("create_video: the parameters can't be read")
         }
     }
+
+    /// The fingerprint of another paid tool's request: the tool, its parameters, its files by size and `max_cost`.
+    /// The tool is part of it, so one request ID never means two tools' requests.
+    static func fingerprint(
+        _ tool: String, _ fields: some Encodable, files: [String], _ maxCost: AgentAmount
+    ) throws(AgentError) -> String {
+        let sizes = files.map { path in
+            (try? URL(filePath: path).resourceValues(forKeys: [.fileSizeKey]))?.fileSize
+        }
+        do {
+            return try AgentFingerprint.of(ToolFingerprint(tool: tool, fields: fields, sizes: sizes, maxCost: maxCost))
+        } catch {
+            throw .badRequest("\(tool): the parameters can't be read")
+        }
+    }
+}
+
+/// What a paid tool's fingerprint is made of (`Tool.fingerprint`).
+private struct ToolFingerprint<Fields: Encodable>: Encodable {
+    var tool: String
+    var fields: Fields
+    var sizes: [Int?]
+    var maxCost: AgentAmount
 }
 
 /// A tool's arguments, read strictly: a key the tool doesn't take or a value of the wrong type is an error that
@@ -212,6 +252,44 @@ struct Arguments {
             throw .badRequest("\(tool): \(key) is a whole number")
         }
         return Int(number)
+    }
+
+    /// nil when left out or null, unlike `bool`.
+    // swiftlint:disable:next discouraged_optional_boolean
+    func optionalBool(_ key: String) throws(AgentError) -> Bool? {
+        switch values[key] {
+        case nil, .null?: return nil
+        case .bool(let value)?: return value
+        default: throw .badRequest("\(tool): \(key) is true or false")
+        }
+    }
+
+    /// An ISO 8601 date and time, such as 2026-10-21T09:00:00Z; nil when left out or null.
+    func date(_ key: String) throws(AgentError) -> Date? {
+        guard let text = try string(key) else { return nil }
+        let withFraction = ISO8601DateFormatter()
+        withFraction.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        guard let date = ISO8601DateFormatter().date(from: text) ?? withFraction.date(from: text) else {
+            throw .badRequest("\(tool): \(key) is an ISO 8601 date and time, such as 2026-10-21T09:00:00Z")
+        }
+        return date
+    }
+
+    /// Library item IDs; empty when left out or null.
+    func ids(_ key: String) throws(AgentError) -> [UUID] {
+        try strings(key).map { text throws(AgentError) -> UUID in
+            guard let id = UUID(uuidString: text) else { throw .badRequest("\(tool): \(key) are Library item IDs") }
+            return id
+        }
+    }
+
+    /// `request_id`, which every paid tool needs.
+    func requestID() throws(AgentError) -> String {
+        guard let requestID = try string("request_id") else {
+            throw .badRequest("\(tool) needs request_id, a new ID of your own for each new request")
+        }
+        guard AgentNames.isValidRequestID(requestID) else { throw .badRequest(AgentNames.requestIDRule) }
+        return requestID
     }
 
     /// Empty when left out or null.

@@ -33,6 +33,18 @@ public enum AgentCommand: Equatable, Sendable {
     case jobs(JobsCommand)
     /// Cancel, retry or run a job next, or pause or resume the queue.
     case jobAction(JobActionCommand)
+    /// Makes images, idempotent by its request ID.
+    case createImage(CreateImageCommand)
+    /// Finds results in the Library, a page at a time.
+    case librarySearch(LibrarySearchCommand)
+    /// Sets the culling verdict and the star of Library items.
+    case libraryMark(LibraryMarkCommand)
+    /// Queues an Enhance operation on a video result, idempotent by its request ID.
+    case enhance(EnhanceCommand)
+    /// Makes, lists or exports delivery sets.
+    case deliverySet(DeliverySetCommand)
+    /// Exports video results for editing.
+    case export(ExportCommand)
 
     public var name: String {
         switch self {
@@ -43,6 +55,12 @@ public enum AgentCommand: Equatable, Sendable {
         case .createVideo: "create_video"
         case .jobs: "jobs"
         case .jobAction: "job_action"
+        case .createImage: "create_image"
+        case .librarySearch: "library_search"
+        case .libraryMark: "library_mark"
+        case .enhance: "enhance"
+        case .deliverySet: "delivery_set"
+        case .export: "export"
         }
     }
 }
@@ -83,6 +101,12 @@ public struct AgentRequest: Codable, Equatable, Sendable {
         case "create_video": command = .createVideo(try CreateVideoCommand(from: decoder))
         case "jobs": command = .jobs(try JobsCommand(from: decoder))
         case "job_action": command = .jobAction(try JobActionCommand(from: decoder))
+        case "create_image": command = .createImage(try .checked(from: decoder))
+        case "library_search": command = .librarySearch(try .checked(from: decoder))
+        case "library_mark": command = .libraryMark(try .checked(from: decoder))
+        case "enhance": command = .enhance(try .checked(from: decoder))
+        case "delivery_set": command = .deliverySet(try .checked(from: decoder))
+        case "export": command = .export(try .checked(from: decoder))
         default: throw AgentError.unknownCommand(name)
         }
     }
@@ -101,6 +125,12 @@ public struct AgentRequest: Codable, Equatable, Sendable {
         case .createVideo(let fields): try fields.encode(to: encoder)
         case .jobs(let fields): try fields.encode(to: encoder)
         case .jobAction(let fields): try fields.encode(to: encoder)
+        case .createImage(let fields): try fields.encode(to: encoder)
+        case .librarySearch(let fields): try fields.encode(to: encoder)
+        case .libraryMark(let fields): try fields.encode(to: encoder)
+        case .enhance(let fields): try fields.encode(to: encoder)
+        case .deliverySet(let fields): try fields.encode(to: encoder)
+        case .export(let fields): try fields.encode(to: encoder)
         }
     }
 }
@@ -114,17 +144,24 @@ public struct AgentResponse: Codable, Equatable, Sendable {
     /// upload: where the app put the file, a path inside its inbox.
     public var uploaded: String?
     public var quote: AgentQuote?
-    /// create_video: the jobs the request queued.
+    /// create_video, create_image and enhance: the jobs the request queued.
     public var created: AgentCreated?
     public var jobs: AgentJobs?
     /// job_action: what was done.
     public var acted: AgentActed?
+    /// library_search: a page of results.
+    public var library: AgentLibraryPage?
+    /// library_mark: the items as they are now.
+    public var marked: AgentMarked?
+    public var delivery: AgentDelivery?
+    public var exported: AgentExported?
     public var error: AgentError?
 
     public init(
         id: String? = nil, capabilities: AgentCapabilities? = nil, shown: AgentShown? = nil, uploaded: String? = nil,
         quote: AgentQuote? = nil, created: AgentCreated? = nil, jobs: AgentJobs? = nil, acted: AgentActed? = nil,
-        error: AgentError? = nil
+        library: AgentLibraryPage? = nil, marked: AgentMarked? = nil, delivery: AgentDelivery? = nil,
+        exported: AgentExported? = nil, error: AgentError? = nil
     ) {
         self.id = id
         self.capabilities = capabilities
@@ -134,6 +171,10 @@ public struct AgentResponse: Codable, Equatable, Sendable {
         self.created = created
         self.jobs = jobs
         self.acted = acted
+        self.library = library
+        self.marked = marked
+        self.delivery = delivery
+        self.exported = exported
         self.error = error
     }
 }

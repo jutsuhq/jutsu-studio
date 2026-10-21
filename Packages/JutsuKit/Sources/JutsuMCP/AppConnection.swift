@@ -70,11 +70,20 @@ public struct AppConnection: Sendable {
         return .bundled(app: app, bundleID: bundleID, socket: socket)
     }
 
+    /// How much longer than `timeout` an export may take to answer.
+    static let exportWait = Duration.seconds(570)
+
     /// Sends `command` and returns the app's answer, or an error saying why the app couldn't be reached.
     public func send(_ command: AgentCommand, client: String?) async -> AgentResponse {
         // A `jobs` wait runs on the app's side; the answer may come only once it is over.
         var wait = Duration.zero
-        if case .jobs(let fields) = command { wait = .seconds(fields.waitSeconds) }
+        switch command {
+        case .jobs(let fields): wait = .seconds(fields.waitSeconds)
+        // Files are written while the call waits: an export of several videos takes minutes.
+        case .export: wait = Self.exportWait
+        case .deliverySet(let fields) where fields.action == .export: wait = Self.exportWait
+        default: break
+        }
         let timeout = timeout + wait
         let response = await exchange { socket in
             try AgentClient(socket: socket, timeout: timeout).send(

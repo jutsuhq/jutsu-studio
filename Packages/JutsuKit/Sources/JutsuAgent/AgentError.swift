@@ -34,6 +34,8 @@ public struct AgentError: Error, Codable, Equatable, Sendable {
         public static let notApplicable = Code(rawValue: "not_applicable")
         /// The app failed to do it; the message says why.
         public static let failed = Code(rawValue: "failed")
+        /// Higgsfield prices the operation only after it has run, so no agent can stay within a max_cost for it.
+        public static let pricedAfterRun = Code(rawValue: "priced_after_run")
     }
 
     public var code: Code

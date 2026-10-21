@@ -57,6 +57,8 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
         public static let all = [
             ToolGroup(name: "app", tools: ["capabilities"]),
             ToolGroup(name: "video", tools: ["quote", "create_video", "jobs", "job_action"]),
+            ToolGroup(name: "image", tools: ["create_image"]),
+            ToolGroup(name: "library", tools: ["library_search", "library_mark", "enhance", "delivery_set", "export"]),
             ToolGroup(name: "window", tools: ["show"]),
         ]
     }
@@ -124,6 +126,47 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
         }
     }
 
+    /// An image model of the connection, as `create_image` takes it.
+    public struct ImageModel: Codable, Equatable, Sendable {
+        public var id: String
+        public var title: String
+        /// How many images one request can make.
+        public var counts: [Int]
+        public var aspectRatios: [String]
+        /// "none", "optional" or "required": whether it edits an input image.
+        public var input: String
+
+        public init(id: String, title: String, counts: [Int], aspectRatios: [String], input: String) {
+            self.id = id
+            self.title = title
+            self.counts = counts
+            self.aspectRatios = aspectRatios
+            self.input = input
+        }
+    }
+
+    /// A Restyle style, by the ID `create_video` takes as `style`.
+    public struct Style: Codable, Equatable, Sendable {
+        public var id: UUID
+        public var name: String
+
+        public init(id: UUID, name: String) {
+            self.id = id
+            self.name = name
+        }
+    }
+
+    /// A voice of Change Voice, by the ID `enhance` takes as `voice`.
+    public struct Voice: Codable, Equatable, Sendable {
+        public var id: String
+        public var name: String
+
+        public init(id: String, name: String) {
+            self.id = id
+            self.name = name
+        }
+    }
+
     public var protocolVersion: Int
     public var appVersion: String
     /// Settings › Agents › Allow agents. Always true in an answer: while it is off, every command is refused with
@@ -135,6 +178,12 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
     public var toolGroups: [ToolGroup]
     /// Only when asked for (`CapabilitiesCommand.models`).
     public var models: [Model]?
+    /// Only when asked for (`CapabilitiesCommand.imageModels`); empty when the connection makes no images.
+    public var imageModels: [ImageModel]?
+    /// Only when asked for (`CapabilitiesCommand.styles`); empty until Create has read the catalog once.
+    public var styles: [Style]?
+    /// Only when asked for (`CapabilitiesCommand.voices`); empty without an account.
+    public var voices: [Voice]?
 
     public init(
         appVersion: String, agentsAllowed: Bool = true, connection: Connection, budget: Budget?,
