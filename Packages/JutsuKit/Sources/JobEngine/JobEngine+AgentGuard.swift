@@ -46,7 +46,7 @@ extension JobEngine {
         let decision = AgentSpendDecision.decide(
             price: job.price, isKnown: job.agentPriceIsKnown, origin: origin,
             dailyLimit: agentPolicy.dailyLimit(job.providerKind), paysUnlimited: unlimited,
-            allowsUnlimited: allowsUnlimited)
+            allowsUnlimited: allowsUnlimited, approved: job.approvedPrice)
         switch decision {
         case .hold(let hold):
             return try await holdAgentJob(id, hold, inputs: inputs)

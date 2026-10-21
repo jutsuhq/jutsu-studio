@@ -53,8 +53,9 @@ says rather than guessing.
 ## Rules
 
 - **Held means tell the person.** A job over your `max_cost`, over what is left of the daily agent budget, over the
-  person's cap, or whose price isn't known, is held (`state: paused`, `needsPerson: true`). Don't work around it with
-  another request: tell the person, who can send it from the Queue or raise the budget. Only the person can.
+  person's cap, whose price isn't known, or that costs more than the person approved, is held (`state: paused`,
+  `needsPerson: true`). Don't work around it with another request: tell the person, who can send it from the Queue or
+  raise the budget. Only the person can.
 - **Reuse `request_id` exactly.** Sending the same `request_id` with the same fields returns the same job and never
   pays twice, so repeat it after a lost answer. The same `request_id` with other fields is refused
   (`request_conflict`). A new request needs a new `request_id`, and so does a retry the app refused.

@@ -74,6 +74,7 @@ public struct AgentJobStatus: Sendable, Hashable {
         case .overDailyBudget: "over_daily_budget"
         case .ledgerUnavailable: "ledger_unavailable"
         case .unlimitedNotAllowed: "unlimited_not_allowed"
+        case .aboveApprovedPrice: "above_approved_price"
         }
     }
 

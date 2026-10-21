@@ -281,6 +281,26 @@ struct AgentImageQueueTests {
         #expect(await ledger.spends.count == 1)
     }
 
+    /// The person approved the price they saw: a higher quote right before the submit waits for them again.
+    @Test func aPriceAboveTheApprovedOneIsHeldAgain() async throws {
+        let generator = generator()
+        let queue = queue(generator)
+        let id = try create(queue, order(), origin: origin(maxCents: 7))
+        await eventually { queue.record(id)?.state == .held }
+
+        await provider.set(estimate: .success(.usd(0.2, isEstimate: false)))
+        queue.approve(id, provider: provider, upload: Self.upload(provider))
+        await eventually { queue.record(id)?.hold == .aboveApprovedPrice }
+        #expect(queue.record(id)?.state == .held)
+        #expect(await provider.submitted.isEmpty)
+        #expect(AgentJobStatus(try #require(queue.record(id)), files: []).hold == "above_approved_price")
+
+        queue.approve(id, provider: provider, upload: Self.upload(provider))
+        await eventually { queue.record(id)?.state == .finished }
+        #expect(await provider.submitted.count == 1)
+        #expect(await ledger.spends.map(\.money) == [AgentMoney(20, .usdCents)])
+    }
+
     @Test func aRefusedSubmitGivesTheReservationBack() async throws {
         await provider.set(submitError: .validation(field: nil, message: "No"))
         let queue = queue(generator())

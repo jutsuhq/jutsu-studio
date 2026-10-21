@@ -22,6 +22,9 @@
     "Waiting for you: it takes today past your spend cap." : {
 
     },
+    "Waiting for you: it costs more now than the price you approved." : {
+
+    },
     "Jutsu Studio lost the record of this request." : {
 
     },
@@ -1796,6 +1799,9 @@
 
     },
     "Over today's agent budget · confirm to send it" : {
+
+    },
+    "Costs more now than the price you approved · confirm to send it" : {
 
     },
     "Over today's cap, you'll be asked to confirm" : {

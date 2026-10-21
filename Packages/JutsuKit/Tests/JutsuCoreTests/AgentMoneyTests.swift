@@ -53,6 +53,26 @@ import Testing
                 == .send(AgentMoney(130, .usdCents), limit: nil))
     }
 
+    /// The person approved the price they saw: a higher one, or one in another unit, goes back to them.
+    @Test func aPriceAboveTheApprovedOneIsHeldAgain() {
+        let price = Cost.usd(2, isEstimate: false)
+        let approved = origin(max: 1, approved: true)
+        #expect(
+            AgentSpendDecision.decide(
+                price: price, isKnown: true, origin: approved, dailyLimit: 0, approved: .usd(2, isEstimate: true))
+                == .send(AgentMoney(200, .usdCents), limit: nil))
+        for agreed in [Cost.usd(1.5, isEstimate: true), .credits(500, isEstimate: false)] {
+            #expect(
+                AgentSpendDecision.decide(
+                    price: price, isKnown: true, origin: approved, dailyLimit: 0, approved: agreed)
+                    == .hold(.aboveApprovedPrice))
+        }
+        #expect(
+            AgentSpendDecision.decide(
+                price: price, isKnown: true, origin: approved, dailyLimit: 0, approved: .unknownUSD)
+                == .send(AgentMoney(200, .usdCents), limit: nil))
+    }
+
     /// The plan's unlimited allowance pays it: nothing counts against the budget, but it goes out without the person
     /// only when they let agents use it.
     @Test func anUnlimitedRequestIsHeldUnlessAgentsMayUseUnlimited() {

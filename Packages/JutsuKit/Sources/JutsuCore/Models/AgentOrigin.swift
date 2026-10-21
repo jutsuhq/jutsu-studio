@@ -14,8 +14,8 @@ public struct AgentOrigin: Codable, Sendable, Hashable {
     public var reservation: UUID?
     /// Why the spending guard paused the job (`PauseReason.agentLimit`); `nil` while it isn't paused for it.
     public var hold: AgentHold?
-    /// The person resumed the job past an agent limit: it goes on at the price they saw, still under their own daily
-    /// cap. Cleared by a retry, which is a new attempt.
+    /// The person resumed the job past an agent limit: it goes on at the price they saw (the job's `approvedPrice`),
+    /// still under their own daily cap; a higher price waits for them again. Cleared by a retry, which is a new attempt.
     public var approvedByPerson: Bool
     /// A variant's: the ledger entry of the submit that started it, its sender's `reservation`. Cleared by a retry.
     public var paidBy: UUID?
@@ -68,6 +68,8 @@ public enum AgentHold: String, Codable, Sendable, Hashable {
     /// It would be paid from the plan's unlimited allowance, which Settings › Agents › Let agents use unlimited
     /// generations doesn't allow.
     case unlimitedNotAllowed
+    /// The person approved it at a price, and the price is higher now.
+    case aboveApprovedPrice
 }
 
 /// Whole cents or whole credits: what agent budgets and `max_cost` count in. Integers only, so a sum can't drift.
@@ -217,22 +219,33 @@ public enum AgentSpendDecision: Sendable, Hashable {
     /// The guard's rule, without the reservation itself (`AgentSpendLedger.reserve` checks the budget as it saves).
     /// A request the plan's unlimited allowance pays costs the budgets nothing, so it goes out reserving 0 with no
     /// limit, but only when the person lets agents use the allowance (or sent it themselves); otherwise it is held.
+    /// One the person approved goes past the agent's limits at the price they approved, and is held again when its
+    /// price is now higher (or in another unit).
     /// - Parameters:
     ///   - price: the job's best known price (`Job.price`).
     ///   - isKnown: the price is the provider's quote, or an exact list price rather than an estimate.
     ///   - dailyLimit: the person's daily agent budget for the connection, in `origin.maxCost`'s unit.
     ///   - paysUnlimited: the request is to be paid from the plan's unlimited allowance (`JobSpec.usesUnlimited`).
     ///   - allowsUnlimited: Settings › Agents › Let agents use unlimited generations.
+    ///   - approved: the price the person approved the job at (`origin.approvedByPerson`); `nil`, or an unknown
+    ///     price, agreed to whatever it costs.
     public static func decide(
         price: Cost, isKnown: Bool, origin: AgentOrigin, dailyLimit: Int, paysUnlimited: Bool = false,
-        allowsUnlimited: Bool = false
+        allowsUnlimited: Bool = false, approved: Cost? = nil
     ) -> Self {
         if paysUnlimited {
             guard allowsUnlimited || origin.approvedByPerson else { return .hold(.unlimitedNotAllowed) }
             return .send(AgentMoney(0, origin.maxCost.unit), limit: nil)
         }
         let money = AgentMoney(price)
-        if origin.approvedByPerson { return .send(money ?? AgentMoney(0, origin.maxCost.unit), limit: nil) }
+        if origin.approvedByPerson {
+            if let money, let agreed = approved.flatMap(AgentMoney.init),
+                money.unit != agreed.unit || money.amount > agreed.amount
+            {
+                return .hold(.aboveApprovedPrice)
+            }
+            return .send(money ?? AgentMoney(0, origin.maxCost.unit), limit: nil)
+        }
         guard isKnown, let money else { return .hold(.unknownPrice) }
         guard money.unit == origin.maxCost.unit, money.amount <= origin.maxCost.amount else {
             return .hold(.overMaxCost)

@@ -384,8 +384,8 @@ public struct AgentJob: Codable, Equatable, Sendable {
     public var state: String
     /// Why it is paused: agent_limit and price_above_cap wait for the person, by_user for Resume all.
     public var pauseReason: String?
-    /// For agent_limit: unknown_price, over_max_cost, over_daily_budget, ledger_unavailable or
-    /// unlimited_not_allowed.
+    /// For agent_limit: unknown_price, over_max_cost, over_daily_budget, ledger_unavailable,
+    /// unlimited_not_allowed or above_approved_price.
     public var hold: String?
     /// Only the person can move it on (a pause for a limit, the connection or funds).
     public var needsPerson: Bool

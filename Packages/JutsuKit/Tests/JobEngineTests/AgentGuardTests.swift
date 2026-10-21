@@ -164,6 +164,29 @@ struct AgentGuardTests {
         #expect(try await ledger.total(on: harness.clock.now, unit: .usdCents).spent == 130)
     }
 
+    /// The person approved the price they saw; a quote that came only after that and is higher waits for them again.
+    @Test func aQuoteAboveTheApprovedPriceIsHeldAgain() async throws {
+        let harness = Harness()
+        let ledger = ledger(harness)
+        await harness.provider.setPreliminary(.usd(1, isEstimate: true))
+        await harness.provider.setQuote(.failure(.network))
+        let engine = try await harness.makeEngine(agentPolicy: policy(ledger))
+
+        let job = try await engine.enqueue(makeSpec(), agent: origin())
+        await harness.repository.wait(for: job.id, .paused(.agentLimit))
+        await harness.provider.setQuote(.success(.usd(6, isEstimate: false)))
+        try await engine.resume(job.id)
+        await eventually {
+            await harness.repository.snapshotJobs().first { $0.id == job.id }?.agent?.hold == .aboveApprovedPrice
+        }
+        #expect(harness.log.count("submit") == 0)
+
+        try await engine.resume(job.id)
+        await harness.repository.wait(for: job.id, .done)
+        #expect(harness.log.count("submit") == 1)
+        #expect(try await ledger.total(on: harness.clock.now, unit: .usdCents).spent == 600)
+    }
+
     @Test func theLedgerFailingPausesWithoutSending() async throws {
         let harness = Harness()
         let engine = try await harness.makeEngine(agentPolicy: policy(BrokenLedger()))

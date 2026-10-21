@@ -7,7 +7,8 @@ import Observation
 /// submit, once the input is uploaded, the guard reads the provider's quote (else the model's list price, an
 /// estimate), the person's own daily cap strictly, the agent's `max_cost` and today's agent budget
 /// (`AgentSpendDecision`), then reserves the price in the agent spend ledger and saves the record as possibly sent.
-/// Over any limit, with an unknown price or a ledger that can't be written, nothing is sent and the request is held in
+/// Once the person approved it, a price above the one they approved holds it again. Over any limit, with an unknown
+/// price or a ledger that can't be written, nothing is sent and the request is held in
 /// the Queue for the person. A reservation is released only when the submit certainly never went out (stopped before
 /// it, or refused by the provider); a submit cut off or unanswered keeps it, as does a cancel the provider refused.
 /// Once every job of an accepted request has ended, the jobs Higgsfield doesn't bill (failed, refused by moderation,
@@ -258,7 +259,7 @@ extension AgentImageQueue {
         // counts against the budget like any paid request and Let agents use unlimited generations never applies.
         let decision = AgentSpendDecision.decide(
             price: price, isKnown: isKnown, origin: record.origin, dailyLimit: dailyLimit(provider.kind),
-            paysUnlimited: false)
+            paysUnlimited: false, approved: record.approvedPrice)
         switch decision {
         case .hold(let reason):
             return hold(id, Self.hold(reason), price: price, isKnown: isKnown)
@@ -416,6 +417,7 @@ extension AgentImageQueue {
         case .overDailyBudget: .overDailyBudget
         case .ledgerUnavailable: .ledgerUnavailable
         case .unlimitedNotAllowed: .unlimitedNotAllowed
+        case .aboveApprovedPrice: .aboveApprovedPrice
         }
     }
 
@@ -434,6 +436,8 @@ extension AgentImageQueue {
             String(
                 localized: "Waiting for you: it would use your plan's unlimited generations, which agents may not use.",
                 bundle: .module)
+        case .aboveApprovedPrice:
+            String(localized: "Waiting for you: it costs more now than the price you approved.", bundle: .module)
         case .priceAboveCap:
             String(localized: "Waiting for you: it takes today past your spend cap.", bundle: .module)
         }

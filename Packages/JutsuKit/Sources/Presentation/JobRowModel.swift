@@ -356,6 +356,8 @@ extension JobRowModel {
                     localized: """
                         Would use your plan's unlimited generations, which agents may not use · confirm to send it
                         """, bundle: .module)
+            case .aboveApprovedPrice?:
+                String(localized: "Costs more now than the price you approved · confirm to send it", bundle: .module)
             case nil:
                 String(localized: "Stopped by the agent spending limits · confirm to send it", bundle: .module)
             }
