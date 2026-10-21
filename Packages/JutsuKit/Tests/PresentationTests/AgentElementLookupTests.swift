@@ -55,33 +55,57 @@ private struct PagedElements: AccountElements {
         let source = PagedElements(pages: pages)
         let all = try await AgentElementLookup.all(in: source)
         #expect(source.asked.value == [nil, HistoryCursor("2"), HistoryCursor("3")])
-        #expect(AgentElementLookup.find("Mara Vance", in: all) == .ambiguous(count: 2))
-        #expect(AgentElementLookup.find("roof", in: all) == .element(roof))
+        #expect(all.isComplete)
+        #expect(AgentElementLookup.find("Mara Vance", in: all.elements) == .ambiguous(count: 2))
+        #expect(AgentElementLookup.find("roof", in: all.elements) == .element(roof))
     }
 
-    /// A page of `elements` reads whole pages from the cursor given until enough match, and hands out the next one.
-    @Test func aPageReadsWholePagesUntilEnoughMatch() async throws {
+    /// A page of `elements` holds at most `limit`; one that ends inside a page of the account's hands out a cursor
+    /// into it, and the next page starts with the element after.
+    @Test func aPageHoldsAtMostTheLimitAndGoesOnWhereItStopped() async throws {
+        var twin = mara
+        twin.id = "el-3"
         let pages = [
             AccountElementPage(items: [roof], nextCursor: HistoryCursor("3")),
-            AccountElementPage(items: [mara, roof], nextCursor: HistoryCursor("4")),
+            AccountElementPage(items: [mara, roof, twin], nextCursor: HistoryCursor("4")),
             AccountElementPage(items: [mara], nextCursor: nil),
         ]
-        let source = PagedElements(pages: pages)
-        let page = try await AgentElementLookup.page(
-            in: source, query: "mara", category: nil, limit: 1, after: HistoryCursor("2"))
-        #expect(page.items == [mara])
-        #expect(page.nextCursor == HistoryCursor("4"))
+        // The fake answers page after page whatever the cursor: the second call reads the middle page again.
+        let source = PagedElements(pages: [pages[0], pages[1], pages[1], pages[2]])
+        let first = try await AgentElementLookup.page(
+            in: source, query: "mara", category: nil, limit: 1, after: "2")
+        #expect(first.items == [mara])
         #expect(source.asked.value == [HistoryCursor("2"), HistoryCursor("3")])
+        let cursor = try #require(first.nextCursor)
+
+        let second = try await AgentElementLookup.page(
+            in: source, query: "mara", category: nil, limit: 1, after: cursor)
+        #expect(second.items == [twin])
+        // The page's last element: the cursor is the account's next page.
+        #expect(second.nextCursor == "4")
+        #expect(source.asked.value.last == HistoryCursor("3"))
+
+        let rest = try await AgentElementLookup.page(
+            in: source, query: "mara", category: nil, limit: 5, after: second.nextCursor)
+        #expect(rest.items == [mara])
+        #expect(rest.nextCursor == nil)
     }
 
-    /// A query that matches nothing stops after `maxPages`, with the cursor to go on from.
-    @Test func aPageStopsAfterMaxPages() async throws {
-        let pages = (1...30).map { AccountElementPage(items: [roof], nextCursor: HistoryCursor("\($0 + 1)")) }
+    /// A query that matches nothing stops after `maxPages`, with the cursor to go on from; looking a name up in that
+    /// many pages can't tell one element of it from two, so it is unchecked.
+    @Test func aLookupStopsAfterMaxPages() async throws {
+        let pages = (1...45).map { AccountElementPage(items: [roof], nextCursor: HistoryCursor("\($0 + 1)")) }
         let source = PagedElements(pages: pages)
         let page = try await AgentElementLookup.page(in: source, query: "mara", category: nil, limit: 5, after: nil)
         #expect(page.items.isEmpty)
         #expect(source.asked.value.count == AgentElementLookup.maxPages)
-        #expect(page.nextCursor == HistoryCursor("\(AgentElementLookup.maxPages + 1)"))
+        #expect(page.nextCursor == "\(AgentElementLookup.maxPages + 1)")
+
+        let all = try await AgentElementLookup.all(in: source)
+        #expect(!all.isComplete)
+        #expect(AgentElementLookup.find("roof", in: all.elements, isComplete: all.isComplete) == .ambiguous(count: 20))
+        #expect(AgentElementLookup.find("Mara Vance", in: all.elements, isComplete: false) == .unchecked)
+        #expect(AgentElementLookup.find("Mara Vance", in: [mara], isComplete: false) == .unchecked)
     }
 
     @Test func theElementsImagesComeFirstThenTheAgentsFilesEachWithItsTag() {

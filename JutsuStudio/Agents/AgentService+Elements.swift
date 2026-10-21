@@ -16,20 +16,21 @@ extension AgentService {
         let (items, next) = try await Self.reading {
             try await AgentElementLookup.page(
                 in: source, query: fields.query ?? "", category: category,
-                limit: fields.limit ?? ElementsCommand.defaultLimit, after: fields.cursor.map(HistoryCursor.init))
+                limit: fields.limit ?? ElementsCommand.defaultLimit, after: fields.cursor)
         }
-        return AgentElementsPage(items: items.map(Self.agentElement), nextCursor: next?.value)
+        return AgentElementsPage(items: items.map(Self.agentElement), nextCursor: next)
     }
 
-    /// The elements named, each with all its images, in the order named. Every page is read first, so a name two
-    /// elements share is refused however far apart they are listed.
+    /// The elements named, each with all its images, in the order named. Every page is read first, up to
+    /// `AgentElementLookup.maxPages`, so a name two elements share is refused; an account with more pages than that
+    /// can't be checked, and a name only once in what was read is refused too.
     func namedElements(_ names: [String]) async throws(AgentError) -> [AccountElement] {
         guard !names.isEmpty else { return [] }
         let source = try elementSource()
         let listed = try await Self.reading { try await AgentElementLookup.all(in: source) }
         var found: [AccountElement] = []
         for name in names {
-            switch AgentElementLookup.find(name, in: listed) {
+            switch AgentElementLookup.find(name, in: listed.elements, isComplete: listed.isComplete) {
             case .element(let element):
                 found.append(
                     element.images.isEmpty
@@ -37,6 +38,10 @@ extension AgentService {
             case .ambiguous(let count):
                 throw .invalidRequest(
                     "\(count) elements are named \(name); ask the person to rename one, or name another element.")
+            case .unchecked:
+                throw .invalidRequest(
+                    "The account has too many elements to check which one is named \(name); ask the person to remove "
+                        + "elements they no longer use, or send the element's images as files instead.")
             case .missing:
                 throw AgentError(
                     .notFound, message: "The account has no element named \(name).", retryable: false,

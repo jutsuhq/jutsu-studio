@@ -63,8 +63,9 @@ extension Tool {
             """
             The account's reference elements, characters, environments and props, as References › From Higgsfield \
             lists them: id, name (what create_video's and create_image's elements take), category and imageCount when \
-            known. query (words of the name), category, limit up to 50; pass nextCursor back as cursor for the next \
-            page. Account connection only. Read-only and free.
+            known. query (words of the name), category, limit (at most that many, up to 50; fewer when the account's \
+            pages read for one answer run out first); pass nextCursor back as cursor for the next page. Account \
+            connection only. Read-only and free.
             """
         case .jobs:
             """
