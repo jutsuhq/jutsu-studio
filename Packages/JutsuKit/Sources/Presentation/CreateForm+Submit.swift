@@ -242,9 +242,18 @@ extension CreateForm {
     /// Moves a model the connection doesn't offer (Seedance or Kling on an account without `generate_video`) to
     /// Genjutsu, so a re-run or a switch of connection never leaves the form on a model its picker can't show.
     /// `nil` while the capabilities are unknown, which changes nothing.
-    public mutating func fitModel(to offered: Set<VideoModel>?) {
-        guard let offered, !offered.contains(model) else { return }
+    /// Returns what to tell the user when the model changed, for inputs they opened themselves (Edit Inputs, Render
+    /// final); `nil` when it stays.
+    @discardableResult
+    public mutating func fitModel(to offered: Set<VideoModel>?) -> UserMessage? {
+        guard let offered, !offered.contains(model) else { return nil }
+        let unavailable = model
         model = .genjutsu
+        return UserMessage(
+            title: String(localized: "Running on Genjutsu", bundle: .module),
+            message: String(
+                localized: "These inputs use \(unavailable.title), which this connection doesn't offer.",
+                bundle: .module))
     }
 
     /// Why Draft (`isDraft`) or Generate can't be submitted, as the cost line shows it; `nil` when it can.

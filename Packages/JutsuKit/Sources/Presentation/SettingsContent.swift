@@ -84,7 +84,8 @@ extension Capabilities {
         let names = VideoModel.allCases.flatMap { model -> [String] in
             let modes = Mode.allCases.filter { unlimited[model]?.contains($0) == true }
             guard !modes.isEmpty else { return [] }
-            return model == .genjutsu ? modes.map { "\(model.title) \($0.title)" } : [model.title]
+            // Genjutsu and Genjutsu Lite name the modes: each has more than one, and the allowance may cover one.
+            return model.descriptor.shape == .genjutsu ? modes.map { "\(model.title) \($0.title)" } : [model.title]
         }
         return names.isEmpty ? nil : names.joined(separator: " · ")
     }
