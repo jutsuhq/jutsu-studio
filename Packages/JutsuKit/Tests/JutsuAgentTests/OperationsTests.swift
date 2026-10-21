@@ -39,7 +39,6 @@ import Testing
         #expect(job?.results == ["\(folder)/\(second).mov"])
         #expect(job?.folder == folder)
         #expect(job?.finishedAt != nil)
-        #expect(job?.isSettled == true)
     }
 
     @Test func anExportThatStopsSaysWhy() async {
@@ -80,7 +79,6 @@ import Testing
         let job = AgentJob.unknown(id)
         #expect(job.id == id)
         #expect(job.state == "unknown")
-        #expect(job.isSettled)
         #expect(job.next?.isEmpty == false)
     }
 }

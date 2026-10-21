@@ -93,6 +93,15 @@ import Testing
                 == .send(AgentMoney(0, .usdCents), limit: nil))
     }
 
+    /// Once a request for the allowance was charged anyway today, agents' requests for it stop trusting it, but only
+    /// while the person lets agents use it: otherwise they are held for the person anyway.
+    @Test func theAllowanceIsTrustedUntilItChargedAnAgentsRequestToday() {
+        #expect(AgentSpendDecision.paysUnlimited(true, allowsUnlimited: true, chargedToday: false))
+        #expect(!AgentSpendDecision.paysUnlimited(true, allowsUnlimited: true, chargedToday: true))
+        #expect(AgentSpendDecision.paysUnlimited(true, allowsUnlimited: false, chargedToday: true))
+        #expect(!AgentSpendDecision.paysUnlimited(false, allowsUnlimited: true, chargedToday: false))
+    }
+
     @Test func onlyAQuoteOrAnExactPriceIsKnown() {
         var job = Job(
             spec: JobSpec(mode: .motionTransfer, source: nil, resolution: .p720), providerKind: .apiKey,

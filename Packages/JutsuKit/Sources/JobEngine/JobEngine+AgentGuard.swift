@@ -26,19 +26,21 @@ extension JobEngine {
         guard let origin = job.agent, job.submitAttempt == nil else { return .send(reservation: nil) }
         guard let agentPolicy else { return try await holdAgentJob(id, .ledgerUnavailable, inputs: inputs) }
         let allowsUnlimited = agentPolicy.allowsUnlimited()
-        var unlimited = job.spec.usesUnlimited
-        if unlimited, allowsUnlimited {
+        var chargedToday = false
+        if job.spec.usesUnlimited, allowsUnlimited {
             do {
-                unlimited = try await !agentPolicy.ledger.total(on: clock.now, unit: origin.maxCost.unit)
+                chargedToday = try await agentPolicy.ledger.total(on: clock.now, unit: origin.maxCost.unit)
                     .unlimitedCharged
             } catch {
                 log.error("Job \(id): the agent spend ledger can't be read", detail: String(describing: error))
                 return try await holdAgentJob(id, .ledgerUnavailable, inputs: inputs)
             }
         }
+        let unlimited = AgentSpendDecision.paysUnlimited(
+            job.spec.usesUnlimited, allowsUnlimited: allowsUnlimited, chargedToday: chargedToday)
         if !unlimited, let status = try await spendStatus(job), let cap = status.cap,
             Budget.allows(cost: job.price, committedToday: status.committedToday, cap: cap) != .allowed,
-            !Self.covers(job.approvedPrice, job.price)
+            !Budget.covers(approved: job.approvedPrice, job.price)
         {
             try await apply(.paused(.priceAboveCap), to: id) { $0.inputs = inputs }
             return .paused
@@ -64,14 +66,8 @@ extension JobEngine {
         }
     }
 
-    /// The price the person agreed to covers `price`.
-    private static func covers(_ approved: Cost?, _ price: Cost) -> Bool {
-        guard let approved, approved.unit == price.unit else { return false }
-        return price.amount <= approved.amount
-    }
-
     private func holdAgentJob(_ id: UUID, _ hold: AgentHold, inputs: RemoteInputs) async throws -> AgentClearance {
-        log.error("Job \(id): an agent's job is held, \(hold.rawValue)")
+        log.notice("Job \(id): an agent's job is held, \(hold.rawValue)")
         try await apply(.paused(.agentLimit), to: id) {
             $0.inputs = inputs
             $0.agent?.hold = hold

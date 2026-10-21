@@ -17,17 +17,23 @@ extension AgentService {
     /// other parameters is refused (`request_conflict`), and one already queued with these needs no file again
     /// (`request_known`).
     func admit(_ upload: UploadCommand) throws(AgentError) {
-        guard let request = upload.request, ["create_video", "create_image"].contains(request.command) else {
+        guard let request = upload.request, ["create_video", "create_image", "frames"].contains(request.command)
+        else {
             throw AgentError(
-                .fileRefused, message: "Only create_video and create_image take files.", retryable: false,
-                next: "Send files with create_video or create_image.")
+                .fileRefused, message: "Only create_video, create_image and frames take files.", retryable: false,
+                next: "Send files with create_video, create_image or frames.")
         }
-        if let running = creating[request.requestID] ?? creatingImages[request.requestID] {
-            guard running.fingerprint == request.fingerprint else { throw .requestConflict }
-            return
+        // Free and never logged as a request: its files are removed once its frames are written.
+        if request.command == "frames" { return }
+        let state: AgentRequestGate<AgentCreated, AgentError>.State
+        do {
+            state = try requests.state(of: request.requestID, fingerprint: request.fingerprint)
+        } catch {
+            logger.error("Can't read the agent requests: \(error.localizedDescription, privacy: .private)")
+            throw Self.requestsUnreadable
         }
-        switch try lookup(request.requestID, fingerprint: request.fingerprint) {
-        case .new: return
+        switch state {
+        case .new, .running: return
         case .conflict: throw .requestConflict
         case .known:
             throw AgentError(
@@ -36,15 +42,17 @@ extension AgentService {
         }
     }
 
-    func lookup(_ requestID: String, fingerprint: String) throws(AgentError) -> AgentRequestLog.Lookup {
-        do {
-            return try environment.agentRequests.lookup(requestID, fingerprint: fingerprint)
-        } catch {
-            logger.error("Can't read the agent requests: \(error.localizedDescription, privacy: .private)")
-            throw AgentError(
-                .failed, message: "Jutsu Studio can't read its record of agent requests, so nothing is queued.",
-                retryable: true, next: "Ask the person to check the app's data folder, then send the request again.")
-        }
+    static let requestsUnreadable = AgentError(
+        .failed, message: "Jutsu Studio can't read its record of agent requests, so nothing is queued.",
+        retryable: true, next: "Ask the person to check the app's data folder, then send the request again.")
+
+    /// What the request gate answers a paid command with instead of running it.
+    static func refusals(_ command: String, made: String) -> AgentRequestGate<AgentCreated, AgentError>.Refusals {
+        AgentRequestGate.Refusals(
+            conflict: .requestConflict, unreadable: requestsUnreadable,
+            neverQueued: AgentError(
+                .failed, message: "The request was recorded but \(made).", retryable: true,
+                next: "Send the same \(command) again."))
     }
 
     // MARK: quote
@@ -58,27 +66,36 @@ extension AgentService {
             }
             source = AgentVideoOrder.quoteSource(start: given.start, end: end)
         }
-        let order = Self.order(video, source: source, images: AgentVideoOrder.quoteImages(video.referenceCount))
+        // An element's images count as the references they become; reading them is free.
+        let elementImages = try await namedElements(video.elements).reduce(0) { $0 + $1.images.count }
+        let order = Self.order(
+            video, source: source, images: AgentVideoOrder.quoteImages(video.referenceCount + elementImages))
         let (spec, paysUnlimited) = try await spec(for: order)
         let kind = environment.connection.state.kind
         var taken: AgentSpendTotal?
         if let kind { taken = try await agentSpendToday(for: kind) }
-        // The plan's unlimited allowance pays it: nothing counts against the budget or the cap. Once the allowance
-        // didn't pay for an agent's job today, the guard checks the job at its price like any other.
-        let unlimited = paysUnlimited && !(preferences.allowsUnlimited && taken?.unlimitedCharged == true)
+        // The plan's unlimited allowance pays it: nothing counts against the budget or the cap.
+        let unlimited = AgentSpendDecision.paysUnlimited(
+            paysUnlimited, allowsUnlimited: preferences.allowsUnlimited, chargedToday: taken?.unlimitedCharged == true)
         let cost: Cost? = unlimited ? .credits(0, isEstimate: false) : await environment.estimate(spec)
         let money = cost.flatMap(AgentMoney.init)
         let price = money.map { AgentAmount($0.amount, Self.unit(of: $0.unit)) }
         var remaining: Int?
         if let kind, let taken { remaining = taken.remaining(of: preferences.dailyBudget(for: kind)) }
         let isExact = cost.map { !$0.isEstimate && !$0.isUnknownPrice } ?? false
+        let limits = spec.limits(in: environment.navigation.modelConstraints).referenceImages
+        let variants = AgentVideoOrder.variants(
+            of: spec.model, in: spec.mode, capabilities: environment.lastCapabilities,
+            unlimitedOptIn: AppSettings.usesUnlimited(in: environment.defaults))
         return AgentQuote(
             price: price, isExact: isExact, mode: video.mode, model: spec.model.rawValue,
             resolution: spec.resolution.rawValue, duration: spec.duration, remainingToday: remaining,
             paysUnlimited: paysUnlimited,
             blocker: Self.quoteBlocker(
                 price: money, remaining: remaining, paysUnlimited: unlimited,
-                unlimitedAllowed: preferences.allowsUnlimited))
+                unlimitedAllowed: preferences.allowsUnlimited),
+            maxVariants: variants.maximum, variantsUnavailable: variants.reason, images: spec.references.count,
+            minImages: limits.lowerBound, maxImages: limits.upperBound)
     }
 
     /// What `create_video` would pause the job for, as far as a quote can tell before upload.
@@ -106,33 +123,19 @@ extension AgentService {
 
     func createVideo(_ fields: CreateVideoCommand, client: String?) async throws(AgentError) -> AgentCreated {
         let files = [fields.video.source?.path].compactMap(\.self) + fields.video.images
-        if let running = creating[fields.requestID] {
-            guard running.fingerprint == fields.fingerprint else {
-                discard(files)
-                throw .requestConflict
-            }
-            return try await running.task.value.get()
-        }
-        switch try lookup(fields.requestID, fingerprint: fields.fingerprint) {
-        case .conflict:
-            discard(files)
-            throw .requestConflict
-        case .known(let ids):
-            discard(files)
-            let jobs = try await knownJobs(ids)
-            guard jobs.isEmpty else {
-                return AgentCreated(requestID: fields.requestID, known: true, jobs: jobs.map(Self.agentJob))
-            }
-            // Recorded, but the app quit before the job was saved: nothing was queued or paid, so it is forgotten and
-            // sent again as new, with its files.
-            try? environment.agentRequests.remove(fields.requestID)
-            throw AgentError(
-                .failed, message: "The request was recorded but its job was never queued.", retryable: true,
-                next: "Send the same create_video again.")
-        case .new:
-            break
-        }
-        return try await run(fields, client: client)
+        defer { Task { await sweepInbox() } }
+        return try await requests.run(
+            fields.requestID, fingerprint: fields.fingerprint,
+            refusals: Self.refusals("create_video", made: "its job was never queued"), discard: { discard(files) },
+            known: { ids throws(AgentError) in
+                let jobs = try await knownJobs(ids)
+                return jobs.isEmpty
+                    ? nil : AgentCreated(requestID: fields.requestID, known: true, jobs: jobs.map(Self.agentJob))
+            },
+            queue: { [weak self] () throws(AgentError) in
+                guard let self else { throw .agentsOff }
+                return try await self.queue(fields, client: client)
+            })
     }
 
     /// The jobs of a known request. Throws when the store can't be read: a job not found there could still exist.
@@ -154,55 +157,35 @@ extension AgentService {
         return jobs
     }
 
-    private func run(_ fields: CreateVideoCommand, client: String?) async throws(AgentError) -> AgentCreated {
-        let task = Task { [weak self] () -> Result<AgentCreated, AgentError> in
-            guard let self else { return .failure(.agentsOff) }
-            do throws(AgentError) {
-                return .success(try await self.queue(fields, client: client))
-            } catch {
-                return .failure(error)
-            }
-        }
-        creating[fields.requestID] = (fields.fingerprint, task)
-        defer { creating[fields.requestID] = nil }
-        let result = await task.value
-        Task { await sweepInbox() }
-        return try result.get()
-    }
-
-    /// Builds the job as Create would, records the request with the job's ID, then queues it. A request that
-    /// can't be queued is forgotten, and its files removed, so the agent can fix it and send it again.
+    /// Builds the job as Create would, records the request with the job's ID, then queues it.
     private func queue(_ fields: CreateVideoCommand, client: String?) async throws(AgentError) -> AgentCreated {
         let video = fields.video
-        let files = [video.source?.path].compactMap(\.self) + video.images
-        do throws(AgentError) {
-            guard let kind = environment.connection.state.kind else { throw Self.notConnected }
-            try Self.checkUnit(of: fields.maxCost, on: kind)
-            var source: AgentVideoOrder.Source?
-            if let given = video.source { source = try await sourceClip(given) }
-            var images: [LocalImage] = []
-            for path in video.images { images.append(LocalImage(fileURL: try inboxFile(path))) }
-            if let style = video.style,
-                let refusal = PresetCatalog.agentStyleRefusal(style, in: environment.layout.presetCacheFolder)
-            {
-                throw .invalidRequest(refusal)
-            }
-            let (spec, _) = try await spec(for: Self.order(video, source: source, images: images))
-            let jobID = UUID()
-            try recordRequest(fields.requestID, fingerprint: fields.fingerprint, jobIDs: [jobID])
-            let origin = AgentOrigin(
-                client: client, requestID: fields.requestID,
-                maxCost: AgentMoney(fields.maxCost.amount, Self.unit(of: fields.maxCost.unit)))
-            do {
-                let job = try await environment.engine.enqueue(spec, id: jobID, agent: origin)
-                return AgentCreated(requestID: fields.requestID, known: false, jobs: [Self.agentJob(job)])
-            } catch {
-                try? environment.agentRequests.remove(fields.requestID)
-                throw Self.agentError(enqueueing: error)
-            }
+        guard let kind = environment.connection.state.kind else { throw Self.notConnected }
+        try Self.checkUnit(of: fields.maxCost, on: kind)
+        var source: AgentVideoOrder.Source?
+        if let given = video.source { source = try await sourceClip(given) }
+        var files: [LocalImage] = []
+        for path in video.images { files.append(LocalImage(fileURL: try inboxFile(path))) }
+        let elements = try await elementImages(video.elements)
+        let images = elements.flatMap(\.images) + files
+        if let style = video.style,
+            let refusal = PresetCatalog.agentStyleRefusal(style, in: environment.layout.presetCacheFolder)
+        {
+            throw .invalidRequest(refusal)
+        }
+        let (spec, _) = try await spec(for: Self.order(video, source: source, images: images))
+        let jobID = UUID()
+        try recordRequest(fields.requestID, fingerprint: fields.fingerprint, jobIDs: [jobID])
+        let origin = AgentOrigin(
+            client: client, requestID: fields.requestID,
+            maxCost: AgentMoney(fields.maxCost.amount, Self.unit(of: fields.maxCost.unit)))
+        do {
+            let job = try await environment.engine.enqueue(spec, id: jobID, agent: origin)
+            return AgentCreated(
+                requestID: fields.requestID, known: false, jobs: [Self.agentJob(job)],
+                references: Self.references(elements: elements, files: files))
         } catch {
-            discard(files)
-            throw error
+            throw Self.agentError(enqueueing: error)
         }
     }
 
@@ -227,8 +210,7 @@ extension AgentService {
     /// Records the request with the IDs of what it makes, before anything is queued or sent.
     func recordRequest(_ requestID: String, fingerprint: String, jobIDs: [UUID]) throws(AgentError) {
         do {
-            try environment.agentRequests.add(
-                AgentRequestLog.Record(requestID: requestID, fingerprint: fingerprint, jobIDs: jobIDs, createdAt: .now))
+            try requests.record(requestID, fingerprint: fingerprint, ids: jobIDs, at: .now)
         } catch {
             throw AgentError(
                 .failed, message: "Jutsu Studio can't record the request, so nothing is queued or sent.",
@@ -294,7 +276,7 @@ extension AgentService {
                     return files.compactMap { $0?.path(percentEncoded: false) }
                 }
                 + ((try? environment.agentImages.records()) ?? []).filter { !$0.isOver }
-                .compactMap { $0.input?.fileURL.path(percentEncoded: false) }
+                .flatMap { $0.inputs.map { $0.fileURL.path(percentEncoded: false) } }
             let removed = inbox.sweep(keeping: Set(kept), before: now.addingTimeInterval(-86_400))
             if removed > 0 { logger.info("Removed \(removed, privacy: .private) old agent upload(s)") }
         } catch {

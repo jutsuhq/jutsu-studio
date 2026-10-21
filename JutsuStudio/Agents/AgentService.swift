@@ -28,21 +28,16 @@ final class AgentService {
     @ObservationIgnored private let system: SystemIntegration
     @ObservationIgnored let preferences: AgentPreferences
     @ObservationIgnored var server: AgentServer?
-    /// `create_video` requests being queued, by request ID: the same one sent meanwhile waits for it.
-    @ObservationIgnored var creating:
-        [String: (fingerprint: String, task: Task<Result<AgentCreated, AgentError>, Never>)] =
-            [:]
+    /// The paid requests, `create_video`, `create_image` and `enhance`, each run once for its request ID.
+    @ObservationIgnored let requests: AgentRequestGate<AgentCreated, AgentError>
     /// The exports agents started, followed with `jobs`; in memory, so a relaunch forgets them.
     @ObservationIgnored let operations = AgentOperations()
-    /// `create_image` requests being taken, by request ID, likewise.
-    @ObservationIgnored var creatingImages:
-        [String: (fingerprint: String, task: Task<Result<AgentCreated, AgentError>, Never>)] =
-            [:]
 
     init(environment: AppEnvironment, system: SystemIntegration, preferences: AgentPreferences = AgentPreferences()) {
         self.environment = environment
         self.system = system
         self.preferences = preferences
+        requests = AgentRequestGate(log: environment.agentRequests)
     }
 
     /// Where the socket goes: the app group's container, which the helper finds from the group in Info.plist.
@@ -131,6 +126,12 @@ final class AgentService {
             return AgentResponse(created: try await createImage(fields, client: client))
         case .librarySearch(let fields):
             return AgentResponse(library: try await librarySearch(fields))
+        case .libraryGet(let fields):
+            return AgentResponse(details: try await libraryGet(fields))
+        case .elements(let fields):
+            return AgentResponse(elements: try await elements(fields))
+        case .libraryDownload(let fields):
+            return AgentResponse(downloads: try await libraryDownload(fields))
         case .libraryMark(let fields):
             let marked = try await libraryMark(fields)
             logger.info("Agent \(client ?? "unnamed", privacy: .private) marked \(marked.changed, privacy: .private)")
@@ -141,6 +142,8 @@ final class AgentService {
             return AgentResponse(delivery: try await deliverySet(fields))
         case .export(let fields):
             return AgentResponse(exported: try await exportForEditing(fields))
+        case .frames(let fields):
+            return AgentResponse(frames: try await frames(fields))
         }
     }
 
@@ -195,27 +198,35 @@ final class AgentService {
         }
         let offered = environment.lastOfferedModels
         let constraints = environment.navigation.modelConstraints
+        let capabilities = environment.lastCapabilities
+        let optedIn = AppSettings.usesUnlimited(in: environment.defaults)
         return models.map { model in
             AgentCapabilities.Model(
                 id: model.rawValue, title: model.title, modes: model.modes.map(AgentVideoOrder.name(of:)),
                 resolutions: model.resolutions.map(\.rawValue),
                 available: connection != nil && offered.contains(model),
-                details: id == nil ? nil : Self.details(of: model, constraints: constraints))
+                details: id == nil
+                    ? nil
+                    : Self.details(
+                        of: model, constraints: constraints, capabilities: connection == nil ? nil : capabilities,
+                        unlimitedOptIn: optedIn))
         }
     }
 
     /// A model's limits in each of its modes, as a job on it takes them.
     private static func details(
-        of model: VideoModel, constraints: ModelConstraintTable
+        of model: VideoModel, constraints: ModelConstraintTable, capabilities: Capabilities?, unlimitedOptIn: Bool
     ) -> AgentCapabilities.ModelDetails {
         let modes = model.modes.map { mode in
             let hasSource = !model.makesClipsWithoutSource || mode != .motionTransfer
             let limits = model.limits(for: mode, hasSource: hasSource, constraints: constraints)
+            let variants = AgentVideoOrder.variants(
+                of: model, in: mode, capabilities: capabilities, unlimitedOptIn: unlimitedOptIn)
             return AgentCapabilities.ModeDetails(
                 mode: AgentVideoOrder.name(of: mode), minSeconds: limits.duration.lowerBound,
                 maxSeconds: limits.duration.upperBound, minImages: limits.referenceImages.lowerBound,
                 maxImages: limits.referenceImages.upperBound, needsStyle: limits.requiresPreset,
-                needsSource: hasSource)
+                needsSource: hasSource, maxVariants: variants.maximum, variantsUnavailable: variants.reason)
         }
         return AgentCapabilities.ModelDetails(
             modes: modes, hasDraft: model.offersDraft, makesClipsWithoutSource: model.makesClipsWithoutSource,

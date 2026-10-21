@@ -82,8 +82,10 @@ public struct AgentVideoRequest: Codable, Equatable, Hashable, Sendable {
     /// The names agents use for the modes.
     public static let modes = ["motion_transfer", "restyle", "object_swap", "edit", "extend"]
     public static let audioOptions = ["original", "mute", "fade_out", "generated"]
-    /// More than any model takes, so the app's own limits refuse the rest with a reason.
-    public static let maxImages = 16
+    /// A sanity bound of the protocol only, above every model's own limit: the limit a request meets is the model's
+    /// in its mode (`capabilities` model details `maxImages`, `quote` `maxImages`), from the server's constraints
+    /// where they state one, which the app's own rules refuse the rest by with a reason.
+    public static let protocolMaxImages = 16
     public static let maxVariants = 16
     /// Seconds a clip made without a source may be asked to run, or Extend to add.
     public static let maxLength: Double = 600
@@ -109,11 +111,14 @@ public struct AgentVideoRequest: Codable, Equatable, Hashable, Sendable {
     public var audio: String?
     /// Videos one submit makes, on a connection that offers more than one.
     public var variants: Int?
+    /// The account's reference elements by name (`elements`): their images go first, before `images`.
+    public var elements: [String]
 
     public init(
         mode: String, model: String? = nil, prompt: String? = nil, source: AgentSource? = nil, images: [String] = [],
         imageCount: Int? = nil, style: UUID? = nil, resolution: String? = nil, draft: Bool = false,
-        length: Double? = nil, aspectRatio: String? = nil, audio: String? = nil, variants: Int? = nil
+        length: Double? = nil, aspectRatio: String? = nil, audio: String? = nil, variants: Int? = nil,
+        elements: [String] = []
     ) {
         self.mode = mode
         self.model = model
@@ -128,6 +133,7 @@ public struct AgentVideoRequest: Codable, Equatable, Hashable, Sendable {
         self.aspectRatio = aspectRatio
         self.audio = audio
         self.variants = variants
+        self.elements = elements
     }
 
     /// How many reference images the job has: the files, else the count a quote names.
@@ -135,7 +141,7 @@ public struct AgentVideoRequest: Codable, Equatable, Hashable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case mode, model, prompt, source, images, imageCount, style, resolution, draft, length, aspectRatio, audio
-        case variants
+        case variants, elements
     }
 
     public init(from decoder: any Decoder) throws {
@@ -153,6 +159,7 @@ public struct AgentVideoRequest: Codable, Equatable, Hashable, Sendable {
         aspectRatio = try container.decodeIfPresent(String.self, forKey: .aspectRatio)
         audio = try container.decodeIfPresent(String.self, forKey: .audio)
         variants = try container.decodeIfPresent(Int.self, forKey: .variants)
+        elements = try container.decodeIfPresent([String].self, forKey: .elements) ?? []
         if let problem { throw AgentError.badRequest(problem) }
     }
 
@@ -171,6 +178,7 @@ public struct AgentVideoRequest: Codable, Equatable, Hashable, Sendable {
         try container.encodeIfPresent(aspectRatio, forKey: .aspectRatio)
         try container.encodeIfPresent(audio, forKey: .audio)
         try container.encodeIfPresent(variants, forKey: .variants)
+        if !elements.isEmpty { try container.encode(elements, forKey: .elements) }
     }
 
     /// Why the fields can't be a request, before the app's own rules; nil when they can. Shared by the helper, which
@@ -179,13 +187,16 @@ public struct AgentVideoRequest: Codable, Equatable, Hashable, Sendable {
         guard Self.modes.contains(mode) else { return "mode is one of \(Self.modes.joined(separator: ", "))" }
         if let model, !AgentNames.isValidModelID(model) { return "model is a model ID from capabilities" }
         if let prompt, prompt.unicodeScalars.count > 10_000 { return "prompt is at most 10 000 characters" }
-        if images.count > Self.maxImages { return "images takes at most \(Self.maxImages) files" }
+        if images.count > Self.protocolMaxImages {
+            return "images takes at most \(Self.protocolMaxImages) files, more than any model takes"
+        }
         if let path = images.first(where: { !Self.isValidPath($0) }) {
             return "images has a path that isn't one: \(path.prefix(80))"
         }
-        if let imageCount, !(0...Self.maxImages).contains(imageCount) {
-            return "image_count is 0 to \(Self.maxImages)"
+        if let imageCount, !(0...Self.protocolMaxImages).contains(imageCount) {
+            return "image_count is 0 to \(Self.protocolMaxImages)"
         }
+        if let problem = AgentElementNames.problem(elements) { return problem }
         if let length, !(length.isFinite && length > 0 && length <= Self.maxLength) {
             return "length is a number of seconds above 0 and up to \(Int(Self.maxLength))"
         }
@@ -340,42 +351,6 @@ public struct JobActionCommand: Codable, Equatable, Sendable {
 
 // MARK: Answers
 
-/// What a video would cost now, before anything is uploaded or queued.
-public struct AgentQuote: Codable, Equatable, Sendable {
-    /// nil when no price list or quote says.
-    public var price: AgentAmount?
-    /// The provider's price or an exact list price; false for an estimate, which Higgsfield refines after upload.
-    public var isExact: Bool
-    public var mode: String
-    public var model: String
-    public var resolution: String
-    /// Seconds the result runs.
-    public var duration: Double
-    /// What is left of today's agent budget; nil while nothing is connected.
-    public var remainingToday: Int?
-    /// It would be paid from the plan's unlimited generations, as the person's Use unlimited generations and the
-    /// account's allowance stand now: it counts nothing against the budget, and it runs without the person only while
-    /// they let agents use unlimited generations (`capabilities` budget.unlimitedAllowed).
-    public var paysUnlimited: Bool
-    /// What `create_video` would refuse it for now, in English; nil when it would queue it.
-    public var blocker: String?
-
-    public init(
-        price: AgentAmount?, isExact: Bool, mode: String, model: String, resolution: String, duration: Double,
-        remainingToday: Int?, paysUnlimited: Bool = false, blocker: String?
-    ) {
-        self.paysUnlimited = paysUnlimited
-        self.price = price
-        self.isExact = isExact
-        self.mode = mode
-        self.model = model
-        self.resolution = resolution
-        self.duration = duration
-        self.remainingToday = remainingToday
-        self.blocker = blocker
-    }
-}
-
 /// One piece of work, as an agent follows it with `jobs`: a video job, an image request, or an export (`kind`).
 public struct AgentJob: Codable, Equatable, Sendable {
     public var id: UUID
@@ -459,11 +434,6 @@ public struct AgentJob: Codable, Equatable, Sendable {
         case requestID = "requestId"
         case client, mode, model, folder, files, set, next, createdAt, finishedAt
     }
-
-    /// Settled: finished, waiting for someone, or not known. A `jobs` wait ends once every job named is.
-    public var isSettled: Bool {
-        ["done", "failed", "rejected", "canceled", "paused", "unknown"].contains(state)
-    }
 }
 
 public struct AgentCreated: Codable, Equatable, Sendable {
@@ -471,16 +441,20 @@ public struct AgentCreated: Codable, Equatable, Sendable {
     /// The request was known: these are the jobs it queued before, and nothing new was queued.
     public var known: Bool
     public var jobs: [AgentJob]
+    /// The images a new request sent, in order, with the @ImageN tags its prompt names them by; left out for a known
+    /// request and one without images.
+    public var references: [AgentReference]?
 
-    public init(requestID: String, known: Bool, jobs: [AgentJob]) {
+    public init(requestID: String, known: Bool, jobs: [AgentJob], references: [AgentReference]? = nil) {
         self.requestID = requestID
         self.known = known
         self.jobs = jobs
+        self.references = references
     }
 
     private enum CodingKeys: String, CodingKey {
         case requestID = "requestId"
-        case known, jobs
+        case known, jobs, references
     }
 }
 

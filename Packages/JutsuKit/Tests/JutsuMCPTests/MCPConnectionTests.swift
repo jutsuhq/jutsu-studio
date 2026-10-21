@@ -1,6 +1,7 @@
 import Foundation
 import HiggsfieldMCP
 import JutsuAgent
+import JutsuTestSupport
 import Testing
 
 @testable import JutsuMCP
@@ -62,15 +63,6 @@ struct MCPConnectionTests {
         return try JSONEncoder().encode(JSONValue.object(message))
     }
 
-    private func until(_ condition: () -> Bool) async throws {
-        var tries = 0
-        while !condition(), tries < 500 {
-            try await Task.sleep(for: .milliseconds(10))
-            tries += 1
-        }
-        #expect(condition())
-    }
-
     @Test func aWaitingCallHoldsUpNothingAndACancelledOneIsNeverAnswered() async throws {
         let connection = connection()
         await connection.receive(
@@ -78,10 +70,10 @@ struct MCPConnectionTests {
         await connection.receive(
             try line("tools/call", ["name": "jobs", "arguments": ["wait_seconds": 50]], id: 1))
         await connection.receive(try line("tools/call", ["name": "capabilities"], id: 2))
-        try await until { record.ids == [0, 2] }
+        await eventually { record.ids == [0, 2] }
 
         await connection.receive(try line("notifications/cancelled", ["requestId": 1, "reason": "user"]))
-        try await until { record.cancels == ["jobs"] }
+        await eventually { record.cancels == ["jobs"] }
         await connection.drain()
 
         #expect(record.ids == [0, 2])

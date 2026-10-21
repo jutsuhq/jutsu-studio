@@ -11,15 +11,15 @@ public struct AgentImageOrder: Sendable, Hashable {
     public var aspectRatio: String?
     /// `nil` makes one image.
     public var count: Int?
-    /// The image to edit.
-    public var input: LocalImage?
+    /// The images to edit, in order.
+    public var inputs: [LocalImage]
 
-    public init(model: String?, prompt: String, aspectRatio: String?, count: Int?, input: LocalImage?) {
+    public init(model: String?, prompt: String, aspectRatio: String?, count: Int?, inputs: [LocalImage] = []) {
         self.model = model
         self.prompt = prompt
         self.aspectRatio = aspectRatio
         self.count = count
-        self.input = input
+        self.inputs = inputs
     }
 
     /// The request the form would send, or why it can't be sent, in English for the agent.
@@ -39,13 +39,17 @@ public struct AgentImageOrder: Sendable, Hashable {
         guard !prompt.isEmpty else {
             return .failure(AgentImageRefusal("create_image needs prompt, the image to make."))
         }
-        switch (chosen.input, input) {
-        case (.required, nil):
-            return .failure(AgentImageRefusal("\(chosen.id) edits an image: send input, the image to edit."))
-        case (.none, _?):
-            return .failure(AgentImageRefusal("\(chosen.id) makes images from text only; leave out input."))
+        switch chosen.input {
+        case .required where inputs.isEmpty:
+            return .failure(AgentImageRefusal("\(chosen.id) edits an image: send inputs, the images to edit."))
+        case .none where !inputs.isEmpty:
+            return .failure(AgentImageRefusal("\(chosen.id) makes images from text only; leave out inputs."))
         default:
             break
+        }
+        if inputs.count > chosen.inputLimit {
+            return .failure(
+                AgentImageRefusal("\(chosen.id) takes at most \(chosen.inputLimit) input images, not \(inputs.count)."))
         }
         let ratio = aspectRatio ?? (chosen.aspectRatios.contains("1:1") ? "1:1" : chosen.aspectRatios.first)
         guard let ratio, chosen.aspectRatios.contains(ratio) else {
@@ -58,7 +62,7 @@ public struct AgentImageOrder: Sendable, Hashable {
             return .failure(AgentImageRefusal("\(chosen.id) makes \(counts) images per request, not \(count)."))
         }
         return .success(
-            ReferenceGenerator.Draft(model: chosen, prompt: prompt, aspectRatio: ratio, count: count, input: input))
+            ReferenceGenerator.Draft(model: chosen, prompt: prompt, aspectRatio: ratio, count: count, inputs: inputs))
     }
 }
 
@@ -105,7 +109,10 @@ public struct AgentImageRecord: Codable, Sendable, Hashable, Identifiable {
     public var prompt: String
     public var aspectRatio: String
     public var count: Int
+    /// The first image to edit. A request of one image keeps only this, which is all a 0.2.0 record holds.
     public var input: LocalImage?
+    /// Every image to edit, in order, when there are several; `nil` for one or none.
+    public var severalInputs: [LocalImage]?
     public var state: State
     public var hold: Hold?
     /// The price the guard last saw.
@@ -119,8 +126,11 @@ public struct AgentImageRecord: Codable, Sendable, Hashable, Identifiable {
     public var createdAt: Date
     public var finishedAt: Date?
 
+    /// The images to edit, in order.
+    public var inputs: [LocalImage] { severalInputs ?? input.map { [$0] } ?? [] }
+
     var draft: ReferenceGenerator.Draft {
-        ReferenceGenerator.Draft(model: model, prompt: prompt, aspectRatio: aspectRatio, count: count, input: input)
+        ReferenceGenerator.Draft(model: model, prompt: prompt, aspectRatio: aspectRatio, count: count, inputs: inputs)
     }
 
     /// It may have reached the provider, so its price counts.

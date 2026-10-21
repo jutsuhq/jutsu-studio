@@ -1,6 +1,6 @@
 ---
 name: jutsu-studio
-description: Make, find and deliver Higgsfield videos and images with the Jutsu Studio app on this Mac, through its jutsu MCP server. Use when asked to generate a video or image with Jutsu Studio, follow or cancel its jobs, search, keep, reject or star Library results, upscale, reframe, dub or change the voice of a result, or export results for editing or delivery.
+description: Make, find and deliver Higgsfield videos and images with the Jutsu Studio app on this Mac, through its jutsu MCP server. Use when asked to generate a video or image with Jutsu Studio, use the account's characters by name, follow or cancel its jobs, search, read, download, keep, reject or star Library results, check results with still frames, upscale, reframe, dub or change the voice of a result, or export results for editing or delivery.
 ---
 
 # Jutsu Studio
@@ -35,14 +35,28 @@ says rather than guessing.
    groups. Ask for `models`, `image_models`, `styles` or `voices` when you need them; they come from what the app last
    read, never a network call.
 2. **Quote before you create.** `quote` a video with the same fields you mean to send, and tell the person the price.
+   It also says `maxVariants` (and `variantsUnavailable`, why only one) and `minImages`/`maxImages`, the reference
+   images the model takes in that mode; the same limits are in `capabilities` with `model`. There is no fixed image
+   limit: go by the model's.
 3. **Create with a `max_cost`.** `create_video` or `create_image` with a new `request_id` of your own and a `max_cost`
    (`{amount, unit}`, `usd` or `credits`, matching the connection) no lower than the quote. Use a cheap draft mode when
    it fits the task (`draft: true` on models that have one, a lower resolution, fewer variants), and make the full
-   version once the person likes the draft.
+   version once the person likes the draft. `create_image` takes several `inputs` to edit, up to the model's
+   `maxInputs`; with `maxInputsNote` that is only a bound, and Higgsfield's quote refuses (for free) what the model
+   doesn't take.
+   - **Characters by name.** `elements` lists the account's characters, environments and props. Pass their names in
+     `elements` to `create_video`, `quote` or `create_image`: their images go first, in order, then your own files.
+     The answer's `references` gives each image's `@ImageN` tag; name them that way in the prompt.
 4. **Follow with `jobs`.** Pass the job IDs and `wait_seconds` (up to 50), and call again while they run. A finished
    video's `result` and an image request's `results` are file paths.
-5. **Review and show.** `library_search` finds results (newest first, `nextCursor` → `cursor`), `library_mark` keeps,
-   rejects or stars them, and `show` opens a job or a page in the app for the person.
+5. **Review and show.** `library_search` finds results (newest first, `nextCursor` → `cursor`), `library_get` gives
+   them in full (the whole prompt, the inputs in order, the settings), `frames` writes still frames of a result at the
+   seconds you name, with `compare_source` or `compare_item` a contact sheet beside what it was made from, so look
+   at those instead of guessing. It is free; the source of a history result is read from its Higgsfield link. `library_mark` keeps, rejects or stars results, and `show` opens a job or a page in
+   the app for the person.
+   - **Higgsfield history.** `library_search` with `include_higgsfield` also lists the account's history
+     (`onHiggsfield`, no file yet; `refresh_higgsfield` reloads it), and `library_download` brings those results
+     into the Library. Both are free.
 6. **Finish.** `enhance` upscales, reframes, removes a background, dubs or changes the voice of a video, with its own
    `request_id` and `max_cost`. `export` writes takes for Premiere, DaVinci Resolve or Final Cut Pro, and
    `delivery_set` creates, lists and exports delivery sets. An export runs in the app and answers at once (or after
@@ -63,8 +77,8 @@ says rather than guessing.
   Removing results is the person's call, in the app.
 - **The queue is the person's.** `pause_queue` and `resume_queue` pause and resume only agents' jobs not yet sent;
   `resume_queue` never lifts the person's own Pause all.
-- **Files are paths on this Mac.** Give absolute paths to your own files (`source.path`, `images`, `input`); the
-  `jutsu` helper copies their bytes into the app. Paths the app gives back are in its output folder and readable as
+- **Files are paths on this Mac.** Give absolute paths to your own files (`source.path`, `images`, `inputs`,
+  `frames`' `file`); the `jutsu` helper copies their bytes into the app. Paths the app gives back are in its output folder and readable as
   they are. Exports never replace a file.
 - **Never ask for credentials.** You never see the API key or the sign-in, and never need them.
 - **Topaz is the person's.** A Topaz upscale is refused (`priced_after_run`): its price is known only after it runs.

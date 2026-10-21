@@ -67,7 +67,13 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
             ToolGroup(name: "app", tools: ["capabilities"]),
             ToolGroup(name: "video", tools: ["quote", "create_video", "jobs", "job_action"]),
             ToolGroup(name: "image", tools: ["create_image"]),
-            ToolGroup(name: "library", tools: ["library_search", "library_mark", "enhance", "delivery_set", "export"]),
+            ToolGroup(name: "elements", tools: ["elements"]),
+            ToolGroup(
+                name: "library",
+                tools: [
+                    "library_search", "library_get", "library_download", "library_mark", "enhance", "delivery_set",
+                    "export", "frames",
+                ]),
             ToolGroup(name: "window", tools: ["show"]),
         ]
     }
@@ -106,10 +112,14 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
         public var maxImages: Int
         public var needsStyle: Bool
         public var needsSource: Bool
+        /// The most `variants` takes here on this connection; 1 with `variantsUnavailable` saying why.
+        public var maxVariants: Int
+        /// Why one job makes one video here whatever `variants` asks, in English; nil when more are offered.
+        public var variantsUnavailable: String?
 
         public init(
             mode: String, minSeconds: Double, maxSeconds: Double, minImages: Int, maxImages: Int, needsStyle: Bool,
-            needsSource: Bool
+            needsSource: Bool, maxVariants: Int = 1, variantsUnavailable: String? = nil
         ) {
             self.mode = mode
             self.minSeconds = minSeconds
@@ -118,6 +128,8 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
             self.maxImages = maxImages
             self.needsStyle = needsStyle
             self.needsSource = needsSource
+            self.maxVariants = maxVariants
+            self.variantsUnavailable = variantsUnavailable
         }
     }
 
@@ -142,16 +154,31 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
         /// How many images one request can make.
         public var counts: [Int]
         public var aspectRatios: [String]
-        /// "none", "optional" or "required": whether it edits an input image.
+        /// "none", "optional" or "required": whether it edits input images.
         public var input: String
+        /// The most images `create_image` takes as `inputs`; 0 when it edits none.
+        public var maxInputs: Int
+        /// Set when `maxInputs` is the protocol's bound rather than the model's own: its catalog states no limit.
+        public var maxInputsNote: String?
 
-        public init(id: String, title: String, counts: [Int], aspectRatios: [String], input: String) {
+        public init(
+            id: String, title: String, counts: [Int], aspectRatios: [String], input: String, maxInputs: Int = 0,
+            maxInputsNote: String? = nil
+        ) {
             self.id = id
             self.title = title
             self.counts = counts
             self.aspectRatios = aspectRatios
             self.input = input
+            self.maxInputs = maxInputs
+            self.maxInputsNote = maxInputsNote
         }
+
+        /// `maxInputsNote` for a model whose catalog states no limit.
+        public static let boundNote =
+            "Higgsfield's catalog states no limit for this model, so up to \(AgentImageRequest.maxInputs) are taken; "
+            + "Higgsfield's own quote, made before anything is sent, refuses more than the model takes, and that costs "
+            + "nothing."
     }
 
     /// A Restyle style, by the ID `create_video` takes as `style`.

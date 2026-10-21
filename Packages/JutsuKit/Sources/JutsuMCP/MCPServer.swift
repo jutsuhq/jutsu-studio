@@ -226,6 +226,7 @@ public struct MCPServer: Sendable {
         switch tool.command(arguments) {
         case .success(.createVideo(let command)): response = await createVideo(command, client: client)
         case .success(.createImage(let command)): response = await createImage(command, client: client)
+        case .success(.frames(let command)): response = await frames(command, client: client)
         case .success(let command): response = await send(command, client)
         case .failure(let error): response = AgentResponse(error: error)
         }
@@ -256,19 +257,37 @@ public struct MCPServer: Sendable {
         return await send(.createVideo(staged), client)
     }
 
-    /// `create_image` likewise: its input is handed over first, unless the app already took the request.
+    /// `create_image` likewise: its inputs are handed over first, in order, unless the app already took the request.
     private func createImage(_ command: CreateImageCommand, client: String?) async -> AgentResponse {
         let request = UploadRequest(
             command: "create_image", requestID: command.requestID, fingerprint: command.fingerprint)
         var staged = command
         do throws(AgentError) {
-            if let path = command.image.input { staged.image.input = try await stage(path, request, client).get() }
+            staged.image.inputs = []
+            for path in command.image.inputs {
+                staged.image.inputs.append(try await stage(path, request, client).get())
+            }
         } catch  where error.code == .requestKnown {
-            staged.image.input = nil
+            staged.image.inputs = []
         } catch {
             return AgentResponse(error: error)
         }
         return await send(.createImage(staged), client)
+    }
+
+    /// `frames` of the agent's own files: they are handed over first, and the app removes its copies once the
+    /// frames are written.
+    private func frames(_ command: FramesCommand, client: String?) async -> AgentResponse {
+        guard !command.files.isEmpty else { return await send(.frames(command), client) }
+        var staged = command
+        do throws(AgentError) {
+            let request = try Tool.uploadRequest(for: command)
+            if let path = command.file { staged.file = try await stage(path, request, client).get() }
+            if let path = command.compareFile { staged.compareFile = try await stage(path, request, client).get() }
+        } catch {
+            return AgentResponse(error: error)
+        }
+        return await send(.frames(staged), client)
     }
 }
 
@@ -292,7 +311,10 @@ extension MCPServer {
     private static func success(_ response: AgentResponse) -> JSONValue {
         let answers: [(any Encodable)?] = [
             response.capabilities, response.shown, response.quote, response.created, response.jobs, response.acted,
-            response.library, response.marked, response.delivery, response.exported,
+            response.library, response.details, response.downloads, response.elements, response.marked,
+            response.delivery,
+            response.exported,
+            response.frames,
         ]
         guard let answer = answers.lazy.compactMap(\.self).first else {
             return ["error": encoded(AgentError.lostAnswer)]
@@ -330,22 +352,26 @@ extension MCPServer {
         an ID gives that model's limits, image_models, styles and voices list what create_image, Restyle and \
         change_voice take. Agents are off until the person turns on Settings › Agents › Allow agents; until then \
         every tool returns agents_off. To make a video: quote it (free), then create_video with a new request_id and \
-        max_cost, the most you agree to pay; create_image and enhance take the same two. Use a cheap draft mode \
-        when it fits the task. Sending the same request_id and parameters again returns the same job and never pays \
+        max_cost, the most you agree to pay; create_image and enhance take the same two. Use a cheap draft mode when \
+        it fits the task. Sending the same request_id and parameters again returns the same job and never pays \
         twice; reuse a request_id only to retry. Follow work with jobs, wait_seconds up to 50; a wait that runs out \
         stops nothing. export and delivery_set's export run in the app and answer with a job ID at once (or within \
         their own wait_seconds): follow it with jobs too. No call blocks longer than about a minute; still_working \
-        means the work goes on, so send the same request again. Jutsu Studio checks every paid request right before it is sent: a price above max_cost, \
-        above what is left of the daily agent budget or not known holds it (paused, needsPerson) until the person \
-        decides in the Queue; the person's own daily cap applies too. A video the plan's unlimited generations would \
-        pay for (quote's paysUnlimited) costs the budget nothing, but is held the same way unless the person lets \
-        agents use them (capabilities budget.unlimitedAllowed). Tell the person when something waits for \
-        them. library_search finds results (paths on this Mac), library_mark keeps, rejects or stars them, \
-        delivery_set and export write files for delivery or editing, never over a file. job_action cancels, \
-        retries or runs a job next, or pauses or resumes the agents' jobs (never the person's own, or their \
-        Pause all); it never resumes a job waiting for the person, and nothing here deletes anything. show opens a \
-        page or a job for the person to see. A failed call returns error with code, message, retryable and next: \
-        follow next.
+        means the work goes on, so send the same request again. Jutsu Studio checks every paid request right before \
+        it is sent: a price above max_cost, above what is left of the daily agent budget or not known holds it \
+        (paused, needsPerson) until the person decides in the Queue; the person's own daily cap applies too. A video \
+        the plan's unlimited generations would pay for (quote's paysUnlimited) costs the budget nothing, but is held \
+        the same way unless the person lets agents use them (capabilities budget.unlimitedAllowed). Tell the person \
+        when something waits for them. elements lists the account's characters and other elements, which \
+        create_video and create_image take by name (references in the answer tags each image sent @ImageN). \
+        library_search finds results (paths on this Mac, or with include_higgsfield the account's history too, which \
+        library_download brings here for free), library_get gives one in full (the whole prompt, its inputs in \
+        order, its settings), frames writes still frames and a contact sheet to check a result, library_mark keeps, \
+        rejects or stars them, delivery_set and export write files for delivery or editing, never over a file. \
+        job_action cancels, retries or runs a job next, or pauses or resumes the agents' jobs (never the person's \
+        own, or their Pause all); it never resumes a job waiting for the person, and nothing here deletes anything. \
+        show opens a page or a job for the person to see. A failed call returns error with code, message, retryable \
+        and next: follow next.
         """
 
     // MARK: Encoding

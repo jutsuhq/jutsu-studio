@@ -47,6 +47,10 @@ final class AppEnvironment {
     /// The models the connection runs video jobs on, from the last capabilities read on Create; Genjutsu alone
     /// until they are known. The menu bar's New from Template applies against these.
     var lastOfferedModels: Set<VideoModel> = [.genjutsu]
+    /// The connection's capabilities as `capabilities()` last read them; `nil` until then and after the provider
+    /// changes, so another account's never answer. Agents' `capabilities` answers from it rather than calling the
+    /// provider.
+    private(set) var lastCapabilities: Capabilities?
     /// The provider of the active connection; `nil` while disconnected.
     private(set) var provider: (any GenerationProvider)? = nil
     /// Goes up whenever `provider` is replaced, a new sign-in to the same account included. Provider-backed
@@ -123,11 +127,9 @@ final class AppEnvironment {
     private static func agentImageQueue(
         folder: URL, generator: ReferenceGenerator, ledger: AgentSpendFile, defaults: UserDefaults
     ) -> AgentImageQueue {
-        // UserDefaults is safe to read from any thread.
-        nonisolated(unsafe) let budgetDefaults = defaults
-        return AgentImageQueue(
+        AgentImageQueue(
             folder: folder, generator: generator, ledger: ledger,
-            dailyLimit: { AgentPreferences(defaults: budgetDefaults).dailyBudget(for: $0) })
+            dailyLimit: { AgentPreferences(defaults: defaults).dailyBudget(for: $0) })
     }
 
     /// Hands the restored connection to the engine, then resumes the jobs of the last session. Runs once, and never
@@ -186,10 +188,18 @@ final class AppEnvironment {
     /// What the active connection can run, for mode pickers. Flags the connection on 401. Also reads the model
     /// constraints again when they are a day old.
     func capabilities() async -> Capabilities? {
-        guard let provider else { return nil }
+        guard let provider else {
+            lastCapabilities = nil
+            return nil
+        }
         refreshModelConstraints()
+        let generation = providerGeneration
         do {
-            return try await provider.capabilities()
+            let capabilities = try await provider.capabilities()
+            // Read for a provider replaced meanwhile: not this connection's.
+            guard providerGeneration == generation else { return nil }
+            lastCapabilities = capabilities
+            return capabilities
         } catch {
             if error as? ProviderError == .unauthorized { connection.markNeedsAttention() }
             logger.error("Can't load capabilities: \(String(describing: error), privacy: .private)")
@@ -208,6 +218,7 @@ final class AppEnvironment {
         }
         self.provider = provider
         providerGeneration += 1
+        lastCapabilities = nil
         followCharacterSheets()
         followImageJobs()
         history.switchAccount(to: provider.map { "\($0.kind.rawValue)|\($0.owner ?? "")" })

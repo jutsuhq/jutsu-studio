@@ -2,8 +2,8 @@ import Foundation
 import JutsuCore
 
 /// `library_search`: the Library's own rows and filters (`MaterialLibrary.row`, `LibraryFilter`) over the catalog,
-/// read-only. Only results with a file on this Mac are listed, since an agent works with paths; rejected ones only
-/// when asked for.
+/// read-only. Results with a file on this Mac are listed, since an agent works with paths, and the account's
+/// Higgsfield history too when asked for; rejected ones only when asked for.
 public struct AgentLibraryQuery: Sendable, Hashable {
     public var text: String
     public var kind: LibraryKind
@@ -21,12 +21,14 @@ public struct AgentLibraryQuery: Sendable, Hashable {
     public var to: Date?
     public var limit: Int
     public var cursor: String?
+    /// Also the history rows From Higgsfield shows, with no file on this Mac yet.
+    public var includeHiggsfield: Bool
 
     public init(
         // swiftlint:disable:next discouraged_optional_boolean
         text: String = "", kind: LibraryKind = .all, starred: Bool? = nil, verdict: Culling? = nil,
         includeRejected: Bool = false, model: String? = nil, mode: Mode? = nil, from: Date? = nil, to: Date? = nil,
-        limit: Int = 20, cursor: String? = nil
+        limit: Int = 20, cursor: String? = nil, includeHiggsfield: Bool = false
     ) {
         self.text = text
         self.kind = kind
@@ -39,6 +41,7 @@ public struct AgentLibraryQuery: Sendable, Hashable {
         self.to = to
         self.limit = limit
         self.cursor = cursor
+        self.includeHiggsfield = includeHiggsfield
     }
 }
 
@@ -46,7 +49,8 @@ public struct AgentLibraryQuery: Sendable, Hashable {
 public struct AgentLibraryHit: Sendable, Hashable {
     public var id: UUID
     public var isVideo: Bool
-    public var file: URL
+    /// `nil` for a result only on Higgsfield.
+    public var file: URL?
     /// A video model's ID, or an image model's name.
     public var model: String
     /// The agent's mode name; `nil` for an image.
@@ -63,8 +67,10 @@ public struct AgentLibraryHit: Sendable, Hashable {
     /// Which version is current, from 1.
     public var version: Int
     public var versionCount: Int
-    /// The job that made a video; `nil` for an image.
+    /// The job that made a video; `nil` for an image and a video only on Higgsfield.
     public var jobID: UUID?
+    /// A result of the account's Higgsfield history with no file on this Mac yet.
+    public var isOnHiggsfield = false
 }
 
 public enum AgentLibrarySearch {
@@ -76,7 +82,7 @@ public enum AgentLibrarySearch {
     ) -> (hits: [AgentLibraryHit], next: String?) {
         let index = LibraryCatalogIndex(materials)
         let byID = Dictionary(materials.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        let rows = materials.compactMap(MaterialLibrary.row).filter(\.isLocal)
+        let rows = materials.compactMap(MaterialLibrary.row).filter { query.includeHiggsfield || $0.isLocal }
         let filter = LibraryFilter(
             query: query.text, isStarredOnly: query.starred == true,
             showsRejected: query.includeRejected || query.verdict == .rejected, sort: .newest)
@@ -109,21 +115,25 @@ public enum AgentLibrarySearch {
         case .localImage(let image):
             if query.mode != nil { return false }
             if let model = query.model, image.model != model { return false }
-        case .remoteImage:
-            return false
+        case .remoteImage(let image):
+            if query.mode != nil { return false }
+            if let model = query.model, image.model != model { return false }
         }
         return true
     }
 
-    private static func hit(_ row: LibraryMediaItem, material: Material, index: LibraryCatalogIndex) -> AgentLibraryHit?
-    {
+    /// - Parameter promptLength: the prompt is cut to this many characters; `nil` keeps it whole.
+    static func hit(
+        _ row: LibraryMediaItem, material: Material, index: LibraryCatalogIndex, promptLength: Int? = promptLength
+    ) -> AgentLibraryHit? {
         let version = material.current
         let position = (material.versions.firstIndex { $0.id == version.id } ?? 0) + 1
-        let (prompt, isTruncated) = truncated(version.generation?.prompt ?? "")
+        let (prompt, isTruncated) = truncated(version.generation?.prompt ?? "", to: promptLength)
         switch row {
         case .video(let item):
-            guard let file = item.outputFile else { return nil }
-            let prompt = truncated(item.spec.prompt)
+            let file = item.historyItem == nil ? item.outputFile : nil
+            guard file != nil || item.historyItem != nil else { return nil }
+            let prompt = truncated(item.spec.prompt, to: promptLength)
             return AgentLibraryHit(
                 id: material.id, isVideo: true, file: file, model: item.spec.model.rawValue,
                 mode: AgentVideoOrder.name(of: item.spec.mode),
@@ -131,22 +141,29 @@ public enum AgentLibrarySearch {
                 duration: item.job.outputDuration, price: item.isFromHiggsfield ? nil : item.job.price,
                 culling: index.culling(of: material.id), isStarred: item.isStarred, createdAt: row.createdAt,
                 prompt: prompt.text, isPromptTruncated: prompt.isTruncated, versionID: version.id, version: position,
-                versionCount: material.versions.count, jobID: item.job.id)
+                versionCount: material.versions.count,
+                // A history row's job is made up for the Library, not one `jobs` or `show` knows.
+                jobID: item.historyItem == nil ? item.job.id : nil, isOnHiggsfield: item.historyItem != nil)
         case .localImage(let image):
             return AgentLibraryHit(
                 id: material.id, isVideo: false, file: image.fileURL, model: image.model, mode: nil,
                 aspectRatio: image.aspectRatio, duration: nil, price: nil, culling: index.culling(of: material.id),
                 isStarred: image.isStarred, createdAt: row.createdAt, prompt: prompt, isPromptTruncated: isTruncated,
                 versionID: version.id, version: position, versionCount: material.versions.count, jobID: nil)
-        case .remoteImage:
-            return nil
+        case .remoteImage(let image):
+            return AgentLibraryHit(
+                id: material.id, isVideo: false, file: nil, model: image.model, mode: nil,
+                aspectRatio: image.aspectRatio, duration: nil, price: nil, culling: index.culling(of: material.id),
+                isStarred: image.isLiked, createdAt: row.createdAt, prompt: prompt, isPromptTruncated: isTruncated,
+                versionID: version.id, version: position, versionCount: material.versions.count, jobID: nil,
+                isOnHiggsfield: true)
         }
     }
 
-    /// The first `promptLength` characters, and whether there were more.
-    static func truncated(_ prompt: String) -> (text: String, isTruncated: Bool) {
-        guard prompt.count > promptLength else { return (prompt, false) }
-        return (String(prompt.prefix(promptLength)), true)
+    /// The first `length` characters, and whether there were more; `nil` keeps it whole.
+    static func truncated(_ prompt: String, to length: Int? = promptLength) -> (text: String, isTruncated: Bool) {
+        guard let length, prompt.count > length else { return (prompt, false) }
+        return (String(prompt.prefix(length)), true)
     }
 }
 
@@ -211,5 +228,32 @@ public struct AgentLibraryMarks: Sendable, Hashable {
         self.videos = videos
         self.images = images
         self.results = results
+    }
+}
+
+/// `library_download`: what each ID asked for is, before anything is downloaded.
+public enum AgentLibraryDownload: Sendable, Hashable {
+    /// A video of the history, which `importHistory` brings into the Library.
+    case video(HistoryItem)
+    /// An image of the history, which the image library's `importRemote` saves.
+    case image(HistoryImageItem)
+    /// It has a file on this Mac already.
+    case local(URL)
+    /// No Library item has this ID.
+    case missing
+
+    public static func plan(_ ids: [UUID], in materials: [Material]) -> [AgentLibraryDownload] {
+        let rows = Dictionary(
+            materials.compactMap(MaterialLibrary.row).map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        return ids.map { id in
+            switch rows[id] {
+            case .video(let item)?:
+                if let history = item.historyItem { return .video(history) }
+                return item.outputFile.map(Self.local) ?? .missing
+            case .localImage(let image)?: return .local(image.fileURL)
+            case .remoteImage(let image)?: return .image(image)
+            case nil: return .missing
+            }
+        }
     }
 }

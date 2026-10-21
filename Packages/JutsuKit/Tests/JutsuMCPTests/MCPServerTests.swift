@@ -155,8 +155,10 @@ actor FakeApp {
         #expect(
             tools.map { $0["name"]?.stringValue }
                 == [
-                    "capabilities", "quote", "create_video", "jobs", "job_action", "create_image", "library_search",
-                    "library_mark", "enhance", "delivery_set", "export", "show",
+                    "capabilities", "quote", "create_video", "jobs", "job_action", "create_image", "elements",
+                    "library_search",
+                    "library_get", "library_download", "library_mark", "enhance", "delivery_set", "export", "frames",
+                    "show",
                 ])
         #expect(tools.compactMap { $0["name"]?.stringValue } == AgentCapabilities.ToolGroup.all.flatMap(\.tools))
         for tool in tools {
@@ -171,8 +173,14 @@ actor FakeApp {
             #expect(tool["description"]?.stringValue?.isEmpty == false)
             #expect(tool["title"]?.stringValue?.isEmpty == false)
         }
+        // Image counts are the model's, from capabilities and quote: no fixed maxItems promises another.
+        let schemas = Dictionary(uniqueKeysWithValues: tools.map { ($0["name"]?.stringValue ?? "", $0["inputSchema"]) })
+        for (tool, field) in [("create_video", "images"), ("quote", "images"), ("create_image", "inputs")] {
+            #expect(schemas[tool]??["properties"]?[field]?["type"] == "array", "\(tool)")
+            #expect(schemas[tool]??["properties"]?[field]?["maxItems"] == nil, "\(tool)")
+        }
         let hints = Dictionary(uniqueKeysWithValues: tools.map { ($0["name"]?.stringValue ?? "", $0["annotations"]) })
-        for name in ["capabilities", "quote", "jobs", "library_search"] {
+        for name in ["capabilities", "quote", "jobs", "elements", "library_search", "library_get"] {
             #expect(hints[name]??["readOnlyHint"] == true, "\(name)")
             #expect(hints[name]??["destructiveHint"] == false, "\(name)")
         }
@@ -186,9 +194,17 @@ actor FakeApp {
             #expect(hints[name]??["idempotentHint"] == true, "\(name)")
             #expect(hints[name]??["destructiveHint"] == false, "\(name)")
         }
+        #expect(hints["library_search"]??["openWorldHint"] == true)
+        #expect(hints["library_download"]??["readOnlyHint"] == false)
+        #expect(hints["library_download"]??["destructiveHint"] == false)
+        #expect(hints["library_download"]??["idempotentHint"] == true)
         #expect(hints["library_mark"]??["idempotentHint"] == true)
         #expect(hints["library_mark"]??["destructiveHint"] == false)
-        for name in ["delivery_set", "export"] { #expect(hints[name]??["destructiveHint"] == false, "\(name)") }
+        for name in ["delivery_set", "export", "frames"] {
+            #expect(hints[name]??["destructiveHint"] == false, "\(name)")
+        }
+        // compare_source may read a history item's source from Higgsfield.
+        #expect(hints["frames"]??["openWorldHint"] == true)
         #expect(hints["show"]??["readOnlyHint"] == false)
         #expect(hints["show"]??["idempotentHint"] == true)
         #expect(hints["show"]??["openWorldHint"] == false)

@@ -542,6 +542,8 @@ struct FakeDownloader: Downloader {
         case hang
         /// The first call hangs like `hang`, later ones complete.
         case hangOnce
+        /// The first call gets "vid", then waits for the gate to open before it completes; later ones complete.
+        case holdOnce(Gate<Void>)
         /// Call n is refused with the n-th status, later calls complete. 404 is an expired result.
         case refuse([Int])
         /// The first call gets "vid", then `error` (a full disk); later calls complete.
@@ -571,6 +573,12 @@ struct FakeDownloader: Downloader {
             try body.prefix(3).write(to: file)
             try await Task.sleep(nanoseconds: 3_600_000_000_000)
         case .hangOnce:
+            try (existing + body.dropFirst(existing.count)).write(to: file)
+        case .holdOnce(let gate) where log.count("download") == 1:
+            try body.prefix(3).write(to: file)
+            try await gate.wait()
+            try body.write(to: file)
+        case .holdOnce:
             try (existing + body.dropFirst(existing.count)).write(to: file)
         case .refuse(let statuses) where log.count("download") <= statuses.count:
             throw JobEngineError.downloadFailed(status: statuses[log.count("download") - 1])

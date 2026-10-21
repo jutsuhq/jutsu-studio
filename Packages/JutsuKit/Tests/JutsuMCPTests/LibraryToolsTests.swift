@@ -57,10 +57,49 @@ import Testing
             Issue.record("create_image wasn't sent")
             return
         }
-        #expect(command.image.input == "/tmp/inbox/1/fox.png")
+        #expect(command.image.inputs == ["/tmp/inbox/1/fox.png"])
         #expect(command.image.count == 4)
         #expect(command.fingerprint == staged.first?.request.fingerprint)
         #expect(command.maxCost == AgentAmount(40, .credits))
+    }
+
+    /// inputs are staged and sent in order; input is the same request with one image, so it keeps its fingerprint.
+    @Test func severalInputsAreStagedInOrderAndInputIsTheirOneItemForm() async throws {
+        let paths = try ["a.png", "b.png", "c.png"].map { try file($0) }
+        let result = try await call("create_image", .object(image(["inputs": .array(paths.map { .string($0) })])))
+        #expect(result["isError"] == false)
+        #expect(await inbox.staged.map(\.path) == paths)
+        guard case .createImage(let staged)? = await app.calls.first?.0 else {
+            Issue.record("create_image wasn't sent")
+            return
+        }
+        #expect(staged.image.inputs.count == 3)
+        #expect(staged.image.inputs.allSatisfy { $0.hasPrefix("/tmp/inbox/") })
+
+        func sent(_ arguments: [String: JSONValue]) throws -> CreateImageCommand {
+            guard case .success(.createImage(let command)) = self.command(.createImage, arguments) else {
+                throw AgentError.badRequest("not a create_image")
+            }
+            return command
+        }
+        let one = try sent(image(["input": .string(paths[0])]))
+        #expect(try sent(image(["inputs": [.string(paths[0])]])).fingerprint == one.fingerprint)
+        // One input goes on the wire as `input`, as 0.2.0 sends it.
+        let line = String(decoding: try AgentWire.line(AgentRequest(.createImage(one))), as: UTF8.self)
+        #expect(line.contains("\"input\":") && !line.contains("\"inputs\""))
+        let decoded = AgentWire.request(from: try AgentWire.line(AgentRequest(.createImage(one)))).request
+        #expect(try decoded.get().command == .createImage(one))
+
+        for bad in [
+            image(["input": .string(paths[0]), "inputs": [.string(paths[1])]]),
+            image(["inputs": .array((0...16).map { .string("/tmp/\($0).png") })]), image(["inputs": "a.png"]),
+        ] {
+            guard case .failure(let error) = command(.createImage, bad) else {
+                Issue.record("taken: \(bad)")
+                continue
+            }
+            #expect(error.code == .badRequest)
+        }
     }
 
     @Test func aConflictingImageRequestStopsBeforeAnyByteOrCommand() async throws {
@@ -131,14 +170,142 @@ import Testing
         #expect(search.verdict == .kept)
         #expect(search.from == ISO8601DateFormatter().date(from: "2026-10-01T00:00:00Z"))
         #expect(search.to != nil)
+        #expect(search.includeHiggsfield == nil)
+        guard
+            case .success(.librarySearch(let history)) = command(
+                .librarySearch, ["include_higgsfield": true, "refresh_higgsfield": true])
+        else {
+            Issue.record("no library_search of the history")
+            return
+        }
+        #expect(history.includeHiggsfield == true && history.refreshHiggsfield == true)
         for bad in [
             ["kind": "audio"], ["from": "yesterday"], ["limit": 51], ["mode": "dance"], ["cursor": "a b"],
+            ["refresh_higgsfield": true],
             ["from": "2026-10-02T00:00:00Z", "to": "2026-10-01T00:00:00Z"],
         ] as [[String: JSONValue]] {
             guard case .failure = command(.librarySearch, bad) else {
                 Issue.record("taken: \(bad)")
                 continue
             }
+        }
+    }
+
+    /// Elements by name, in create_video, quote and create_image; a request without them keeps its wire shape.
+    @Test func elementsAreNamesCheckedBeforeTheApp() throws {
+        guard case .success(.elements(let list)) = command(.elements, ["query": "mara", "category": "character"])
+        else {
+            Issue.record("no elements")
+            return
+        }
+        #expect(list.query == "mara" && list.category == "character")
+        guard case .success(.createImage(let made)) = command(.createImage, image(["elements": ["Mara", "Roof"]]))
+        else {
+            Issue.record("no create_image with elements")
+            return
+        }
+        #expect(made.image.elements == ["Mara", "Roof"])
+        let plain = try AgentWire.line(AgentRequest(.quote(QuoteCommand(video: AgentVideoRequest(mode: "restyle")))))
+        #expect(!String(decoding: plain, as: UTF8.self).contains("elements"))
+        let quote: [String: JSONValue] = ["mode": "motion_transfer", "elements": ["Mara"]]
+        guard case .success(.quote(let quoted)) = command(.quote, quote) else {
+            Issue.record("no quote with elements")
+            return
+        }
+        #expect(quoted.video.elements == ["Mara"])
+        for (tool, bad) in [
+            (Tool.elements, ["category": "pet"]), (.elements, ["limit": 51]),
+            (.quote, ["mode": "restyle", "elements": ["a", "b", "c", "d", "e"]]),
+            (.quote, ["mode": "restyle", "elements": ["Mara", "mara"]]),
+            // The lookup trims names, so these are one element twice.
+            (.quote, ["mode": "restyle", "elements": ["Mara", "Mara "]]),
+            (.quote, ["mode": "restyle", "elements": [" "]]),
+            (.createImage, image(["elements": "Mara"])),
+        ] as [(Tool, [String: JSONValue])] {
+            guard case .failure(let error) = command(tool, bad) else {
+                Issue.record("taken: \(bad)")
+                continue
+            }
+            #expect(error.code == .badRequest)
+        }
+    }
+
+    @Test func libraryDownloadTakesUpToTwentyItemIDs() {
+        let id = UUID().uuidString
+        guard case .success(.libraryDownload(let download)) = command(.libraryDownload, ["ids": [.string(id)]]) else {
+            Issue.record("no library_download")
+            return
+        }
+        #expect(download.ids.map(\.uuidString) == [id])
+        for bad in [
+            [:], ["ids": []], ["ids": [.string(id), .string(id)]], ["ids": ["nope"]],
+            ["ids": .array((0...20).map { _ in .string(UUID().uuidString) })],
+        ] as [[String: JSONValue]] {
+            guard case .failure = command(.libraryDownload, bad) else {
+                Issue.record("taken: \(bad)")
+                continue
+            }
+        }
+    }
+
+    @Test func libraryGetTakesUpToTwentyItemIDs() {
+        let id = UUID().uuidString
+        guard case .success(.libraryGet(let get)) = command(.libraryGet, ["ids": [.string(id)]]) else {
+            Issue.record("no library_get")
+            return
+        }
+        #expect(get.ids.map(\.uuidString) == [id])
+        for bad in [
+            ["ids": []], ["ids": [.string(id), .string(id)]], ["ids": ["not-an-id"]],
+            ["ids": [.string(id)], "full": true],
+            ["ids": .array((0...20).map { _ in .string(UUID().uuidString) })],
+        ] as [[String: JSONValue]] {
+            guard case .failure = command(.libraryGet, bad) else {
+                Issue.record("taken: \(bad)")
+                continue
+            }
+        }
+        let answer = AgentResponse(details: AgentLibraryDetailsPage(items: []))
+        #expect(MCPServer.toolResult(answer, structured: true)["isError"] == false)
+    }
+
+    /// frames' own files are staged under a request named by its fingerprint, then the command goes with inbox paths.
+    @Test func framesStagesItsFilesAndSendsTheCommand() async throws {
+        let (main, other) = (try file("take.mov"), try file("source.mov"))
+        let result = try await call(
+            "frames", ["file": .string(main), "times": [.number(1), .number(2.5)], "compare_file": .string(other)])
+        #expect(result["isError"] == false)
+        #expect(await inbox.staged.map(\.path) == [main, other])
+        #expect(await inbox.staged.allSatisfy { $0.request.command == "frames" })
+        guard case .frames(let staged)? = await app.calls.first?.0 else {
+            Issue.record("frames wasn't sent")
+            return
+        }
+        #expect(staged.times == [1, 2.5])
+        #expect(staged.files.allSatisfy { $0.hasPrefix("/tmp/inbox/") })
+    }
+
+    @Test func framesTakesOneClipAndAtMostOneComparison() {
+        let id = UUID().uuidString
+        let asked: [String: JSONValue] = ["item": .string(id), "times": [0], "compare_source": true]
+        guard case .success(.frames(let item)) = command(.frames, asked) else {
+            Issue.record("no frames")
+            return
+        }
+        #expect(item.compareSource && item.item?.uuidString == id)
+        for bad in [
+            ["times": [1]], ["item": .string(id), "file": "/tmp/a.mov", "times": [1]], ["item": .string(id)],
+            ["item": .string(id), "times": []],
+            ["item": .string(id), "times": .array((0...12).map { .number(Double($0)) })],
+            ["item": .string(id), "times": [-1]], ["file": "/tmp/a.mov", "times": [1], "compare_source": true],
+            ["item": .string(id), "times": [1], "compare_item": .string(id), "compare_file": "/tmp/b.mov"],
+            ["item": "nope", "times": [1]],
+        ] as [[String: JSONValue]] {
+            guard case .failure(let error) = command(.frames, bad) else {
+                Issue.record("taken: \(bad)")
+                continue
+            }
+            #expect(error.code == .badRequest)
         }
     }
 

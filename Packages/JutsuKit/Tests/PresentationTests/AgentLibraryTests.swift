@@ -37,6 +37,44 @@ import Testing
         #expect(!ids(AgentLibraryQuery(to: cutoff)).contains(fox.id))
     }
 
+    /// An image of the account's Higgsfield history: no file on this Mac, only its link.
+    var cloud: Material {
+        var material = Material(
+            kind: .image, createdAt: CatalogFixture.now.addingTimeInterval(-30),
+            version: MaterialVersion(
+                remoteURL: URL(string: "https://cdn.example.com/cloud.png"),
+                generation: MaterialGeneration(prompt: "A cloud fox", model: "soul")))
+        material.remote = MaterialRemote(provider: .account, owner: nil, id: "gen-1")
+        return material
+    }
+
+    @Test func theHiggsfieldHistoryIsListedOnlyWhenAskedFor() throws {
+        let cloud = cloud
+        let all = materials + [cloud]
+        let local = AgentLibrarySearch.page(all, AgentLibraryQuery(text: "fox")).hits
+        #expect(local.map(\.id) == [fox.id, image.id])
+        let hits = AgentLibrarySearch.page(all, AgentLibraryQuery(text: "fox", includeHiggsfield: true)).hits
+        #expect(hits.map(\.id) == [cloud.id, fox.id, image.id])
+        let first = try #require(hits.first)
+        #expect(first.isOnHiggsfield && first.file == nil && first.model == "soul")
+        #expect(hits.dropFirst().allSatisfy { !$0.isOnHiggsfield && $0.file != nil })
+        // A mode lists videos only, the history's images too.
+        let videos = AgentLibrarySearch.page(all, AgentLibraryQuery(mode: .restyle, includeHiggsfield: true)).hits
+        #expect(videos.allSatisfy { $0.isVideo })
+    }
+
+    @Test func aDownloadIsPlannedFromWhatEachIDIs() {
+        let cloud = cloud
+        let plan = AgentLibraryDownload.plan([cloud.id, image.id, UUID()], in: materials + [cloud])
+        guard case .image(let remote) = plan[0] else {
+            Issue.record("not the history image: \(plan[0])")
+            return
+        }
+        #expect(remote.jobID == cloud.id && remote.id == "gen-1")
+        #expect(plan[1] == image.current.fileURL.map(AgentLibraryDownload.local))
+        #expect(plan[2] == .missing)
+    }
+
     @Test func pagesFollowTheCursorWithoutRepeatsOrGaps() {
         var seen: [UUID] = []
         var cursor: String?
@@ -58,7 +96,7 @@ import Testing
         #expect(!video.isPromptTruncated)
         #expect(video.mode == "restyle")
         #expect(video.version == 1 && video.versionCount == 1)
-        #expect(video.file.lastPathComponent == "out.mp4")
+        #expect(video.file?.lastPathComponent == "out.mp4")
     }
 
     @Test func markingAgainChangesNothing() {

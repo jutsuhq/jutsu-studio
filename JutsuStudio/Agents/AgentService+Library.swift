@@ -21,19 +21,56 @@ extension AgentService {
             text: fields.query ?? "", kind: Self.kind(fields.kind), starred: fields.starred,
             verdict: fields.verdict.map(Self.culling), includeRejected: fields.includeRejected ?? false,
             model: fields.model, mode: fields.mode.flatMap(AgentVideoOrder.mode(named:)), from: fields.from,
-            to: fields.to, limit: fields.limit ?? LibrarySearchCommand.defaultLimit, cursor: fields.cursor)
+            to: fields.to, limit: fields.limit ?? LibrarySearchCommand.defaultLimit, cursor: fields.cursor,
+            includeHiggsfield: fields.includeHiggsfield ?? false)
+        // From Higgsfield's own refresh: it reads the history, never spends, and does nothing without an account.
+        if fields.refreshHiggsfield == true { await environment.loadHistory(refresh: true) }
         let (hits, next) = AgentLibrarySearch.page(try await materials(), query)
         return AgentLibraryPage(items: hits.map(Self.item), nextCursor: next)
     }
 
+    // MARK: library_get
+
+    func libraryGet(_ fields: LibraryGetCommand) async throws(AgentError) -> AgentLibraryDetailsPage {
+        let (details, missing) = AgentLibraryDetail.of(fields.ids, in: try await materials())
+        return AgentLibraryDetailsPage(
+            items: details.map { detail in
+                AgentLibraryDetails(
+                    item: Self.item(detail.hit), inputs: detail.inputs.map(Self.input),
+                    settings: Self.settings(detail.settings),
+                    next: detail.hit.isOnHiggsfield ? AgentLibraryDetails.downloadNext : nil)
+            }, notFound: missing)
+    }
+
+    private static func input(_ input: AgentLibraryDetail.Input) -> AgentLibraryInput {
+        let role: AgentLibraryInput.Role =
+            switch input.role {
+            case .source: .source
+            case .startFrame: .startFrame
+            case .endFrame: .endFrame
+            case .reference: .reference
+            case .editedFrom: .editedFrom
+            }
+        return AgentLibraryInput(
+            role: role, position: input.position, file: input.file?.path(percentEncoded: false), item: input.item,
+            onHiggsfield: input.isOnHiggsfield, start: input.range?.lowerBound, end: input.range?.upperBound)
+    }
+
+    private static func settings(_ settings: AgentLibraryDetail.Settings) -> AgentLibrarySettings {
+        AgentLibrarySettings(
+            resolution: settings.resolution, draft: settings.isDraft, audio: settings.audio, style: settings.style,
+            length: settings.length, aspectRatio: settings.aspectRatio, paidWithUnlimited: settings.paidWithUnlimited,
+            operation: settings.operation, count: settings.count)
+    }
+
     private static func item(_ hit: AgentLibraryHit) -> AgentLibraryItem {
         AgentLibraryItem(
-            id: hit.id, kind: hit.isVideo ? .video : .image, file: hit.file.path(percentEncoded: false),
+            id: hit.id, kind: hit.isVideo ? .video : .image, file: hit.file?.path(percentEncoded: false),
             model: hit.model, mode: hit.mode, aspectRatio: hit.aspectRatio, duration: hit.duration,
             price: hit.price.flatMap(AgentMoney.init).map { AgentAmount($0.amount, unit(of: $0.unit)) },
             verdict: verdict(hit.culling), starred: hit.isStarred, createdAt: hit.createdAt, prompt: hit.prompt,
             promptTruncated: hit.isPromptTruncated, versionID: hit.versionID, version: hit.version,
-            versionCount: hit.versionCount, jobID: hit.jobID)
+            versionCount: hit.versionCount, jobID: hit.jobID, onHiggsfield: hit.isOnHiggsfield ? true : nil)
     }
 
     // MARK: library_mark
@@ -81,36 +118,18 @@ extension AgentService {
     // MARK: enhance
 
     func enhance(_ fields: EnhanceCommand, client: String?) async throws(AgentError) -> AgentCreated {
-        if let running = creating[fields.requestID] {
-            guard running.fingerprint == fields.fingerprint else { throw .requestConflict }
-            return try await running.task.value.get()
-        }
-        switch try lookup(fields.requestID, fingerprint: fields.fingerprint) {
-        case .conflict:
-            throw .requestConflict
-        case .known(let ids):
-            let jobs = try await knownJobs(ids)
-            guard jobs.isEmpty else {
-                return AgentCreated(requestID: fields.requestID, known: true, jobs: jobs.map(Self.agentJob))
-            }
-            try? environment.agentRequests.remove(fields.requestID)
-            throw AgentError(
-                .failed, message: "The request was recorded but its job was never queued.", retryable: true,
-                next: "Send the same enhance again.")
-        case .new:
-            break
-        }
-        let task = Task { [weak self] () -> Result<AgentCreated, AgentError> in
-            guard let self else { return .failure(.agentsOff) }
-            do throws(AgentError) {
-                return .success(try await self.queueEnhancement(fields, client: client))
-            } catch {
-                return .failure(error)
-            }
-        }
-        creating[fields.requestID] = (fields.fingerprint, task)
-        defer { creating[fields.requestID] = nil }
-        return try await task.value.get()
+        try await requests.run(
+            fields.requestID, fingerprint: fields.fingerprint,
+            refusals: Self.refusals("enhance", made: "its job was never queued"), discard: {},
+            known: { ids throws(AgentError) in
+                let jobs = try await knownJobs(ids)
+                return jobs.isEmpty
+                    ? nil : AgentCreated(requestID: fields.requestID, known: true, jobs: jobs.map(Self.agentJob))
+            },
+            queue: { [weak self] () throws(AgentError) in
+                guard let self else { throw .agentsOff }
+                return try await self.queueEnhancement(fields, client: client)
+            })
     }
 
     /// Builds the job as the Enhance sheet would, records the request with its ID, then queues it with the agent's
@@ -138,7 +157,6 @@ extension AgentService {
                 "Agent \(client ?? "unnamed", privacy: .private) queued \(fields.operation.rawValue, privacy: .public)")
             return AgentCreated(requestID: fields.requestID, known: false, jobs: [Self.agentJob(job)])
         } catch {
-            try? environment.agentRequests.remove(fields.requestID)
             throw Self.agentError(enqueueing: error)
         }
     }
@@ -345,8 +363,6 @@ extension AgentService {
         case .skipped: .skipped
         }
     }
-
-    // MARK: export
 
     // MARK: Helpers
 

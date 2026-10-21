@@ -22,6 +22,7 @@ public final class AgentImageQueue {
     @ObservationIgnored let now: @Sendable () -> Date
     @ObservationIgnored private let file: LogFile<AgentImageRecord>
     @ObservationIgnored private var loaded: [AgentImageRecord]?
+    @ObservationIgnored let log = PresentationLog(category: "AgentImages")
 
     static let keptDays = 30
 
@@ -75,6 +76,7 @@ public final class AgentImageQueue {
         do {
             try save(record)
         } catch {
+            log.error("Image request \(id): a change can't be saved", detail: String(describing: error))
             if let index = loaded?.firstIndex(where: { $0.id == id }) { loaded?[index] = record }
         }
     }
@@ -90,8 +92,9 @@ public final class AgentImageQueue {
         let draft = try order.draft(models: generator.models, modelsAreSaved: generator.modelsAreSaved).get()
         let record = AgentImageRecord(
             id: id, origin: origin, providerKind: provider.kind, owner: provider.owner, model: draft.model,
-            prompt: draft.prompt, aspectRatio: draft.aspectRatio, count: draft.count, input: draft.input,
-            state: .pricing, priceIsKnown: false, createdAt: now())
+            prompt: draft.prompt, aspectRatio: draft.aspectRatio, count: draft.count, input: draft.inputs.first,
+            severalInputs: draft.inputs.count > 1 ? draft.inputs : nil, state: .pricing, priceIsKnown: false,
+            createdAt: now())
         do {
             try save(record)
         } catch {
@@ -141,14 +144,24 @@ public final class AgentImageQueue {
     /// never saved with their request, so never sent), fails a request that was being sent and whose answer was lost
     /// (its reservation stays), and shows the held ones again.
     public func restore() async {
-        guard let records = try? load() else { return }
-        if let unsettled = try? await ledger.unsettled() {
-            for spend in unsettled {
+        let records: [AgentImageRecord]
+        do {
+            records = try load()
+        } catch {
+            return log.error(
+                "The agent image requests can't be read to restore them", detail: String(describing: error))
+        }
+        do {
+            for spend in try await ledger.unsettled() {
                 guard let record = records.first(where: { $0.id == spend.jobID }),
                     record.origin.reservation != spend.id
                 else { continue }
-                try? await ledger.release(spend.id)
+                await release(spend.id, of: record.id)
             }
+        } catch {
+            // Reservations kept, which only counts too much.
+            log.error(
+                "The agent spend ledger can't be read to reconcile image requests", detail: String(describing: error))
         }
         for record in records {
             let followed = generator.jobLog.records.contains { $0.runID == record.id }
@@ -180,7 +193,12 @@ public final class AgentImageQueue {
     public func resume(
         provider: any ImageProvider, upload: @escaping @Sendable (LocalImage) async throws -> RemoteAsset
     ) {
-        guard let records = try? load() else { return }
+        let records: [AgentImageRecord]
+        do {
+            records = try load()
+        } catch {
+            return log.error("The agent image requests can't be read to resume them", detail: String(describing: error))
+        }
         for record in records where record.providerKind == provider.kind && record.owner == provider.owner {
             switch record.state {
             case .pricing where generator.submits[record.id] == nil:
@@ -241,7 +259,7 @@ extension AgentImageQueue {
             generator.finish(id, .failed(Self.notRecorded))
             return nil
         }
-        let (price, isKnown) = await quote(request, of: record, provider: provider)
+        guard let (price, isKnown) = await quoteOrFail(request, of: record, provider: provider) else { return nil }
         let status: SpendStatus?
         do {
             status = try await generator.spendStatus(provider.kind)
@@ -251,7 +269,7 @@ extension AgentImageQueue {
         }
         if let status, let cap = status.cap,
             case .needsConfirmation = Budget.allows(cost: price, committedToday: status.committedToday, cap: cap),
-            !Self.covers(record.approvedPrice, price)
+            !Budget.covers(approved: record.approvedPrice, price)
         {
             return hold(id, .priceAboveCap, price: price, isKnown: isKnown)
         }
@@ -269,13 +287,19 @@ extension AgentImageQueue {
     }
 
     /// The provider's quote for the request, else the model's list price as an estimate; and whether it is exact.
-    private func quote(
+    /// A quote that turns the request down, such as more input images than a model whose catalog states no limit
+    /// takes, fails the request (`nil`): it comes before anything is reserved or sent, so the refusal costs nothing.
+    private func quoteOrFail(
         _ request: ImageRequest, of record: AgentImageRecord, provider: any ImageProvider
-    ) async -> (Cost, Bool) {
+    ) async -> (Cost, Bool)? {
         do {
             let price = try await provider.imageEstimate(request)
             return (price, !price.isEstimate && !price.isUnknownPrice)
         } catch {
+            if let error = error as? ProviderError, case .validation = error {
+                generator.finish(record.id, .failed(ReferenceGenerator.message(error)))
+                return nil
+            }
             return (Self.listPrice(of: record) ?? .unknownCredits, false)
         }
     }
@@ -291,6 +315,7 @@ extension AgentImageQueue {
                 return hold(id, .overDailyBudget, price: price, isKnown: isKnown)
             }
         } catch {
+            log.error("Image request \(id): the agent spend ledger can't be written", detail: String(describing: error))
             return hold(id, .ledgerUnavailable, price: price, isKnown: isKnown)
         }
         var sending = record
@@ -303,7 +328,8 @@ extension AgentImageQueue {
             try save(sending)
         } catch {
             // Not recorded as sent, so it isn't sent.
-            try? await ledger.release(spend.id)
+            log.error("Image request \(id): can't be recorded as sent", detail: String(describing: error))
+            await release(spend.id, of: id)
             generator.finish(id, .failed(error.localizedDescription))
             return nil
         }
@@ -330,17 +356,18 @@ extension AgentImageQueue {
         switch outcome {
         case .accepted:
             update(id) { $0.state = .following }
-            try? await ledger.settle(reservation, amount: nil)
+            do {
+                try await ledger.settle(reservation, amount: nil)
+            } catch {
+                // Still reserved, which counts the same.
+                log.error("Image request \(id): its charge can't be recorded", detail: String(describing: error))
+            }
         case .refused, .notSent:
             // Certainly never sent: its reservation is given back.
-            do {
-                try await ledger.release(reservation)
-                update(id) {
-                    $0.origin.reservation = nil
-                    $0.sentAt = nil
-                }
-            } catch {
-                // Kept, which only counts too much.
+            guard await release(reservation, of: id) else { return }
+            update(id) {
+                $0.origin.reservation = nil
+                $0.sentAt = nil
             }
         case .unknown:
             break
@@ -376,7 +403,7 @@ extension AgentImageQueue {
     }
 }
 
-// The guard's rules and the texts a held request shows.
+// The reservations of requests that ended or were never sent.
 extension AgentImageQueue {
     /// Settles an accepted request's reservation to what its jobs were really charged once they all ended: Higgsfield
     /// doesn't bill a job that failed, was refused by moderation or was cancelled, so each of those stops counting its
@@ -388,63 +415,30 @@ extension AgentImageQueue {
         guard !jobs.isEmpty, !jobs.contains(where: { $0.state == .pending }) else { return }
         let unbilled = jobs.filter(\.isUnbilled).map(\.id)
         guard !unbilled.isEmpty else { return }
-        let ledger = ledger
+        let (ledger, log, id) = (ledger, log, record.id)
         Task {
             // A ledger that can't be written keeps the reservation, which only counts too much.
-            for part in unbilled { try? await ledger.unbill(reservation, part: part, of: jobs.count) }
+            for part in unbilled {
+                do {
+                    try await ledger.unbill(reservation, part: part, of: jobs.count)
+                } catch {
+                    log.error(
+                        "Image request \(id): an unbilled job can't be recorded", detail: String(describing: error))
+                }
+            }
         }
     }
 
-    /// The model's list price for the request, an estimate.
-    static func listPrice(of record: AgentImageRecord) -> Cost? {
-        switch record.model.listPrice {
-        case .usd(let amount, _)?: .usd(amount * Decimal(record.count), isEstimate: true)
-        case .credits(let amount, _)?: .credits(amount * Decimal(record.count), isEstimate: true)
-        case nil: nil
+    /// Gives back a reservation whose submit certainly never went out; `false` when the ledger can't be written,
+    /// which keeps it and only counts too much.
+    @discardableResult
+    private func release(_ reservation: UUID, of id: UUID) async -> Bool {
+        do {
+            try await ledger.release(reservation)
+            return true
+        } catch {
+            log.error("Image request \(id): a reservation can't be released", detail: String(describing: error))
+            return false
         }
     }
-
-    /// The price the person agreed to covers `price`.
-    static func covers(_ approved: Cost?, _ price: Cost) -> Bool {
-        guard let approved, approved.unit == price.unit else { return false }
-        return price.amount <= approved.amount
-    }
-
-    static func hold(_ hold: AgentHold) -> AgentImageRecord.Hold {
-        switch hold {
-        case .unknownPrice: .unknownPrice
-        case .overMaxCost: .overMaxCost
-        case .overDailyBudget: .overDailyBudget
-        case .ledgerUnavailable: .ledgerUnavailable
-        case .unlimitedNotAllowed: .unlimitedNotAllowed
-        case .aboveApprovedPrice: .aboveApprovedPrice
-        }
-    }
-
-    /// Why a held request waits, for its row in the Queue.
-    public static func text(of hold: AgentImageRecord.Hold) -> String {
-        switch hold {
-        case .unknownPrice:
-            String(localized: "Waiting for you: its price isn't known.", bundle: .module)
-        case .overMaxCost:
-            String(localized: "Waiting for you: it costs more than the agent was allowed.", bundle: .module)
-        case .overDailyBudget:
-            String(localized: "Waiting for you: it's over today's agent budget.", bundle: .module)
-        case .ledgerUnavailable:
-            String(localized: "Waiting for you: agent spending can't be recorded.", bundle: .module)
-        case .unlimitedNotAllowed:
-            String(
-                localized: "Waiting for you: it would use your plan's unlimited generations, which agents may not use.",
-                bundle: .module)
-        case .aboveApprovedPrice:
-            String(localized: "Waiting for you: it costs more now than the price you approved.", bundle: .module)
-        case .priceAboveCap:
-            String(localized: "Waiting for you: it takes today past your spend cap.", bundle: .module)
-        }
-    }
-
-    static let notRecorded = String(localized: "Jutsu Studio lost the record of this request.", bundle: .module)
-    static let lostAnswer = String(
-        localized: "Jutsu Studio quit while sending this request, so it may have been sent. Its price still counts.",
-        bundle: .module)
 }

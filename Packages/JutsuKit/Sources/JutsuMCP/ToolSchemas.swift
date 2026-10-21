@@ -57,6 +57,7 @@ extension Tool {
                         "counts": ["type": "array", "items": ["type": "integer"]],
                         "aspectRatios": ["type": "array", "items": ["type": "string"]],
                         "input": ["type": "string", "enum": ["none", "optional", "required"]],
+                        "maxInputs": ["type": "integer"], "maxInputsNote": ["type": "string"],
                     ],
                 ],
             ]
@@ -78,10 +79,36 @@ extension Tool {
             properties["remainingToday"] = ["type": "integer"]
             properties["paysUnlimited"] = ["type": "boolean"]
             properties["blocker"] = ["type": "string"]
+            properties["maxVariants"] = ["type": "integer"]
+            properties["variantsUnavailable"] = ["type": "string"]
+            properties["images"] = ["type": "integer"]
+            properties["minImages"] = ["type": "integer"]
+            properties["maxImages"] = ["type": "integer"]
         case .createVideo, .createImage, .enhance:
             properties["requestId"] = ["type": "string"]
             properties["known"] = ["type": "boolean"]
             properties["jobs"] = ["type": "array", "items": Self.jobSchema]
+            properties["references"] = [
+                "type": "array",
+                "items": [
+                    "type": "object",
+                    "properties": [
+                        "tag": ["type": "string"], "element": ["type": "string"], "file": ["type": "string"],
+                    ],
+                ],
+            ]
+        case .elements:
+            properties["items"] = [
+                "type": "array",
+                "items": [
+                    "type": "object",
+                    "properties": [
+                        "id": ["type": "string"], "name": ["type": "string"], "category": ["type": "string"],
+                        "imageCount": ["type": "integer"],
+                    ],
+                ],
+            ]
+            properties["nextCursor"] = ["type": "string"]
         case .jobs:
             properties["jobs"] = ["type": "array", "items": Self.jobSchema]
             properties["timedOut"] = ["type": "boolean"]
@@ -89,6 +116,34 @@ extension Tool {
         case .librarySearch:
             properties["items"] = ["type": "array", "items": Self.itemSchema]
             properties["nextCursor"] = ["type": "string"]
+        case .libraryGet:
+            properties["items"] = [
+                "type": "array",
+                "items": [
+                    "type": "object",
+                    "properties": [
+                        "item": Self.itemSchema, "inputs": ["type": "array", "items": Self.inputSchema],
+                        "settings": Self.settingsSchema, "next": ["type": "string"],
+                    ],
+                ],
+            ]
+            properties["notFound"] = ["type": "array", "items": ["type": "string"]]
+            properties["next"] = ["type": "string"]
+        case .libraryDownload:
+            properties["items"] = [
+                "type": "array",
+                "items": [
+                    "type": "object",
+                    "properties": [
+                        "id": ["type": "string"],
+                        "status": [
+                            "type": "string",
+                            "enum": .array(AgentDownload.Status.allCases.map { .string($0.rawValue) }),
+                        ],
+                        "file": ["type": "string"], "message": ["type": "string"],
+                    ],
+                ],
+            ]
         case .libraryMark:
             properties["items"] = [
                 "type": "array",
@@ -110,6 +165,19 @@ extension Tool {
         case .export:
             properties["job"] = Self.jobSchema
             properties["timedOut"] = ["type": "boolean"]
+        case .frames:
+            properties["folder"] = ["type": "string"]
+            properties["frames"] = [
+                "type": "array",
+                "items": [
+                    "type": "object",
+                    "properties": [
+                        "clip": ["type": "string", "enum": ["main", "compare"]], "time": ["type": "number"],
+                        "file": ["type": "string"],
+                    ],
+                ],
+            ]
+            properties["sheet"] = ["type": "string"]
         case .jobAction:
             properties["action"] = ["type": "string"]
             properties["job"] = Self.jobSchema
@@ -151,7 +219,25 @@ extension Tool {
             "duration": ["type": "number"], "price": amountSchema, "verdict": ["type": "string"],
             "starred": ["type": "boolean"], "createdAt": ["type": "string"], "prompt": ["type": "string"],
             "promptTruncated": ["type": "boolean"], "versionId": ["type": "string"], "version": ["type": "integer"],
-            "versionCount": ["type": "integer"], "jobId": ["type": "string"],
+            "versionCount": ["type": "integer"], "jobId": ["type": "string"], "onHiggsfield": ["type": "boolean"],
+        ],
+    ]
+
+    static let inputSchema: JSONValue = [
+        "type": "object",
+        "properties": [
+            "role": ["type": "string", "enum": .array(AgentLibraryInput.Role.allCases.map { .string($0.rawValue) })],
+            "position": ["type": "integer"], "file": ["type": "string"], "item": ["type": "string"],
+            "onHiggsfield": ["type": "boolean"], "start": ["type": "number"], "end": ["type": "number"],
+        ],
+    ]
+
+    static let settingsSchema: JSONValue = [
+        "type": "object",
+        "properties": [
+            "resolution": ["type": "string"], "draft": ["type": "boolean"], "audio": ["type": "string"],
+            "style": ["type": "string"], "length": ["type": "number"], "aspectRatio": ["type": "string"],
+            "paidWithUnlimited": ["type": "boolean"], "operation": ["type": "string"], "count": ["type": "integer"],
         ],
     ]
 

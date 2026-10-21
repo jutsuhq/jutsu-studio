@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Fails on a value logged as public that isn't plainly safe. Every `privacy: .public` interpolation, and every
-# interpolation in the message of an `EngineLog` call (logged as public by the wrapper), must have one of the safe
-# shapes below, or be listed as a reviewed exception. A message passed to `EngineLog` must be a string literal.
+# interpolation in the message of an `EngineLog` or `PresentationLog` call (logged as public by the wrapper), must have
+# one of the safe shapes below, or be listed as a reviewed exception. A message passed to either must be a string
+# literal.
 # Anything else (error text, descriptions, paths, URLs, prompts, server messages) is logged as private.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -38,6 +39,7 @@ my %reviewed = map { $_ => 1 } (
     "Packages/HiggsfieldKit/Sources/HiggsfieldAPI/HiggsfieldAPIClient.swift|path",
     # The wrapper itself; its callers are checked below.
     "Packages/JutsuKit/Sources/JobEngine/EngineLog.swift|message",
+    "Packages/JutsuKit/Sources/Presentation/PresentationLog.swift|message",
     # Numbers of variants and submits.
     "Packages/JutsuKit/Sources/JobEngine/JobEngine+Variants.swift|asked",
     "Packages/JutsuKit/Sources/JobEngine/JobEngine+Variants.swift|started",
@@ -109,8 +111,8 @@ for my $file (@ARGV) {
     }
 
     # EngineLog logs its message as public: it must be a literal, and what it interpolates must be safe.
-    next unless $file =~ m{/JobEngine/};
-    while ($text =~ /\blog\.(?:error|fault)\(\s*/g) {
+    next unless $file =~ m{/(?:JobEngine|Presentation)/};
+    while ($text =~ /\blog\.(?:notice|error|fault)\(\s*/g) {
         my $at = pos($text);
         if (substr($text, $at, 1) ne "\"" || substr($text, $at, 3) eq "\"\"\"") {
             print "$file:" . line_of($text, $at) . ": EngineLog message is not a one-line string literal\n";

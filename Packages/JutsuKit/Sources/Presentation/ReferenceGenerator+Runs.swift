@@ -87,7 +87,7 @@ extension ReferenceGenerator {
                     model: draft.model.title, aspectRatio: draft.aspectRatio, count: draft.count)
                 record.providerKind = provider.kind
                 record.request = request
-                record.inputImages = draft.input.map { [$0] } ?? []
+                record.inputImages = draft.inputs
                 return record
             })
     }

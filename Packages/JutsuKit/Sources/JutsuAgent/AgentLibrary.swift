@@ -23,10 +23,13 @@ extension AgentFields {
 // MARK: create_image
 
 /// The image an agent asks for, made as the Image side of Create would make it: a model of the connection, a frame
-/// it takes, a count it makes and an optional image to edit.
+/// it takes, a count it makes and the images to edit, in order.
 public struct AgentImageRequest: Codable, Equatable, Hashable, Sendable {
     /// More than any model makes, so the model's own counts refuse the rest with a reason.
     public static let maxCount = 16
+    /// A bound of the protocol: the most a model may take where its catalog states no limit (`capabilities`
+    /// imageModels `maxInputs` with `maxInputsNote`); a model's own limit refuses the rest with a reason.
+    public static let maxInputs = 14
 
     /// An image model ID from `capabilities` (`imageModels`); left out, the connection's first.
     public var model: String?
@@ -35,18 +38,57 @@ public struct AgentImageRequest: Codable, Equatable, Hashable, Sendable {
     public var aspectRatio: String?
     /// Images the request makes; 1 when left out.
     public var count: Int?
-    /// For `create_image`: the image to edit, a path in the app's inbox.
-    public var input: String?
+    /// For `create_image`: the images to edit, in order, paths in the app's inbox.
+    public var inputs: [String]
+    /// The account's reference elements by name (`elements`): their images go first, before `inputs`.
+    public var elements: [String]
 
     public init(
-        model: String? = nil, prompt: String, aspectRatio: String? = nil, count: Int? = nil, input: String? = nil
+        model: String? = nil, prompt: String, aspectRatio: String? = nil, count: Int? = nil, inputs: [String] = [],
+        elements: [String] = []
     ) {
         self.model = model
         self.prompt = prompt
         self.aspectRatio = aspectRatio
         self.count = count
-        self.input = input
+        self.inputs = inputs
+        self.elements = elements
     }
+
+    /// One input goes as `input` and several as `inputs`: a request of one input encodes as 0.2.0 encodes it, so its
+    /// fingerprint matches the one 0.2.0 recorded.
+    private enum CodingKeys: String, CodingKey {
+        case model, prompt, aspectRatio, count, input, inputs, elements
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        model = try container.decodeIfPresent(String.self, forKey: .model)
+        prompt = try container.decode(String.self, forKey: .prompt)
+        aspectRatio = try container.decodeIfPresent(String.self, forKey: .aspectRatio)
+        count = try container.decodeIfPresent(Int.self, forKey: .count)
+        let input = try container.decodeIfPresent(String.self, forKey: .input)
+        let inputs = try container.decodeIfPresent([String].self, forKey: .inputs)
+        if input != nil, inputs != nil { throw AgentError.badRequest(Self.bothInputs) }
+        self.inputs = inputs ?? input.map { [$0] } ?? []
+        elements = try container.decodeIfPresent([String].self, forKey: .elements) ?? []
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(model, forKey: .model)
+        try container.encode(prompt, forKey: .prompt)
+        try container.encodeIfPresent(aspectRatio, forKey: .aspectRatio)
+        try container.encodeIfPresent(count, forKey: .count)
+        switch inputs.count {
+        case 0: break
+        case 1: try container.encode(inputs[0], forKey: .input)
+        default: try container.encode(inputs, forKey: .inputs)
+        }
+        if !elements.isEmpty { try container.encode(elements, forKey: .elements) }
+    }
+
+    public static let bothInputs = "send inputs, the images in order, or input, one image; not both"
 
     /// Shared by the helper and the app.
     public var problem: String? {
@@ -55,7 +97,11 @@ public struct AgentImageRequest: Codable, Equatable, Hashable, Sendable {
         if prompt.unicodeScalars.count > 10_000 { return "prompt is at most 10 000 characters" }
         if let aspectRatio, aspectRatio.utf8.count > 16 { return "aspect_ratio is a ratio such as 16:9" }
         if let count, !(1...Self.maxCount).contains(count) { return "count is 1 to \(Self.maxCount)" }
-        if let input, !AgentVideoRequest.isValidPath(input) { return "input is a file path" }
+        if inputs.count > Self.maxInputs { return "inputs takes at most \(Self.maxInputs) images" }
+        if let path = inputs.first(where: { !AgentVideoRequest.isValidPath($0) }) {
+            return "inputs has a path that isn't one: \(path.prefix(80))"
+        }
+        if let problem = AgentElementNames.problem(elements) { return problem }
         return nil
     }
 }
@@ -127,13 +173,21 @@ public struct LibrarySearchCommand: Codable, Equatable, Sendable, AgentFields {
     public var limit: Int?
     /// `nextCursor` of the page before.
     public var cursor: String?
+    /// Also lists the account's Higgsfield history the Library shows under From Higgsfield, results with no file on
+    /// this Mac yet (`library_download` brings one here).
+    // swiftlint:disable:next discouraged_optional_boolean
+    public var includeHiggsfield: Bool?
+    /// Loads the history from Higgsfield again first, as From Higgsfield's refresh does; free, never spends.
+    // swiftlint:disable:next discouraged_optional_boolean
+    public var refreshHiggsfield: Bool?
 
     public init(
         // swiftlint:disable:next discouraged_optional_boolean
         query: String? = nil, kind: AgentLibraryKind? = nil, starred: Bool? = nil, verdict: AgentVerdict? = nil,
         // swiftlint:disable:next discouraged_optional_boolean
         includeRejected: Bool? = nil, model: String? = nil, mode: String? = nil, from: Date? = nil, to: Date? = nil,
-        limit: Int? = nil, cursor: String? = nil
+        // swiftlint:disable:next discouraged_optional_boolean
+        limit: Int? = nil, cursor: String? = nil, includeHiggsfield: Bool? = nil, refreshHiggsfield: Bool? = nil
     ) {
         self.query = query
         self.kind = kind
@@ -146,9 +200,14 @@ public struct LibrarySearchCommand: Codable, Equatable, Sendable, AgentFields {
         self.to = to
         self.limit = limit
         self.cursor = cursor
+        self.includeHiggsfield = includeHiggsfield
+        self.refreshHiggsfield = refreshHiggsfield
     }
 
     public var problem: String? {
+        if refreshHiggsfield == true, includeHiggsfield != true {
+            return "refresh_higgsfield loads the history include_higgsfield lists; send both"
+        }
         if let query, query.unicodeScalars.count > 500 { return "query is at most 500 characters" }
         if let model, model.utf8.count > 128 { return "model is a model ID or an image model's name" }
         if let mode, !AgentVideoRequest.modes.contains(mode) {
@@ -166,7 +225,7 @@ public struct AgentLibraryItem: Codable, Equatable, Sendable {
     /// The Library item's ID, which `library_mark`, `enhance`, `delivery_set` and `export` take.
     public var id: UUID
     public var kind: AgentLibraryKind
-    /// The current version's file on this Mac.
+    /// The current version's file on this Mac; `nil` for a result only on Higgsfield.
     public var file: String?
     /// The video model's ID, or the image model's name.
     public var model: String?
@@ -187,13 +246,18 @@ public struct AgentLibraryItem: Codable, Equatable, Sendable {
     /// 1 for the original; the current version's place among the item's versions.
     public var version: Int
     public var versionCount: Int
-    /// The video job that made it, when it was one (`jobs`, `show`).
+    /// The video job that made it, when it was one (`jobs`, `show`); left out for a video only on Higgsfield.
     public var jobID: UUID?
+    /// true for a result of the account's Higgsfield history with no file on this Mac yet; left out otherwise.
+    // swiftlint:disable:next discouraged_optional_boolean
+    public var onHiggsfield: Bool?
 
     public init(
         id: UUID, kind: AgentLibraryKind, file: String?, model: String?, mode: String?, aspectRatio: String?,
         duration: Double?, price: AgentAmount?, verdict: AgentVerdict, starred: Bool, createdAt: Date,
-        prompt: String, promptTruncated: Bool, versionID: UUID, version: Int, versionCount: Int, jobID: UUID?
+        prompt: String, promptTruncated: Bool, versionID: UUID, version: Int, versionCount: Int, jobID: UUID?,
+        // swiftlint:disable:next discouraged_optional_boolean
+        onHiggsfield: Bool? = nil
     ) {
         self.id = id
         self.kind = kind
@@ -212,6 +276,7 @@ public struct AgentLibraryItem: Codable, Equatable, Sendable {
         self.version = version
         self.versionCount = versionCount
         self.jobID = jobID
+        self.onHiggsfield = onHiggsfield
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -220,6 +285,7 @@ public struct AgentLibraryItem: Codable, Equatable, Sendable {
         case versionID = "versionId"
         case version, versionCount
         case jobID = "jobId"
+        case onHiggsfield
     }
 }
 

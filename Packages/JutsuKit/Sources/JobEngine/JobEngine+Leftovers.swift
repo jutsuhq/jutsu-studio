@@ -8,7 +8,7 @@ extension JobEngine {
     /// - Parameter storedIDs: every active job in the repository, including ones that didn't decode.
     func removeLeftovers(activeJobs stored: [Job], storedIDs: Set<UUID>) async {
         let active = stored + jobs.values.filter(\.state.isActive)
-        let kept = Set(active.map(\.id)).union(storedIDs).union(runners.keys).union(importing)
+        let kept = Set(active.map(\.id)).union(storedIDs).union(runners.keys).union(importing.keys)
         let folders = Set([settings.outputDirectory] + active.compactMap(\.downloadFolder))
         for folder in folders {
             for file in Self.leftovers(in: folder, keeping: kept, isAnyJobRunning: !runners.isEmpty) {
