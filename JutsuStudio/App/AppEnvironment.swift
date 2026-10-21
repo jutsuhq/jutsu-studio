@@ -47,8 +47,9 @@ final class AppEnvironment {
     /// The models the connection runs video jobs on, from the last capabilities read on Create; Genjutsu alone
     /// until they are known. The menu bar's New from Template applies against these.
     var lastOfferedModels: Set<VideoModel> = [.genjutsu]
-    /// The connection's capabilities as `capabilities()` last read them; `nil` until then. Agents' `capabilities`
-    /// answers from it rather than calling the provider.
+    /// The connection's capabilities as `capabilities()` last read them; `nil` until then and after the provider
+    /// changes, so another account's never answer. Agents' `capabilities` answers from it rather than calling the
+    /// provider.
     var lastCapabilities: Capabilities?
     /// The provider of the active connection; `nil` while disconnected.
     private(set) var provider: (any GenerationProvider)? = nil
@@ -194,8 +195,11 @@ final class AppEnvironment {
             return nil
         }
         refreshModelConstraints()
+        let generation = providerGeneration
         do {
             let capabilities = try await provider.capabilities()
+            // Read for a provider replaced meanwhile: not this connection's.
+            guard providerGeneration == generation else { return nil }
             lastCapabilities = capabilities
             return capabilities
         } catch {
@@ -216,6 +220,7 @@ final class AppEnvironment {
         }
         self.provider = provider
         providerGeneration += 1
+        lastCapabilities = nil
         followCharacterSheets()
         followImageJobs()
         history.switchAccount(to: provider.map { "\($0.kind.rawValue)|\($0.owner ?? "")" })
