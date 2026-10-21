@@ -114,6 +114,22 @@ extension JobEngine {
         }
     }
 
+    /// The job ended in a way Higgsfield doesn't bill (its generation failed, moderation refused it, or it was
+    /// cancelled before it ran): its share of its submit's ledger entry stops counting, all of it for a submit of one
+    /// job. Only called once the provider said so; a job whose outcome isn't known (cut off, past the deadline,
+    /// unanswered) never comes here and keeps counting. A ledger that can't be written keeps it, which only counts
+    /// too much.
+    func unbillAgentSpend(of id: UUID) async {
+        guard let origin = jobs[id]?.agent, let entry = origin.ledgerEntry, let ledger = agentPolicy?.ledger else {
+            return
+        }
+        do {
+            try await ledger.unbill(entry, part: id.uuidString, of: origin.paidParts ?? 1)
+        } catch {
+            log.error("Job \(id): an agent's unbilled job can't be recorded", detail: String(describing: error))
+        }
+    }
+
     /// Marks the submit as begun and saves its marker with the agent's reservation. A stopping engine sends
     /// nothing new, and anything that stops the send here releases the reservation, as nothing was sent. The
     /// caller finishes the submit once this returns.

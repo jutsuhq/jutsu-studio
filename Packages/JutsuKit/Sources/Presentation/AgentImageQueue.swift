@@ -9,7 +9,9 @@ import Observation
 /// (`AgentSpendDecision`), then reserves the price in the agent spend ledger and saves the record as possibly sent.
 /// Over any limit, with an unknown price or a ledger that can't be written, nothing is sent and the request is held in
 /// the Queue for the person. A reservation is released only when the submit certainly never went out (stopped before
-/// it, or refused by the provider); a submit cut off or unanswered keeps it, as does a cancel once sent.
+/// it, or refused by the provider); a submit cut off or unanswered keeps it, as does a cancel the provider refused.
+/// Once every job of an accepted request has ended, the jobs Higgsfield doesn't bill (failed, refused by moderation,
+/// cancelled) stop counting their share, so the request counts what its images that were made cost.
 @MainActor
 @Observable
 public final class AgentImageQueue {
@@ -349,17 +351,20 @@ extension AgentImageQueue {
         guard let record = record(id), !record.isOver else { return }
         switch state {
         case .finished:
+            settle(record)
             update(id) {
                 $0.state = .finished
                 $0.finishedAt = now()
             }
         case .failed(let message):
+            settle(record)
             update(id) {
                 $0.state = .failed
                 $0.error = message
                 $0.finishedAt = now()
             }
         case .canceled:
+            settle(record)
             update(id) {
                 $0.state = .canceled
                 $0.finishedAt = now()
@@ -372,6 +377,23 @@ extension AgentImageQueue {
 
 // The guard's rules and the texts a held request shows.
 extension AgentImageQueue {
+    /// Settles an accepted request's reservation to what its jobs were really charged once they all ended: Higgsfield
+    /// doesn't bill a job that failed, was refused by moderation or was cancelled, so each of those stops counting its
+    /// share (the price for its images). The full reservation stays while any job's outcome is unknown: still pending
+    /// when following stopped, or a cancel the provider refused. Read from the job log before the run forgets it.
+    private func settle(_ record: AgentImageRecord) {
+        guard let reservation = record.origin.reservation else { return }
+        let jobs = generator.jobLog.records.filter { $0.runID == record.id }
+        guard !jobs.isEmpty, !jobs.contains(where: { $0.state == .pending }) else { return }
+        let unbilled = jobs.filter(\.isUnbilled).map(\.id)
+        guard !unbilled.isEmpty else { return }
+        let ledger = ledger
+        Task {
+            // A ledger that can't be written keeps the reservation, which only counts too much.
+            for part in unbilled { try? await ledger.unbill(reservation, part: part, of: jobs.count) }
+        }
+    }
+
     /// The model's list price for the request, an estimate.
     static func listPrice(of record: AgentImageRecord) -> Cost? {
         switch record.model.listPrice {

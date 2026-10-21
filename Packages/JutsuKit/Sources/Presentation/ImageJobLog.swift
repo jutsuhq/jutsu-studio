@@ -33,6 +33,14 @@ public struct ImageJobRecord: Codable, Sendable, Hashable, Identifiable {
 
     public var id: String { job.requestID }
 
+    /// It ended in a way Higgsfield doesn't bill: failed, refused by moderation, or cancelled.
+    public var isUnbilled: Bool {
+        switch state {
+        case .failed, .rejected, .canceled: true
+        case .pending, .completed: false
+        }
+    }
+
     public init(
         job: RemoteJob, owner: String?, runID: UUID, createdAt: Date, prompt: String, model: String,
         aspectRatio: String?, count: Int, state: State = .pending

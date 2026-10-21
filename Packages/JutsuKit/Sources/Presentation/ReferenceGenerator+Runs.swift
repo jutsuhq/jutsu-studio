@@ -234,20 +234,22 @@ extension ReferenceGenerator {
     }
 
     /// A request cancelled while queued isn't charged; one the provider can't cancel any more is, so its price
-    /// stays counted, as does one that already made images.
+    /// stays counted, as does one that already made images. Each job cancelled is marked so before the run ends, so
+    /// `onRunEnded` sees which ones went unbilled.
     private func cancelJobs(of run: UUID, provider: any ImageProvider) async {
         var refused = false
         for record in jobLog.records where record.runID == run && record.state == .pending {
             do {
                 try await provider.cancelImages(record.job)
+                jobLog.update(record.id, state: .canceled)
             } catch {
                 refused = true
             }
         }
         let made = jobLog.records.contains { $0.runID == run && $0.state == .completed }
         if refused || made { spend.settle(run) } else { spend.remove(run) }
-        jobLog.forget(run: run)
         finish(run, made ? .finished : .canceled)
+        jobLog.forget(run: run)
     }
 
     private static func failure(of records: [ImageJobRecord]) -> String? {

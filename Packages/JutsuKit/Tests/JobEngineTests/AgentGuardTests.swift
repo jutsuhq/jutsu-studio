@@ -12,6 +12,7 @@ private struct BrokenLedger: AgentSpendLedger {
     func reserve(_ spend: AgentSpend, dailyLimit: Int?) throws -> Bool { throw Broken() }
     func release(_ id: UUID) throws { throw Broken() }
     func settle(_ id: UUID, amount: Int?) throws { throw Broken() }
+    func unbill(_ id: UUID, part: String, of parts: Int) throws { throw Broken() }
     func total(on day: Date, unit: AgentMoney.Unit) throws -> AgentSpendTotal { throw Broken() }
     func unsettled() throws -> [AgentSpend] { throw Broken() }
 }
@@ -319,6 +320,69 @@ struct AgentGuardTests {
         #expect(harness.log.count("submit") == 0)
     }
 
+    /// Higgsfield doesn't bill a generation that failed, was refused by moderation or was cancelled on its side: the
+    /// job's reservation stops counting once the provider says so.
+    @Test(arguments: [
+        RemoteStatus.failed(message: nil), .failed(message: "Boom"), .rejected(.explicitContent), .canceled,
+    ])
+    func aJobThatEndedUnbilledCountsNothing(status: RemoteStatus) async throws {
+        let harness = Harness()
+        let ledger = ledger(harness)
+        await harness.provider.hold(status)
+        let engine = try await harness.makeEngine(agentPolicy: policy(ledger))
+
+        let job = try await engine.enqueue(makeSpec(), agent: origin())
+        await eventually { await harness.repository.snapshotJobs().first { $0.id == job.id }?.state.isTerminal == true }
+        await eventually { (try? await ledger.total(on: harness.clock.now, unit: .usdCents)) == AgentSpendTotal() }
+
+        #expect(harness.log.count("submit") == 1)
+    }
+
+    /// One variant of two failed: the submit counts the share of the one that was made.
+    @Test func aFailedVariantGivesItsShareBack() async throws {
+        let harness = Harness(statusBatchLimit: 4)
+        let ledger = ledger(harness)
+        await harness.provider.setBatch(statuses: ["r1-v1": .failed(message: nil)])
+        let engine = try await harness.makeEngine(agentPolicy: policy(ledger))
+        var spec = makeSpec()
+        spec.variants = 2
+
+        let job = try await engine.enqueue(spec, agent: origin(maxCents: 300))
+        await harness.repository.wait { snapshot in
+            snapshot.jobs.values.filter { $0.batchID == job.batchID && $0.state.isTerminal }.count == 2
+        }
+
+        await eventually { (try? await ledger.total(on: harness.clock.now, unit: .usdCents).spent) == 130 }
+    }
+
+    /// The person's cancel of a job still queued at Higgsfield: cancelled there, so never billed.
+    @Test func aJobCanceledWhileQueuedCountsNothing() async throws {
+        let harness = Harness()
+        let ledger = ledger(harness)
+        await harness.provider.hold(.queued)
+        let engine = try await harness.makeEngine(agentPolicy: policy(ledger))
+
+        let job = try await engine.enqueue(makeSpec(), agent: origin())
+        await harness.repository.wait(for: job.id, .queued)
+        try await engine.cancel(job.id)
+
+        #expect(try await ledger.total(on: harness.clock.now, unit: .usdCents) == AgentSpendTotal())
+    }
+
+    /// Past the deadline the generation may still finish and be charged: the reservation keeps counting.
+    @Test func aJobPastTheDeadlineKeepsItsCharge() async throws {
+        let harness = Harness(generationDeadline: 3600)
+        let ledger = ledger(harness)
+        await harness.provider.script(status: Array(repeating: .failure(.network), count: 500))
+        let engine = try await harness.makeEngine(agentPolicy: policy(ledger))
+
+        let job = try await engine.enqueue(makeSpec(), agent: origin())
+        let failed = try #require(await harness.repository.wait(for: job.id, .failed(reason: .deadline)))
+
+        #expect(failed.mayHaveBeenCharged)
+        #expect(try await ledger.total(on: harness.clock.now, unit: .usdCents) == AgentSpendTotal(spent: 130))
+    }
+
     /// The agent's request ID names the job: queueing it again returns the same job.
     @Test func aKnownJobIDIsReturnedNotQueuedAgain() async throws {
         let harness = Harness()
@@ -394,6 +458,25 @@ struct AgentGuardTests {
         try await ledger.release(charged.id)
 
         #expect(try await ledger.total(on: day, unit: .usdCents) == AgentSpendTotal(spent: 80))
+    }
+
+    /// Parts that ended unbilled stop counting their share, each once, rounded up; settling after keeps that.
+    @Test func unbilledPartsStopCountingTheirShare() async throws {
+        let ledger = AgentSpendFile(file: file, now: { [day] in day })
+        let spend = cents(10)
+        _ = try await ledger.reserve(spend, dailyLimit: nil)
+
+        try await ledger.unbill(spend.id, part: "a", of: 3)
+        try await ledger.unbill(spend.id, part: "a", of: 3)
+        #expect(try await ledger.total(on: day, unit: .usdCents) == AgentSpendTotal(reserved: 7))
+        try await ledger.settle(spend.id, amount: nil)
+        #expect(try await ledger.total(on: day, unit: .usdCents) == AgentSpendTotal(spent: 7))
+        try await ledger.unbill(spend.id, part: "b", of: 3)
+        try await ledger.unbill(spend.id, part: "c", of: 3)
+
+        let reopened = AgentSpendFile(file: file, now: { [day] in day })
+        #expect(try await reopened.total(on: day, unit: .usdCents) == AgentSpendTotal())
+        try await reopened.unbill(UUID(), part: "x", of: 1)
     }
 
     @Test func anUnreadableFileThrowsRatherThanCountingFromZero() async throws {

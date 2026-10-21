@@ -175,6 +175,8 @@ public actor JobEngine {
         }
         let mayHaveStarted = job.submitAttempt != nil
         try await apply(mayHaveStarted ? .failed(reason: .outcomeUnknown) : .cancel, to: id)
+        // Higgsfield cancelled it while queued, so it isn't billed.
+        if job.state == .queued, job.remote != nil, !mayHaveStarted { await unbillAgentSpend(of: id) }
     }
 
     /// A failed or canceled job whose generation finished downloads that paid result again, and one that failed at
@@ -201,9 +203,7 @@ public actor JobEngine {
                 $0.submitAttempt = nil
                 $0.serverPrice = nil
                 $0.approvedPrice = nil
-                $0.agent?.approvedByPerson = false
-                $0.agent?.hold = nil
-                $0.agent?.reservation = nil
+                $0.agent?.startOver()
                 $0.submittedAt = nil
                 $0.processingAt = nil
                 $0.promotedAt = nil

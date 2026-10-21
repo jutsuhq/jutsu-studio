@@ -308,16 +308,20 @@ extension JobEngine {
             await releaseSlot(id)
             try await apply(.completed, to: id) { $0.chargedAt = clock.now }
             try await readCharge(of: id)
+        // Higgsfield doesn't bill a generation that failed, was refused or was cancelled: the agent's share goes back.
         case .failed(let message):
             await releaseSlot(id)
             try await apply(.failed(reason: message.map(FailureReason.message) ?? .generationFailed), to: id)
+            await unbillAgentSpend(of: id)
         case .rejected(let reason):
             await releaseSlot(id)
             try await apply(.rejected, to: id) { $0.rejection = reason }
+            await unbillAgentSpend(of: id)
         case .canceled:
             await releaseSlot(id)
             let cancellable = jobs[id]?.state.isCancellable == true
             try await apply(cancellable ? .cancel : .failed(reason: .canceledOnServer), to: id)
+            await unbillAgentSpend(of: id)
         }
     }
 

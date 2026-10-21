@@ -11,12 +11,21 @@ actor ImageFake: ImageProvider {
     nonisolated let owner: String? = "key-1"
     var estimate: Result<Cost, ProviderError> = .success(.usd(Decimal(string: "0.08")!, isEstimate: false))
     var submitError: ProviderError?
+    /// How each job of a request ends, one job per entry; empty makes one job that completes.
+    var outcomes: [ImageJobStatus] = []
+    /// Refuses to cancel, as for a job that already started.
+    var refusesCancel = false
     private(set) var submitted: [ImageRequest] = []
     private(set) var uploads = 0
 
     func set(estimate: Result<Cost, ProviderError>? = nil, submitError: ProviderError? = nil) {
         if let estimate { self.estimate = estimate }
         self.submitError = submitError
+    }
+
+    func set(outcomes: [ImageJobStatus], refusesCancel: Bool = false) {
+        self.outcomes = outcomes
+        self.refusesCancel = refusesCancel
     }
 
     func imageModels() async throws -> [ImageModel] { [] }
@@ -30,14 +39,20 @@ actor ImageFake: ImageProvider {
     func submitImages(_ request: ImageRequest, idempotencyKey: UUID) async throws -> [RemoteJob] {
         submitted.append(request)
         if let submitError { throw submitError }
-        return [RemoteJob(requestID: "req-1")]
+        guard !outcomes.isEmpty else { return [RemoteJob(requestID: "req-1")] }
+        return outcomes.indices.map { RemoteJob(requestID: "req-\($0)") }
     }
 
     func imageStatus(_ job: RemoteJob) async throws -> ImageJobStatus {
-        .completed([URL(string: "https://cdn.example.com/1.png")!])
+        guard let index = Int(job.requestID.dropFirst(4)), outcomes.indices.contains(index) else {
+            return .completed([URL(string: "https://cdn.example.com/1.png")!])
+        }
+        return outcomes[index]
     }
 
-    func cancelImages(_ job: RemoteJob) async throws {}
+    func cancelImages(_ job: RemoteJob) async throws {
+        if refusesCancel { throw ProviderError.validation(field: nil, message: "already running") }
+    }
 }
 
 /// The agent spend ledger in memory, with the budget check `AgentSpendFile` makes.
@@ -68,10 +83,18 @@ actor MemoryLedger: AgentSpendLedger {
         if let amount { spends[index].money.amount = amount }
     }
 
+    func unbill(_ id: UUID, part: String, of parts: Int) throws {
+        guard let index = spends.firstIndex(where: { $0.id == id }),
+            spends[index].unbilled?.contains(part) != true
+        else { return }
+        spends[index].parts = parts
+        spends[index].unbilled = (spends[index].unbilled ?? []) + [part]
+    }
+
     func total(on day: Date, unit: AgentMoney.Unit) throws -> AgentSpendTotal {
         AgentSpendTotal(
-            spent: spends.filter(\.isSettled).reduce(0) { $0 + $1.money.amount },
-            reserved: spends.filter { !$0.isSettled }.reduce(0) { $0 + $1.money.amount })
+            spent: spends.filter(\.isSettled).reduce(0) { $0 + $1.counted },
+            reserved: spends.filter { !$0.isSettled }.reduce(0) { $0 + $1.counted })
     }
 
     func unsettled() throws -> [AgentSpend] { spends.filter { !$0.isSettled } }
@@ -275,6 +298,53 @@ struct AgentImageQueueTests {
         #expect(await ledger.spends.map(\.isSettled) == [false])
         #expect(queue.record(id)?.mayHaveBeenSent == true)
         #expect(AgentJobStatus(try #require(queue.record(id)), files: []).charged)
+    }
+
+    // MARK: What it was charged
+
+    func spent() async -> Int {
+        (try? await ledger.total(on: Date(), unit: .usdCents).spent) ?? -1
+    }
+
+    /// Higgsfield bills only the jobs that made images: the others' share goes back once all of them ended.
+    @Test func aRequestCountsOnlyTheJobsThatMadeImages() async throws {
+        let image = ImageJobStatus.completed([URL(string: "https://cdn.example.com/1.png")!])
+        await provider.set(outcomes: [image, .failed(message: nil), .rejected(.explicitContent), image])
+        let queue = queue(generator())
+        let id = try create(queue, order(count: 4))
+
+        await eventually { queue.record(id)?.state == .finished }
+        await eventually { await spent() == 4 }
+
+        #expect(await ledger.spends.map(\.money) == [AgentMoney(8, .usdCents)])
+    }
+
+    @Test func aRequestWhoseJobsAllFailedCountsNothing() async throws {
+        await provider.set(outcomes: [.failed(message: "Boom")])
+        let queue = queue(generator())
+        let id = try create(queue, order())
+
+        await eventually { queue.record(id)?.state == .failed }
+        await eventually { await spent() == 0 }
+        #expect(await ledger.spends.count == 1)
+    }
+
+    /// Cancelled while its jobs waited: none ran, so none is billed. One the provider wouldn't cancel may have run,
+    /// and keeps its whole price.
+    @Test(arguments: [false, true])
+    func aCanceledRequestCountsNothingUnlessTheCancelWasRefused(refused: Bool) async throws {
+        await provider.set(outcomes: [.pending, .pending], refusesCancel: refused)
+        let generator = generator()
+        let queue = queue(generator)
+        let id = try create(queue, order(count: 4))
+        await eventually { queue.record(id)?.state == .following }
+        await eventually { generator.jobLog.records.contains { $0.runID == id } }
+
+        #expect(queue.cancel(id))
+        await eventually { queue.record(id)?.isOver == true }
+        await eventually { await spent() == (refused ? 8 : 0) }
+
+        #expect(queue.record(id)?.state == .canceled)
     }
 
     @Test func aHeldRequestCanceledWasNeverSent() async throws {

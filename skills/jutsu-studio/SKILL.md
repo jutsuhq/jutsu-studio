@@ -21,6 +21,9 @@ says rather than guessing.
   Jutsu Studio, then try again.
 - **The budget.** Agents spend from a daily agent budget, in dollars with an API key and in credits with an account.
   It is 0 until the person sets one in Settings › Agents; the person's own daily cap applies on top of it.
+- **What counts.** Every request you send counts against the budget from the moment it goes out. Higgsfield doesn't
+  bill a generation that failed, was refused by moderation or was cancelled, so those give their price back once
+  they end; one whose outcome isn't known keeps counting.
 - **Unlimited generations.** A video the plan's unlimited generations would pay for (`quote` says `paysUnlimited`)
   costs the budget nothing, but runs on its own only while the person lets agents use them
   (`capabilities` › `budget.unlimitedAllowed`); otherwise it is held for the person (`hold: unlimited_not_allowed`).

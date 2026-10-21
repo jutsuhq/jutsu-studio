@@ -136,6 +136,7 @@ Images and videos share one persistent material catalog. It retains versions, th
 - Sending the same request again returns the job it already made, so a lost answer never queues or pays twice.
 - A daily agent budget: dollars with an API key, credits with an account. 0 by default. Your own daily cap still applies.
 - Every agent job and image request names the most it may cost. One over that, over today's agent budget or your cap, or at a price not known yet waits in the Queue until you confirm or send it; an agent can't send it on its own.
+- A job or image request that failed, was refused by moderation or was cancelled before it ran gives its price back to the agent budget, as Higgsfield doesn't bill it; one whose outcome isn't known keeps counting.
 - Let agents use unlimited generations (Settings › Agents, off by default): off, an agent's video that your plan's unlimited generations would pay for waits in the Queue for you like one over the budget; on, it runs without counting against the agent budget. Image requests never use unlimited generations.
 - Queue rows and image requests show which agent asked for them and what it was allowed to spend.
 - A skill for Claude Code and other agents, [skills/jutsu-studio](../skills/jutsu-studio/SKILL.md), explains the working order and the rules.

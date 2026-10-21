@@ -17,10 +17,15 @@ public struct AgentOrigin: Codable, Sendable, Hashable {
     /// The person resumed the job past an agent limit: it goes on at the price they saw, still under their own daily
     /// cap. Cleared by a retry, which is a new attempt.
     public var approvedByPerson: Bool
+    /// A variant's: the ledger entry of the submit that started it, its sender's `reservation`. Cleared by a retry.
+    public var paidBy: UUID?
+    /// How many jobs the submit that started this one started, itself included, when it was more than one: each is
+    /// that share of the entry (`AgentSpendLedger.unbill`). Cleared by a retry.
+    public var paidParts: Int?
 
     public init(
         client: String?, requestID: String, maxCost: AgentMoney, reservation: UUID? = nil, hold: AgentHold? = nil,
-        approvedByPerson: Bool = false
+        approvedByPerson: Bool = false, paidBy: UUID? = nil, paidParts: Int? = nil
     ) {
         self.client = client
         self.requestID = requestID
@@ -28,7 +33,21 @@ public struct AgentOrigin: Codable, Sendable, Hashable {
         self.reservation = reservation
         self.hold = hold
         self.approvedByPerson = approvedByPerson
+        self.paidBy = paidBy
+        self.paidParts = paidParts
     }
+
+    /// A retry, a new attempt: it forgets the person's approval, the hold and what paid for the attempt before.
+    public mutating func startOver() {
+        approvedByPerson = false
+        hold = nil
+        reservation = nil
+        paidBy = nil
+        paidParts = nil
+    }
+
+    /// The ledger entry this job's charge is part of: its own submit's, else its sender's.
+    public var ledgerEntry: UUID? { reservation ?? paidBy }
 }
 
 /// Why the spending guard stopped an agent's job before its submit. Only a person resumes it.
@@ -118,6 +137,11 @@ public struct AgentSpend: Codable, Sendable, Hashable, Identifiable {
     public var at: Date
     /// The submit was answered and `money` is what it charged; before that it is reserved.
     public var isSettled: Bool
+    /// How many equal parts `money` pays for (the jobs of a submit of variants, the jobs of an image request), once
+    /// one of them ended unbilled; `nil` before.
+    public var parts: Int?
+    /// The parts that ended without being billed (`AgentSpendLedger.unbill`), each once.
+    public var unbilled: [String]?
 
     public init(id: UUID = UUID(), jobID: UUID, money: AgentMoney, at: Date, isSettled: Bool = false) {
         self.id = id
@@ -125,6 +149,18 @@ public struct AgentSpend: Codable, Sendable, Hashable, Identifiable {
         self.money = money
         self.at = at
         self.isSettled = isSettled
+    }
+
+    /// The most parts an entry is split into: far above any request, and small enough that `counted` can't overflow.
+    public static let maxParts = 1_000
+
+    /// What it counts against the budget: `money`, less the share of the parts that ended unbilled, rounded up so a
+    /// fraction is never read as free; 0 once every part did.
+    public var counted: Int {
+        guard let parts, parts > 0, let unbilled, !unbilled.isEmpty else { return money.amount }
+        let billed = max(0, parts - unbilled.count)
+        let (whole, rest) = money.amount.quotientAndRemainder(dividingBy: parts)
+        return whole * billed + (rest * billed + parts - 1) / parts
     }
 }
 
@@ -140,6 +176,11 @@ public protocol AgentSpendLedger: Sendable {
     /// Marks a reservation as charged: what its submit charged, or `nil` for the amount reserved when the answer
     /// didn't say.
     func settle(_ id: UUID, amount: Int?) async throws
+    /// One of the `parts` jobs the submit `id` paid for ended without being billed: Higgsfield doesn't charge a
+    /// generation that failed, was refused by moderation or was cancelled. From then on the entry counts only its
+    /// billed parts' share (`AgentSpend.counted`), 0 when none is left; `part` names the job, and counts once. An
+    /// entry the ledger no longer keeps is left alone.
+    func unbill(_ id: UUID, part: String, of parts: Int) async throws
     /// What is taken on `day` in `unit`.
     func total(on day: Date, unit: AgentMoney.Unit) async throws -> AgentSpendTotal
     /// The reservations not settled yet, of every day the ledger keeps: what a launch reconciles with the jobs.

@@ -66,6 +66,17 @@ public actor AgentSpendFile: AgentSpendLedger {
         try write(entries)
     }
 
+    public func unbill(_ id: UUID, part: String, of parts: Int) throws {
+        var entries = try load()
+        guard let index = entries.firstIndex(where: { $0.id == id }) else { return }
+        var entry = entries[index]
+        guard entry.unbilled?.contains(part) != true else { return }
+        entry.parts = min(max(entry.parts ?? 1, parts, 1), AgentSpend.maxParts)
+        entry.unbilled = (entry.unbilled ?? []) + [part]
+        entries[index] = entry
+        try write(entries)
+    }
+
     public func unsettled() throws -> [AgentSpend] {
         try load().filter { !$0.isSettled }
     }
@@ -82,9 +93,9 @@ public actor AgentSpendFile: AgentSpendLedger {
         entries.reduce(into: AgentSpendTotal()) { total, entry in
             guard entry.money.unit == unit, calendar.isDate(entry.at, inSameDayAs: day) else { return }
             if entry.isSettled {
-                total.spent = AgentMoney.sum(total.spent, entry.money.amount)
+                total.spent = AgentMoney.sum(total.spent, entry.counted)
             } else {
-                total.reserved = AgentMoney.sum(total.reserved, entry.money.amount)
+                total.reserved = AgentMoney.sum(total.reserved, entry.counted)
             }
         }
     }
