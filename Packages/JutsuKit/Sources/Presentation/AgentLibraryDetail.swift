@@ -3,7 +3,8 @@ import JutsuCore
 
 /// `library_get`: one Library result in full, read from the catalog as the Library's details show it: the whole
 /// prompt, the files that went in, in the order its job sent them (`MaterialRelations` for the Library items they
-/// are), and the settings it was made with. Rejected results too; read-only.
+/// are), and the settings it was made with. Rejected results too, and results only on Higgsfield as far as the
+/// history says them, with no file; read-only.
 public struct AgentLibraryDetail: Sendable, Hashable {
     public enum InputRole: Sendable, Hashable {
         case source, startFrame, endFrame, reference
@@ -46,12 +47,12 @@ public struct AgentLibraryDetail: Sendable, Hashable {
     public var inputs: [Input]
     public var settings: Settings
 
-    /// The details of `ids`, in the order asked, and the IDs that aren't results with a file on this Mac.
+    /// The details of `ids`, in the order asked, and the IDs no Library item has.
     public static func of(_ ids: [UUID], in materials: [Material]) -> (details: [AgentLibraryDetail], missing: [UUID]) {
         let index = LibraryCatalogIndex(materials)
         let byID = Dictionary(materials.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let rows = Dictionary(
-            materials.compactMap(MaterialLibrary.row).filter(\.isLocal).map { ($0.id, $0) },
+            materials.compactMap(MaterialLibrary.row).map { ($0.id, $0) },
             uniquingKeysWith: { first, _ in first })
         let relations = MaterialRelations(materials)
         var details: [AgentLibraryDetail] = []
@@ -70,13 +71,11 @@ public struct AgentLibraryDetail: Sendable, Hashable {
                     AgentLibraryDetail(
                         hit: hit, inputs: inputs(of: item, version: material.current, listed: listed),
                         settings: settings(of: item.job)))
-            case .localImage:
+            case .localImage, .remoteImage:
                 details.append(
                     AgentLibraryDetail(
                         hit: hit, inputs: imageInputs(of: material.current, relations: relations, listed: listed),
                         settings: imageSettings(of: material.current)))
-            case .remoteImage:
-                missing.append(id)
             }
         }
         return (details, missing)

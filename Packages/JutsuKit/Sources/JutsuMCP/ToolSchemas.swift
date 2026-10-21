@@ -123,10 +123,12 @@ extension Tool {
                     "type": "object",
                     "properties": [
                         "item": Self.itemSchema, "inputs": ["type": "array", "items": Self.inputSchema],
-                        "settings": Self.settingsSchema,
+                        "settings": Self.settingsSchema, "next": ["type": "string"],
                     ],
                 ],
             ]
+            properties["notFound"] = ["type": "array", "items": ["type": "string"]]
+            properties["next"] = ["type": "string"]
         case .libraryDownload:
             properties["items"] = [
                 "type": "array",

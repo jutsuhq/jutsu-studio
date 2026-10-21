@@ -58,10 +58,31 @@ import Testing
         #expect(detail.settings.aspectRatio == "3:4")
     }
 
-    @Test func anIDThatIsNoResultOnThisMacIsMissing() {
+    /// A video of the account's Higgsfield history: no file on this Mac, only its link and what the history says.
+    var historyVideo: Material {
+        let item = LibraryFixture.item(mode: .motionTransfer, isDraft: false, prompt: "a long history prompt")
+        var job = item.job
+        job.outputFile = nil
+        let version = MaterialVersion(
+            id: job.id, createdAt: LibraryFixture.now, remoteURL: URL(string: "https://cdn.example.com/clip.mp4"),
+            generation: MaterialGeneration(prompt: job.spec.prompt, model: job.spec.model.rawValue), video: job)
+        var material = Material(
+            id: job.id, kind: .video, origin: .higgsfield, createdAt: job.createdAt, version: version)
+        material.remote = MaterialRemote(provider: .account, owner: nil, id: "gen-2")
+        return material
+    }
+
+    /// One only on Higgsfield is answered from the history, with no file; an unknown ID fails alone.
+    @Test func aHistoryResultIsInFullWithoutAFileAndAnUnknownIDIsMissingAlone() throws {
+        let history = historyVideo
         let unknown = UUID()
-        let (details, missing) = AgentLibraryDetail.of([character.id, unknown], in: [character])
-        #expect(details.map(\.hit.id) == [character.id])
+        let (details, missing) = AgentLibraryDetail.of([character.id, unknown, history.id], in: [character, history])
+        #expect(details.map(\.hit.id) == [character.id, history.id])
         #expect(missing == [unknown])
+        let detail = try #require(details.last)
+        #expect(detail.hit.isOnHiggsfield && detail.hit.file == nil)
+        #expect(detail.hit.prompt == "a long history prompt")
+        #expect(detail.hit.mode == "motion_transfer")
+        #expect(detail.settings.resolution == "480p")
     }
 }

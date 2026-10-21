@@ -104,8 +104,10 @@ extension Tool {
             the job sent them (role source, start_frame, end_frame, reference or edited_from; position, the N of the \
             prompt's @ImageN; file, the path on this Mac when it is here; item, its own Library ID when the Library \
             lists it; onHiggsfield; start and end, the source's range); and settings (resolution, draft, audio, \
-            style, length, aspectRatio, paidWithUnlimited, operation for an Enhance result, count for images). An ID \
-            that isn't a result with a file on this Mac is not_found. Read-only.
+            style, length, aspectRatio, paidWithUnlimited, operation for an Enhance result, count for images). A \
+            result only on Higgsfield (include_higgsfield) is there too, as far as the history says it, with no file \
+            and next pointing at library_download. IDs no item has are listed in notFound; the rest are answered. \
+            Read-only.
             """
         case .libraryDownload:
             """

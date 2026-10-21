@@ -33,17 +33,13 @@ extension AgentService {
 
     func libraryGet(_ fields: LibraryGetCommand) async throws(AgentError) -> AgentLibraryDetailsPage {
         let (details, missing) = AgentLibraryDetail.of(fields.ids, in: try await materials())
-        if let missing = missing.first {
-            throw AgentError(
-                .notFound, message: "There's no Library item \(missing.uuidString) with a file on this Mac.",
-                retryable: false, next: "Call library_search for the item IDs.")
-        }
         return AgentLibraryDetailsPage(
             items: details.map { detail in
                 AgentLibraryDetails(
                     item: Self.item(detail.hit), inputs: detail.inputs.map(Self.input),
-                    settings: Self.settings(detail.settings))
-            })
+                    settings: Self.settings(detail.settings),
+                    next: detail.hit.isOnHiggsfield ? AgentLibraryDetails.downloadNext : nil)
+            }, notFound: missing)
     }
 
     private static func input(_ input: AgentLibraryDetail.Input) -> AgentLibraryInput {
