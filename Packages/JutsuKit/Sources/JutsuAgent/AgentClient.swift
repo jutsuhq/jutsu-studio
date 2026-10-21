@@ -23,16 +23,13 @@ public final class AgentClient {
     public init(socket path: URL, timeout: Duration = .seconds(30)) throws {
         let socket = Darwin.socket(AF_UNIX, SOCK_STREAM, 0)
         guard socket >= 0 else { throw Failure.notListening(errno: errno) }
+        // Every stored property is set from here on, so a throw runs deinit, which closes the socket. Closing it here
+        // too would close whatever descriptor another thread opened under the same number in between.
         self.socket = socket
         guard let connected = AgentSocket.withAddress(path, { connect(socket, $0, $1) }) else {
-            close(socket)
             throw Failure.pathTooLong
         }
-        guard connected == 0 else {
-            let error = errno
-            close(socket)
-            throw Failure.notListening(errno: error)
-        }
+        guard connected == 0 else { throw Failure.notListening(errno: errno) }
         // A closed peer is an error from write, not a SIGPIPE that ends the process.
         var on: Int32 = 1
         setsockopt(socket, SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size))
