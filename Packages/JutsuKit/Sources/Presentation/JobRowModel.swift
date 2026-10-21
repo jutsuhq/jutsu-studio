@@ -351,6 +351,11 @@ extension JobRowModel {
                 String(
                     localized: "Agent spending couldn't be read · nothing was sent, confirm to send it", bundle: .module
                 )
+            case .unlimitedNotAllowed?:
+                String(
+                    localized: """
+                        Would use your plan's unlimited generations, which agents may not use · confirm to send it
+                        """, bundle: .module)
             case nil:
                 String(localized: "Stopped by the agent spending limits · confirm to send it", bundle: .module)
             }

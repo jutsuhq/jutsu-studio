@@ -9,6 +9,7 @@ struct AgentSettingsView: View {
     /// Read from the saved preferences, never through `@AppStorage`, which also reads launch arguments: the switch
     /// shows what the app enforces.
     @State private var isAllowed = AgentPreferences().isAllowed
+    @State private var allowsUnlimited = AgentPreferences().allowsUnlimited
     @State private var centsText = ""
     @State private var creditsText = ""
     @FocusState private var focus: ProviderKind?
@@ -44,6 +45,20 @@ struct AgentSettingsView: View {
                 budgetRow(String(localized: "With an account (credits)"), kind: .account, text: $creditsText)
             }
             SettingsSection(
+                title: "Unlimited generations",
+                footer: String(
+                    localized: """
+                        Off, an agent's job that your plan's unlimited generations would pay for waits in the Queue \
+                        for you to confirm. On, it runs without counting against the agent budget.
+                        """)
+            ) {
+                SettingsRow(label: "Let agents use unlimited generations", isFirst: true) {
+                    Toggle("Let agents use unlimited generations", isOn: $allowsUnlimited)
+                        .toggleStyle(.switch)
+                        .labelsHidden()
+                }
+            }
+            SettingsSection(
                 title: "Claude Code",
                 footer: String(localized: "Run this once in Terminal to add Jutsu Studio's tools to Claude Code.")
             ) {
@@ -61,6 +76,9 @@ struct AgentSettingsView: View {
         }
         .onChange(of: isAllowed) { _, isAllowed in
             preferences.setAllowed(isAllowed)
+        }
+        .onChange(of: allowsUnlimited) { _, allows in
+            preferences.setAllowsUnlimited(allows)
         }
         .onAppear {
             centsText = budgetText(for: .apiKey)

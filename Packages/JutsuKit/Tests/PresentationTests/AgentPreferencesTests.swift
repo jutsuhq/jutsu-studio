@@ -41,6 +41,15 @@ extension UserDefaultsBackedTests {
             #expect(preferences.dailyBudget(for: .account) == 0)
         }
 
+        @Test func unlimitedGenerationsAreOffForAgentsUntilThePersonTurnsThemOn() throws {
+            let (defaults, preferences) = try preferences()
+            #expect(!preferences.allowsUnlimited)
+            defaults.register(defaults: [AgentPreferences.unlimitedKey: true])
+            #expect(!preferences.allowsUnlimited)
+            preferences.setAllowsUnlimited(true)
+            #expect(preferences.allowsUnlimited)
+        }
+
         @Test func aLaunchArgumentCantTurnAgentsOn() throws {
             let (defaults, preferences) = try preferences()
             // What `-agents.allow YES` puts in the argument domain, read by `bool(forKey:)` but not saved.

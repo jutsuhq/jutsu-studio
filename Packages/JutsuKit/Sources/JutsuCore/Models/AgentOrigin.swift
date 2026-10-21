@@ -41,6 +41,9 @@ public enum AgentHold: String, Codable, Sendable, Hashable {
     case overDailyBudget
     /// The agent spend ledger couldn't be read or written, so nothing an agent asks for is sent.
     case ledgerUnavailable
+    /// It would be paid from the plan's unlimited allowance, which Settings › Agents › Let agents use unlimited
+    /// generations doesn't allow.
+    case unlimitedNotAllowed
 }
 
 /// Whole cents or whole credits: what agent budgets and `max_cost` count in. Integers only, so a sum can't drift.
@@ -151,11 +154,22 @@ public enum AgentSpendDecision: Sendable, Hashable {
     case hold(AgentHold)
 
     /// The guard's rule, without the reservation itself (`AgentSpendLedger.reserve` checks the budget as it saves).
+    /// A request the plan's unlimited allowance pays costs the budgets nothing, so it goes out reserving 0 with no
+    /// limit, but only when the person lets agents use the allowance (or sent it themselves); otherwise it is held.
     /// - Parameters:
     ///   - price: the job's best known price (`Job.price`).
     ///   - isKnown: the price is the provider's quote, or an exact list price rather than an estimate.
     ///   - dailyLimit: the person's daily agent budget for the connection, in `origin.maxCost`'s unit.
-    public static func decide(price: Cost, isKnown: Bool, origin: AgentOrigin, dailyLimit: Int) -> Self {
+    ///   - paysUnlimited: the request is to be paid from the plan's unlimited allowance (`JobSpec.usesUnlimited`).
+    ///   - allowsUnlimited: Settings › Agents › Let agents use unlimited generations.
+    public static func decide(
+        price: Cost, isKnown: Bool, origin: AgentOrigin, dailyLimit: Int, paysUnlimited: Bool = false,
+        allowsUnlimited: Bool = false
+    ) -> Self {
+        if paysUnlimited {
+            guard allowsUnlimited || origin.approvedByPerson else { return .hold(.unlimitedNotAllowed) }
+            return .send(AgentMoney(0, origin.maxCost.unit), limit: nil)
+        }
         let money = AgentMoney(price)
         if origin.approvedByPerson { return .send(money ?? AgentMoney(0, origin.maxCost.unit), limit: nil) }
         guard isKnown, let money else { return .hold(.unknownPrice) }

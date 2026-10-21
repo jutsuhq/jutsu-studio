@@ -38,7 +38,8 @@ extension Tool {
             What Jutsu Studio can do now: the app version, how it is connected to Higgsfield (none, apiKey or \
             account) with the account's plan and credits when known, today's agent budget in whole units \
             (usd_cents with an API key, credits on an account: dailyLimit, spentToday, reservedToday for submits \
-            not answered yet, remaining) and the tool groups this version offers. models: true adds the video models \
+            not answered yet, remaining, and unlimitedAllowed, whether the person lets agents use the plan's unlimited \
+            generations) and the tool groups this version offers. models: true adds the video models \
             (id, title, modes, resolutions, whether the connection runs it); model: an ID returns only that one, with \
             its limits per mode (seconds, images, whether it needs a style or a source). image_models: true adds the \
             image models create_image takes (counts, aspect ratios, whether an input image is needed), styles: true \
@@ -48,7 +49,9 @@ extension Tool {
             """
             What a video would cost now, with the same parameters as create_video, without uploading or queueing \
             anything: the price in whole usd_cents or credits (null when not known before upload), whether it is \
-            exact, what is left of today's agent budget, and blocker, why create_video would refuse it now. A source \
+            exact, what is left of today's agent budget, paysUnlimited (the plan's unlimited generations would pay \
+            for it: it costs the budget nothing, and waits for the person unless unlimitedAllowed), and blocker, \
+            why create_video would hold or refuse it now. A source \
             needs end (its start and end in seconds) instead of a file; images may be paths or image_count. Free.
             """
         case .createVideo:
@@ -59,7 +62,8 @@ extension Tool {
             under a used request_id is refused with request_conflict. max_cost {amount, unit: usd or credits} is the \
             most you agree to pay: right before the job is paid for, a price above it, above what is left of the \
             daily agent budget or not known pauses the job (state paused, pauseReason agent_limit) until the person \
-            confirms it in the app. Files (source.path, images) are paths on this Mac, copied into the app. Returns \
+            confirms it in the app; so does a job the plan's unlimited generations would pay for while the person \
+            doesn't let agents use them (hold unlimited_not_allowed). Files (source.path, images) are paths on this Mac, copied into the app. Returns \
             the job; follow it with jobs.
             """
         case .createImage:

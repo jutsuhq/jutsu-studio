@@ -7,10 +7,17 @@ public struct AgentSpendPolicy: Sendable {
     /// Settings › Agents › Daily agent budget for the connection, in its `AgentMoney.unit(for:)`; 0 lets agents
     /// spend nothing.
     public var dailyLimit: @Sendable (ProviderKind) -> Int
+    /// Settings › Agents › Let agents use unlimited generations: whether an agent's job the plan's unlimited allowance
+    /// would pay for may go out without the person. Off holds it.
+    public var allowsUnlimited: @Sendable () -> Bool
 
-    public init(ledger: any AgentSpendLedger, dailyLimit: @escaping @Sendable (ProviderKind) -> Int) {
+    public init(
+        ledger: any AgentSpendLedger, dailyLimit: @escaping @Sendable (ProviderKind) -> Int,
+        allowsUnlimited: @escaping @Sendable () -> Bool = { false }
+    ) {
         self.ledger = ledger
         self.dailyLimit = dailyLimit
+        self.allowsUnlimited = allowsUnlimited
     }
 }
 

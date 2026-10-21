@@ -335,7 +335,9 @@ extension MCPServer {
         twice; reuse a request_id only to retry. Follow jobs with jobs, wait_seconds up to 50; a wait that runs out \
         stops nothing. Jutsu Studio checks every paid request right before it is sent: a price above max_cost, \
         above what is left of the daily agent budget or not known holds it (paused, needsPerson) until the person \
-        decides in the Queue; the person's own daily cap applies too. Tell the person when something waits for \
+        decides in the Queue; the person's own daily cap applies too. A video the plan's unlimited generations would \
+        pay for (quote's paysUnlimited) costs the budget nothing, but is held the same way unless the person lets \
+        agents use them (capabilities budget.unlimitedAllowed). Tell the person when something waits for \
         them. library_search finds results (paths on this Mac), library_mark keeps, rejects or stars them, \
         delivery_set and export write files for delivery or editing, never over a file. job_action cancels, \
         retries or runs a job next, or pauses or resumes the queue; it never resumes a job waiting for the person, \

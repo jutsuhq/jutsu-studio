@@ -53,6 +53,26 @@ import Testing
                 == .send(AgentMoney(130, .usdCents), limit: nil))
     }
 
+    /// The plan's unlimited allowance pays it: nothing counts against the budget, but it goes out without the person
+    /// only when they let agents use it.
+    @Test func anUnlimitedRequestIsHeldUnlessAgentsMayUseUnlimited() {
+        let price = Cost.usd(1.3, isEstimate: false)
+        #expect(
+            AgentSpendDecision.decide(
+                price: price, isKnown: true, origin: origin(max: 500), dailyLimit: 500, paysUnlimited: true)
+                == .hold(.unlimitedNotAllowed))
+        #expect(
+            AgentSpendDecision.decide(
+                price: price, isKnown: false, origin: origin(max: 0), dailyLimit: 0, paysUnlimited: true,
+                allowsUnlimited: true)
+                == .send(AgentMoney(0, .usdCents), limit: nil))
+        #expect(
+            AgentSpendDecision.decide(
+                price: price, isKnown: true, origin: origin(max: 0, approved: true), dailyLimit: 0,
+                paysUnlimited: true)
+                == .send(AgentMoney(0, .usdCents), limit: nil))
+    }
+
     @Test func onlyAQuoteOrAnExactPriceIsKnown() {
         var job = Job(
             spec: JobSpec(mode: .motionTransfer, source: nil, resolution: .p720), providerKind: .apiKey,

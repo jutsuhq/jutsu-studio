@@ -32,9 +32,16 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
         /// Held today for agents' submits sent and not answered yet; counts against the budget like a charge.
         public var reservedToday: Int
         public var remaining: Int
+        /// Settings › Agents › Let agents use unlimited generations. Off, a job the plan's unlimited allowance would pay
+        /// for waits for the person (hold unlimited_not_allowed); on, it runs without counting against the budget.
+        public var unlimitedAllowed: Bool
 
-        public init(unit: AgentBudgetUnit, dailyLimit: Int, spentToday: Int, reservedToday: Int = 0) {
+        public init(
+            unit: AgentBudgetUnit, dailyLimit: Int, spentToday: Int, reservedToday: Int = 0,
+            unlimitedAllowed: Bool = false
+        ) {
             self.unit = unit
+            self.unlimitedAllowed = unlimitedAllowed
             self.dailyLimit = max(0, dailyLimit)
             self.spentToday = max(0, spentToday)
             self.reservedToday = max(0, reservedToday)

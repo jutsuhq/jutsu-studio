@@ -353,13 +353,18 @@ public struct AgentQuote: Codable, Equatable, Sendable {
     public var duration: Double
     /// What is left of today's agent budget; nil while nothing is connected.
     public var remainingToday: Int?
+    /// It would be paid from the plan's unlimited generations, as the person's Use unlimited generations and the
+    /// account's allowance stand now: it counts nothing against the budget, and it runs without the person only while
+    /// they let agents use unlimited generations (`capabilities` budget.unlimitedAllowed).
+    public var paysUnlimited: Bool
     /// What `create_video` would refuse it for now, in English; nil when it would queue it.
     public var blocker: String?
 
     public init(
         price: AgentAmount?, isExact: Bool, mode: String, model: String, resolution: String, duration: Double,
-        remainingToday: Int?, blocker: String?
+        remainingToday: Int?, paysUnlimited: Bool = false, blocker: String?
     ) {
+        self.paysUnlimited = paysUnlimited
         self.price = price
         self.isExact = isExact
         self.mode = mode
@@ -379,7 +384,8 @@ public struct AgentJob: Codable, Equatable, Sendable {
     public var state: String
     /// Why it is paused: agent_limit and price_above_cap wait for the person, by_user for Resume all.
     public var pauseReason: String?
-    /// For agent_limit: unknown_price, over_max_cost, over_daily_budget or ledger_unavailable.
+    /// For agent_limit: unknown_price, over_max_cost, over_daily_budget, ledger_unavailable or
+    /// unlimited_not_allowed.
     public var hold: String?
     /// Only the person can move it on (a pause for a limit, the connection or funds).
     public var needsPerson: Bool

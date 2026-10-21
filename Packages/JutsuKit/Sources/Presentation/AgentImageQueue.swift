@@ -252,8 +252,11 @@ extension AgentImageQueue {
         {
             return hold(id, .priceAboveCap, price: price, isKnown: isKnown)
         }
+        // Image requests are always sent without the plan's unlimited allowance (`use_unlim` false), so each one
+        // counts against the budget like any paid request and Let agents use unlimited generations never applies.
         let decision = AgentSpendDecision.decide(
-            price: price, isKnown: isKnown, origin: record.origin, dailyLimit: dailyLimit(provider.kind))
+            price: price, isKnown: isKnown, origin: record.origin, dailyLimit: dailyLimit(provider.kind),
+            paysUnlimited: false)
         switch decision {
         case .hold(let reason):
             return hold(id, Self.hold(reason), price: price, isKnown: isKnown)
@@ -390,6 +393,7 @@ extension AgentImageQueue {
         case .overMaxCost: .overMaxCost
         case .overDailyBudget: .overDailyBudget
         case .ledgerUnavailable: .ledgerUnavailable
+        case .unlimitedNotAllowed: .unlimitedNotAllowed
         }
     }
 
@@ -404,6 +408,10 @@ extension AgentImageQueue {
             String(localized: "Waiting for you: it's over today's agent budget.", bundle: .module)
         case .ledgerUnavailable:
             String(localized: "Waiting for you: agent spending can't be recorded.", bundle: .module)
+        case .unlimitedNotAllowed:
+            String(
+                localized: "Waiting for you: it would use your plan's unlimited generations, which agents may not use.",
+                bundle: .module)
         case .priceAboveCap:
             String(localized: "Waiting for you: it takes today past your spend cap.", bundle: .module)
         }

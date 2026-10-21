@@ -1,6 +1,12 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Let agents use unlimited generations" : {
+
+    },
+    "Off, an agent's job that your plan's unlimited generations would pay for waits in the Queue for you to confirm. On, it runs without counting against the agent budget." : {
+
+    },
     "Review…" : {
 
     },

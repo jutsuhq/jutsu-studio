@@ -13,25 +13,28 @@ extension JobEngine {
 
     /// Runs right before an agent's job is sent, once its slot is taken: the person's own daily cap, strictly, then
     /// the agent's `max_cost`, an unknown price and today's agent budget (`AgentSpendDecision`), and last the
-    /// reservation, written to the ledger before anything is sent. Over any limit, or when the ledger can't be read
-    /// or written, the job pauses (`priceAboveCap` or `agentLimit`) and only the person resumes it. A submit that may
-    /// already have reached the server is resent with the reservation it holds and no new check.
+    /// reservation, written to the ledger before anything is sent. A job the plan's unlimited allowance pays for
+    /// skips the cap and the budget, which don't count it, but goes out only when the person lets agents use the
+    /// allowance (`AgentSpendPolicy.allowsUnlimited`); it reserves 0, and the charge the answer reports replaces that.
+    /// Over any limit, or when the ledger can't be read or written, the job pauses (`priceAboveCap` or `agentLimit`)
+    /// and only the person resumes it. A submit that may already have reached the server is resent with the
+    /// reservation it holds and no new check.
     func clearAgentSpend(_ id: UUID, inputs: RemoteInputs) async throws -> AgentClearance {
         let job = try await loadJob(id)
         guard let origin = job.agent, job.submitAttempt == nil else { return .send(reservation: nil) }
         guard let agentPolicy else { return try await holdAgentJob(id, .ledgerUnavailable, inputs: inputs) }
-        // A job the plan's unlimited allowance pays costs nothing the budgets count.
-        let price = job.spec.usesUnlimited ? Cost.credits(0, isEstimate: false) : job.price
-        if !job.spec.usesUnlimited, let status = try await spendStatus(job), let cap = status.cap,
-            Budget.allows(cost: price, committedToday: status.committedToday, cap: cap) != .allowed,
-            !Self.covers(job.approvedPrice, price)
+        let unlimited = job.spec.usesUnlimited
+        if !unlimited, let status = try await spendStatus(job), let cap = status.cap,
+            Budget.allows(cost: job.price, committedToday: status.committedToday, cap: cap) != .allowed,
+            !Self.covers(job.approvedPrice, job.price)
         {
             try await apply(.paused(.priceAboveCap), to: id) { $0.inputs = inputs }
             return .paused
         }
         let decision = AgentSpendDecision.decide(
-            price: price, isKnown: job.spec.usesUnlimited || job.agentPriceIsKnown, origin: origin,
-            dailyLimit: agentPolicy.dailyLimit(job.providerKind))
+            price: job.price, isKnown: job.agentPriceIsKnown, origin: origin,
+            dailyLimit: agentPolicy.dailyLimit(job.providerKind), paysUnlimited: unlimited,
+            allowsUnlimited: agentPolicy.allowsUnlimited())
         switch decision {
         case .hold(let hold):
             return try await holdAgentJob(id, hold, inputs: inputs)

@@ -10,6 +10,9 @@ public struct AgentPreferences {
     public static let budgetCentsKey = "agents.dailyBudgetCents"
     /// Whole credits, for an account.
     public static let budgetCreditsKey = "agents.dailyBudgetCredits"
+    /// Let agents use unlimited generations: whether an agent's job the plan's unlimited allowance would pay for goes
+    /// out without the person.
+    public static let unlimitedKey = "agents.allowUnlimited"
     /// The most a daily budget may be: $10,000, or ten million credits. Whatever is stored is read within these,
     /// so no sum of budgets and prices can overflow.
     public static let maxBudgetCents = 1_000_000
@@ -27,6 +30,10 @@ public struct AgentPreferences {
     /// Off until the person turns it on.
     public var isAllowed: Bool { stored(Self.allowKey) as? Bool ?? false }
 
+    /// Off until the person turns it on: until then an agent's job the plan's unlimited allowance would pay for waits
+    /// in the Queue for them, as one over the budget does.
+    public var allowsUnlimited: Bool { stored(Self.unlimitedKey) as? Bool ?? false }
+
     /// What agents may spend a day on `connection`, in its whole units: cents with an API key, credits on an
     /// account. 0 until the person sets one, so agents can look but not spend.
     public func dailyBudget(for connection: ProviderKind) -> Int {
@@ -41,6 +48,10 @@ public struct AgentPreferences {
     /// Settings › Agents writes these; `defaults` is the app's own domain, so they are read back as saved.
     public func setAllowed(_ isAllowed: Bool) {
         defaults.set(isAllowed, forKey: Self.allowKey)
+    }
+
+    public func setAllowsUnlimited(_ allows: Bool) {
+        defaults.set(allows, forKey: Self.unlimitedKey)
     }
 
     /// Stores `amount` within the most for `connection`.

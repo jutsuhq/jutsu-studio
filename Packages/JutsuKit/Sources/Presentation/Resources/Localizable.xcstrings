@@ -1,6 +1,12 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Would use your plan's unlimited generations, which agents may not use · confirm to send it" : {
+
+    },
+    "Waiting for you: it would use your plan's unlimited generations, which agents may not use." : {
+
+    },
     "Waiting for you: its price isn't known." : {
 
     },

@@ -25,8 +25,8 @@ struct AgentGuardTests {
         AgentSpendFile(file: file, now: { [clock = harness.clock] in clock.now })
     }
 
-    func policy(_ ledger: any AgentSpendLedger, limit: Int = 1_000) -> AgentSpendPolicy {
-        AgentSpendPolicy(ledger: ledger, dailyLimit: { _ in limit })
+    func policy(_ ledger: any AgentSpendLedger, limit: Int = 1_000, unlimited: Bool = false) -> AgentSpendPolicy {
+        AgentSpendPolicy(ledger: ledger, dailyLimit: { _ in limit }, allowsUnlimited: { unlimited })
     }
 
     func origin(maxCents: Int = 500, request: String = "r-1") -> AgentOrigin {
@@ -272,6 +272,51 @@ struct AgentGuardTests {
         #expect(jobs.allSatisfy { $0.agent?.requestID == "r-1" })
         #expect(jobs.filter { $0.agent?.reservation != nil }.count == 1)
         #expect(try await ledger.total(on: harness.clock.now, unit: .usdCents).spent == 260)
+    }
+
+    /// A job the plan's unlimited allowance would pay for waits for the person while agents may not use it, even with
+    /// room in the budget; their Confirm sends it, and it counts nothing.
+    @Test func anUnlimitedJobWaitsForThePersonWhileAgentsMayNotUseUnlimited() async throws {
+        let harness = Harness()
+        await harness.provider.payUnlimited(true)
+        let ledger = ledger(harness)
+        let engine = try await harness.makeEngine(agentPolicy: policy(ledger))
+
+        let job = try await engine.enqueue(makeSpec(), agent: origin())
+        let paused = try #require(await harness.repository.wait(for: job.id, .paused(.agentLimit)))
+        #expect(paused.agent?.hold == .unlimitedNotAllowed)
+        #expect(harness.log.count("submit") == 0)
+
+        try await engine.resume(job.id)
+        await harness.repository.wait(for: job.id, .done)
+        #expect(harness.log.count("submit") == 1)
+        #expect(try await ledger.total(on: harness.clock.now, unit: .usdCents) == AgentSpendTotal())
+    }
+
+    /// Allowed, it runs with no budget at all and counts nothing against it.
+    @Test func anUnlimitedJobRunsWithoutTheBudgetWhenAgentsMayUseUnlimited() async throws {
+        let harness = Harness()
+        await harness.provider.payUnlimited(true)
+        let ledger = ledger(harness)
+        let engine = try await harness.makeEngine(agentPolicy: policy(ledger, limit: 0, unlimited: true))
+
+        let job = try await engine.enqueue(makeSpec(), agent: origin(maxCents: 0))
+        await harness.repository.wait(for: job.id, .done)
+
+        #expect(harness.log.count("submit") == 1)
+        #expect(try await ledger.total(on: harness.clock.now, unit: .usdCents) == AgentSpendTotal())
+    }
+
+    /// The setting only covers the allowance: a job it doesn't pay for keeps every limit.
+    @Test func lettingAgentsUseUnlimitedLeavesOtherJobsWithinTheBudget() async throws {
+        let harness = Harness()
+        let engine = try await harness.makeEngine(agentPolicy: policy(ledger(harness), limit: 0, unlimited: true))
+
+        let job = try await engine.enqueue(makeSpec(), agent: origin())
+        let paused = try #require(await harness.repository.wait(for: job.id, .paused(.agentLimit)))
+
+        #expect(paused.agent?.hold == .overDailyBudget)
+        #expect(harness.log.count("submit") == 0)
     }
 
     /// The agent's request ID names the job: queueing it again returns the same job.

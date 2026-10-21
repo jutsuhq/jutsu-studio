@@ -363,6 +363,7 @@ extension AppEnvironment {
         // UserDefaults is safe to read from any thread.
         nonisolated(unsafe) let defaults = defaults
         return AgentSpendPolicy(
-            ledger: ledger, dailyLimit: { AgentPreferences(defaults: defaults).dailyBudget(for: $0) })
+            ledger: ledger, dailyLimit: { AgentPreferences(defaults: defaults).dailyBudget(for: $0) },
+            allowsUnlimited: { AgentPreferences(defaults: defaults).allowsUnlimited })
     }
 }

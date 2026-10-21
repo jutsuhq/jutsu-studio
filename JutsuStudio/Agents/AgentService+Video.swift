@@ -59,8 +59,9 @@ extension AgentService {
             source = AgentVideoOrder.quoteSource(start: given.start, end: end)
         }
         let order = Self.order(video, source: source, images: AgentVideoOrder.quoteImages(video.referenceCount))
-        let spec = try await spec(for: order)
-        let cost = await environment.estimate(spec)
+        let (spec, paysUnlimited) = try await spec(for: order)
+        // The plan's unlimited allowance pays it: nothing counts against the budget or the cap.
+        let cost: Cost? = paysUnlimited ? .credits(0, isEstimate: false) : await environment.estimate(spec)
         let kind = environment.connection.state.kind
         let money = cost.flatMap(AgentMoney.init)
         let price = money.map { AgentAmount($0.amount, Self.unit(of: $0.unit)) }
@@ -73,11 +74,22 @@ extension AgentService {
         return AgentQuote(
             price: price, isExact: isExact, mode: video.mode, model: spec.model.rawValue,
             resolution: spec.resolution.rawValue, duration: spec.duration, remainingToday: remaining,
-            blocker: Self.quoteBlocker(price: money, remaining: remaining))
+            paysUnlimited: paysUnlimited,
+            blocker: Self.quoteBlocker(
+                price: money, remaining: remaining, paysUnlimited: paysUnlimited,
+                unlimitedAllowed: preferences.allowsUnlimited))
     }
 
     /// What `create_video` would pause the job for, as far as a quote can tell before upload.
-    private static func quoteBlocker(price: AgentMoney?, remaining: Int?) -> String? {
+    private static func quoteBlocker(
+        price: AgentMoney?, remaining: Int?, paysUnlimited: Bool, unlimitedAllowed: Bool
+    ) -> String? {
+        if paysUnlimited {
+            return unlimitedAllowed
+                ? nil
+                : "It would be paid from the plan's unlimited generations, which the person hasn't let agents use "
+                    + "(Settings › Agents); the job would wait for the person."
+        }
         guard let price else {
             return "The price isn't known before upload; unless Higgsfield quotes it then, the job waits for the "
                 + "person."
@@ -174,7 +186,7 @@ extension AgentService {
             {
                 throw .invalidRequest(refusal)
             }
-            let spec = try await spec(for: Self.order(video, source: source, images: images))
+            let (spec, _) = try await spec(for: Self.order(video, source: source, images: images))
             let jobID = UUID()
             try recordRequest(fields.requestID, fingerprint: fields.fingerprint, jobIDs: [jobID])
             let origin = AgentOrigin(
@@ -233,8 +245,9 @@ extension AgentService {
             aspectRatio: video.aspectRatio, audio: video.audio, variants: video.variants)
     }
 
-    /// The one job `order` makes, built and checked as Create does, on the connection as it is now.
-    private func spec(for order: AgentVideoOrder) async throws(AgentError) -> JobSpec {
+    /// The one job `order` makes, built and checked as Create does, on the connection as it is now, and whether the
+    /// plan's unlimited allowance would pay for it as things stand (the engine decides again when it is queued).
+    private func spec(for order: AgentVideoOrder) async throws(AgentError) -> (JobSpec, paysUnlimited: Bool) {
         let state = environment.connection.state
         guard let kind = state.kind else { throw Self.notConnected }
         let capabilities = await environment.capabilities()
@@ -246,7 +259,7 @@ extension AgentService {
         let constraints = environment.navigation.modelConstraints
         let base = CreateForm(settings: environment.defaults)
         switch order.spec(from: base, in: context, constraints: constraints == .builtIn ? nil : constraints) {
-        case .success(let spec): return spec
+        case .success(let spec): return (spec, context.paysUnlimited(spec))
         case .failure(let refusal): throw .invalidRequest(refusal.message)
         }
     }

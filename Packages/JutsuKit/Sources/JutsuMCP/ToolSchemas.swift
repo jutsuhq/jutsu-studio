@@ -24,6 +24,7 @@ extension Tool {
                     "unit": ["type": "string", "enum": ["usd_cents", "credits"]],
                     "dailyLimit": ["type": "integer"], "spentToday": ["type": "integer"],
                     "reservedToday": ["type": "integer"], "remaining": ["type": "integer"],
+                    "unlimitedAllowed": ["type": "boolean"],
                 ],
             ]
             properties["toolGroups"] = [
@@ -75,6 +76,7 @@ extension Tool {
             properties["resolution"] = ["type": "string"]
             properties["duration"] = ["type": "number"]
             properties["remainingToday"] = ["type": "integer"]
+            properties["paysUnlimited"] = ["type": "boolean"]
             properties["blocker"] = ["type": "string"]
         case .createVideo, .createImage, .enhance:
             properties["requestId"] = ["type": "string"]

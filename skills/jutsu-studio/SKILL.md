@@ -21,6 +21,9 @@ says rather than guessing.
   Jutsu Studio, then try again.
 - **The budget.** Agents spend from a daily agent budget, in dollars with an API key and in credits with an account.
   It is 0 until the person sets one in Settings › Agents; the person's own daily cap applies on top of it.
+- **Unlimited generations.** A video the plan's unlimited generations would pay for (`quote` says `paysUnlimited`)
+  costs the budget nothing, but runs on its own only while the person lets agents use them
+  (`capabilities` › `budget.unlimitedAllowed`); otherwise it is held for the person (`hold: unlimited_not_allowed`).
 
 ## How to work
 

@@ -91,7 +91,7 @@ public struct AgentImageRecord: Codable, Sendable, Hashable, Identifiable {
 
     /// Why it is held.
     public enum Hold: String, Codable, Sendable, Hashable {
-        case unknownPrice, overMaxCost, overDailyBudget, ledgerUnavailable
+        case unknownPrice, overMaxCost, overDailyBudget, ledgerUnavailable, unlimitedNotAllowed
         /// It takes today past the person's own daily cap.
         case priceAboveCap
     }
@@ -161,6 +161,7 @@ extension AgentJobStatus {
         case .overMaxCost: "over_max_cost"
         case .overDailyBudget: "over_daily_budget"
         case .ledgerUnavailable: "ledger_unavailable"
+        case .unlimitedNotAllowed: "unlimited_not_allowed"
         case .priceAboveCap: nil
         }
     }
