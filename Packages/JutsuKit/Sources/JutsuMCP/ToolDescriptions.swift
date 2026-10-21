@@ -27,7 +27,9 @@ extension Tool {
             for it: it costs the budget nothing, and waits for the person unless unlimitedAllowed), and blocker, \
             why create_video would hold or refuse it now, and maxVariants with variantsUnavailable, the most videos \
             one job of it makes and why only one (a style; the plan's unlimited generations, which make one video \
-            per job while the person uses them; a connection without variants). A source \
+            per job while the person uses them; a connection without variants), and images with minImages and \
+            maxImages, the reference images the job has (elements' included) and the most and fewest its model takes \
+            in this mode, the server's limits where it states them, else the app's. A source \
             needs end (its start and end in seconds) instead of a file; images may be paths or image_count. Free.
             """
         case .createVideo:

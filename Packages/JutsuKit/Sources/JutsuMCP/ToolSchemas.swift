@@ -81,6 +81,9 @@ extension Tool {
             properties["blocker"] = ["type": "string"]
             properties["maxVariants"] = ["type": "integer"]
             properties["variantsUnavailable"] = ["type": "string"]
+            properties["images"] = ["type": "integer"]
+            properties["minImages"] = ["type": "integer"]
+            properties["maxImages"] = ["type": "integer"]
         case .createVideo, .createImage, .enhance:
             properties["requestId"] = ["type": "string"]
             properties["known"] = ["type": "boolean"]

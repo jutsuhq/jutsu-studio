@@ -23,11 +23,16 @@ public struct AgentQuote: Codable, Equatable, Sendable {
     public var maxVariants: Int
     /// Why it makes one video whatever `variants` asks, in English; nil when more are offered.
     public var variantsUnavailable: String?
+    /// The reference images the job has, elements' included, and how many its model takes in this mode: the
+    /// server's constraints where they state them, else the app's built-in limits.
+    public var images: Int
+    public var minImages: Int
+    public var maxImages: Int
 
     public init(
         price: AgentAmount?, isExact: Bool, mode: String, model: String, resolution: String, duration: Double,
         remainingToday: Int?, paysUnlimited: Bool = false, blocker: String?, maxVariants: Int = 1,
-        variantsUnavailable: String? = nil
+        variantsUnavailable: String? = nil, images: Int = 0, minImages: Int = 0, maxImages: Int = 0
     ) {
         self.paysUnlimited = paysUnlimited
         self.price = price
@@ -40,5 +45,8 @@ public struct AgentQuote: Codable, Equatable, Sendable {
         self.blocker = blocker
         self.maxVariants = maxVariants
         self.variantsUnavailable = variantsUnavailable
+        self.images = images
+        self.minImages = minImages
+        self.maxImages = maxImages
     }
 }

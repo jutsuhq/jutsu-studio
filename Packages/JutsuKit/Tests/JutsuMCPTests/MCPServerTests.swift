@@ -173,6 +173,12 @@ actor FakeApp {
             #expect(tool["description"]?.stringValue?.isEmpty == false)
             #expect(tool["title"]?.stringValue?.isEmpty == false)
         }
+        // Image counts are the model's, from capabilities and quote: no fixed maxItems promises another.
+        let schemas = Dictionary(uniqueKeysWithValues: tools.map { ($0["name"]?.stringValue ?? "", $0["inputSchema"]) })
+        for (tool, field) in [("create_video", "images"), ("quote", "images"), ("create_image", "inputs")] {
+            #expect(schemas[tool]??["properties"]?[field]?["type"] == "array", "\(tool)")
+            #expect(schemas[tool]??["properties"]?[field]?["maxItems"] == nil, "\(tool)")
+        }
         let hints = Dictionary(uniqueKeysWithValues: tools.map { ($0["name"]?.stringValue ?? "", $0["annotations"]) })
         for name in ["capabilities", "quote", "jobs", "elements", "library_search", "library_get"] {
             #expect(hints[name]??["readOnlyHint"] == true, "\(name)")

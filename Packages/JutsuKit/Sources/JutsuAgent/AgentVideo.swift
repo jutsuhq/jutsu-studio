@@ -82,8 +82,10 @@ public struct AgentVideoRequest: Codable, Equatable, Hashable, Sendable {
     /// The names agents use for the modes.
     public static let modes = ["motion_transfer", "restyle", "object_swap", "edit", "extend"]
     public static let audioOptions = ["original", "mute", "fade_out", "generated"]
-    /// More than any model takes, so the app's own limits refuse the rest with a reason.
-    public static let maxImages = 16
+    /// A sanity bound of the protocol only, above every model's own limit: the limit a request meets is the model's
+    /// in its mode (`capabilities` model details `maxImages`, `quote` `maxImages`), from the server's constraints
+    /// where they state one, which the app's own rules refuse the rest by with a reason.
+    public static let protocolMaxImages = 16
     public static let maxVariants = 16
     /// Seconds a clip made without a source may be asked to run, or Extend to add.
     public static let maxLength: Double = 600
@@ -185,12 +187,14 @@ public struct AgentVideoRequest: Codable, Equatable, Hashable, Sendable {
         guard Self.modes.contains(mode) else { return "mode is one of \(Self.modes.joined(separator: ", "))" }
         if let model, !AgentNames.isValidModelID(model) { return "model is a model ID from capabilities" }
         if let prompt, prompt.unicodeScalars.count > 10_000 { return "prompt is at most 10 000 characters" }
-        if images.count > Self.maxImages { return "images takes at most \(Self.maxImages) files" }
+        if images.count > Self.protocolMaxImages {
+            return "images takes at most \(Self.protocolMaxImages) files, more than any model takes"
+        }
         if let path = images.first(where: { !Self.isValidPath($0) }) {
             return "images has a path that isn't one: \(path.prefix(80))"
         }
-        if let imageCount, !(0...Self.maxImages).contains(imageCount) {
-            return "image_count is 0 to \(Self.maxImages)"
+        if let imageCount, !(0...Self.protocolMaxImages).contains(imageCount) {
+            return "image_count is 0 to \(Self.protocolMaxImages)"
         }
         if let problem = AgentElementNames.problem(elements) { return problem }
         if let length, !(length.isFinite && length > 0 && length <= Self.maxLength) {

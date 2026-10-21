@@ -68,9 +68,9 @@ extension Tool {
                     "type": "integer", "minimum": 1, "maximum": .number(Double(AgentImageRequest.maxCount)),
                     "description": "Images to make, one the model offers; 1 when left out.",
                 ],
+                // No maxItems: the limit is the model's, which capabilities' image_models give.
                 "inputs": [
-                    "type": "array", "maxItems": .number(Double(AgentImageRequest.maxInputs)),
-                    "items": ["type": "string"],
+                    "type": "array", "items": ["type": "string"],
                     "description": "Images on this Mac to edit, in order, up to the model's maxInputs.",
                 ],
                 "input": ["type": "string", "description": "One image to edit: the same as inputs with one item."],
@@ -252,9 +252,10 @@ extension Tool {
                     ? "The source clip; left out, a model that can makes the clip from the prompt and images."
                     : "The source clip's range; end is needed.",
             ],
+            // No maxItems: the limit is the model's in its mode, which capabilities and quote give.
             "images": [
-                "type": "array", "maxItems": .number(Double(AgentVideoRequest.maxImages)),
-                "items": ["type": "string"], "description": "Reference images on this Mac, in order.",
+                "type": "array", "items": ["type": "string"],
+                "description": "Reference images on this Mac, in order, up to the model's maxImages (quote).",
             ],
             "style": ["type": "string", "format": "uuid", "description": "Restyle's style ID."],
             "resolution": ["type": "string", "description": "One from capabilities, such as 720p."],
