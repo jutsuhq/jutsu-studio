@@ -101,6 +101,21 @@ extension Tool {
                     ],
                 ],
             ]
+        case .libraryDownload:
+            properties["items"] = [
+                "type": "array",
+                "items": [
+                    "type": "object",
+                    "properties": [
+                        "id": ["type": "string"],
+                        "status": [
+                            "type": "string",
+                            "enum": .array(AgentDownload.Status.allCases.map { .string($0.rawValue) }),
+                        ],
+                        "file": ["type": "string"], "message": ["type": "string"],
+                    ],
+                ],
+            ]
         case .libraryMark:
             properties["items"] = [
                 "type": "array",
@@ -176,7 +191,7 @@ extension Tool {
             "duration": ["type": "number"], "price": amountSchema, "verdict": ["type": "string"],
             "starred": ["type": "boolean"], "createdAt": ["type": "string"], "prompt": ["type": "string"],
             "promptTruncated": ["type": "boolean"], "versionId": ["type": "string"], "version": ["type": "integer"],
-            "versionCount": ["type": "integer"], "jobId": ["type": "string"],
+            "versionCount": ["type": "integer"], "jobId": ["type": "string"], "onHiggsfield": ["type": "boolean"],
         ],
     ]
 

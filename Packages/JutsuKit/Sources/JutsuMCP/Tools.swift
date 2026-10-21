@@ -12,6 +12,7 @@ enum Tool: String, CaseIterable {
     case createImage = "create_image"
     case librarySearch = "library_search"
     case libraryGet = "library_get"
+    case libraryDownload = "library_download"
     case libraryMark = "library_mark"
     case enhance
     case deliverySet = "delivery_set"
@@ -38,6 +39,7 @@ enum Tool: String, CaseIterable {
             case .jobAction: .success(try Self.jobAction(given))
             case .librarySearch: .success(try Self.librarySearch(given))
             case .libraryGet: .success(try Self.libraryGet(given))
+            case .libraryDownload: .success(try Self.libraryDownload(given))
             case .libraryMark: .success(try Self.libraryMark(given))
             case .enhance: .success(try Self.enhance(given))
             case .deliverySet: .success(try Self.deliverySet(given))

@@ -170,11 +170,39 @@ import Testing
         #expect(search.verdict == .kept)
         #expect(search.from == ISO8601DateFormatter().date(from: "2026-10-01T00:00:00Z"))
         #expect(search.to != nil)
+        #expect(search.includeHiggsfield == nil)
+        guard
+            case .success(.librarySearch(let history)) = command(
+                .librarySearch, ["include_higgsfield": true, "refresh_higgsfield": true])
+        else {
+            Issue.record("no library_search of the history")
+            return
+        }
+        #expect(history.includeHiggsfield == true && history.refreshHiggsfield == true)
         for bad in [
             ["kind": "audio"], ["from": "yesterday"], ["limit": 51], ["mode": "dance"], ["cursor": "a b"],
+            ["refresh_higgsfield": true],
             ["from": "2026-10-02T00:00:00Z", "to": "2026-10-01T00:00:00Z"],
         ] as [[String: JSONValue]] {
             guard case .failure = command(.librarySearch, bad) else {
+                Issue.record("taken: \(bad)")
+                continue
+            }
+        }
+    }
+
+    @Test func libraryDownloadTakesUpToTwentyItemIDs() {
+        let id = UUID().uuidString
+        guard case .success(.libraryDownload(let download)) = command(.libraryDownload, ["ids": [.string(id)]]) else {
+            Issue.record("no library_download")
+            return
+        }
+        #expect(download.ids.map(\.uuidString) == [id])
+        for bad in [
+            [:], ["ids": []], ["ids": [.string(id), .string(id)]], ["ids": ["nope"]],
+            ["ids": .array((0...20).map { _ in .string(UUID().uuidString) })],
+        ] as [[String: JSONValue]] {
+            guard case .failure = command(.libraryDownload, bad) else {
                 Issue.record("taken: \(bad)")
                 continue
             }

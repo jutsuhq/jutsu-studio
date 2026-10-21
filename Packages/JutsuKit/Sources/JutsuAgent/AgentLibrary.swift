@@ -166,13 +166,21 @@ public struct LibrarySearchCommand: Codable, Equatable, Sendable, AgentFields {
     public var limit: Int?
     /// `nextCursor` of the page before.
     public var cursor: String?
+    /// Also lists the account's Higgsfield history the Library shows under From Higgsfield, results with no file on
+    /// this Mac yet (`library_download` brings one here).
+    // swiftlint:disable:next discouraged_optional_boolean
+    public var includeHiggsfield: Bool?
+    /// Loads the history from Higgsfield again first, as From Higgsfield's refresh does; free, never spends.
+    // swiftlint:disable:next discouraged_optional_boolean
+    public var refreshHiggsfield: Bool?
 
     public init(
         // swiftlint:disable:next discouraged_optional_boolean
         query: String? = nil, kind: AgentLibraryKind? = nil, starred: Bool? = nil, verdict: AgentVerdict? = nil,
         // swiftlint:disable:next discouraged_optional_boolean
         includeRejected: Bool? = nil, model: String? = nil, mode: String? = nil, from: Date? = nil, to: Date? = nil,
-        limit: Int? = nil, cursor: String? = nil
+        // swiftlint:disable:next discouraged_optional_boolean
+        limit: Int? = nil, cursor: String? = nil, includeHiggsfield: Bool? = nil, refreshHiggsfield: Bool? = nil
     ) {
         self.query = query
         self.kind = kind
@@ -185,9 +193,14 @@ public struct LibrarySearchCommand: Codable, Equatable, Sendable, AgentFields {
         self.to = to
         self.limit = limit
         self.cursor = cursor
+        self.includeHiggsfield = includeHiggsfield
+        self.refreshHiggsfield = refreshHiggsfield
     }
 
     public var problem: String? {
+        if refreshHiggsfield == true, includeHiggsfield != true {
+            return "refresh_higgsfield loads the history include_higgsfield lists; send both"
+        }
         if let query, query.unicodeScalars.count > 500 { return "query is at most 500 characters" }
         if let model, model.utf8.count > 128 { return "model is a model ID or an image model's name" }
         if let mode, !AgentVideoRequest.modes.contains(mode) {
@@ -205,7 +218,7 @@ public struct AgentLibraryItem: Codable, Equatable, Sendable {
     /// The Library item's ID, which `library_mark`, `enhance`, `delivery_set` and `export` take.
     public var id: UUID
     public var kind: AgentLibraryKind
-    /// The current version's file on this Mac.
+    /// The current version's file on this Mac; `nil` for a result only on Higgsfield.
     public var file: String?
     /// The video model's ID, or the image model's name.
     public var model: String?
@@ -228,11 +241,16 @@ public struct AgentLibraryItem: Codable, Equatable, Sendable {
     public var versionCount: Int
     /// The video job that made it, when it was one (`jobs`, `show`).
     public var jobID: UUID?
+    /// true for a result of the account's Higgsfield history with no file on this Mac yet; left out otherwise.
+    // swiftlint:disable:next discouraged_optional_boolean
+    public var onHiggsfield: Bool?
 
     public init(
         id: UUID, kind: AgentLibraryKind, file: String?, model: String?, mode: String?, aspectRatio: String?,
         duration: Double?, price: AgentAmount?, verdict: AgentVerdict, starred: Bool, createdAt: Date,
-        prompt: String, promptTruncated: Bool, versionID: UUID, version: Int, versionCount: Int, jobID: UUID?
+        prompt: String, promptTruncated: Bool, versionID: UUID, version: Int, versionCount: Int, jobID: UUID?,
+        // swiftlint:disable:next discouraged_optional_boolean
+        onHiggsfield: Bool? = nil
     ) {
         self.id = id
         self.kind = kind
@@ -251,6 +269,7 @@ public struct AgentLibraryItem: Codable, Equatable, Sendable {
         self.version = version
         self.versionCount = versionCount
         self.jobID = jobID
+        self.onHiggsfield = onHiggsfield
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -259,6 +278,7 @@ public struct AgentLibraryItem: Codable, Equatable, Sendable {
         case versionID = "versionId"
         case version, versionCount
         case jobID = "jobId"
+        case onHiggsfield
     }
 }
 

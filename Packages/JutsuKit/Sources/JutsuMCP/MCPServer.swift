@@ -311,7 +311,8 @@ extension MCPServer {
     private static func success(_ response: AgentResponse) -> JSONValue {
         let answers: [(any Encodable)?] = [
             response.capabilities, response.shown, response.quote, response.created, response.jobs, response.acted,
-            response.library, response.details, response.marked, response.delivery, response.exported,
+            response.library, response.details, response.downloads, response.marked, response.delivery,
+            response.exported,
             response.frames,
         ]
         guard let answer = answers.lazy.compactMap(\.self).first else {

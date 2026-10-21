@@ -33,6 +33,7 @@ extension Tool {
     static func librarySearch(_ given: Arguments) throws(AgentError) -> AgentCommand {
         try given.allow([
             "query", "kind", "starred", "verdict", "include_rejected", "model", "mode", "from", "to", "limit", "cursor",
+            "include_higgsfield", "refresh_higgsfield",
         ])
         let kind = try given.string("kind").map { name throws(AgentError) -> AgentLibraryKind in
             guard let kind = AgentLibraryKind(rawValue: name) else {
@@ -50,7 +51,9 @@ extension Tool {
             query: try given.string("query"), kind: kind, starred: try given.optionalBool("starred"), verdict: verdict,
             includeRejected: try given.optionalBool("include_rejected"), model: try given.string("model"),
             mode: try given.string("mode"), from: try given.date("from"), to: try given.date("to"),
-            limit: try given.int("limit"), cursor: try given.string("cursor"))
+            limit: try given.int("limit"), cursor: try given.string("cursor"),
+            includeHiggsfield: try given.optionalBool("include_higgsfield"),
+            refreshHiggsfield: try given.optionalBool("refresh_higgsfield"))
         if let problem = command.problem { throw .badRequest("library_search: \(problem)") }
         return .librarySearch(command)
     }
@@ -60,6 +63,13 @@ extension Tool {
         let command = LibraryGetCommand(ids: try given.ids("ids"))
         if let problem = command.problem { throw .badRequest("library_get: \(problem)") }
         return .libraryGet(command)
+    }
+
+    static func libraryDownload(_ given: Arguments) throws(AgentError) -> AgentCommand {
+        try given.allow(["ids"])
+        let command = LibraryDownloadCommand(ids: try given.ids("ids"))
+        if let problem = command.problem { throw .badRequest("library_download: \(problem)") }
+        return .libraryDownload(command)
     }
 
     static func libraryMark(_ given: Arguments) throws(AgentError) -> AgentCommand {

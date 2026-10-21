@@ -21,7 +21,10 @@ extension AgentService {
             text: fields.query ?? "", kind: Self.kind(fields.kind), starred: fields.starred,
             verdict: fields.verdict.map(Self.culling), includeRejected: fields.includeRejected ?? false,
             model: fields.model, mode: fields.mode.flatMap(AgentVideoOrder.mode(named:)), from: fields.from,
-            to: fields.to, limit: fields.limit ?? LibrarySearchCommand.defaultLimit, cursor: fields.cursor)
+            to: fields.to, limit: fields.limit ?? LibrarySearchCommand.defaultLimit, cursor: fields.cursor,
+            includeHiggsfield: fields.includeHiggsfield ?? false)
+        // From Higgsfield's own refresh: it reads the history, never spends, and does nothing without an account.
+        if fields.refreshHiggsfield == true { await environment.loadHistory(refresh: true) }
         let (hits, next) = AgentLibrarySearch.page(try await materials(), query)
         return AgentLibraryPage(items: hits.map(Self.item), nextCursor: next)
     }
@@ -66,12 +69,12 @@ extension AgentService {
 
     private static func item(_ hit: AgentLibraryHit) -> AgentLibraryItem {
         AgentLibraryItem(
-            id: hit.id, kind: hit.isVideo ? .video : .image, file: hit.file.path(percentEncoded: false),
+            id: hit.id, kind: hit.isVideo ? .video : .image, file: hit.file?.path(percentEncoded: false),
             model: hit.model, mode: hit.mode, aspectRatio: hit.aspectRatio, duration: hit.duration,
             price: hit.price.flatMap(AgentMoney.init).map { AgentAmount($0.amount, unit(of: $0.unit)) },
             verdict: verdict(hit.culling), starred: hit.isStarred, createdAt: hit.createdAt, prompt: hit.prompt,
             promptTruncated: hit.isPromptTruncated, versionID: hit.versionID, version: hit.version,
-            versionCount: hit.versionCount, jobID: hit.jobID)
+            versionCount: hit.versionCount, jobID: hit.jobID, onHiggsfield: hit.isOnHiggsfield ? true : nil)
     }
 
     // MARK: library_mark
