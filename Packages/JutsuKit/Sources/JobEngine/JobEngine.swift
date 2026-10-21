@@ -29,7 +29,7 @@ public actor JobEngine {
     let agentPolicy: AgentSpendPolicy?
     var settings: EngineSettings
     let limiter: SlotLimiter
-    let log = EngineLog()
+    let log = EngineLog(category: "JobEngine")
 
     var jobs: [UUID: Job] = [:]
     var runners: [UUID: Runner] = [:]

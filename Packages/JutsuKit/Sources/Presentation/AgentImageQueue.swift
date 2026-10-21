@@ -22,6 +22,7 @@ public final class AgentImageQueue {
     @ObservationIgnored let now: @Sendable () -> Date
     @ObservationIgnored private let file: LogFile<AgentImageRecord>
     @ObservationIgnored private var loaded: [AgentImageRecord]?
+    @ObservationIgnored let log = EngineLog(category: "AgentImages")
 
     static let keptDays = 30
 
@@ -75,6 +76,7 @@ public final class AgentImageQueue {
         do {
             try save(record)
         } catch {
+            log.error("Image request \(id): a change can't be saved", detail: String(describing: error))
             if let index = loaded?.firstIndex(where: { $0.id == id }) { loaded?[index] = record }
         }
     }
@@ -142,14 +144,24 @@ public final class AgentImageQueue {
     /// never saved with their request, so never sent), fails a request that was being sent and whose answer was lost
     /// (its reservation stays), and shows the held ones again.
     public func restore() async {
-        guard let records = try? load() else { return }
-        if let unsettled = try? await ledger.unsettled() {
-            for spend in unsettled {
+        let records: [AgentImageRecord]
+        do {
+            records = try load()
+        } catch {
+            return log.error(
+                "The agent image requests can't be read to restore them", detail: String(describing: error))
+        }
+        do {
+            for spend in try await ledger.unsettled() {
                 guard let record = records.first(where: { $0.id == spend.jobID }),
                     record.origin.reservation != spend.id
                 else { continue }
-                try? await ledger.release(spend.id)
+                await release(spend.id, of: record.id)
             }
+        } catch {
+            // Reservations kept, which only counts too much.
+            log.error(
+                "The agent spend ledger can't be read to reconcile image requests", detail: String(describing: error))
         }
         for record in records {
             let followed = generator.jobLog.records.contains { $0.runID == record.id }
@@ -181,7 +193,12 @@ public final class AgentImageQueue {
     public func resume(
         provider: any ImageProvider, upload: @escaping @Sendable (LocalImage) async throws -> RemoteAsset
     ) {
-        guard let records = try? load() else { return }
+        let records: [AgentImageRecord]
+        do {
+            records = try load()
+        } catch {
+            return log.error("The agent image requests can't be read to resume them", detail: String(describing: error))
+        }
         for record in records where record.providerKind == provider.kind && record.owner == provider.owner {
             switch record.state {
             case .pricing where generator.submits[record.id] == nil:
@@ -298,6 +315,7 @@ extension AgentImageQueue {
                 return hold(id, .overDailyBudget, price: price, isKnown: isKnown)
             }
         } catch {
+            log.error("Image request \(id): the agent spend ledger can't be written", detail: String(describing: error))
             return hold(id, .ledgerUnavailable, price: price, isKnown: isKnown)
         }
         var sending = record
@@ -310,7 +328,8 @@ extension AgentImageQueue {
             try save(sending)
         } catch {
             // Not recorded as sent, so it isn't sent.
-            try? await ledger.release(spend.id)
+            log.error("Image request \(id): can't be recorded as sent", detail: String(describing: error))
+            await release(spend.id, of: id)
             generator.finish(id, .failed(error.localizedDescription))
             return nil
         }
@@ -337,17 +356,18 @@ extension AgentImageQueue {
         switch outcome {
         case .accepted:
             update(id) { $0.state = .following }
-            try? await ledger.settle(reservation, amount: nil)
+            do {
+                try await ledger.settle(reservation, amount: nil)
+            } catch {
+                // Still reserved, which counts the same.
+                log.error("Image request \(id): its charge can't be recorded", detail: String(describing: error))
+            }
         case .refused, .notSent:
             // Certainly never sent: its reservation is given back.
-            do {
-                try await ledger.release(reservation)
-                update(id) {
-                    $0.origin.reservation = nil
-                    $0.sentAt = nil
-                }
-            } catch {
-                // Kept, which only counts too much.
+            guard await release(reservation, of: id) else { return }
+            update(id) {
+                $0.origin.reservation = nil
+                $0.sentAt = nil
             }
         case .unknown:
             break
@@ -395,10 +415,30 @@ extension AgentImageQueue {
         guard !jobs.isEmpty, !jobs.contains(where: { $0.state == .pending }) else { return }
         let unbilled = jobs.filter(\.isUnbilled).map(\.id)
         guard !unbilled.isEmpty else { return }
-        let ledger = ledger
+        let (ledger, log, id) = (ledger, log, record.id)
         Task {
             // A ledger that can't be written keeps the reservation, which only counts too much.
-            for part in unbilled { try? await ledger.unbill(reservation, part: part, of: jobs.count) }
+            for part in unbilled {
+                do {
+                    try await ledger.unbill(reservation, part: part, of: jobs.count)
+                } catch {
+                    log.error(
+                        "Image request \(id): an unbilled job can't be recorded", detail: String(describing: error))
+                }
+            }
+        }
+    }
+
+    /// Gives back a reservation whose submit certainly never went out; `false` when the ledger can't be written,
+    /// which keeps it and only counts too much.
+    @discardableResult
+    private func release(_ reservation: UUID, of id: UUID) async -> Bool {
+        do {
+            try await ledger.release(reservation)
+            return true
+        } catch {
+            log.error("Image request \(id): a reservation can't be released", detail: String(describing: error))
+            return false
         }
     }
 

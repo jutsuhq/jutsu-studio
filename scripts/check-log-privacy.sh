@@ -37,7 +37,7 @@ my %reviewed = map { $_ => 1 } (
     # REST routes on the API host, whose only variable part is a request ID.
     "Packages/HiggsfieldKit/Sources/HiggsfieldAPI/HiggsfieldAPIClient.swift|path",
     # The wrapper itself; its callers are checked below.
-    "Packages/JutsuKit/Sources/JobEngine/EngineLog.swift|message",
+    "Packages/JutsuKit/Sources/JutsuCore/EngineLog.swift|message",
     # Numbers of variants and submits.
     "Packages/JutsuKit/Sources/JobEngine/JobEngine+Variants.swift|asked",
     "Packages/JutsuKit/Sources/JobEngine/JobEngine+Variants.swift|started",
@@ -109,7 +109,7 @@ for my $file (@ARGV) {
     }
 
     # EngineLog logs its message as public: it must be a literal, and what it interpolates must be safe.
-    next unless $file =~ m{/JobEngine/};
+    next unless $file =~ m{/(?:JobEngine|Presentation)/};
     while ($text =~ /\blog\.(?:error|fault)\(\s*/g) {
         my $at = pos($text);
         if (substr($text, $at, 1) ne "\"" || substr($text, $at, 3) eq "\"\"\"") {
