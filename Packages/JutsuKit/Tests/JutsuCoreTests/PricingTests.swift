@@ -19,6 +19,14 @@ func billedSecondsRoundUp(duration: TimeInterval, expected: Int) {
     }
 }
 
+/// Genjutsu Lite's list prices are kept for its REST endpoints, which no job uses until its schema is published.
+@Test func genjutsuLiteHasItsListPrices() throws {
+    let pricing = try Pricing.bundled()
+    let rates = [Resolution.p480: "0.05", .p720: "0.1", .p1080: "0.2"].compactMapValues { Decimal(string: $0) }
+    #expect(pricing.rates["higgsfield/genjutsu-light/motion-transfer/v1.0"] == rates)
+    #expect(pricing.rates["higgsfield/genjutsu-light/object-swap/v1.0"] == rates)
+}
+
 /// Seedance's list price is per second of output, and a source clip is billed as input too, at 0.6 of the rate for
 /// both: 1.2 times the rate. Kling's quality is its endpoint: Standard below 1080p, Pro at 1080p.
 @Test(arguments: [

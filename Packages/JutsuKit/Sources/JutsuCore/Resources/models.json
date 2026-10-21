@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-15",
+  "updated": "2026-10-21",
   "notes": [
     "One entry per video model, in the order the model picker lists them; the first model serving a mode is that mode's default.",
     "id: stored in jobs, templates and settings; never change an existing one. title, family and detail are the English fallbacks of the keys <id>.title, <id>.family and <id>.detail in Models.xcstrings.",
@@ -36,6 +36,24 @@
       "credits": {
         "perSecond": { "480p": 3, "720p": 7, "1080p": 20 },
         "modes": { "objectSwap": { "perSecond": { "480p": 3.25, "720p": 7.58, "1080p": 21.66 } } }
+      }
+    },
+    {
+      "id": "genjutsuLite",
+      "family": "Genjutsu",
+      "title": "Genjutsu Lite",
+      "detail": "Genjutsu Lite · cheaper, up to 15 s",
+      "modes": ["motionTransfer", "objectSwap"],
+      "limits": { "duration": [4, 15] },
+      "controls": ["draft"],
+      "listPriceIsExact": true,
+      "request": {
+        "shape": "genjutsu",
+        "endpoints": {},
+        "account": {
+          "motionTransfer": "hf_mult_motion_control_flash",
+          "objectSwap": "hf_mult_replace_object_flash"
+        }
       }
     },
     {
