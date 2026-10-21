@@ -59,6 +59,31 @@ private struct PagedElements: AccountElements {
         #expect(AgentElementLookup.find("roof", in: all) == .element(roof))
     }
 
+    /// A page of `elements` reads whole pages from the cursor given until enough match, and hands out the next one.
+    @Test func aPageReadsWholePagesUntilEnoughMatch() async throws {
+        let pages = [
+            AccountElementPage(items: [roof], nextCursor: HistoryCursor("3")),
+            AccountElementPage(items: [mara, roof], nextCursor: HistoryCursor("4")),
+            AccountElementPage(items: [mara], nextCursor: nil),
+        ]
+        let source = PagedElements(pages: pages)
+        let page = try await AgentElementLookup.page(
+            in: source, query: "mara", category: nil, limit: 1, after: HistoryCursor("2"))
+        #expect(page.items == [mara])
+        #expect(page.nextCursor == HistoryCursor("4"))
+        #expect(source.asked.value == [HistoryCursor("2"), HistoryCursor("3")])
+    }
+
+    /// A query that matches nothing stops after `maxPages`, with the cursor to go on from.
+    @Test func aPageStopsAfterMaxPages() async throws {
+        let pages = (1...30).map { AccountElementPage(items: [roof], nextCursor: HistoryCursor("\($0 + 1)")) }
+        let source = PagedElements(pages: pages)
+        let page = try await AgentElementLookup.page(in: source, query: "mara", category: nil, limit: 5, after: nil)
+        #expect(page.items.isEmpty)
+        #expect(source.asked.value.count == AgentElementLookup.maxPages)
+        #expect(page.nextCursor == HistoryCursor("\(AgentElementLookup.maxPages + 1)"))
+    }
+
     @Test func theElementsImagesComeFirstThenTheAgentsFilesEachWithItsTag() {
         let image = { (name: String) in LocalImage(fileURL: URL(fileURLWithPath: "/tmp/\(name).png")) }
         let references = AgentElementLookup.references(

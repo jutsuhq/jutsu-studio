@@ -21,6 +21,24 @@ public enum AgentElementLookup {
         case missing
     }
 
+    /// One answer of `elements`: the elements that match `query` and `category`, read page after page from `cursor`
+    /// until `limit` match, the last page or `maxPages`, and the cursor of the page after them. Whole pages only, so
+    /// the next cursor never skips an element.
+    public static func page(
+        in source: any AccountElements, query: String, category: ElementCategory?, limit: Int,
+        after cursor: HistoryCursor?
+    ) async throws -> (items: [AccountElement], nextCursor: HistoryCursor?) {
+        var cursor = cursor
+        var items: [AccountElement] = []
+        for _ in 0..<maxPages {
+            let read = try await source.elements(after: cursor)
+            items += read.items.filter { matches($0, query: query, category: category) }
+            cursor = read.nextCursor
+            if cursor == nil || items.count >= limit { break }
+        }
+        return (items, cursor)
+    }
+
     /// The account's elements, page after page until the last or `maxPages`: a name is known to be one element only
     /// once they are all read, as a second one of that name may be on a later page.
     public static func all(in source: any AccountElements) async throws -> [AccountElement] {

@@ -13,18 +13,12 @@ extension AgentService {
     func elements(_ fields: ElementsCommand) async throws(AgentError) -> AgentElementsPage {
         let source = try elementSource()
         let category = fields.category.flatMap(ElementCategory.init(rawValue:))
-        let limit = fields.limit ?? ElementsCommand.defaultLimit
-        var cursor = fields.cursor.map(HistoryCursor.init)
-        var items: [AgentElement] = []
-        for _ in 0..<AgentElementLookup.maxPages {
-            let page = try await Self.reading { try await source.elements(after: cursor) }
-            items += page.items.filter { AgentElementLookup.matches($0, query: fields.query ?? "", category: category) }
-                .map(Self.agentElement)
-            cursor = page.nextCursor
-            // Whole pages only, so the next cursor never skips an element.
-            if cursor == nil || items.count >= limit { break }
+        let (items, next) = try await Self.reading {
+            try await AgentElementLookup.page(
+                in: source, query: fields.query ?? "", category: category,
+                limit: fields.limit ?? ElementsCommand.defaultLimit, after: fields.cursor.map(HistoryCursor.init))
         }
-        return AgentElementsPage(items: items, nextCursor: cursor?.value)
+        return AgentElementsPage(items: items.map(Self.agentElement), nextCursor: next?.value)
     }
 
     /// The elements named, each with all its images, in the order named. Every page is read first, so a name two
