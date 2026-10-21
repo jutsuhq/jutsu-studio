@@ -31,6 +31,8 @@ final class AgentService {
     @ObservationIgnored var creating:
         [String: (fingerprint: String, task: Task<Result<AgentCreated, AgentError>, Never>)] =
             [:]
+    /// The exports agents started, followed with `jobs`; in memory, so a relaunch forgets them.
+    @ObservationIgnored let operations = AgentOperations()
     /// `create_image` requests being taken, by request ID, likewise.
     @ObservationIgnored var creatingImages:
         [String: (fingerprint: String, task: Task<Result<AgentCreated, AgentError>, Never>)] =

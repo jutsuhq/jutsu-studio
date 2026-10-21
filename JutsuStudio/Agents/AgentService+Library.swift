@@ -220,8 +220,9 @@ extension AgentService {
         }
     }
 
-    /// Writes what is still to write of the set, never over a file, into a folder the person exported a set to, or
-    /// the output folder's Exports folder, and records it on the set as the sheet does.
+    /// Starts writing what is still to write of the set, never over a file, into a folder the person exported a set
+    /// to, or the output folder's Exports folder, recording it on the set as the sheet does once done. The export runs
+    /// in the app (`AgentOperations`); the answer comes at once, or once it finished within `waitSeconds`.
     private func exportDelivery(_ fields: DeliverySetCommand) async throws(AgentError) -> AgentDelivery {
         let sets = try await deliverySets()
         guard let set = sets.first(where: { $0.id == fields.set }) else {
@@ -231,34 +232,72 @@ extension AgentService {
         }
         let folder = try deliveryFolder(fields.folder, in: sets)
         let access = SecurityScopedAccess(url: folder.url, bookmark: folder.bookmark)
-        defer { withExtendedLifetime(access) {} }
         let directory = access.url
         try Self.makeFolder(directory)
         let versions = Self.versions(of: set, in: try await materials())
         let tasks = AgentExports.deliveryTasks(for: set, existing: AgentExports.existingNames(in: directory))
-        let results = await DeliveryRun.run(tasks) { task in
-            try await DeliveryExportModel.export(task, version: versions[task.item.reference], into: directory)
-        }
-        var recorded = set
-        if !results.isEmpty {
-            let date = Date()
-            recorded.record(results, in: DeliverySet.Folder(url: directory, bookmark: folder.bookmark), at: date)
-            DeliveryExportModel.writeManifest(of: recorded, at: date, into: directory, replacing: false)
-            do {
-                try await environment.store.saveDeliverySet(recorded)
-            } catch {
-                logger.error("Can't record a delivery export: \(String(describing: error), privacy: .private)")
+        let store = environment.store
+        let started = operations.start(
+            .deliveryExport, folder: directory.path(percentEncoded: false), total: tasks.count, set: set.id
+        ) { report in
+            // The folder stays open to the app until every file is written.
+            defer { withExtendedLifetime(access) {} }
+            let byID = Dictionary(tasks.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+            let results = await DeliveryRun.run(
+                tasks,
+                export: { task in
+                    try await DeliveryExportModel.export(task, version: versions[task.item.reference], into: directory)
+                },
+                report: { id, state in
+                    guard let task = byID[id], let file = Self.file(of: task, state, in: directory) else { return }
+                    report(file)
+                })
+            if !results.isEmpty {
+                var recorded = set
+                let date = Date()
+                recorded.record(results, in: DeliverySet.Folder(url: directory, bookmark: folder.bookmark), at: date)
+                DeliveryExportModel.writeManifest(of: recorded, at: date, into: directory, replacing: false)
+                do {
+                    try await store.saveDeliverySet(recorded)
+                } catch {
+                    logger.error("Can't record a delivery export: \(String(describing: error), privacy: .private)")
+                }
             }
+            return .success(
+                zip(tasks, results).map { task, result in
+                    Self.file(of: task, status: Self.status(result.status), message: result.message, in: directory)
+                })
         }
-        let files = zip(tasks, results).map { task, result in
-            AgentExportFile(
-                item: task.item.reference.materialID, status: Self.status(result.status),
-                file: result.status == .done
-                    ? directory.appending(path: task.fileName).path(percentEncoded: false) : nil,
-                message: result.message, output: DeliveryContent.summary(of: task.output))
-        }
+        let timedOut = await waitFor(started.id, seconds: fields.waitSeconds ?? 0)
         return AgentDelivery(
-            action: .export, set: Self.agentSet(recorded), folder: directory.path(percentEncoded: false), files: files)
+            action: .export, set: Self.agentSet(set), job: (operations.operation(started.id) ?? started).job,
+            timedOut: timedOut)
+    }
+
+    /// A delivery file as `jobs` lists it, once its task finished; `nil` while it waits or runs.
+    private static func file(of task: DeliveryTask, _ state: DeliveryRun.State, in directory: URL) -> AgentExportFile? {
+        switch state {
+        case .waiting, .running: nil
+        case .done: file(of: task, status: .done, message: nil, in: directory)
+        case .failed(let message): file(of: task, status: .failed, message: message, in: directory)
+        case .skipped(let message): file(of: task, status: .skipped, message: message, in: directory)
+        }
+    }
+
+    private static func file(
+        of task: DeliveryTask, status: AgentExportFile.Status, message: String?, in directory: URL
+    ) -> AgentExportFile {
+        AgentExportFile(
+            item: task.item.reference.materialID, status: status,
+            file: status == .done ? directory.appending(path: task.fileName).path(percentEncoded: false) : nil,
+            message: message, output: DeliveryContent.summary(of: task.output))
+    }
+
+    /// Waits up to `seconds` for an export to finish: `true` when the time ran out first. It runs on either way.
+    func waitFor(_ id: UUID, seconds: Int) async -> Bool {
+        guard seconds > 0 else { return operations.operation(id)?.state == .running }
+        let operations = operations
+        return await agentWait(seconds: seconds) { operations.operation(id)?.state != .running }
     }
 
     /// A folder the person exported a set to, else the output folder's Exports.
@@ -284,7 +323,7 @@ extension AgentService {
         return versions
     }
 
-    private static func makeFolder(_ folder: URL) throws(AgentError) {
+    static func makeFolder(_ folder: URL) throws(AgentError) {
         do {
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         } catch {
@@ -309,72 +348,9 @@ extension AgentService {
 
     // MARK: export
 
-    func exportForEditing(_ fields: ExportCommand) async throws(AgentError) -> AgentExported {
-        let preset = Self.preset(fields.preset)
-        let folder = environment.outputFolder.url(of: .exports)
-        try Self.makeFolder(folder)
-        let byID = Dictionary(
-            try await materials().map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        var videos: [LibraryItemModel] = []
-        var files: [AgentExportFile] = []
-        for id in fields.items {
-            guard let material = byID[id], case .video(let item)? = MaterialLibrary.row(material),
-                item.historyItem == nil, let file = item.outputFile,
-                FileManager.default.fileExists(atPath: file.path(percentEncoded: false))
-            else {
-                files.append(
-                    AgentExportFile(item: id, status: .skipped, message: "Not a video with a file on this Mac."))
-                continue
-            }
-            videos.append(item)
-        }
-        let names = AgentExports.editingNames(
-            for: videos, preset: preset, existing: AgentExports.existingNames(in: folder))
-        for (item, name) in zip(videos, names) {
-            files.append(
-                await Self.write(item, as: name, preset: preset, into: folder, sidecar: fields.sidecar ?? true))
-        }
-        // In the order asked.
-        let order = Dictionary(fields.items.enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
-        files.sort { (order[$0.item] ?? 0) < (order[$1.item] ?? 0) }
-        return AgentExported(folder: folder.path(percentEncoded: false), files: files)
-    }
-
-    private static func preset(_ preset: AgentExportPreset) -> ExportPreset {
-        switch preset {
-        case .premiere: .premiere
-        case .davinciResolve: .davinciResolve
-        case .finalCutPro: .finalCutPro
-        case .editingH264: .editingH264
-        }
-    }
-
-    /// Writes one take as Export for Editing does, under a name no file has.
-    private static func write(
-        _ item: LibraryItemModel, as name: ExportNaming.Names, preset: ExportPreset, into folder: URL,
-        sidecar writesSidecar: Bool
-    ) async -> AgentExportFile {
-        guard let result = item.outputFile else {
-            return AgentExportFile(item: item.id, status: .skipped, message: "Not a video with a file on this Mac.")
-        }
-        let video = folder.appending(path: name.video)
-        let sidecar = writesSidecar ? folder.appending(path: name.sidecar) : nil
-        do {
-            let sidecarError = try await EditingExportModel.write(
-                preset, item: item, result: result, to: video, sidecar: sidecar)
-            return AgentExportFile(
-                item: item.id, status: .done, file: video.path(percentEncoded: false),
-                sidecar: sidecarError == nil ? sidecar?.path(percentEncoded: false) : nil,
-                message: sidecarError.map { "The JSON sidecar wasn't written: \($0.localizedDescription)" })
-        } catch {
-            logger.error("Agent export failed: \(String(describing: error), privacy: .private)")
-            return AgentExportFile(item: item.id, status: .failed, message: error.localizedDescription)
-        }
-    }
-
     // MARK: Helpers
 
-    private func materials() async throws(AgentError) -> [Material] {
+    func materials() async throws(AgentError) -> [Material] {
         do {
             return try await environment.store.materials()
         } catch {

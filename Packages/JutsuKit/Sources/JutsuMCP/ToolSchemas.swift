@@ -105,11 +105,11 @@ extension Tool {
             properties["set"] = Self.deliverySetSchema
             properties["sets"] = ["type": "array", "items": Self.deliverySetSchema]
             properties["folders"] = ["type": "array", "items": ["type": "string"]]
-            properties["folder"] = ["type": "string"]
-            properties["files"] = ["type": "array", "items": Self.exportFileSchema]
+            properties["job"] = Self.jobSchema
+            properties["timedOut"] = ["type": "boolean"]
         case .export:
-            properties["folder"] = ["type": "string"]
-            properties["files"] = ["type": "array", "items": Self.exportFileSchema]
+            properties["job"] = Self.jobSchema
+            properties["timedOut"] = ["type": "boolean"]
         case .jobAction:
             properties["action"] = ["type": "string"]
             properties["job"] = Self.jobSchema
@@ -137,6 +137,8 @@ extension Tool {
             "results": ["type": "array", "items": ["type": "string"]], "kind": ["type": "string"],
             "requestId": ["type": "string"],
             "client": ["type": "string"], "mode": ["type": "string"], "model": ["type": "string"],
+            "folder": ["type": "string"], "files": ["type": "array", "items": exportFileSchema],
+            "set": ["type": "string"], "next": ["type": "string"],
             "createdAt": ["type": "string"], "finishedAt": ["type": "string"],
         ],
     ]

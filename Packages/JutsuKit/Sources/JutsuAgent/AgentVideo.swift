@@ -376,11 +376,11 @@ public struct AgentQuote: Codable, Equatable, Sendable {
     }
 }
 
-/// One job, as an agent sees it.
+/// One piece of work, as an agent follows it with `jobs`: a video job, an image request, or an export (`kind`).
 public struct AgentJob: Codable, Equatable, Sendable {
     public var id: UUID
     /// preparing, uploading, waiting_for_slot, queued, processing, downloading, paused, done, failed, rejected,
-    /// canceled.
+    /// canceled; unknown for an ID Jutsu Studio doesn't know (an export's, after a relaunch).
     public var state: String
     /// Why it is paused: agent_limit and price_above_cap wait for the person, by_user for Resume all.
     public var pauseReason: String?
@@ -389,7 +389,7 @@ public struct AgentJob: Codable, Equatable, Sendable {
     public var hold: String?
     /// Only the person can move it on (a pause for a limit, the connection or funds).
     public var needsPerson: Bool
-    /// 0…1 while preparing, uploading or downloading.
+    /// 0…1 while preparing, uploading or downloading, and for an export the share of its files finished.
     public var progress: Double?
     public var price: AgentAmount?
     public var isPriceExact: Bool
@@ -399,24 +399,39 @@ public struct AgentJob: Codable, Equatable, Sendable {
     public var error: String?
     /// The finished video's path on the person's Mac, or an image request's first image.
     public var result: String?
-    /// Every file the job made: an image request's images.
+    /// Every file the job made: an image request's images, an export's files written.
     public var results: [String]?
-    /// "video", or "image" for a create_image request.
+    /// "video", "image" for a create_image request, "export" or "delivery_export" for an export, "unknown".
     public var kind: String
     public var requestID: String?
     public var client: String?
-    public var mode: String
-    public var model: String
-    public var createdAt: Date
+    /// A video's or image's; nil for an export.
+    public var mode: String?
+    public var model: String?
+    /// An export's folder.
+    public var folder: String?
+    /// An export's files so far, each done, failed or skipped.
+    public var files: [AgentExportFile]?
+    /// A delivery export's set.
+    public var set: UUID?
+    /// What to do about it, for state unknown.
+    public var next: String?
+    /// nil for state unknown.
+    public var createdAt: Date?
     public var finishedAt: Date?
 
     public init(
         id: UUID, state: String, pauseReason: String? = nil, hold: String? = nil, needsPerson: Bool = false,
         progress: Double? = nil, price: AgentAmount? = nil, isPriceExact: Bool = false, charged: Bool = false,
         error: String? = nil, result: String? = nil, results: [String]? = nil, kind: String = "video",
-        requestID: String? = nil, client: String? = nil, mode: String, model: String, createdAt: Date,
-        finishedAt: Date? = nil
+        requestID: String? = nil, client: String? = nil, mode: String? = nil, model: String? = nil,
+        folder: String? = nil, files: [AgentExportFile]? = nil, set: UUID? = nil, next: String? = nil,
+        createdAt: Date?, finishedAt: Date? = nil
     ) {
+        self.folder = folder
+        self.files = files
+        self.set = set
+        self.next = next
         self.id = id
         self.state = state
         self.pauseReason = pauseReason
@@ -442,12 +457,12 @@ public struct AgentJob: Codable, Equatable, Sendable {
         case id, state, pauseReason, hold, needsPerson, progress, price, isPriceExact, charged, error, result
         case results, kind
         case requestID = "requestId"
-        case client, mode, model, createdAt, finishedAt
+        case client, mode, model, folder, files, set, next, createdAt, finishedAt
     }
 
-    /// Settled: finished, or waiting for someone. A `jobs` wait ends once every job named is.
+    /// Settled: finished, waiting for someone, or not known. A `jobs` wait ends once every job named is.
     public var isSettled: Bool {
-        ["done", "failed", "rejected", "canceled", "paused"].contains(state)
+        ["done", "failed", "rejected", "canceled", "paused", "unknown"].contains(state)
     }
 }
 

@@ -332,8 +332,10 @@ extension MCPServer {
         every tool returns agents_off. To make a video: quote it (free), then create_video with a new request_id and \
         max_cost, the most you agree to pay; create_image and enhance take the same two. Use a cheap draft mode \
         when it fits the task. Sending the same request_id and parameters again returns the same job and never pays \
-        twice; reuse a request_id only to retry. Follow jobs with jobs, wait_seconds up to 50; a wait that runs out \
-        stops nothing. Jutsu Studio checks every paid request right before it is sent: a price above max_cost, \
+        twice; reuse a request_id only to retry. Follow work with jobs, wait_seconds up to 50; a wait that runs out \
+        stops nothing. export and delivery_set's export run in the app and answer with a job ID at once (or within \
+        their own wait_seconds): follow it with jobs too. No call blocks longer than about a minute; still_working \
+        means the work goes on, so send the same request again. Jutsu Studio checks every paid request right before it is sent: a price above max_cost, \
         above what is left of the daily agent budget or not known holds it (paused, needsPerson) until the person \
         decides in the Queue; the person's own daily cap applies too. A video the plan's unlimited generations would \
         pay for (quote's paysUnlimited) costs the budget nothing, but is held the same way unless the person lets \

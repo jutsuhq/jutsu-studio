@@ -18,17 +18,20 @@ public final class AgentServer {
     private let isAllowed: @MainActor () -> Bool
     private let gate: UploadGate
     private let handle: Handler
+    private let answerDeadline: Duration
     private var listener: AgentListener?
     private var connections: [ObjectIdentifier: AgentSocketConnection] = [:]
 
+    /// - Parameter answerDeadline: what a command's answer waits for its work at most (`AgentProtocol.answerDeadline`).
     public init(
         socket: URL, isAllowed: @escaping @MainActor () -> Bool, gate: @escaping UploadGate = { _, _ in },
-        handle: @escaping Handler
+        answerDeadline: Duration = AgentProtocol.answerDeadline, handle: @escaping Handler
     ) {
         self.socket = socket
         inbox = AgentInbox(socket: socket)
         self.isAllowed = isAllowed
         self.gate = gate
+        self.answerDeadline = answerDeadline
         self.handle = handle
     }
 
@@ -63,12 +66,40 @@ public final class AgentServer {
             guard isAllowed() else { throw .agentsOff }
             let parsed = try request.get()
             if case .upload = parsed.command { throw .badRequest("upload is read with the bytes that follow it") }
-            var response = try await handle(parsed)
+            var response = try await answer(parsed)
             response.id = id
             return response
         } catch {
             return AgentResponse(id: id, error: error)
         }
+    }
+
+    /// The handler's answer, or `still_working` once `answerDeadline` passes first. The work runs in a task of its
+    /// own and goes on either way: nothing a command started is stopped because its answer came too late.
+    private func answer(_ request: AgentRequest) async throws(AgentError) -> AgentResponse {
+        let handle = handle
+        let work = Task { () -> Result<AgentResponse, AgentError> in
+            do throws(AgentError) {
+                return .success(try await handle(request))
+            } catch {
+                return .failure(error)
+            }
+        }
+        let first = await withCheckedContinuation {
+            (continuation: CheckedContinuation<Result<AgentResponse, AgentError>?, Never>) in
+            let race = AnswerRace(continuation)
+            let timer = Task { [answerDeadline] in
+                try? await Task.sleep(for: answerDeadline)
+                race.finish(nil)
+            }
+            Task {
+                let result = await work.value
+                timer.cancel()
+                race.finish(result)
+            }
+        }
+        guard let first else { throw .stillWorking(request.command.name) }
+        return try first.get()
     }
 
     private func accept(_ connection: AgentSocketConnection) {
@@ -178,6 +209,21 @@ public final class AgentServer {
             if case .success = result { result = Result { try handle.write(contentsOf: chunk) } }
         }
         return result
+    }
+}
+
+/// Resumes its continuation once, with whichever result comes first.
+@MainActor
+private final class AnswerRace {
+    private var continuation: CheckedContinuation<Result<AgentResponse, AgentError>?, Never>?
+
+    init(_ continuation: CheckedContinuation<Result<AgentResponse, AgentError>?, Never>) {
+        self.continuation = continuation
+    }
+
+    func finish(_ result: Result<AgentResponse, AgentError>?) {
+        continuation?.resume(returning: result)
+        continuation = nil
     }
 }
 

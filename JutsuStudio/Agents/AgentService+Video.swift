@@ -306,16 +306,12 @@ extension AgentService {
     func jobs(_ fields: JobsCommand) async throws(AgentError) -> AgentJobs {
         var ids = fields.ids
         var next: String?
+        let operations = operations
         if ids.isEmpty {
             let videos = environment.liveJobs.all.filter { $0.agent != nil }.map { ($0.createdAt, $0.id) }
             let images = ((try? environment.agentImages.records()) ?? []).map { ($0.createdAt, $0.id) }
-            (ids, next) = AgentJobPage.page(videos + images, limit: fields.limit ?? 10, after: fields.cursor)
-        }
-        for id in ids {
-            guard await job(id) == nil, environment.agentImages.record(id) == nil else { continue }
-            throw AgentError(
-                .notFound, message: "There's no job \(id.uuidString).", retryable: false,
-                next: "Call jobs without ids to list the latest agent jobs.")
+            let exports = operations.all.map { ($0.createdAt, $0.id) }
+            (ids, next) = AgentJobPage.page(videos + images + exports, limit: fields.limit ?? 10, after: fields.cursor)
         }
         let live = environment.liveJobs
         let images = environment.agentImages
@@ -324,6 +320,7 @@ extension AgentService {
             ? await agentWait(seconds: fields.waitSeconds) {
                 ids.allSatisfy { id in
                     if let job = live.job(id) { return AgentJobStatus.isSettled(job.state) }
+                    if let operation = operations.operation(id) { return operation.state != .running }
                     guard let record = images.record(id) else { return true }
                     return (record.isOver && !images.files(of: id).isEmpty) || record.state == .held
                         || record.state == .failed || record.state == .canceled
@@ -335,6 +332,10 @@ extension AgentService {
                 jobs.append(Self.agentJob(job))
             } else if let image = await imageJob(id) {
                 jobs.append(image)
+            } else if let operation = operations.operation(id) {
+                jobs.append(operation.job)
+            } else {
+                jobs.append(.unknown(id))
             }
         }
         return AgentJobs(jobs: jobs, timedOut: timedOut, nextCursor: next)

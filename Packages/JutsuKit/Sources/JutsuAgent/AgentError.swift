@@ -36,6 +36,8 @@ public struct AgentError: Error, Codable, Equatable, Sendable {
         public static let failed = Code(rawValue: "failed")
         /// Higgsfield prices the operation only after it has run, so no agent can stay within a max_cost for it.
         public static let pricedAfterRun = Code(rawValue: "priced_after_run")
+        /// The command's work took longer than the app answers within (`AgentProtocol.answerDeadline`); it goes on.
+        public static let stillWorking = Code(rawValue: "still_working")
     }
 
     public var code: Code
@@ -79,6 +81,14 @@ public struct AgentError: Error, Codable, Equatable, Sendable {
         AgentError(
             .invalidRequest, message: reason, retryable: false,
             next: "Change the request as the message says; capabilities with models true lists each model's limits.")
+    }
+
+    /// Nothing is stopped: a request with a `request_id` sent again returns what it made, once it has.
+    public static func stillWorking(_ command: String) -> AgentError {
+        AgentError(
+            .stillWorking,
+            message: "Jutsu Studio is still working on \(command); it goes on without this answer.", retryable: true,
+            next: "Send the same request again in a moment (the same request_id returns what it made), or call jobs.")
     }
 
     public static let requestConflict = AgentError(

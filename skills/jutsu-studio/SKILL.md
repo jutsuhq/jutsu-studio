@@ -44,7 +44,10 @@ says rather than guessing.
    rejects or stars them, and `show` opens a job or a page in the app for the person.
 6. **Finish.** `enhance` upscales, reframes, removes a background, dubs or changes the voice of a video, with its own
    `request_id` and `max_cost`. `export` writes takes for Premiere, DaVinci Resolve or Final Cut Pro, and
-   `delivery_set` creates, lists and exports delivery sets.
+   `delivery_set` creates, lists and exports delivery sets. An export runs in the app and answers at once (or after
+   `wait_seconds`, up to 50) with a `job`: follow it with `jobs` like any job, and read its `files` and `results`
+   once it is `done`. If the app was relaunched meanwhile, `jobs` answers `unknown`: look in its `folder` or export
+   again. An answer of `still_working` means the app is still on it; send the same call again or call `jobs`.
 
 ## Rules
 

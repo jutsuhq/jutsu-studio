@@ -206,9 +206,43 @@ import Testing
             return
         }
         #expect(export.preset == .premiere)
+        #expect(export.waitSeconds == nil)
         guard case .failure = command(.export, ["items": [.string(id), .string(id)], "preset": "premiere"]) else {
             Issue.record("the same video twice")
             return
+        }
+    }
+
+    /// An export answers with its handle; a wait for it is as bounded as a jobs wait, and only an export waits.
+    @Test func exportsTakeABoundedWait() {
+        let id = UUID().uuidString
+        guard
+            case .success(.export(let export)) = command(
+                .export, ["items": [.string(id)], "preset": "premiere", "wait_seconds": 50])
+        else {
+            Issue.record("no export")
+            return
+        }
+        #expect(export.waitSeconds == 50)
+        let set = UUID().uuidString
+        guard
+            case .success(.deliverySet(let delivery)) = command(
+                .deliverySet, ["action": "export", "set": .string(set), "wait_seconds": 10])
+        else {
+            Issue.record("no delivery export")
+            return
+        }
+        #expect(delivery.waitSeconds == 10)
+        let refused: [(Tool, [String: JSONValue])] = [
+            (.export, ["items": [.string(id)], "preset": "premiere", "wait_seconds": 51]),
+            (.export, ["items": [.string(id)], "preset": "premiere", "wait_seconds": -1]),
+            (.deliverySet, ["action": "list", "wait_seconds": 5]),
+        ]
+        for (tool, arguments) in refused {
+            guard case .failure = command(tool, arguments) else {
+                Issue.record("\(tool.rawValue) took \(arguments)")
+                continue
+            }
         }
     }
 
@@ -237,7 +271,9 @@ import Testing
             AgentResponse(library: AgentLibraryPage(items: [], nextCursor: "c")),
             AgentResponse(marked: AgentMarked(items: [], changed: 0)),
             AgentResponse(delivery: AgentDelivery(action: .list, sets: [], folders: [])),
-            AgentResponse(exported: AgentExported(folder: "/tmp/Exports", files: [])),
+            AgentResponse(
+                exported: AgentExported(job: AgentJob(id: UUID(), state: "processing", kind: "export", createdAt: .now))
+            ),
         ]
         for answer in answers {
             let result = MCPServer.toolResult(answer, structured: true)

@@ -16,6 +16,13 @@ public enum AgentProtocol {
     /// A request line longer than this is refused rather than buffered: no command needs more. An upload's bytes
     /// follow its line and don't count (`AgentInbox.maxFileSize`).
     public static let maxLineLength = 64 * 1024
+    /// The app answers every command within this, under the minute MCP clients usually give a tool call: a `jobs` or
+    /// export wait is at most 50 s, and any other command whose work runs longer is answered `still_working` while
+    /// the work goes on (`AgentServer`). Long work returns a handle instead (`AgentOperations`).
+    public static let answerDeadline = Duration.seconds(55)
+    /// How long the helper waits on the socket for each write and for the answer: the answer deadline and a margin
+    /// for the line to arrive.
+    public static let helperTimeout = answerDeadline + .seconds(5)
 }
 
 public enum AgentCommand: Equatable, Sendable {

@@ -78,12 +78,14 @@ extension Tool {
             """
         case .jobs:
             """
-            The state of jobs by ID (ids, up to 20), or of the latest jobs and image requests agents made (limit, up \
-            to 50, newest first; pass nextCursor back as cursor for the page after): state, pauseReason, hold, \
-            needsPerson, progress, price, error, result (the finished video's path) and, for an image request (kind \
-            image), results, its images' paths. wait_seconds (0–50) waits until every job named has settled (done, \
-            failed, rejected, canceled or paused); a wait that runs out returns the state as it is, with timedOut, \
-            and stops nothing. Read-only.
+            One place to follow work: video jobs, image requests and exports, by ID (ids, up to 20), or the latest \
+            agents started (limit, up to 50, newest first; pass nextCursor back as cursor for the page after). Each \
+            has kind (video, image, export, delivery_export), state, pauseReason, hold, needsPerson, progress, \
+            price, error and result (the finished video's path); an image request's results are its images' paths, \
+            an export's results the files written, with folder and files (each done, failed or skipped). An ID \
+            Jutsu Studio doesn't know is state unknown with next: an export's ID is forgotten when the app quits. \
+            wait_seconds (0–50) waits until everything named has settled (done, failed, rejected, canceled, paused \
+            or unknown); a wait that runs out returns the state as it is, with timedOut, and stops nothing. Read-only.
             """
         case .jobAction:
             """
@@ -124,15 +126,19 @@ extension Tool {
             with an optional name. list: every set, and folders, the folders the person exported sets to. export: \
             writes the set's files still to write with its outputs (a full-size JPEG for images and an H.264 file \
             for videos unless the person changed them) into folder, one of list's folders, or else the output \
-            folder's Exports folder, and returns each file as done, failed or skipped. Free and local; never \
-            replaces a file. Exporting freezes the set's versions.
+            folder's Exports folder. The export runs in the app: it answers at once, or once it finished within \
+            wait_seconds (0–50), with job (kind delivery_export), whose ID jobs follows until every file is done, \
+            failed or skipped. A wait that runs out stops nothing. Free and local; never replaces a file. \
+            Exporting freezes the set's versions.
             """
         case .export:
             """
             Exports video results for editing, as the result page's Export for Editing does: preset premiere, \
             davinci_resolve or final_cut_pro (ProRes 422, MOV) or editing_h264, with a JSON sidecar of the job \
-            unless sidecar is false, into the output folder's Exports folder. Returns each file's path, or why it \
-            failed or was skipped. Free and local; never replaces a file.
+            unless sidecar is false, into the output folder's Exports folder. The export runs in the app: it \
+            answers at once, or once it finished within wait_seconds (0–50), with job (kind export), whose ID jobs \
+            follows with progress and each file's path, or why it failed or was skipped. A wait that runs out stops \
+            nothing. Free and local; never replaces a file.
             """
         case .show:
             """
@@ -230,6 +236,7 @@ extension Tool {
                 ],
                 "set": ["type": "string", "format": "uuid", "description": "export: the set's ID."],
                 "folder": ["type": "string", "description": "export: one of list's folders."],
+                "wait_seconds": Self.exportWaitSchema,
             ]
             schema["required"] = ["action"]
         case .export:
@@ -242,6 +249,7 @@ extension Tool {
                     "type": "string", "enum": .array(AgentExportPreset.allCases.map { .string($0.rawValue) }),
                 ],
                 "sidecar": ["type": "boolean", "description": "Also write the JSON sidecar; true when left out."],
+                "wait_seconds": Self.exportWaitSchema,
             ]
             schema["required"] = ["items", "preset"]
         case .jobs:
@@ -281,6 +289,11 @@ extension Tool {
         }
         return schema
     }
+
+    private static let exportWaitSchema: JSONValue = [
+        "type": "integer", "minimum": 0, "maximum": .number(Double(JobsCommand.maxWaitSeconds)),
+        "description": "Wait up to this long for the export to finish before answering; it runs on either way.",
+    ]
 
     /// The video fields of `quote` and `create_video`; `files` for paths to send, else counts and lengths only.
     private static func videoProperties(files: Bool) -> [String: JSONValue] {

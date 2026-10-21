@@ -1,5 +1,6 @@
 import Darwin
 import Foundation
+import JutsuTestSupport
 import Testing
 
 @testable import JutsuAgent
@@ -83,6 +84,34 @@ final class Switch: @unchecked Sendable {
         }
         #expect(bad.error?.code == .badRequest)
         #expect(good.capabilities != nil)
+    }
+
+    /// A command whose work outlasts the answer deadline answers `still_working`, and the work goes on to finish.
+    @Test func aSlowCommandAnswersStillWorkingAndKeepsRunning() async throws {
+        let finished = Switch(false)
+        let release = AsyncStream<Void>.makeStream()
+        let server = AgentServer(socket: try temporarySocket(), isAllowed: { true }, answerDeadline: .milliseconds(20))
+        {
+            _ in
+            for await _ in release.stream { break }
+            finished.isOn = true
+            return AgentResponse(shown: AgentShown(page: .queue))
+        }
+        try server.start()
+        defer { server.stop() }
+        let answer = try await exchange(server.socket) { try $0.send(AgentRequest(.show(.page(.queue)), id: "7")) }
+        #expect(answer.error?.code == .stillWorking)
+        #expect(answer.error?.retryable == true)
+        #expect(answer.id == "7")
+        #expect(!finished.isOn)
+        release.continuation.yield()
+        await eventually { finished.isOn }
+        #expect(finished.isOn)
+    }
+
+    @Test func theHelperWaitsLongerThanTheAppTakesToAnswer() {
+        #expect(AgentProtocol.answerDeadline <= .seconds(60))
+        #expect(AgentProtocol.helperTimeout > AgentProtocol.answerDeadline)
     }
 
     @Test func theSocketIsTheUsersAlone() throws {

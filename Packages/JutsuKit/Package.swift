@@ -67,7 +67,7 @@ var targets: [Target] = [
         .target(
             name: "JutsuMCP",
             dependencies: ["JutsuAgent", .product(name: "HiggsfieldMCP", package: "HiggsfieldKit")]),
-        .testTarget(name: "JutsuAgentTests", dependencies: ["JutsuAgent"]),
+        .testTarget(name: "JutsuAgentTests", dependencies: ["JutsuAgent", "JutsuTestSupport"]),
         .testTarget(
             name: "JutsuMCPTests",
             dependencies: ["JutsuMCP", "JutsuAgent", .product(name: "HiggsfieldMCP", package: "HiggsfieldKit")]),

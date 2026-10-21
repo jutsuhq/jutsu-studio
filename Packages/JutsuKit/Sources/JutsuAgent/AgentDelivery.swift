@@ -22,19 +22,24 @@ public struct DeliverySetCommand: Codable, Equatable, Sendable, AgentFields {
     /// export: a folder the person already exported a set to (`folders` of list); left out, the output folder's
     /// Exports folder.
     public var folder: String?
+    /// export: how long to wait for it to finish before answering, 0 to `JobsCommand.maxWaitSeconds`; it runs on
+    /// either way.
+    public var waitSeconds: Int?
 
     public init(
-        action: AgentDeliveryAction, name: String? = nil, items: [UUID] = [], set: UUID? = nil, folder: String? = nil
+        action: AgentDeliveryAction, name: String? = nil, items: [UUID] = [], set: UUID? = nil, folder: String? = nil,
+        waitSeconds: Int? = nil
     ) {
         self.action = action
         self.name = name
         self.items = items
         self.set = set
         self.folder = folder
+        self.waitSeconds = waitSeconds
     }
 
     private enum CodingKeys: String, CodingKey {
-        case action, name, items, set, folder
+        case action, name, items, set, folder, waitSeconds
     }
 
     public init(from decoder: any Decoder) throws {
@@ -44,6 +49,7 @@ public struct DeliverySetCommand: Codable, Equatable, Sendable, AgentFields {
         items = try container.decodeIfPresent([UUID].self, forKey: .items) ?? []
         set = try container.decodeIfPresent(UUID.self, forKey: .set)
         folder = try container.decodeIfPresent(String.self, forKey: .folder)
+        waitSeconds = try container.decodeIfPresent(Int.self, forKey: .waitSeconds)
     }
 
     public func encode(to encoder: any Encoder) throws {
@@ -53,6 +59,7 @@ public struct DeliverySetCommand: Codable, Equatable, Sendable, AgentFields {
         if !items.isEmpty { try container.encode(items, forKey: .items) }
         try container.encodeIfPresent(set, forKey: .set)
         try container.encodeIfPresent(folder, forKey: .folder)
+        try container.encodeIfPresent(waitSeconds, forKey: .waitSeconds)
     }
 
     public var problem: String? {
@@ -60,6 +67,12 @@ public struct DeliverySetCommand: Codable, Equatable, Sendable, AgentFields {
             return "name is 1 to 120 characters"
         }
         if let folder, !AgentVideoRequest.isValidPath(folder) { return "folder is a folder path from list" }
+        if let waitSeconds {
+            guard action == .export else { return "wait_seconds is for export" }
+            guard (0...JobsCommand.maxWaitSeconds).contains(waitSeconds) else {
+                return "wait_seconds is 0 to \(JobsCommand.maxWaitSeconds)"
+            }
+        }
         switch action {
         case .create:
             guard (1...Self.maxItems).contains(items.count) else {
@@ -142,20 +155,23 @@ public struct AgentDelivery: Codable, Equatable, Sendable {
     public var sets: [AgentDeliverySet]?
     /// list: the folders the person exported sets to, which export takes.
     public var folders: [String]?
-    /// export: where the files went, and each file.
-    public var folder: String?
-    public var files: [AgentExportFile]?
+    /// export: the export, running in the app; follow it with `jobs` by its ID (kind delivery_export).
+    public var job: AgentJob?
+    /// export: `wait_seconds` ran out before it finished; nothing was stopped.
+    // swiftlint:disable:next discouraged_optional_boolean
+    public var timedOut: Bool?
 
     public init(
         action: AgentDeliveryAction, set: AgentDeliverySet? = nil, sets: [AgentDeliverySet]? = nil,
-        folders: [String]? = nil, folder: String? = nil, files: [AgentExportFile]? = nil
+        // swiftlint:disable:next discouraged_optional_boolean
+        folders: [String]? = nil, job: AgentJob? = nil, timedOut: Bool? = nil
     ) {
         self.action = action
         self.set = set
         self.sets = sets
         self.folders = folders
-        self.folder = folder
-        self.files = files
+        self.job = job
+        self.timedOut = timedOut
     }
 }
 
@@ -170,7 +186,8 @@ public enum AgentExportPreset: String, Codable, Sendable, CaseIterable {
 }
 
 /// Exports video results for editing, as the result page's Export for Editing does, into the output folder's
-/// Exports folder. Never replaces a file.
+/// Exports folder. Never replaces a file. It runs in the app and answers at once, or after `waitSeconds`, with the
+/// export to follow with `jobs`.
 public struct ExportCommand: Codable, Equatable, Sendable, AgentFields {
     public static let maxItems = 20
 
@@ -179,28 +196,37 @@ public struct ExportCommand: Codable, Equatable, Sendable, AgentFields {
     /// Also writes the JSON sidecar; true when left out.
     // swiftlint:disable:next discouraged_optional_boolean
     public var sidecar: Bool?
+    /// How long to wait for it to finish before answering, 0 to `JobsCommand.maxWaitSeconds`; it runs on either way.
+    public var waitSeconds: Int?
 
     // swiftlint:disable:next discouraged_optional_boolean
-    public init(items: [UUID], preset: AgentExportPreset, sidecar: Bool? = nil) {
+    public init(items: [UUID], preset: AgentExportPreset, sidecar: Bool? = nil, waitSeconds: Int? = nil) {
         self.items = items
         self.preset = preset
         self.sidecar = sidecar
+        self.waitSeconds = waitSeconds
     }
 
     public var problem: String? {
         guard (1...Self.maxItems).contains(items.count) else { return "items takes 1 to \(Self.maxItems) video IDs" }
         guard Set(items).count == items.count else { return "items names each video once" }
+        if let waitSeconds, !(0...JobsCommand.maxWaitSeconds).contains(waitSeconds) {
+            return "wait_seconds is 0 to \(JobsCommand.maxWaitSeconds)"
+        }
         return nil
     }
 }
 
+/// The answer to `export`: the export, running in the app or finished, to follow with `jobs` by its ID.
 public struct AgentExported: Codable, Equatable, Sendable {
-    public var folder: String
-    public var files: [AgentExportFile]
+    /// kind export: its state, progress, folder and the files so far.
+    public var job: AgentJob
+    /// `waitSeconds` ran out before it finished; nothing was stopped.
+    public var timedOut: Bool
 
-    public init(folder: String, files: [AgentExportFile]) {
-        self.folder = folder
-        self.files = files
+    public init(job: AgentJob, timedOut: Bool = false) {
+        self.job = job
+        self.timedOut = timedOut
     }
 }
 

@@ -85,7 +85,7 @@ extension Tool {
     }
 
     static func deliverySet(_ given: Arguments) throws(AgentError) -> AgentCommand {
-        try given.allow(["action", "name", "items", "set", "folder"])
+        try given.allow(["action", "name", "items", "set", "folder", "wait_seconds"])
         guard let name = try given.string("action"), let action = AgentDeliveryAction(rawValue: name) else {
             throw .badRequest("delivery_set needs action: create, list or export")
         }
@@ -95,19 +95,20 @@ extension Tool {
         }
         let command = DeliverySetCommand(
             action: action, name: try given.string("name"), items: try given.ids("items"), set: set,
-            folder: try given.string("folder"))
+            folder: try given.string("folder"), waitSeconds: try given.int("wait_seconds"))
         if let problem = command.problem { throw .badRequest("delivery_set: \(problem)") }
         return .deliverySet(command)
     }
 
     static func export(_ given: Arguments) throws(AgentError) -> AgentCommand {
-        try given.allow(["items", "preset", "sidecar"])
+        try given.allow(["items", "preset", "sidecar", "wait_seconds"])
         guard let name = try given.string("preset"), let preset = AgentExportPreset(rawValue: name) else {
             let names = AgentExportPreset.allCases.map(\.rawValue).joined(separator: ", ")
             throw .badRequest("export needs preset, one of \(names)")
         }
         let command = ExportCommand(
-            items: try given.ids("items"), preset: preset, sidecar: try given.optionalBool("sidecar"))
+            items: try given.ids("items"), preset: preset, sidecar: try given.optionalBool("sidecar"),
+            waitSeconds: try given.int("wait_seconds"))
         if let problem = command.problem { throw .badRequest("export: \(problem)") }
         return .export(command)
     }
