@@ -1,0 +1,347 @@
+import Foundation
+import JutsuCore
+import JutsuTestSupport
+import Testing
+
+@testable import Presentation
+
+/// An image provider for agents' requests: a scripted quote and submit, every job done at the first poll.
+actor ImageFake: ImageProvider {
+    nonisolated let kind: ProviderKind = .apiKey
+    nonisolated let owner: String? = "key-1"
+    var estimate: Result<Cost, ProviderError> = .success(.usd(Decimal(string: "0.08")!, isEstimate: false))
+    var submitError: ProviderError?
+    private(set) var submitted: [ImageRequest] = []
+    private(set) var uploads = 0
+
+    func set(estimate: Result<Cost, ProviderError>? = nil, submitError: ProviderError? = nil) {
+        if let estimate { self.estimate = estimate }
+        self.submitError = submitError
+    }
+
+    func imageModels() async throws -> [ImageModel] { [] }
+    func imageEstimate(_ request: ImageRequest) async throws -> Cost { try estimate.get() }
+
+    func upload(_ file: PreparedFile) async throws -> RemoteAsset {
+        uploads += 1
+        return RemoteAsset(url: URL(string: "https://cdn.example.com/in.png")!, id: "media-1")
+    }
+
+    func submitImages(_ request: ImageRequest, idempotencyKey: UUID) async throws -> [RemoteJob] {
+        submitted.append(request)
+        if let submitError { throw submitError }
+        return [RemoteJob(requestID: "req-1")]
+    }
+
+    func imageStatus(_ job: RemoteJob) async throws -> ImageJobStatus {
+        .completed([URL(string: "https://cdn.example.com/1.png")!])
+    }
+
+    func cancelImages(_ job: RemoteJob) async throws {}
+}
+
+/// The agent spend ledger in memory, with the budget check `AgentSpendFile` makes.
+actor MemoryLedger: AgentSpendLedger {
+    struct Broken: Error {}
+
+    private(set) var spends: [AgentSpend] = []
+    var isBroken = false
+
+    func breakIt() { isBroken = true }
+
+    func reserve(_ spend: AgentSpend, dailyLimit: Int?) throws -> Bool {
+        if isBroken { throw Broken() }
+        let taken = spends.reduce(0) { $0 + $1.money.amount }
+        if let dailyLimit, taken + spend.money.amount > dailyLimit { return false }
+        spends.append(spend)
+        return true
+    }
+
+    func release(_ id: UUID) throws {
+        if isBroken { throw Broken() }
+        spends.removeAll { $0.id == id }
+    }
+
+    func settle(_ id: UUID, amount: Int?) throws {
+        guard let index = spends.firstIndex(where: { $0.id == id }) else { return }
+        spends[index].isSettled = true
+        if let amount { spends[index].money.amount = amount }
+    }
+
+    func total(on day: Date, unit: AgentMoney.Unit) throws -> AgentSpendTotal {
+        AgentSpendTotal(
+            spent: spends.filter(\.isSettled).reduce(0) { $0 + $1.money.amount },
+            reserved: spends.filter { !$0.isSettled }.reduce(0) { $0 + $1.money.amount })
+    }
+
+    func unsettled() throws -> [AgentSpend] { spends.filter { !$0.isSettled } }
+}
+
+private let soul = ImageModel(
+    id: "soul", title: "Soul 2", variantCounts: [1, 4], aspectRatios: ["1:1", "16:9"],
+    listPrice: .usd(Decimal(string: "0.02")!, isEstimate: true))
+private let edit = ImageModel(id: "edit", title: "Edit", aspectRatios: ["1:1"], input: .required)
+private let picture = LocalImage(fileURL: URL(fileURLWithPath: "/tmp/agent-input.png"))
+
+@MainActor
+@Suite(.timeLimit(.minutes(1)))
+struct AgentImageQueueTests {
+    let folder = FileManager.default.temporaryDirectory.appending(path: "agent-images-\(UUID().uuidString)")
+    let jobLog = ImageJobLog(folder: nil)
+    let ledger = MemoryLedger()
+    let provider = ImageFake()
+
+    func generator(cap: SpendStatus? = nil) -> ReferenceGenerator {
+        let generator = ReferenceGenerator(
+            spend: ImageSpendLog(folder: nil), jobLog: jobLog, spendStatus: { _ in cap },
+            sleep: { _ in await Task.yield() })
+        generator.useModels([soul, edit])
+        return generator
+    }
+
+    func queue(
+        _ generator: ReferenceGenerator, limit: Int = 1_000, ledger: (any AgentSpendLedger)? = nil
+    )
+        -> AgentImageQueue
+    {
+        AgentImageQueue(folder: folder, generator: generator, ledger: ledger ?? self.ledger, dailyLimit: { _ in limit })
+    }
+
+    func origin(maxCents: Int = 50) -> AgentOrigin {
+        AgentOrigin(client: "claude-code", requestID: "img-1", maxCost: AgentMoney(maxCents, .usdCents))
+    }
+
+    func order(_ prompt: String = "a red fox", count: Int? = nil, model: String? = nil) -> AgentImageOrder {
+        AgentImageOrder(model: model, prompt: prompt, aspectRatio: nil, count: count, input: nil)
+    }
+
+    nonisolated static func upload(_ provider: ImageFake) -> @Sendable (LocalImage) async throws -> RemoteAsset {
+        { _ in
+            try await provider.upload(
+                PreparedFile(fileURL: picture.fileURL, contentType: "image/png", byteCount: 1, contentHash: "h"))
+        }
+    }
+
+    @discardableResult
+    func create(_ queue: AgentImageQueue, _ order: AgentImageOrder, origin: AgentOrigin? = nil) throws -> UUID {
+        let id = UUID()
+        _ = try queue.create(
+            order, id: id, origin: origin ?? self.origin(), provider: provider, upload: Self.upload(provider))
+        return id
+    }
+
+    // MARK: The order
+
+    @Test func theRequestIsBuiltAsTheImageSideBuildsIt() throws {
+        let models = [soul, edit]
+        let made = try order(count: 4).draft(models: models, modelsAreSaved: false).get()
+        #expect(made.model.id == "soul")
+        #expect(made.aspectRatio == "1:1")
+        #expect(made.count == 4)
+        func refusal(_ order: AgentImageOrder, saved: Bool = false) -> String? {
+            if case .failure(let refusal) = order.draft(models: models, modelsAreSaved: saved) {
+                return refusal.message
+            }
+            return nil
+        }
+        #expect(refusal(order(model: "nope"))?.contains("no image model nope") == true)
+        #expect(refusal(order("  ")) != nil)
+        #expect(refusal(order(count: 3))?.contains("1, 4") == true)
+        #expect(refusal(order(model: "edit"))?.contains("send input") == true)
+        #expect(refusal(AgentImageOrder(model: nil, prompt: "x", aspectRatio: "21:9", count: nil, input: nil)) != nil)
+        #expect(refusal(order(), saved: true) != nil)
+    }
+
+    @Test func theVisibleFormIsNeverTouched() throws {
+        let generator = generator()
+        generator.prompt = "the person's own prompt"
+        let queue = queue(generator)
+        try create(queue, order(count: 4))
+        #expect(generator.prompt == "the person's own prompt")
+        #expect(generator.count == 1)
+    }
+
+    // MARK: The guard
+
+    @Test func aRequestUnderEveryLimitIsReservedSentAndSettled() async throws {
+        let generator = generator()
+        let queue = queue(generator)
+        let id = try create(queue, order())
+
+        await eventually { queue.record(id)?.state == .finished }
+
+        #expect(await provider.submitted.count == 1)
+        let record = try #require(queue.record(id))
+        #expect(record.mayHaveBeenSent)
+        #expect(record.origin.reservation != nil)
+        #expect(await ledger.spends.map(\.isSettled) == [true])
+        #expect(await ledger.spends.map(\.money) == [AgentMoney(8, .usdCents)])
+        #expect(generator.runs.first?.agent?.client == "claude-code")
+    }
+
+    @Test func aPriceOverMaxCostIsHeldAndNothingIsSent() async throws {
+        let generator = generator()
+        let queue = queue(generator)
+        let id = try create(queue, order(), origin: origin(maxCents: 7))
+
+        await eventually { queue.record(id)?.state == .held }
+
+        #expect(queue.record(id)?.hold == .overMaxCost)
+        #expect(await provider.submitted.isEmpty)
+        #expect(await ledger.spends.isEmpty)
+        #expect(generator.runs.first?.state == .held(AgentImageQueue.text(of: .overMaxCost)))
+        let status = AgentJobStatus(try #require(queue.record(id)), files: [])
+        #expect(status.state == "paused")
+        #expect(status.needsPerson)
+        #expect(status.hold == "over_max_cost")
+    }
+
+    @Test func anUnknownPriceIsHeld() async throws {
+        await provider.set(estimate: .failure(.server(status: 500)))
+        let queue = queue(generator())
+        let id = try create(queue, order())
+
+        await eventually { queue.record(id)?.state == .held }
+
+        // The list price is only an estimate: never trusted for an agent.
+        #expect(queue.record(id)?.hold == .unknownPrice)
+        #expect(await provider.submitted.isEmpty)
+    }
+
+    @Test func overTheDailyAgentBudgetIsHeld() async throws {
+        let queue = queue(generator(), limit: 5)
+        let id = try create(queue, order())
+        await eventually { queue.record(id)?.state == .held }
+        #expect(queue.record(id)?.hold == .overDailyBudget)
+        #expect(await provider.submitted.isEmpty)
+    }
+
+    @Test func reservationsInFlightCountAgainstTheBudget() async throws {
+        _ = try await ledger.reserve(
+            AgentSpend(jobID: UUID(), money: AgentMoney(95, .usdCents), at: Date()), dailyLimit: nil)
+        let queue = queue(generator(), limit: 100)
+        let id = try create(queue, order())
+        await eventually { queue.record(id)?.state == .held }
+        #expect(queue.record(id)?.hold == .overDailyBudget)
+    }
+
+    @Test func aLedgerThatCantBeWrittenSendsNothing() async throws {
+        await ledger.breakIt()
+        let queue = queue(generator())
+        let id = try create(queue, order())
+        await eventually { queue.record(id)?.state == .held }
+        #expect(queue.record(id)?.hold == .ledgerUnavailable)
+        #expect(await provider.submitted.isEmpty)
+    }
+
+    @Test func thePersonsOwnCapHoldsItToo() async throws {
+        let cap = SpendStatus(committedToday: Decimal(string: "0.95")!, cap: .usd(1))
+        let queue = queue(generator(cap: cap))
+        let id = try create(queue, order())
+        await eventually { queue.record(id)?.state == .held }
+        #expect(queue.record(id)?.hold == .priceAboveCap)
+        #expect(AgentJobStatus(try #require(queue.record(id)), files: []).pauseReason == "price_above_cap")
+        #expect(await provider.submitted.isEmpty)
+    }
+
+    @Test func onlyThePersonSendsAHeldRequest() async throws {
+        let generator = generator()
+        let queue = queue(generator)
+        let id = try create(queue, order(), origin: origin(maxCents: 7))
+        await eventually { queue.record(id)?.state == .held }
+
+        queue.approve(id, provider: provider, upload: Self.upload(provider))
+        await eventually { queue.record(id)?.state == .finished }
+
+        #expect(await provider.submitted.count == 1)
+        #expect(queue.record(id)?.origin.approvedByPerson == true)
+        #expect(await ledger.spends.count == 1)
+    }
+
+    @Test func aRefusedSubmitGivesTheReservationBack() async throws {
+        await provider.set(submitError: .validation(field: nil, message: "No"))
+        let queue = queue(generator())
+        let id = try create(queue, order())
+        await eventually { queue.record(id)?.state == .failed }
+        #expect(await ledger.spends.isEmpty)
+        #expect(queue.record(id)?.mayHaveBeenSent == false)
+    }
+
+    @Test func anUnansweredSubmitKeepsTheReservation() async throws {
+        await provider.set(submitError: .network)
+        let queue = queue(generator())
+        let id = try create(queue, order())
+        await eventually { queue.record(id)?.state == .failed }
+        #expect(await ledger.spends.map(\.isSettled) == [false])
+        #expect(queue.record(id)?.mayHaveBeenSent == true)
+        #expect(AgentJobStatus(try #require(queue.record(id)), files: []).charged)
+    }
+
+    @Test func aHeldRequestCanceledWasNeverSent() async throws {
+        let generator = generator()
+        let queue = queue(generator)
+        let id = try create(queue, order(), origin: origin(maxCents: 1))
+        await eventually { queue.record(id)?.state == .held }
+
+        #expect(queue.cancel(id))
+        #expect(queue.record(id)?.state == .canceled)
+        #expect(!queue.cancel(id))
+        #expect(await provider.submitted.isEmpty)
+    }
+
+    // MARK: Relaunch
+
+    @Test func aRelaunchReleasesOrphansFailsLostAnswersAndShowsHeldRequests() async throws {
+        let first = queue(generator())
+        let held = try create(first, order(), origin: origin(maxCents: 1))
+        await eventually { first.record(held)?.state == .held }
+
+        // Another launch's request: reserved and saved as being sent, then the app quit before an answer.
+        var sending = try #require(first.record(held))
+        let sent = AgentSpend(jobID: UUID(), money: AgentMoney(8, .usdCents), at: Date())
+        let orphan = AgentSpend(jobID: held, money: AgentMoney(8, .usdCents), at: Date())
+        _ = try await ledger.reserve(orphan, dailyLimit: nil)
+        _ = try await ledger.reserve(sent, dailyLimit: nil)
+        let file = folder.appending(path: "agent-images.json")
+        var records = try JSONDecoder.iso.decode([AgentImageRecord].self, from: Data(contentsOf: file))
+        sending = AgentImageRecord(
+            id: sent.jobID, origin: sending.origin, providerKind: .apiKey, owner: "key-1", model: soul, prompt: "x",
+            aspectRatio: "1:1", count: 1, state: .sending, priceIsKnown: true, sentAt: Date(), createdAt: Date())
+        sending.origin.reservation = sent.id
+        records.append(sending)
+        try JSONEncoder.iso.encode(records).write(to: file)
+
+        let generator = generator()
+        let relaunched = queue(generator)
+        await relaunched.restore()
+
+        #expect(await ledger.spends.map(\.id) == [sent.id])
+        #expect(relaunched.record(sent.jobID)?.state == .failed)
+        #expect(relaunched.record(sent.jobID)?.mayHaveBeenSent == true)
+        #expect(generator.runs.map(\.id) == [held])
+        #expect(generator.runs.first?.agent?.requestID == "img-1")
+    }
+
+    @Test func aRecordThatCantBeReadTakesNothing() throws {
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try Data("not json".utf8).write(to: folder.appending(path: "agent-images.json"))
+        let queue = queue(generator())
+        #expect(throws: AgentImageRefusal.self) { try create(queue, order()) }
+    }
+}
+
+extension JSONDecoder {
+    fileprivate static var iso: JSONDecoder {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return decoder
+    }
+}
+
+extension JSONEncoder {
+    fileprivate static var iso: JSONEncoder {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        return encoder
+    }
+}

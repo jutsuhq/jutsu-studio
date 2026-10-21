@@ -90,10 +90,17 @@ public enum AgentJobRules {
         return nil
     }
 
-    public static func retryRefusal(_ job: Job) -> String? {
+    /// - Parameter fileExists: whether a local input is still there; an agent's uploads are swept from the inbox a
+    ///   day after their job finished, and a retry without them would only fail once it runs.
+    public static func retryRefusal(_ job: Job, fileExists: (URL) -> Bool = { _ in true }) -> String? {
         if job.agent == nil { return "Only jobs an agent queued can be retried by an agent." }
         if job.mayHaveBeenCharged {
             return "The job may already have been charged; only the person can decide to retry it in the Queue."
+        }
+        let inputs = [job.spec.source?.fileURL].compactMap(\.self) + job.spec.references.map(\.fileURL)
+        if inputs.contains(where: { $0.isFileURL && !fileExists($0) }) {
+            return "The job's input files are gone from Jutsu Studio, so a retry can't run. Send create_video again "
+                + "with the files and a new request_id."
         }
         return nil
     }
@@ -101,6 +108,74 @@ public enum AgentJobRules {
     public static func runNextRefusal(_ job: Job) -> String? {
         if job.agent == nil { return "Only jobs an agent queued can be moved ahead by an agent." }
         return nil
+    }
+}
+
+/// A page of the agents' jobs, newest first, after a cursor an earlier page handed out.
+public enum AgentJobPage {
+    /// - Returns: the jobs of the page, and the cursor of the next one when there are more.
+    public static func page(_ jobs: [Job], limit: Int, after cursor: String?) -> (jobs: [Job], next: String?) {
+        let agents = jobs.filter { $0.agent != nil }
+        let byID = Dictionary(agents.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let (ids, next) = page(agents.map { ($0.createdAt, $0.id) }, limit: limit, after: cursor)
+        return (ids.compactMap { byID[$0] }, next)
+    }
+
+    /// The same page over entries of any kind, by when each was made and its ID: video jobs and image requests.
+    public static func page(
+        _ entries: [(Date, UUID)], limit: Int, after cursor: String?
+    ) -> (ids: [UUID], next: String?) {
+        let sorted = entries.sorted(by: AgentCursor.isNewerFirst)
+        let rest =
+            cursor.flatMap(AgentCursor.init(text:)).map { position in
+                sorted.filter { position.precedes($0.0, $0.1) }
+            } ?? sorted
+        let page = Array(rest.prefix(max(1, limit)))
+        let next = rest.count > page.count ? page.last.map { AgentCursor($0.0, $0.1).text } : nil
+        return (page.map(\.1), next)
+    }
+}
+
+/// Where a page newest first ended: the date and ID of its last entry, as text an agent hands back
+/// (`1729500000123_<UUID>`). Entries order by date, then by ID, so equal dates never repeat or drop one.
+public struct AgentCursor: Sendable, Hashable {
+    public var date: Date
+    public var id: UUID
+
+    public init(_ date: Date, _ id: UUID) {
+        self.date = date
+        self.id = id
+    }
+
+    /// `nil` for text no page handed out.
+    public init?(text: String) {
+        let parts = text.split(separator: "_", maxSplits: 1)
+        guard parts.count == 2, let milliseconds = Int64(parts[0]), let id = UUID(uuidString: String(parts[1]))
+        else { return nil }
+        self.init(Date(timeIntervalSince1970: Double(milliseconds) / 1000), id)
+    }
+
+    public var text: String { "\(Self.milliseconds(date))_\(id.uuidString)" }
+
+    /// Whether an entry made at `date` with `id` comes after this cursor, newest first.
+    public func precedes(_ date: Date, _ id: UUID) -> Bool {
+        let (mine, theirs) = (Self.milliseconds(self.date), Self.milliseconds(date))
+        return theirs != mine ? theirs < mine : id.uuidString < self.id.uuidString
+    }
+
+    /// Newest first, then by ID, to the millisecond a cursor keeps.
+    public static func isNewerFirst(_ a: Job, _ b: Job) -> Bool {
+        isNewerFirst((a.createdAt, a.id), (b.createdAt, b.id))
+    }
+
+    public static func isNewerFirst(_ a: (Date, UUID), _ b: (Date, UUID)) -> Bool {
+        let (left, right) = (milliseconds(a.0), milliseconds(b.0))
+        return left != right ? left > right : a.1.uuidString > b.1.uuidString
+    }
+
+    static func milliseconds(_ date: Date) -> Int64 {
+        let value = (date.timeIntervalSince1970 * 1000).rounded(.down)
+        return value.isFinite ? Int64(clamping: Int(max(min(value, 9e15), -9e15))) : 0
     }
 }
 

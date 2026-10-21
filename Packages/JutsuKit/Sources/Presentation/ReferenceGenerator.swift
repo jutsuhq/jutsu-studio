@@ -41,12 +41,35 @@ public struct ImageRun: Sendable, Hashable, Identifiable {
         /// Following it stopped before it ended: the sign-in expired, its status couldn't be read, or another
         /// account was connected. Its jobs and price are kept, and it is followed again (`resume`).
         case interrupted(String)
+        /// An agent's request the spending guard stopped before anything was sent: only the person sends it, after
+        /// seeing why (`AgentImageQueue.approve`).
+        case held(String)
     }
 
     public let id: UUID
     public var model: String
     public var count: Int
     public var state: State
+    /// The agent that asked for it (`create_image`); `nil` for the person's own.
+    public var agent: AgentOrigin?
+    /// An agent's request: its price as the guard saw it, for the person's confirmation.
+    public var price: Cost?
+
+    /// Its row stays when a new request replaces the rows of the ones that are over.
+    var keepsRow: Bool {
+        switch state {
+        case .running, .held: true
+        default: false
+        }
+    }
+
+    /// "Agent · claude-code", for the row of an agent's request.
+    public var agentTitle: String? { agent.map(JobRowModel.originText) }
+
+    /// "Allowed up to $2.00".
+    public var agentDetail: String? {
+        agent.map { String(localized: "Allowed up to \(JobRowModel.moneyText($0.maxCost))", bundle: .module) }
+    }
 
     /// "Soul 2 · 4 images".
     public var title: String {
@@ -96,6 +119,8 @@ public final class ReferenceGenerator {
     @ObservationIgnored public var onImages: (([GeneratedImage]) -> Void)?
     /// Called when Higgsfield turned a poll down because the sign-in no longer works, to ask for it again.
     @ObservationIgnored public var onSignInExpired: (() -> Void)?
+    /// Called when a run ends or stops being followed, with how: what `AgentImageQueue` records for an agent.
+    @ObservationIgnored var onRunEnded: ((UUID, ImageRun.State) -> Void)?
     @ObservationIgnored public let jobLog: ImageJobLog
     @ObservationIgnored let spend: ImageSpendLog
     @ObservationIgnored let spendStatus: SpendStatusReader
@@ -350,7 +375,7 @@ public final class ReferenceGenerator {
         }
         let id = UUID()
         // A new request replaces the rows of the ones that are over; their images stay.
-        runs.removeAll { $0.state != .running }
+        runs.removeAll { !$0.keepsRow }
         runs.insert(ImageRun(id: id, model: draft.model.title, count: draft.count, state: .running), at: 0)
         let cost = price ?? (provider.kind == .apiKey ? .usd(0, isEstimate: true) : .unknownCredits)
         submits[id] = Task { [weak self] in
@@ -359,13 +384,16 @@ public final class ReferenceGenerator {
         return .started
     }
 
-    /// Stops following the run; a request still queued is cancelled and not charged.
+    /// Stops following the run; a request still queued is cancelled and not charged, and an agent's request held
+    /// before it was sent is dropped.
     public func cancel(_ id: UUID) {
         if let submit = submits[id] {
             submit.cancel()
         } else if let follower = followers[id] {
             canceling.insert(id)
             follower.cancel()
+        } else if case .held? = runs.first(where: { $0.id == id })?.state {
+            finish(id, .canceled)
         }
     }
 
@@ -383,8 +411,8 @@ public final class ReferenceGenerator {
     }
 
     func finish(_ id: UUID, _ state: ImageRun.State) {
-        guard let index = runs.firstIndex(where: { $0.id == id }) else { return }
-        runs[index].state = state
+        if let index = runs.firstIndex(where: { $0.id == id }) { runs[index].state = state }
+        if state != .running { onRunEnded?(id, state) }
     }
 
     static func message(_ error: any Error) -> String {
@@ -445,7 +473,7 @@ extension ReferenceGenerator {
     public func clearResults() {
         images.removeAll()
         selection.removeAll()
-        runs.removeAll { $0.state != .running }
+        runs.removeAll { !$0.keepsRow }
     }
 }
 

@@ -1,6 +1,27 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Waiting for you: its price isn't known." : {
+
+    },
+    "Waiting for you: it costs more than the agent was allowed." : {
+
+    },
+    "Waiting for you: it's over today's agent budget." : {
+
+    },
+    "Waiting for you: agent spending can't be recorded." : {
+
+    },
+    "Waiting for you: it takes today past your spend cap." : {
+
+    },
+    "Jutsu Studio lost the record of this request." : {
+
+    },
+    "Jutsu Studio quit while sending this request, so it may have been sent. Its price still counts." : {
+
+    },
     "Agent" : {
 
     },
