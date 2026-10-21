@@ -4,6 +4,8 @@ Notable changes to Jutsu Studio. Versions follow [Semantic Versioning](https://s
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-21
+
 ### Added
 
 - Agents can give `create_image` several input images (`inputs`), up to the model's limit, or 14 where Higgsfield's catalog states none; `input` still takes one.
@@ -51,7 +53,8 @@ The first public release.
 - The restyle preset gallery with search, favorites and recents.
 - Menu bar status, Dock badge, notifications and open at login.
 
-[Unreleased]: https://github.com/jutsuhq/jutsu-studio/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/jutsuhq/jutsu-studio/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/jutsuhq/jutsu-studio/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/jutsuhq/jutsu-studio/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/jutsuhq/jutsu-studio/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/jutsuhq/jutsu-studio/releases/tag/v0.1.0
