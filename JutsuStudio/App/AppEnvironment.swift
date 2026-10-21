@@ -47,6 +47,9 @@ final class AppEnvironment {
     /// The models the connection runs video jobs on, from the last capabilities read on Create; Genjutsu alone
     /// until they are known. The menu bar's New from Template applies against these.
     var lastOfferedModels: Set<VideoModel> = [.genjutsu]
+    /// The connection's capabilities as `capabilities()` last read them; `nil` until then. Agents' `capabilities`
+    /// answers from it rather than calling the provider.
+    var lastCapabilities: Capabilities?
     /// The provider of the active connection; `nil` while disconnected.
     private(set) var provider: (any GenerationProvider)? = nil
     /// Goes up whenever `provider` is replaced, a new sign-in to the same account included. Provider-backed
@@ -186,10 +189,15 @@ final class AppEnvironment {
     /// What the active connection can run, for mode pickers. Flags the connection on 401. Also reads the model
     /// constraints again when they are a day old.
     func capabilities() async -> Capabilities? {
-        guard let provider else { return nil }
+        guard let provider else {
+            lastCapabilities = nil
+            return nil
+        }
         refreshModelConstraints()
         do {
-            return try await provider.capabilities()
+            let capabilities = try await provider.capabilities()
+            lastCapabilities = capabilities
+            return capabilities
         } catch {
             if error as? ProviderError == .unauthorized { connection.markNeedsAttention() }
             logger.error("Can't load capabilities: \(String(describing: error), privacy: .private)")

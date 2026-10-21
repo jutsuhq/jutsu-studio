@@ -79,6 +79,8 @@ extension Tool {
             properties["remainingToday"] = ["type": "integer"]
             properties["paysUnlimited"] = ["type": "boolean"]
             properties["blocker"] = ["type": "string"]
+            properties["maxVariants"] = ["type": "integer"]
+            properties["variantsUnavailable"] = ["type": "string"]
         case .createVideo, .createImage, .enhance:
             properties["requestId"] = ["type": "string"]
             properties["known"] = ["type": "boolean"]

@@ -13,7 +13,8 @@ extension Tool {
             generations, false for the rest of the day once one was charged anyway) and the tool groups this version \
             offers. models: true adds the video models \
             (id, title, modes, resolutions, whether the connection runs it); model: an ID returns only that one, with \
-            its limits per mode (seconds, images, whether it needs a style or a source). image_models: true adds the \
+            its limits per mode (seconds, images, whether it needs a style or a source, and maxVariants, the most \
+            variants takes there on this connection, with variantsUnavailable saying why it is 1). image_models: true adds the \
             image models create_image takes (counts, aspect ratios, whether input images are needed, maxInputs, the \
             most inputs it takes), styles: true Restyle's style IDs, voices: true Change Voice's voices. Free, and \
             never shows a credential.
@@ -24,7 +25,9 @@ extension Tool {
             anything: the price in whole usd_cents or credits (null when not known before upload), whether it is \
             exact, what is left of today's agent budget, paysUnlimited (the plan's unlimited generations would pay \
             for it: it costs the budget nothing, and waits for the person unless unlimitedAllowed), and blocker, \
-            why create_video would hold or refuse it now. A source \
+            why create_video would hold or refuse it now, and maxVariants with variantsUnavailable, the most videos \
+            one job of it makes and why only one (a style; the plan's unlimited generations, which make one video \
+            per job while the person uses them; a connection without variants). A source \
             needs end (its start and end in seconds) instead of a file; images may be paths or image_count. Free.
             """
         case .createVideo:

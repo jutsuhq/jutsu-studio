@@ -78,13 +78,17 @@ extension AgentService {
         var remaining: Int?
         if let kind, let taken { remaining = taken.remaining(of: preferences.dailyBudget(for: kind)) }
         let isExact = cost.map { !$0.isEstimate && !$0.isUnknownPrice } ?? false
+        let variants = AgentVideoOrder.variants(
+            of: spec.model, in: spec.mode, capabilities: environment.lastCapabilities,
+            unlimitedOptIn: AppSettings.usesUnlimited(in: environment.defaults))
         return AgentQuote(
             price: price, isExact: isExact, mode: video.mode, model: spec.model.rawValue,
             resolution: spec.resolution.rawValue, duration: spec.duration, remainingToday: remaining,
             paysUnlimited: paysUnlimited,
             blocker: Self.quoteBlocker(
                 price: money, remaining: remaining, paysUnlimited: unlimited,
-                unlimitedAllowed: preferences.allowsUnlimited))
+                unlimitedAllowed: preferences.allowsUnlimited),
+            maxVariants: variants.maximum, variantsUnavailable: variants.reason)
     }
 
     /// What `create_video` would pause the job for, as far as a quote can tell before upload.

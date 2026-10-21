@@ -265,7 +265,9 @@ extension Tool {
             ],
             "aspect_ratio": ["type": "string", "description": "A clip without a source: 16:9, 9:16, 1:1…"],
             "audio": ["type": "string", "enum": .array(AgentVideoRequest.audioOptions.map { .string($0) })],
-            "variants": ["type": "integer", "minimum": 1, "description": "Videos one submit makes, where offered."],
+            "variants": [
+                "type": "integer", "minimum": 1, "description": "Videos one submit makes, up to quote's maxVariants.",
+            ],
             "elements": [
                 "type": "array", "maxItems": .number(Double(AgentElementNames.maxNames)),
                 "items": ["type": "string", "maxLength": .number(Double(AgentElementNames.maxNameLength))],

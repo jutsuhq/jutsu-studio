@@ -203,27 +203,35 @@ final class AgentService {
         }
         let offered = environment.lastOfferedModels
         let constraints = environment.navigation.modelConstraints
+        let capabilities = environment.lastCapabilities
+        let optedIn = AppSettings.usesUnlimited(in: environment.defaults)
         return models.map { model in
             AgentCapabilities.Model(
                 id: model.rawValue, title: model.title, modes: model.modes.map(AgentVideoOrder.name(of:)),
                 resolutions: model.resolutions.map(\.rawValue),
                 available: connection != nil && offered.contains(model),
-                details: id == nil ? nil : Self.details(of: model, constraints: constraints))
+                details: id == nil
+                    ? nil
+                    : Self.details(
+                        of: model, constraints: constraints, capabilities: connection == nil ? nil : capabilities,
+                        unlimitedOptIn: optedIn))
         }
     }
 
     /// A model's limits in each of its modes, as a job on it takes them.
     private static func details(
-        of model: VideoModel, constraints: ModelConstraintTable
+        of model: VideoModel, constraints: ModelConstraintTable, capabilities: Capabilities?, unlimitedOptIn: Bool
     ) -> AgentCapabilities.ModelDetails {
         let modes = model.modes.map { mode in
             let hasSource = !model.makesClipsWithoutSource || mode != .motionTransfer
             let limits = model.limits(for: mode, hasSource: hasSource, constraints: constraints)
+            let variants = AgentVideoOrder.variants(
+                of: model, in: mode, capabilities: capabilities, unlimitedOptIn: unlimitedOptIn)
             return AgentCapabilities.ModeDetails(
                 mode: AgentVideoOrder.name(of: mode), minSeconds: limits.duration.lowerBound,
                 maxSeconds: limits.duration.upperBound, minImages: limits.referenceImages.lowerBound,
                 maxImages: limits.referenceImages.upperBound, needsStyle: limits.requiresPreset,
-                needsSource: hasSource)
+                needsSource: hasSource, maxVariants: variants.maximum, variantsUnavailable: variants.reason)
         }
         return AgentCapabilities.ModelDetails(
             modes: modes, hasDraft: model.offersDraft, makesClipsWithoutSource: model.makesClipsWithoutSource,

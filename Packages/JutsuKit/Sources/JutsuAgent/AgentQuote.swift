@@ -19,10 +19,15 @@ public struct AgentQuote: Codable, Equatable, Sendable {
     public var paysUnlimited: Bool
     /// What `create_video` would refuse it for now, in English; nil when it would queue it.
     public var blocker: String?
+    /// The most `variants` takes for this request; 1 with `variantsUnavailable` saying why.
+    public var maxVariants: Int
+    /// Why it makes one video whatever `variants` asks, in English; nil when more are offered.
+    public var variantsUnavailable: String?
 
     public init(
         price: AgentAmount?, isExact: Bool, mode: String, model: String, resolution: String, duration: Double,
-        remainingToday: Int?, paysUnlimited: Bool = false, blocker: String?
+        remainingToday: Int?, paysUnlimited: Bool = false, blocker: String?, maxVariants: Int = 1,
+        variantsUnavailable: String? = nil
     ) {
         self.paysUnlimited = paysUnlimited
         self.price = price
@@ -33,5 +38,7 @@ public struct AgentQuote: Codable, Equatable, Sendable {
         self.duration = duration
         self.remainingToday = remainingToday
         self.blocker = blocker
+        self.maxVariants = maxVariants
+        self.variantsUnavailable = variantsUnavailable
     }
 }
