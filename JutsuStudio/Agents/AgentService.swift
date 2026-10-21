@@ -131,6 +131,8 @@ final class AgentService {
             return AgentResponse(created: try await createImage(fields, client: client))
         case .librarySearch(let fields):
             return AgentResponse(library: try await librarySearch(fields))
+        case .libraryGet(let fields):
+            return AgentResponse(details: try await libraryGet(fields))
         case .libraryMark(let fields):
             let marked = try await libraryMark(fields)
             logger.info("Agent \(client ?? "unnamed", privacy: .private) marked \(marked.changed, privacy: .private)")

@@ -26,6 +26,44 @@ extension AgentService {
         return AgentLibraryPage(items: hits.map(Self.item), nextCursor: next)
     }
 
+    // MARK: library_get
+
+    func libraryGet(_ fields: LibraryGetCommand) async throws(AgentError) -> AgentLibraryDetailsPage {
+        let (details, missing) = AgentLibraryDetail.of(fields.ids, in: try await materials())
+        if let missing = missing.first {
+            throw AgentError(
+                .notFound, message: "There's no Library item \(missing.uuidString) with a file on this Mac.",
+                retryable: false, next: "Call library_search for the item IDs.")
+        }
+        return AgentLibraryDetailsPage(
+            items: details.map { detail in
+                AgentLibraryDetails(
+                    item: Self.item(detail.hit), inputs: detail.inputs.map(Self.input),
+                    settings: Self.settings(detail.settings))
+            })
+    }
+
+    private static func input(_ input: AgentLibraryDetail.Input) -> AgentLibraryInput {
+        let role: AgentLibraryInput.Role =
+            switch input.role {
+            case .source: .source
+            case .startFrame: .startFrame
+            case .endFrame: .endFrame
+            case .reference: .reference
+            case .editedFrom: .editedFrom
+            }
+        return AgentLibraryInput(
+            role: role, position: input.position, file: input.file?.path(percentEncoded: false), item: input.item,
+            onHiggsfield: input.isOnHiggsfield, start: input.range?.lowerBound, end: input.range?.upperBound)
+    }
+
+    private static func settings(_ settings: AgentLibraryDetail.Settings) -> AgentLibrarySettings {
+        AgentLibrarySettings(
+            resolution: settings.resolution, draft: settings.isDraft, audio: settings.audio, style: settings.style,
+            length: settings.length, aspectRatio: settings.aspectRatio, paidWithUnlimited: settings.paidWithUnlimited,
+            operation: settings.operation, count: settings.count)
+    }
+
     private static func item(_ hit: AgentLibraryHit) -> AgentLibraryItem {
         AgentLibraryItem(
             id: hit.id, kind: hit.isVideo ? .video : .image, file: hit.file.path(percentEncoded: false),

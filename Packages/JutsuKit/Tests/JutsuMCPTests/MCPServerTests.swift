@@ -156,7 +156,7 @@ actor FakeApp {
             tools.map { $0["name"]?.stringValue }
                 == [
                     "capabilities", "quote", "create_video", "jobs", "job_action", "create_image", "library_search",
-                    "library_mark", "enhance", "delivery_set", "export", "show",
+                    "library_get", "library_mark", "enhance", "delivery_set", "export", "show",
                 ])
         #expect(tools.compactMap { $0["name"]?.stringValue } == AgentCapabilities.ToolGroup.all.flatMap(\.tools))
         for tool in tools {
@@ -172,7 +172,7 @@ actor FakeApp {
             #expect(tool["title"]?.stringValue?.isEmpty == false)
         }
         let hints = Dictionary(uniqueKeysWithValues: tools.map { ($0["name"]?.stringValue ?? "", $0["annotations"]) })
-        for name in ["capabilities", "quote", "jobs", "library_search"] {
+        for name in ["capabilities", "quote", "jobs", "library_search", "library_get"] {
             #expect(hints[name]??["readOnlyHint"] == true, "\(name)")
             #expect(hints[name]??["destructiveHint"] == false, "\(name)")
         }

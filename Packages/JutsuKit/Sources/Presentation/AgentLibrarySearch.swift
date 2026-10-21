@@ -115,15 +115,17 @@ public enum AgentLibrarySearch {
         return true
     }
 
-    private static func hit(_ row: LibraryMediaItem, material: Material, index: LibraryCatalogIndex) -> AgentLibraryHit?
-    {
+    /// - Parameter promptLength: the prompt is cut to this many characters; `nil` keeps it whole.
+    static func hit(
+        _ row: LibraryMediaItem, material: Material, index: LibraryCatalogIndex, promptLength: Int? = promptLength
+    ) -> AgentLibraryHit? {
         let version = material.current
         let position = (material.versions.firstIndex { $0.id == version.id } ?? 0) + 1
-        let (prompt, isTruncated) = truncated(version.generation?.prompt ?? "")
+        let (prompt, isTruncated) = truncated(version.generation?.prompt ?? "", to: promptLength)
         switch row {
         case .video(let item):
             guard let file = item.outputFile else { return nil }
-            let prompt = truncated(item.spec.prompt)
+            let prompt = truncated(item.spec.prompt, to: promptLength)
             return AgentLibraryHit(
                 id: material.id, isVideo: true, file: file, model: item.spec.model.rawValue,
                 mode: AgentVideoOrder.name(of: item.spec.mode),
@@ -143,10 +145,10 @@ public enum AgentLibrarySearch {
         }
     }
 
-    /// The first `promptLength` characters, and whether there were more.
-    static func truncated(_ prompt: String) -> (text: String, isTruncated: Bool) {
-        guard prompt.count > promptLength else { return (prompt, false) }
-        return (String(prompt.prefix(promptLength)), true)
+    /// The first `length` characters, and whether there were more; `nil` keeps it whole.
+    static func truncated(_ prompt: String, to length: Int? = promptLength) -> (text: String, isTruncated: Bool) {
+        guard let length, prompt.count > length else { return (prompt, false) }
+        return (String(prompt.prefix(length)), true)
     }
 }
 

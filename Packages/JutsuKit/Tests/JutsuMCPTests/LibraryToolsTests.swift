@@ -181,6 +181,27 @@ import Testing
         }
     }
 
+    @Test func libraryGetTakesUpToTwentyItemIDs() {
+        let id = UUID().uuidString
+        guard case .success(.libraryGet(let get)) = command(.libraryGet, ["ids": [.string(id)]]) else {
+            Issue.record("no library_get")
+            return
+        }
+        #expect(get.ids.map(\.uuidString) == [id])
+        for bad in [
+            ["ids": []], ["ids": [.string(id), .string(id)]], ["ids": ["not-an-id"]],
+            ["ids": [.string(id)], "full": true],
+            ["ids": .array((0...20).map { _ in .string(UUID().uuidString) })],
+        ] as [[String: JSONValue]] {
+            guard case .failure = command(.libraryGet, bad) else {
+                Issue.record("taken: \(bad)")
+                continue
+            }
+        }
+        let answer = AgentResponse(details: AgentLibraryDetailsPage(items: []))
+        #expect(MCPServer.toolResult(answer, structured: true)["isError"] == false)
+    }
+
     @Test func libraryMarkNeedsSomethingToMark() {
         let id = UUID().uuidString
         guard case .success(.libraryMark(let mark)) = command(.libraryMark, ["ids": [.string(id)], "star": true]) else {

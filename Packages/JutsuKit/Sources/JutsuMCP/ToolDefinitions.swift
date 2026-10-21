@@ -23,6 +23,7 @@ extension Tool {
         case .jobs: "Jobs"
         case .jobAction: "Act on a job or the queue"
         case .librarySearch: "Search the Library"
+        case .libraryGet: "Library items in full"
         case .libraryMark: "Keep, reject or star"
         case .enhance: "Enhance a video"
         case .deliverySet: "Delivery sets"
@@ -106,6 +107,16 @@ extension Tool {
             include_rejected is true. Each item has its ID, file path, kind, model, mode, aspect ratio, duration, \
             price, verdict, star, date, prompt (cut to 200 characters, promptTruncated) and version. limit up to 50; \
             pass nextCursor back as cursor for the next page. Read-only.
+            """
+        case .libraryGet:
+            """
+            The full details of up to 20 Library items by ID (from library_search or a job), rejected ones too: the \
+            item as library_search lists it but with the whole prompt; inputs, the files that went in, in the order \
+            the job sent them (role source, start_frame, end_frame, reference or edited_from; position, the N of the \
+            prompt's @ImageN; file, the path on this Mac when it is here; item, its own Library ID when the Library \
+            lists it; onHiggsfield; start and end, the source's range); and settings (resolution, draft, audio, \
+            style, length, aspectRatio, paidWithUnlimited, operation for an Enhance result, count for images). An ID \
+            that isn't a result with a file on this Mac is not_found. Read-only.
             """
         case .libraryMark:
             """
@@ -208,6 +219,14 @@ extension Tool {
                 "limit": ["type": "integer", "minimum": 1, "maximum": .number(Double(LibrarySearchCommand.maxLimit))],
                 "cursor": ["type": "string", "description": "nextCursor of the page before."],
             ]
+        case .libraryGet:
+            schema["properties"] = [
+                "ids": [
+                    "type": "array", "minItems": 1, "maxItems": .number(Double(LibraryGetCommand.maxIDs)),
+                    "items": ["type": "string", "format": "uuid"], "description": "Library item IDs.",
+                ]
+            ]
+            schema["required"] = ["ids"]
         case .libraryMark:
             schema["properties"] = [
                 "ids": [
@@ -348,7 +367,7 @@ extension Tool {
 
     private var annotations: JSONValue {
         switch self {
-        case .capabilities, .quote, .jobs, .librarySearch:
+        case .capabilities, .quote, .jobs, .librarySearch, .libraryGet:
             ["readOnlyHint": true, "destructiveHint": false, "idempotentHint": true, "openWorldHint": false]
         // Spends, but the same request_id never queues twice; it reaches Higgsfield.
         case .createVideo, .createImage, .enhance:

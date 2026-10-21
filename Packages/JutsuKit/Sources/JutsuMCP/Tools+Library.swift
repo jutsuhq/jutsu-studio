@@ -55,6 +55,13 @@ extension Tool {
         return .librarySearch(command)
     }
 
+    static func libraryGet(_ given: Arguments) throws(AgentError) -> AgentCommand {
+        try given.allow(["ids"])
+        let command = LibraryGetCommand(ids: try given.ids("ids"))
+        if let problem = command.problem { throw .badRequest("library_get: \(problem)") }
+        return .libraryGet(command)
+    }
+
     static func libraryMark(_ given: Arguments) throws(AgentError) -> AgentCommand {
         try given.allow(["ids", "verdict", "star"])
         let verdict = try given.string("verdict").map { name throws(AgentError) -> AgentCulling in

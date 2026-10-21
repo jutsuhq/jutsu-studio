@@ -90,6 +90,17 @@ extension Tool {
         case .librarySearch:
             properties["items"] = ["type": "array", "items": Self.itemSchema]
             properties["nextCursor"] = ["type": "string"]
+        case .libraryGet:
+            properties["items"] = [
+                "type": "array",
+                "items": [
+                    "type": "object",
+                    "properties": [
+                        "item": Self.itemSchema, "inputs": ["type": "array", "items": Self.inputSchema],
+                        "settings": Self.settingsSchema,
+                    ],
+                ],
+            ]
         case .libraryMark:
             properties["items"] = [
                 "type": "array",
@@ -153,6 +164,24 @@ extension Tool {
             "starred": ["type": "boolean"], "createdAt": ["type": "string"], "prompt": ["type": "string"],
             "promptTruncated": ["type": "boolean"], "versionId": ["type": "string"], "version": ["type": "integer"],
             "versionCount": ["type": "integer"], "jobId": ["type": "string"],
+        ],
+    ]
+
+    static let inputSchema: JSONValue = [
+        "type": "object",
+        "properties": [
+            "role": ["type": "string", "enum": .array(AgentLibraryInput.Role.allCases.map { .string($0.rawValue) })],
+            "position": ["type": "integer"], "file": ["type": "string"], "item": ["type": "string"],
+            "onHiggsfield": ["type": "boolean"], "start": ["type": "number"], "end": ["type": "number"],
+        ],
+    ]
+
+    static let settingsSchema: JSONValue = [
+        "type": "object",
+        "properties": [
+            "resolution": ["type": "string"], "draft": ["type": "boolean"], "audio": ["type": "string"],
+            "style": ["type": "string"], "length": ["type": "number"], "aspectRatio": ["type": "string"],
+            "paidWithUnlimited": ["type": "boolean"], "operation": ["type": "string"], "count": ["type": "integer"],
         ],
     ]
 
