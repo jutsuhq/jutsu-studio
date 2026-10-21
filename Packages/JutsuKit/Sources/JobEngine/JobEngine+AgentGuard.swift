@@ -40,7 +40,7 @@ extension JobEngine {
             job.spec.usesUnlimited, allowsUnlimited: allowsUnlimited, chargedToday: chargedToday)
         if !unlimited, let status = try await spendStatus(job), let cap = status.cap,
             Budget.allows(cost: job.price, committedToday: status.committedToday, cap: cap) != .allowed,
-            !Self.covers(job.approvedPrice, job.price)
+            !Budget.covers(approved: job.approvedPrice, job.price)
         {
             try await apply(.paused(.priceAboveCap), to: id) { $0.inputs = inputs }
             return .paused
@@ -64,12 +64,6 @@ extension JobEngine {
             guard fits else { return try await holdAgentJob(id, .overDailyBudget, inputs: inputs) }
             return .send(reservation: spend.id)
         }
-    }
-
-    /// The price the person agreed to covers `price`.
-    private static func covers(_ approved: Cost?, _ price: Cost) -> Bool {
-        guard let approved, approved.unit == price.unit else { return false }
-        return price.amount <= approved.amount
     }
 
     private func holdAgentJob(_ id: UUID, _ hold: AgentHold, inputs: RemoteInputs) async throws -> AgentClearance {

@@ -51,12 +51,18 @@ public enum Budget {
     public static func refinedPriceNeedsConfirmation(
         preliminary: Cost, refined: Cost, approved: Cost?, committedToday: Decimal, cap: SpendCap?
     ) -> Bool {
-        if let approved, approved.unit == refined.unit, refined.amount <= approved.amount { return false }
+        if covers(approved: approved, refined) { return false }
         guard case .needsConfirmation = allows(cost: refined, committedToday: committedToday, cap: cap) else {
             return false
         }
         if let approved, approved.unit == refined.unit { return true }
         return allows(cost: preliminary, committedToday: committedToday, cap: cap) == .allowed
+    }
+
+    /// Whether the price the person agreed to, `approved`, covers `price`: in the same unit and no lower.
+    public static func covers(approved: Cost?, _ price: Cost) -> Bool {
+        guard let approved, approved.unit == price.unit else { return false }
+        return price.amount <= approved.amount
     }
 
     /// Spend in `unit` committed on `day`: jobs charged that day plus every job still in the queue, so queueing

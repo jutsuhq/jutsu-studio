@@ -269,7 +269,7 @@ extension AgentImageQueue {
         }
         if let status, let cap = status.cap,
             case .needsConfirmation = Budget.allows(cost: price, committedToday: status.committedToday, cap: cap),
-            !Self.covers(record.approvedPrice, price)
+            !Budget.covers(approved: record.approvedPrice, price)
         {
             return hold(id, .priceAboveCap, price: price, isKnown: isKnown)
         }
@@ -449,12 +449,6 @@ extension AgentImageQueue {
         case .credits(let amount, _)?: .credits(amount * Decimal(record.count), isEstimate: true)
         case nil: nil
         }
-    }
-
-    /// The price the person agreed to covers `price`.
-    static func covers(_ approved: Cost?, _ price: Cost) -> Bool {
-        guard let approved, approved.unit == price.unit else { return false }
-        return price.amount <= approved.amount
     }
 
     static func hold(_ hold: AgentHold) -> AgentImageRecord.Hold {

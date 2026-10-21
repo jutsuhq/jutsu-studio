@@ -92,3 +92,12 @@ import Testing
     #expect(Budget.allows(cost: .unknownCredits, committedToday: 0, cap: nil) == .allowed)
     #expect(Budget.allows(cost: .unknownUSD, committedToday: 0, cap: .credits(100)) == .allowed)
 }
+
+/// A price the person agreed to covers the same price or a lower one in its unit, and nothing in another unit.
+@Test func anApprovedPriceCoversNoMoreThanItself() {
+    #expect(Budget.covers(approved: .credits(20, isEstimate: false), .credits(20, isEstimate: true)))
+    #expect(Budget.covers(approved: .credits(20, isEstimate: false), .credits(12, isEstimate: false)))
+    #expect(!Budget.covers(approved: .credits(20, isEstimate: false), .credits(21, isEstimate: false)))
+    #expect(!Budget.covers(approved: .credits(20, isEstimate: false), .usd(1, isEstimate: false)))
+    #expect(!Budget.covers(approved: nil, .credits(0, isEstimate: false)))
+}
