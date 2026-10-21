@@ -10,13 +10,25 @@ private let logger = Logger(subsystem: "com.jutsustudio", category: "Agents")
 
 // frames: still frames and a contact sheet into the output folder's Exports folder, local and free.
 extension AgentService {
-    /// One clip to take frames of: its file, open to the app while the frames are taken, and where its times start.
+    /// One clip to take frames of: its file and where its times start. A file the person picked is read through its
+    /// bookmark, in scoped access held only while its frames are taken (`writeFrames`), as the Library's player does.
     struct FrameClip: Sendable {
-        let access: SecurityScopedAccess
+        let url: URL
+        let bookmark: Data?
         /// Seconds added to each time asked: the start of the range a source clip's job used.
         let offset: Double
         /// What its frames are named after.
         let name: String
+        /// What it is, for an error that says which clip couldn't be read: "video", "source video"…
+        let role: String
+
+        init(url: URL, bookmark: Data? = nil, offset: Double = 0, role: String) {
+            self.url = url
+            self.bookmark = bookmark
+            self.offset = offset
+            name = url.deletingPathExtension().lastPathComponent
+            self.role = role
+        }
     }
 
     func frames(_ fields: FramesCommand) async throws(AgentError) -> AgentFrames {
@@ -32,9 +44,12 @@ extension AgentService {
             guard case .video(let item)? = byID[id].flatMap(MaterialLibrary.row), let source = item.spec.source else {
                 throw .badRequest("frames: compare_source is a video's source clip; this item has none")
             }
+            guard source.fileURL.isFileURL else {
+                throw .badRequest("frames: this item's source clip is only on Higgsfield, not on this Mac")
+            }
             compare = FrameClip(
-                access: SecurityScopedAccess(url: source.fileURL, bookmark: source.bookmark),
-                offset: source.range.lowerBound, name: source.fileURL.deletingPathExtension().lastPathComponent)
+                url: source.fileURL, bookmark: source.bookmark, offset: source.range.lowerBound,
+                role: "source video")
         }
         let folder = environment.outputFolder.url(of: .exports)
         try Self.makeFolder(folder)
@@ -58,9 +73,7 @@ extension AgentService {
     private func clip(item id: UUID?, file path: String?, in byID: [UUID: Material]) throws(AgentError) -> FrameClip {
         if let path {
             let url = try inboxFile(path)
-            return FrameClip(
-                access: SecurityScopedAccess(url: url, bookmark: nil), offset: 0,
-                name: url.deletingPathExtension().lastPathComponent)
+            return FrameClip(url: url, role: FrameGrab.isImage(url) ? "image" : "video")
         }
         let row = id.flatMap { byID[$0] }.flatMap(MaterialLibrary.row)
         let file: URL?
@@ -74,9 +87,7 @@ extension AgentService {
                 .notFound, message: "There's no Library item \(id?.uuidString ?? "") with a file on this Mac.",
                 retryable: false, next: "Call library_search for the item IDs.")
         }
-        return FrameClip(
-            access: SecurityScopedAccess(url: file, bookmark: nil), offset: 0,
-            name: file.deletingPathExtension().lastPathComponent)
+        return FrameClip(url: file, role: FrameGrab.isImage(file) ? "image" : "video")
     }
 
     /// Takes every frame, then writes them and the sheet under names no file has.
@@ -86,20 +97,32 @@ extension AgentService {
         let clips = [main] + (compare.map { [$0] } ?? [])
         var rows: [[CGImage]] = []
         for clip in clips {
-            let url = clip.access.url
-            if FrameGrab.isImage(url) {
-                let still = try FrameGrab.still(at: url)
-                rows.append(times.map { _ in still })
-                continue
+            let access = SecurityScopedAccess(url: clip.url, bookmark: clip.bookmark)
+            let url = access.url
+            guard FileManager.default.isReadableFile(atPath: url.path(percentEncoded: false)) else {
+                throw unreadable(clip, because: "it was moved or deleted, or Jutsu Studio may no longer read it")
             }
-            let at = times.map { $0 + clip.offset }
-            let duration = try await FrameGrab.duration(of: url)
-            if let late = at.first(where: { $0 > duration }) {
-                throw AgentError.badRequest(
-                    "frames: \(late.formatted()) s is past the end of \(clip.name), which runs "
-                        + "\(duration.formatted(.number.precision(.fractionLength(0...2)))) s")
+            do {
+                if FrameGrab.isImage(url) {
+                    let still = try FrameGrab.still(at: url)
+                    rows.append(times.map { _ in still })
+                } else {
+                    let at = times.map { $0 + clip.offset }
+                    let duration = try await FrameGrab.duration(of: url)
+                    if let late = at.first(where: { $0 > duration }) {
+                        throw AgentError.badRequest(
+                            "frames: \(late.formatted()) s is past the end of \(clip.name), which runs "
+                                + "\(duration.formatted(.number.precision(.fractionLength(0...2)))) s")
+                    }
+                    rows.append(try await FrameGrab.frames(of: url, at: at))
+                }
+            } catch let error as AgentError {
+                throw error
+            } catch {
+                logger.error("Agent frames can't read a clip: \(String(describing: error), privacy: .private)")
+                throw unreadable(clip, because: error.localizedDescription)
             }
-            rows.append(try await FrameGrab.frames(of: url, at: at))
+            withExtendedLifetime(access) {}
         }
         var frames: [AgentFrames.Frame] = []
         for (index, (clip, row)) in zip(clips, rows).enumerated() {
@@ -119,7 +142,15 @@ extension AgentService {
             try FrameGrab.writePNG(image, to: url)
             sheet = url.path(percentEncoded: false)
         }
-        withExtendedLifetime(clips) {}
         return AgentFrames(folder: folder.path(percentEncoded: false), frames: frames, sheet: sheet)
+    }
+
+    /// Which clip couldn't be read, and why.
+    nonisolated private static func unreadable(_ clip: FrameClip, because reason: String) -> AgentError {
+        AgentError(
+            .failed, message: "frames: can't read the \(clip.role) \(clip.name): \(reason)", retryable: false,
+            next: clip.role == "source video"
+                ? "Check in the Library that the source still plays; if not, frames of the result alone still work."
+                : "Check that the file is a video or an image the app can read.")
     }
 }
