@@ -74,9 +74,9 @@ extension AgentService {
         let kind = environment.connection.state.kind
         var taken: AgentSpendTotal?
         if let kind { taken = try await agentSpendToday(for: kind) }
-        // The plan's unlimited allowance pays it: nothing counts against the budget or the cap. Once the allowance
-        // didn't pay for an agent's job today, the guard checks the job at its price like any other.
-        let unlimited = paysUnlimited && !(preferences.allowsUnlimited && taken?.unlimitedCharged == true)
+        // The plan's unlimited allowance pays it: nothing counts against the budget or the cap.
+        let unlimited = AgentSpendDecision.paysUnlimited(
+            paysUnlimited, allowsUnlimited: preferences.allowsUnlimited, chargedToday: taken?.unlimitedCharged == true)
         let cost: Cost? = unlimited ? .credits(0, isEstimate: false) : await environment.estimate(spec)
         let money = cost.flatMap(AgentMoney.init)
         let price = money.map { AgentAmount($0.amount, Self.unit(of: $0.unit)) }

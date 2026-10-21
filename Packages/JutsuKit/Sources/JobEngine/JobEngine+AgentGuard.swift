@@ -26,16 +26,18 @@ extension JobEngine {
         guard let origin = job.agent, job.submitAttempt == nil else { return .send(reservation: nil) }
         guard let agentPolicy else { return try await holdAgentJob(id, .ledgerUnavailable, inputs: inputs) }
         let allowsUnlimited = agentPolicy.allowsUnlimited()
-        var unlimited = job.spec.usesUnlimited
-        if unlimited, allowsUnlimited {
+        var chargedToday = false
+        if job.spec.usesUnlimited, allowsUnlimited {
             do {
-                unlimited = try await !agentPolicy.ledger.total(on: clock.now, unit: origin.maxCost.unit)
+                chargedToday = try await agentPolicy.ledger.total(on: clock.now, unit: origin.maxCost.unit)
                     .unlimitedCharged
             } catch {
                 log.error("Job \(id): the agent spend ledger can't be read", detail: String(describing: error))
                 return try await holdAgentJob(id, .ledgerUnavailable, inputs: inputs)
             }
         }
+        let unlimited = AgentSpendDecision.paysUnlimited(
+            job.spec.usesUnlimited, allowsUnlimited: allowsUnlimited, chargedToday: chargedToday)
         if !unlimited, let status = try await spendStatus(job), let cap = status.cap,
             Budget.allows(cost: job.price, committedToday: status.committedToday, cap: cap) != .allowed,
             !Self.covers(job.approvedPrice, job.price)

@@ -255,6 +255,16 @@ public enum AgentSpendDecision: Sendable, Hashable {
     }
 }
 
+extension AgentSpendDecision {
+    /// Whether the plan's unlimited allowance pays for an agent's request that asks for it (`JobSpec.usesUnlimited`):
+    /// it does, unless the person lets agents use the allowance and a request of theirs for it was charged anyway
+    /// today (`AgentSpendTotal.unlimitedCharged`). Then the allowance isn't trusted to pay until the day ends, and the
+    /// request keeps the cap, `max_cost` and the budget like any other.
+    public static func paysUnlimited(_ usesUnlimited: Bool, allowsUnlimited: Bool, chargedToday: Bool) -> Bool {
+        usesUnlimited && !(allowsUnlimited && chargedToday)
+    }
+}
+
 extension Job {
     /// The price the guard may trust: the provider's quote, or an exact preliminary price.
     public var agentPriceIsKnown: Bool {
