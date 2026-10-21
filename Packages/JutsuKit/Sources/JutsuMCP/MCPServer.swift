@@ -362,8 +362,11 @@ extension MCPServer {
         decides in the Queue; the person's own daily cap applies too. A video the plan's unlimited generations would \
         pay for (quote's paysUnlimited) costs the budget nothing, but is held the same way unless the person lets \
         agents use them (capabilities budget.unlimitedAllowed). Tell the person when something waits for \
-        them. library_search finds results (paths on this Mac), library_get gives one in full (the whole prompt, \
-        its inputs in order, its settings), library_mark keeps, rejects or stars them, \
+        them. elements lists the account's characters and other elements, which create_video and create_image take \
+        by name (references in the answer tags each image sent @ImageN). library_search finds results (paths on \
+        this Mac, or with include_higgsfield the account's history too, which library_download brings here for \
+        free), library_get gives one in full (the whole prompt, its inputs in order, its settings), frames writes \
+        still frames and a contact sheet to check a result, library_mark keeps, rejects or stars them, \
         delivery_set and export write files for delivery or editing, never over a file. job_action cancels, \
         retries or runs a job next, or pauses or resumes the agents' jobs (never the person's own, or their \
         Pause all); it never resumes a job waiting for the person, and nothing here deletes anything. show opens a \

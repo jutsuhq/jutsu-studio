@@ -4,6 +4,19 @@ Notable changes to Jutsu Studio. Versions follow [Semantic Versioning](https://s
 
 ## [Unreleased]
 
+### Added
+
+- Agents can give `create_image` several input images (`inputs`); `input` still takes one.
+- Agents can read Library items in full with `library_get`: the whole prompt, the inputs in the order sent and the settings.
+- Agents can take still frames of a result or a file with `frames`, and compare it with another clip or its own source on a contact sheet, written into the Exports folder. Free and local.
+- Agents can list your Higgsfield history in `library_search` and download results into the Library with `library_download`. Free; it never spends credits.
+- Agents can use your account's characters and other elements by name in `create_video` and `create_image`, and list them with `elements`. The answer tags every image sent as @Image1, @Image2 and so on.
+- `capabilities` and `quote` say how many variants a job can make and why only one, and `quote` gives how many reference images the model takes.
+
+### Changed
+
+- Agents' reference images follow the model's own limit instead of a fixed 16.
+
 ## [0.2.0] - 2026-10-21
 
 ### Added
