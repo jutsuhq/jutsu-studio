@@ -17,11 +17,14 @@ extension AgentService {
     /// other parameters is refused (`request_conflict`), and one already queued with these needs no file again
     /// (`request_known`).
     func admit(_ upload: UploadCommand) throws(AgentError) {
-        guard let request = upload.request, ["create_video", "create_image"].contains(request.command) else {
+        guard let request = upload.request, ["create_video", "create_image", "frames"].contains(request.command)
+        else {
             throw AgentError(
-                .fileRefused, message: "Only create_video and create_image take files.", retryable: false,
-                next: "Send files with create_video or create_image.")
+                .fileRefused, message: "Only create_video, create_image and frames take files.", retryable: false,
+                next: "Send files with create_video, create_image or frames.")
         }
+        // Free and never logged as a request: its files are removed once its frames are written.
+        if request.command == "frames" { return }
         if let running = creating[request.requestID] ?? creatingImages[request.requestID] {
             guard running.fingerprint == request.fingerprint else { throw .requestConflict }
             return

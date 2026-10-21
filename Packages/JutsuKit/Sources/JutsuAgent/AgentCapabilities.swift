@@ -69,7 +69,7 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
             ToolGroup(name: "image", tools: ["create_image"]),
             ToolGroup(
                 name: "library",
-                tools: ["library_search", "library_get", "library_mark", "enhance", "delivery_set", "export"]),
+                tools: ["library_search", "library_get", "library_mark", "enhance", "delivery_set", "export", "frames"]),
             ToolGroup(name: "window", tools: ["show"]),
         ]
     }

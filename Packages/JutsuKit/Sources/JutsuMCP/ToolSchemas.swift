@@ -122,6 +122,19 @@ extension Tool {
         case .export:
             properties["job"] = Self.jobSchema
             properties["timedOut"] = ["type": "boolean"]
+        case .frames:
+            properties["folder"] = ["type": "string"]
+            properties["frames"] = [
+                "type": "array",
+                "items": [
+                    "type": "object",
+                    "properties": [
+                        "clip": ["type": "string", "enum": ["main", "compare"]], "time": ["type": "number"],
+                        "file": ["type": "string"],
+                    ],
+                ],
+            ]
+            properties["sheet"] = ["type": "string"]
         case .jobAction:
             properties["action"] = ["type": "string"]
             properties["job"] = Self.jobSchema

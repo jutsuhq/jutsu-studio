@@ -28,6 +28,7 @@ extension Tool {
         case .enhance: "Enhance a video"
         case .deliverySet: "Delivery sets"
         case .export: "Export for editing"
+        case .frames: "Still frames and contact sheet"
         case .show: "Show in Jutsu Studio"
         }
     }
@@ -154,6 +155,17 @@ extension Tool {
             answers at once, or once it finished within wait_seconds (0–50), with job (kind export), whose ID jobs \
             follows with progress and each file's path, or why it failed or was skipped. A wait that runs out stops \
             nothing. Free and local; never replaces a file.
+            """
+        case .frames:
+            """
+            Writes still frames as PNG files, to look at a result without a video player: item (a Library ID) or \
+            file (a video or an image on this Mac) at times, 1–12 seconds from its start, the exact frame at each. \
+            To compare, give one of compare_item, compare_file or compare_source (true: the item's own source clip, \
+            at the same times from the start of the range it used, so the swap and what it swapped line up): its \
+            frames at the same times are written too, with a contact sheet, a row per clip (item on top) and a \
+            column per time; several times without a comparison get a sheet as well. Answers with folder, the \
+            output folder's Exports folder, frames (clip main or compare, time, file) and sheet. An image has one \
+            frame whatever the time; a time past a video's end is refused. Free and local; never replaces a file.
             """
         case .show:
             """
@@ -304,6 +316,19 @@ extension Tool {
                 ],
             ]
             schema["required"] = ["action"]
+        case .frames:
+            schema["properties"] = [
+                "item": ["type": "string", "format": "uuid", "description": "A Library item, a video or an image."],
+                "file": ["type": "string", "description": "Else a video or an image on this Mac."],
+                "times": [
+                    "type": "array", "minItems": 1, "maxItems": .number(Double(FramesCommand.maxTimes)),
+                    "items": ["type": "number", "minimum": 0], "description": "Seconds from the start, in order.",
+                ],
+                "compare_item": ["type": "string", "format": "uuid", "description": "Another Library item."],
+                "compare_file": ["type": "string", "description": "Another video or image on this Mac."],
+                "compare_source": ["type": "boolean", "description": "The item's own source clip."],
+            ]
+            schema["required"] = ["times"]
         // Exactly one of the two, said in words and checked on the call: some model APIs refuse oneOf at the top of
         // an input schema.
         case .show:
@@ -379,7 +404,7 @@ extension Tool {
         case .libraryMark:
             ["readOnlyHint": false, "destructiveHint": false, "idempotentHint": true, "openWorldHint": true]
         // Writes new files on this Mac, never over one; each call writes new ones.
-        case .deliverySet, .export:
+        case .deliverySet, .export, .frames:
             ["readOnlyHint": false, "destructiveHint": false, "idempotentHint": false, "openWorldHint": false]
         // Changes what the window shows, nothing else.
         case .show:

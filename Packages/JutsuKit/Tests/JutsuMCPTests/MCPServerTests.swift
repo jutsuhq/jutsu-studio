@@ -156,7 +156,7 @@ actor FakeApp {
             tools.map { $0["name"]?.stringValue }
                 == [
                     "capabilities", "quote", "create_video", "jobs", "job_action", "create_image", "library_search",
-                    "library_get", "library_mark", "enhance", "delivery_set", "export", "show",
+                    "library_get", "library_mark", "enhance", "delivery_set", "export", "frames", "show",
                 ])
         #expect(tools.compactMap { $0["name"]?.stringValue } == AgentCapabilities.ToolGroup.all.flatMap(\.tools))
         for tool in tools {
@@ -188,7 +188,9 @@ actor FakeApp {
         }
         #expect(hints["library_mark"]??["idempotentHint"] == true)
         #expect(hints["library_mark"]??["destructiveHint"] == false)
-        for name in ["delivery_set", "export"] { #expect(hints[name]??["destructiveHint"] == false, "\(name)") }
+        for name in ["delivery_set", "export", "frames"] {
+            #expect(hints[name]??["destructiveHint"] == false, "\(name)")
+        }
         #expect(hints["show"]??["readOnlyHint"] == false)
         #expect(hints["show"]??["idempotentHint"] == true)
         #expect(hints["show"]??["openWorldHint"] == false)

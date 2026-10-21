@@ -116,6 +116,49 @@ extension Tool {
         return .deliverySet(command)
     }
 
+    static func frames(_ given: Arguments, workingDirectory: URL) throws(AgentError) -> AgentCommand {
+        try given.allow(["item", "file", "times", "compare_item", "compare_file", "compare_source"])
+        let id = { (key: String) throws(AgentError) -> UUID? in
+            try given.string(key).map { text throws(AgentError) -> UUID in
+                guard let id = UUID(uuidString: text) else { throw .badRequest("frames: \(key) is a Library item ID") }
+                return id
+            }
+        }
+        let times: [Double]
+        switch given.values["times"] {
+        case .array(let values)?:
+            times = try values.map { value throws(AgentError) -> Double in
+                guard let number = value.numberValue, number.isFinite else {
+                    throw .badRequest("frames: times is a list of seconds")
+                }
+                return number
+            }
+        case nil, .null?:
+            throw .badRequest("frames needs times, the seconds to take frames at, such as [1, 2.5]")
+        default:
+            throw .badRequest("frames: times is a list of seconds")
+        }
+        var command = FramesCommand(
+            item: try id("item"), file: try given.string("file"), times: times, compareItem: try id("compare_item"),
+            compareFile: try given.string("compare_file"), compareSource: try given.bool("compare_source"))
+        if let problem = command.problem { throw .badRequest("frames: \(problem)") }
+        let local = { (path: String) in Inbox.resolve(path, from: workingDirectory).path(percentEncoded: false) }
+        command.file = command.file.map(local)
+        command.compareFile = command.compareFile.map(local)
+        return .frames(command)
+    }
+
+    /// What names a `frames` command's uploads: it isn't a paid request, so its ID is made from its fingerprint.
+    static func uploadRequest(for command: FramesCommand) throws(AgentError) -> UploadRequest {
+        let fingerprint: String
+        do {
+            fingerprint = try AgentFingerprint.of(command)
+        } catch {
+            throw .badRequest("frames: the parameters can't be read")
+        }
+        return UploadRequest(command: "frames", requestID: "frames-\(fingerprint.prefix(16))", fingerprint: fingerprint)
+    }
+
     static func export(_ given: Arguments) throws(AgentError) -> AgentCommand {
         try given.allow(["items", "preset", "sidecar", "wait_seconds"])
         guard let name = try given.string("preset"), let preset = AgentExportPreset(rawValue: name) else {

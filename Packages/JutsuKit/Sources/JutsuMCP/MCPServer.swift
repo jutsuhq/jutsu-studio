@@ -226,6 +226,7 @@ public struct MCPServer: Sendable {
         switch tool.command(arguments) {
         case .success(.createVideo(let command)): response = await createVideo(command, client: client)
         case .success(.createImage(let command)): response = await createImage(command, client: client)
+        case .success(.frames(let command)): response = await frames(command, client: client)
         case .success(let command): response = await send(command, client)
         case .failure(let error): response = AgentResponse(error: error)
         }
@@ -273,6 +274,21 @@ public struct MCPServer: Sendable {
         }
         return await send(.createImage(staged), client)
     }
+
+    /// `frames` of the agent's own files: they are handed over first, and the app removes its copies once the
+    /// frames are written.
+    private func frames(_ command: FramesCommand, client: String?) async -> AgentResponse {
+        guard !command.files.isEmpty else { return await send(.frames(command), client) }
+        var staged = command
+        do throws(AgentError) {
+            let request = try Tool.uploadRequest(for: command)
+            if let path = command.file { staged.file = try await stage(path, request, client).get() }
+            if let path = command.compareFile { staged.compareFile = try await stage(path, request, client).get() }
+        } catch {
+            return AgentResponse(error: error)
+        }
+        return await send(.frames(staged), client)
+    }
 }
 
 // Tool results, names and encoding.
@@ -296,6 +312,7 @@ extension MCPServer {
         let answers: [(any Encodable)?] = [
             response.capabilities, response.shown, response.quote, response.created, response.jobs, response.acted,
             response.library, response.details, response.marked, response.delivery, response.exported,
+            response.frames,
         ]
         guard let answer = answers.lazy.compactMap(\.self).first else {
             return ["error": encoded(AgentError.lostAnswer)]

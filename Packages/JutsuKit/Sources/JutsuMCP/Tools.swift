@@ -16,6 +16,7 @@ enum Tool: String, CaseIterable {
     case enhance
     case deliverySet = "delivery_set"
     case export
+    case frames
     case show
 
     /// The command for these arguments, or the tool error that tells the model what to fix. Checked here before
@@ -41,6 +42,7 @@ enum Tool: String, CaseIterable {
             case .enhance: .success(try Self.enhance(given))
             case .deliverySet: .success(try Self.deliverySet(given))
             case .export: .success(try Self.export(given))
+            case .frames: .success(try Self.frames(given, workingDirectory: workingDirectory))
             case .show: .success(try Self.show(given))
             }
         } catch {

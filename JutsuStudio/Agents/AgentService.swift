@@ -143,6 +143,8 @@ final class AgentService {
             return AgentResponse(delivery: try await deliverySet(fields))
         case .export(let fields):
             return AgentResponse(exported: try await exportForEditing(fields))
+        case .frames(let fields):
+            return AgentResponse(frames: try await frames(fields))
         }
     }
 

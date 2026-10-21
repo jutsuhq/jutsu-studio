@@ -54,6 +54,8 @@ public enum AgentCommand: Equatable, Sendable {
     case deliverySet(DeliverySetCommand)
     /// Exports video results for editing.
     case export(ExportCommand)
+    /// Writes still frames of a result or a file, and a contact sheet of a comparison.
+    case frames(FramesCommand)
 
     public var name: String {
         switch self {
@@ -71,6 +73,7 @@ public enum AgentCommand: Equatable, Sendable {
         case .enhance: "enhance"
         case .deliverySet: "delivery_set"
         case .export: "export"
+        case .frames: "frames"
         }
     }
 }
@@ -118,6 +121,7 @@ public struct AgentRequest: Codable, Equatable, Sendable {
         case "enhance": command = .enhance(try .checked(from: decoder))
         case "delivery_set": command = .deliverySet(try .checked(from: decoder))
         case "export": command = .export(try .checked(from: decoder))
+        case "frames": command = .frames(try .checked(from: decoder))
         default: throw AgentError.unknownCommand(name)
         }
     }
@@ -143,6 +147,7 @@ public struct AgentRequest: Codable, Equatable, Sendable {
         case .enhance(let fields): try fields.encode(to: encoder)
         case .deliverySet(let fields): try fields.encode(to: encoder)
         case .export(let fields): try fields.encode(to: encoder)
+        case .frames(let fields): try fields.encode(to: encoder)
         }
     }
 }
@@ -169,13 +174,15 @@ public struct AgentResponse: Codable, Equatable, Sendable {
     public var marked: AgentMarked?
     public var delivery: AgentDelivery?
     public var exported: AgentExported?
+    public var frames: AgentFrames?
     public var error: AgentError?
 
     public init(
         id: String? = nil, capabilities: AgentCapabilities? = nil, shown: AgentShown? = nil, uploaded: String? = nil,
         quote: AgentQuote? = nil, created: AgentCreated? = nil, jobs: AgentJobs? = nil, acted: AgentActed? = nil,
         library: AgentLibraryPage? = nil, details: AgentLibraryDetailsPage? = nil, marked: AgentMarked? = nil,
-        delivery: AgentDelivery? = nil, exported: AgentExported? = nil, error: AgentError? = nil
+        delivery: AgentDelivery? = nil, exported: AgentExported? = nil, frames: AgentFrames? = nil,
+        error: AgentError? = nil
     ) {
         self.id = id
         self.capabilities = capabilities
@@ -190,6 +197,7 @@ public struct AgentResponse: Codable, Equatable, Sendable {
         self.marked = marked
         self.delivery = delivery
         self.exported = exported
+        self.frames = frames
         self.error = error
     }
 }

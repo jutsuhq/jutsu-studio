@@ -202,6 +202,46 @@ import Testing
         #expect(MCPServer.toolResult(answer, structured: true)["isError"] == false)
     }
 
+    /// frames' own files are staged under a request named by its fingerprint, then the command goes with inbox paths.
+    @Test func framesStagesItsFilesAndSendsTheCommand() async throws {
+        let (main, other) = (try file("take.mov"), try file("source.mov"))
+        let result = try await call(
+            "frames", ["file": .string(main), "times": [.number(1), .number(2.5)], "compare_file": .string(other)])
+        #expect(result["isError"] == false)
+        #expect(await inbox.staged.map(\.path) == [main, other])
+        #expect(await inbox.staged.allSatisfy { $0.request.command == "frames" })
+        guard case .frames(let staged)? = await app.calls.first?.0 else {
+            Issue.record("frames wasn't sent")
+            return
+        }
+        #expect(staged.times == [1, 2.5])
+        #expect(staged.files.allSatisfy { $0.hasPrefix("/tmp/inbox/") })
+    }
+
+    @Test func framesTakesOneClipAndAtMostOneComparison() {
+        let id = UUID().uuidString
+        let asked: [String: JSONValue] = ["item": .string(id), "times": [0], "compare_source": true]
+        guard case .success(.frames(let item)) = command(.frames, asked) else {
+            Issue.record("no frames")
+            return
+        }
+        #expect(item.compareSource && item.item?.uuidString == id)
+        for bad in [
+            ["times": [1]], ["item": .string(id), "file": "/tmp/a.mov", "times": [1]], ["item": .string(id)],
+            ["item": .string(id), "times": []],
+            ["item": .string(id), "times": .array((0...12).map { .number(Double($0)) })],
+            ["item": .string(id), "times": [-1]], ["file": "/tmp/a.mov", "times": [1], "compare_source": true],
+            ["item": .string(id), "times": [1], "compare_item": .string(id), "compare_file": "/tmp/b.mov"],
+            ["item": "nope", "times": [1]],
+        ] as [[String: JSONValue]] {
+            guard case .failure(let error) = command(.frames, bad) else {
+                Issue.record("taken: \(bad)")
+                continue
+            }
+            #expect(error.code == .badRequest)
+        }
+    }
+
     @Test func libraryMarkNeedsSomethingToMark() {
         let id = UUID().uuidString
         guard case .success(.libraryMark(let mark)) = command(.libraryMark, ["ids": [.string(id)], "star": true]) else {
