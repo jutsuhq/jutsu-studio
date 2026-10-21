@@ -37,7 +37,7 @@ public final class AgentRequestGate<Answer: Sendable, Failure: Error> {
     }
 
     private let log: AgentRequestLog
-    private let events = EngineLog(category: "Agents")
+    private let events = PresentationLog(category: "Agents")
     private var running: [String: (fingerprint: String, task: Task<Result<Answer, Failure>, Never>)] = [:]
 
     public init(log: AgentRequestLog) {

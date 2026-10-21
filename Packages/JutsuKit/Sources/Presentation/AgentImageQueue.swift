@@ -22,7 +22,7 @@ public final class AgentImageQueue {
     @ObservationIgnored let now: @Sendable () -> Date
     @ObservationIgnored private let file: LogFile<AgentImageRecord>
     @ObservationIgnored private var loaded: [AgentImageRecord]?
-    @ObservationIgnored let log = EngineLog(category: "AgentImages")
+    @ObservationIgnored let log = PresentationLog(category: "AgentImages")
 
     static let keptDays = 30
 

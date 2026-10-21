@@ -17,7 +17,7 @@ allowed() {
         MediaKit) echo "Foundation JutsuCore AVFoundation CoreMedia CoreVideo CoreImage CoreGraphics ImageIO UniformTypeIdentifiers CryptoKit os" ;;
         Persistence) echo "Foundation JutsuCore SwiftData os" ;;
         JobEngine) echo "Foundation FoundationNetworking JutsuCore HiggsfieldCore os" ;;
-        Presentation) echo "Foundation JutsuCore Observation" ;;
+        Presentation) echo "Foundation JutsuCore Observation os" ;;
         # The helper links these two: nothing of the app, and no AppKit (it starts the app through its own target).
         JutsuAgent) echo "Foundation Darwin Dispatch CryptoKit" ;;
         JutsuMCP) echo "Foundation JutsuAgent HiggsfieldMCP" ;;
