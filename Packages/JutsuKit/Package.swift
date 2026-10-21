@@ -70,7 +70,9 @@ var targets: [Target] = [
         .testTarget(name: "JutsuAgentTests", dependencies: ["JutsuAgent", "JutsuTestSupport"]),
         .testTarget(
             name: "JutsuMCPTests",
-            dependencies: ["JutsuMCP", "JutsuAgent", .product(name: "HiggsfieldMCP", package: "HiggsfieldKit")]),
+            dependencies: [
+                "JutsuMCP", "JutsuAgent", "JutsuTestSupport", .product(name: "HiggsfieldMCP", package: "HiggsfieldKit"),
+            ]),
     ]
 #endif
 
