@@ -6,7 +6,7 @@ import ImageIO
 import UniformTypeIdentifiers
 
 /// Still frames of a video or an image as PNG files, and a contact sheet of several clips at the same times: what an
-/// agent checks a result with instead of a video player. Local and free.
+/// agent checks a result with instead of a video player.
 public enum FrameGrab {
     /// Whether `url` names an image rather than a video, by its extension.
     public static func isImage(_ url: URL) -> Bool {

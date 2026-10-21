@@ -163,7 +163,8 @@ extension Tool {
             frames at the same times are written too, with a contact sheet, a row per clip (item on top) and a \
             column per time; several times without a comparison get a sheet as well. Answers with folder, the \
             output folder's Exports folder, frames (clip main or compare, time, file) and sheet. An image has one \
-            frame whatever the time; a time past a video's end is refused. Free and local; never replaces a file.
+            frame whatever the time; a time past a video's end is refused. Free; never replaces a file. The source \
+            of a result only on Higgsfield is read from its Higgsfield link.
             """
         case .show:
             """

@@ -3,8 +3,8 @@ import Foundation
 // frames: still frames and a contact sheet, for checking a result without a video player.
 
 /// PNG frames of a Library result or a file at the times asked, and with a comparison, the same times of a second
-/// clip and a contact sheet of both. Written into the output folder's Exports folder under names no file has; local
-/// and free.
+/// clip and a contact sheet of both. Written into the output folder's Exports folder under names no file has; free,
+/// and a history item's source is read from its Higgsfield link.
 public struct FramesCommand: Codable, Equatable, Sendable, AgentFields {
     public static let maxTimes = 12
 

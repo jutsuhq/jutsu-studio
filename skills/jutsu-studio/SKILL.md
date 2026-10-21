@@ -52,7 +52,7 @@ says rather than guessing.
 5. **Review and show.** `library_search` finds results (newest first, `nextCursor` → `cursor`), `library_get` gives
    them in full (the whole prompt, the inputs in order, the settings), `frames` writes still frames of a result at the
    seconds you name, with `compare_source` or `compare_item` a contact sheet beside what it was made from, so look
-   at those instead of guessing. `library_mark` keeps, rejects or stars results, and `show` opens a job or a page in
+   at those instead of guessing. It is free; the source of a history result is read from its Higgsfield link. `library_mark` keeps, rejects or stars results, and `show` opens a job or a page in
    the app for the person.
    - **Higgsfield history.** `library_search` with `include_higgsfield` also lists the account's history
      (`onHiggsfield`, no file yet; `refresh_higgsfield` reloads it), and `library_download` brings those results

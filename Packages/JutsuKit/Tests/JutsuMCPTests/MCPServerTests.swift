@@ -203,6 +203,8 @@ actor FakeApp {
         for name in ["delivery_set", "export", "frames"] {
             #expect(hints[name]??["destructiveHint"] == false, "\(name)")
         }
+        // compare_source may read a history item's source from Higgsfield.
+        #expect(hints["frames"]??["openWorldHint"] == true)
         #expect(hints["show"]??["readOnlyHint"] == false)
         #expect(hints["show"]??["idempotentHint"] == true)
         #expect(hints["show"]??["openWorldHint"] == false)

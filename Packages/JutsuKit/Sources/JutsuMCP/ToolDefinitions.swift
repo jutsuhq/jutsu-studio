@@ -306,8 +306,11 @@ extension Tool {
         case .libraryMark:
             ["readOnlyHint": false, "destructiveHint": false, "idempotentHint": true, "openWorldHint": true]
         // Writes new files on this Mac, never over one; each call writes new ones.
-        case .deliverySet, .export, .frames:
+        case .deliverySet, .export:
             ["readOnlyHint": false, "destructiveHint": false, "idempotentHint": false, "openWorldHint": false]
+        // Writes new files on this Mac likewise; compare_source may read a history item's source from Higgsfield.
+        case .frames:
+            ["readOnlyHint": false, "destructiveHint": false, "idempotentHint": false, "openWorldHint": true]
         // Changes what the window shows, nothing else.
         case .show:
             ["readOnlyHint": false, "destructiveHint": false, "idempotentHint": true, "openWorldHint": false]
