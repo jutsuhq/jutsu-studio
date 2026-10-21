@@ -400,7 +400,7 @@ private func batchJob(
     @Test func eachCellPlaysItsResultUnderItsLabel() throws {
         let batch = UUID()
         var first = member(batch, presetName: "Noir", minutesAgo: 2)
-        first.job.outputFile = URL(fileURLWithPath: "/Users/me/Movies/Jutsu Studio/noir.mp4")
+        first.job.outputFile = URL(fileURLWithPath: "/home/me/Movies/Jutsu Studio/noir.mp4")
         var second = member(batch, presetName: "Clay", minutesAgo: 1)
         second.job.outputFile = nil
         let group = try #require(LibraryBatch(id: batch, in: [first, second]))

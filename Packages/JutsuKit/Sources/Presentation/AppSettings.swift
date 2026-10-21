@@ -229,16 +229,25 @@ public enum AppSettings {
     // MARK: Output folder and cache
 
     /// The folder as the user knows it: the home folder, or a sandbox container's `Data` folder, becomes `~`.
-    public static func displayPath(_ path: String) -> String {
+    /// - Parameter home: the account's home folder. Inside the sandbox `NSHomeDirectory()` is the container, so the
+    ///   default reads the account's own.
+    public static func displayPath(_ path: String, home: String = accountHome) -> String {
+        let homeParts = home.split(separator: "/", omittingEmptySubsequences: false)
         let parts = path.split(separator: "/", omittingEmptySubsequences: false)
-        guard parts.count >= 3, parts[0].isEmpty, parts[1] == "Users" else { return path }
-        var rest = parts.dropFirst(3)
+        guard homeParts.count >= 2, parts.starts(with: homeParts) else { return path }
+        var rest = parts.dropFirst(homeParts.count)
         if rest.starts(with: ["Library", "Containers"]), let data = rest.dropFirst(3).first, data == "Data",
             rest.count > 4
         {
             rest = rest.dropFirst(4)
         }
         return (["~"] + rest).joined(separator: "/")
+    }
+
+    /// The account's home folder from the user database, which the sandbox doesn't redirect.
+    public static var accountHome: String {
+        guard let entry = getpwuid(getuid()), let directory = entry.pointee.pw_dir else { return NSHomeDirectory() }
+        return String(cString: directory)
     }
 
     /// "1.43 GB · prepared sources, previews and downloaded inputs", or "Empty".

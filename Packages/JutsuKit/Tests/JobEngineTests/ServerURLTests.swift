@@ -6,7 +6,7 @@ import Testing
 
 /// Reused inputs as a tampered history entry would give them: the source video names a local file.
 private func specReusingALocalFile() -> JobSpec {
-    let local = URL(fileURLWithPath: "/Users/me/Movies/private.mov")
+    let local = URL(fileURLWithPath: "/home/me/Movies/private.mov")
     let image = RemoteAsset(url: URL(string: "https://cdn.example/a.png")!, id: "media-a")
     let reused = RemoteInputs(video: RemoteAsset(url: local, id: "media-v"), images: [image])
     let source = SourceClip(fileURL: local, duration: 8, pixelSize: PixelSize(width: 1080, height: 1920), range: 0...8)

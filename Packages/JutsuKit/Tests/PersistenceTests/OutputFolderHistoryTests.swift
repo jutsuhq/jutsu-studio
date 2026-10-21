@@ -6,7 +6,7 @@ import Testing
     struct Unresolvable: Error {}
 
     let folderA = URL(filePath: "/Volumes/Drive/Renders A/", directoryHint: .isDirectory)
-    let folderB = URL(filePath: "/Users/me/Renders B/", directoryHint: .isDirectory)
+    let folderB = URL(filePath: "/home/me/Renders B/", directoryHint: .isDirectory)
     let bookmarkA = Data("a".utf8)
     let bookmarkB = Data("b".utf8)
 

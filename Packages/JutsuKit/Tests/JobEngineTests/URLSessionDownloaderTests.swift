@@ -152,7 +152,7 @@ struct URLSessionDownloaderTests {
     }
 
     @Test func onlyHTTPSIsFetched() async throws {
-        for address in ["http://cdn.example\(path)", "file:///Users/me/Movies/x.mov"] {
+        for address in ["http://cdn.example\(path)", "file:///home/me/Movies/x.mov"] {
             let url = try #require(URL(string: address))
             await #expect(throws: JobEngineError.downloadRefused(.notHTTPS)) {
                 try await downloader.download(url, to: file)

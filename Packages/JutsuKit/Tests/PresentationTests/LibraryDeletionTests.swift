@@ -36,7 +36,7 @@ private final class FakeRecords: LibraryRecords {
 @Suite struct LibraryDeletionTests {
     static func item(_ name: String?) -> LibraryItemModel {
         var item = LibraryFixture.item()
-        item.job.outputFile = name.map { URL(fileURLWithPath: "/Users/me/Movies/Jutsu Studio/\($0).mp4") }
+        item.job.outputFile = name.map { URL(fileURLWithPath: "/home/me/Movies/Jutsu Studio/\($0).mp4") }
         return item
     }
 

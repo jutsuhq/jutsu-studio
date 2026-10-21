@@ -9,7 +9,7 @@ import Testing
 
 @Test(arguments: [
     ("https://cdn.example/a.mp4", true), ("HTTPS://cdn.example/a.mp4", true), ("http://cdn.example/a.mp4", false),
-    ("file:///Users/me/Movies/x.mov", false), ("ftp://cdn.example/a.mp4", false), ("data:video/mp4,abc", false),
+    ("file:///home/me/Movies/x.mov", false), ("ftp://cdn.example/a.mp4", false), ("data:video/mp4,abc", false),
 ])
 func onlyHTTPSURLsCountAsServerFiles(string: String, isHTTPS: Bool) throws {
     let url = try #require(URL(string: string))

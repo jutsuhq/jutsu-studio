@@ -114,7 +114,7 @@ extension Network {
 
 @Test(arguments: [
     ("https://cdn.example/a b.mp4", true), ("HTTPS://cdn.example/a.mp4", true), ("http://cdn.example/a.mp4", false),
-    ("file:///Users/me/Movies/x.mov", false), ("ftp://cdn.example/a.mp4", false), ("/tmp/a.mp4", false),
+    ("file:///home/me/Movies/x.mov", false), ("ftp://cdn.example/a.mp4", false), ("/tmp/a.mp4", false),
     ("https:///a.mp4", false),
 ])
 func serverMediaURLsMustBeHTTPS(string: String, isAccepted: Bool) {
