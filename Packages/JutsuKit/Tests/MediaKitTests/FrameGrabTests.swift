@@ -21,7 +21,7 @@ import UniformTypeIdentifiers
         let image = try #require(Fixtures.makeImage(in: directory, width: 360, height: 640, type: .png))
         #expect(FrameGrab.isImage(image))
         #expect(!FrameGrab.isImage(video))
-        let still = try FrameGrab.still(at: image)
+        let still = try #require(await ImageThumbnail.image(at: image, maxPixelSize: 8192))
         #expect((still.width, still.height) == (360, 640))
 
         // Each column is as wide as its widest frame: 640 at 360 high, the portrait still 203.
@@ -35,7 +35,7 @@ import UniformTypeIdentifiers
         let directory = try Fixtures.makeDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let image = try #require(Fixtures.makeImage(in: directory, width: 64, height: 48, type: .jpeg))
-        let still = try FrameGrab.still(at: image)
+        let still = try #require(await ImageThumbnail.image(at: image, maxPixelSize: 8192))
         let png = directory.appending(path: "frame.png")
         try FrameGrab.writePNG(still, to: png)
         #expect(Fixtures.imageSize(at: png).map { [$0.width, $0.height] } == [64, 48])
@@ -54,7 +54,7 @@ import UniformTypeIdentifiers
         // A time at the very end, which frames lets through, is the last frame.
         try await FrameGrab.frames(of: video, at: [1.0]) { _, _ in }
         let image = try #require(Fixtures.makeImage(in: directory, width: 1280, height: 720, type: .png))
-        let still = try FrameGrab.still(at: image)
+        let still = try #require(await ImageThumbnail.image(at: image, maxPixelSize: 8192))
         let small = try #require(FrameGrab.scaled(still, toHeight: FrameGrab.sheetCellHeight))
         #expect((small.width, small.height) == (640, 360))
         #expect(FrameGrab.scaled(small, toHeight: 720) === small)

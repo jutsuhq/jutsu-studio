@@ -48,27 +48,9 @@ public enum FrameGrab {
     public static func scaled(_ image: CGImage, toHeight height: Int) -> CGImage? {
         guard image.height > height, height > 0 else { return image }
         let width = max(1, Int((Double(image.width) * Double(height) / Double(image.height)).rounded()))
-        guard
-            let context = CGContext(
-                data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
-                space: CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB(),
-                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
-        else { return nil }
-        context.interpolationQuality = .high
+        guard let context = context(width: width, height: height) else { return nil }
         context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
         return context.makeImage()
-    }
-
-    /// The image at `url`, upright, at most `maxPixelSize` on its longest side.
-    public static func still(at url: URL, maxPixelSize: Int = 8192) throws -> CGImage {
-        let options: [CFString: Any] = [
-            kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
-        ]
-        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
-            let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
-        else { throw MediaError.unreadableImage }
-        return image
     }
 
     /// The height of a contact sheet's cells.
@@ -91,15 +73,9 @@ public enum FrameGrab {
         }
         let width = widths.reduce(gap) { $0 + $1 + gap }
         let height = gap + rows.count * (cellHeight + gap)
-        guard
-            let context = CGContext(
-                data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
-                space: CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB(),
-                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
-        else { return nil }
+        guard let context = context(width: width, height: height) else { return nil }
         context.setFillColor(red: 0, green: 0, blue: 0, alpha: 1)
         context.fill(CGRect(x: 0, y: 0, width: width, height: height))
-        context.interpolationQuality = .high
         for (rowIndex, row) in scaled.enumerated() {
             // Core Graphics counts from the bottom: the first row goes on top.
             let y = height - (rowIndex + 1) * (cellHeight + gap)
@@ -123,5 +99,15 @@ public enum FrameGrab {
         else { throw MediaError.exportFailed("PNG") }
         CGImageDestinationAddImage(destination, image, nil)
         guard CGImageDestinationFinalize(destination) else { throw MediaError.exportFailed("PNG") }
+    }
+
+    /// An sRGB canvas with alpha that draws scaled images smoothly.
+    private static func context(width: Int, height: Int) -> CGContext? {
+        let context = CGContext(
+            data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
+            space: CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        context?.interpolationQuality = .high
+        return context
     }
 }

@@ -171,7 +171,8 @@ extension AgentService {
         }
         do {
             if open.isImage {
-                let still = try FrameGrab.still(at: open.access.url, maxPixelSize: FrameGrab.maximumSide)
+                guard let still = await ImageThumbnail.image(at: open.access.url, maxPixelSize: FrameGrab.maximumSide)
+                else { throw MediaError.unreadableImage }
                 for time in times { try write(time, still) }
             } else {
                 try await FrameGrab.frames(of: open.access.url, at: times.map { $0 + clip.offset }) { position, image in
