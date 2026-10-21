@@ -49,6 +49,8 @@ var targets: [Target] = [
         .library(name: "Secrets", targets: ["Secrets"]),
         .library(name: "MediaKit", targets: ["MediaKit"]),
         .library(name: "Persistence", targets: ["Persistence"]),
+        .library(name: "JutsuAgent", targets: ["JutsuAgent"]),
+        .library(name: "JutsuMCP", targets: ["JutsuMCP"]),
     ]
 
     targets += [
@@ -58,6 +60,17 @@ var targets: [Target] = [
         .testTarget(name: "SecretsTests", dependencies: ["Secrets"]),
         .testTarget(name: "PersistenceTests", dependencies: ["Persistence"]),
         .testTarget(name: "MediaKitTests", dependencies: ["MediaKit", "JutsuCore"]),
+        // The agent socket's commands, framing and server, shared by the app and the `jutsu` helper. Darwin sockets,
+        // and nothing of the app's other modules, so the helper links no resource bundles.
+        .target(name: "JutsuAgent"),
+        // `jutsu mcp`: the MCP server agents run, over JutsuAgent. HiggsfieldMCP only for its JSONValue.
+        .target(
+            name: "JutsuMCP",
+            dependencies: ["JutsuAgent", .product(name: "HiggsfieldMCP", package: "HiggsfieldKit")]),
+        .testTarget(name: "JutsuAgentTests", dependencies: ["JutsuAgent"]),
+        .testTarget(
+            name: "JutsuMCPTests",
+            dependencies: ["JutsuMCP", "JutsuAgent", .product(name: "HiggsfieldMCP", package: "HiggsfieldKit")]),
     ]
 #endif
 

@@ -1,0 +1,180 @@
+import Foundation
+
+// The fields of each command and the answers they get. Each type checks its own fields as it decodes, so the app
+// refuses a malformed command with `bad_request` before any of it runs, whatever sent it.
+
+/// The pages `show` can open, by the names the sidebar uses.
+public enum AgentPage: String, Codable, Sendable, CaseIterable {
+    case create, queue, library, settings
+}
+
+public struct CapabilitiesCommand: Codable, Equatable, Sendable {
+    /// Lists the video models; left out, the answer stays short.
+    public var models: Bool
+    /// Only this model, by its ID; implies `models`.
+    public var model: String?
+
+    public init(models: Bool = false, model: String? = nil) {
+        self.models = models
+        self.model = model
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case models, model
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        models = try container.decodeIfPresent(Bool.self, forKey: .models) ?? false
+        model = try container.decodeIfPresent(String.self, forKey: .model)
+        if let model, !AgentNames.isValidModelID(model) {
+            throw AgentError.badRequest("model is a model ID from capabilities, such as seedance25")
+        }
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        if models { try container.encode(models, forKey: .models) }
+        try container.encodeIfPresent(model, forKey: .model)
+    }
+}
+
+/// Exactly one of `page` or `job`.
+public struct ShowCommand: Codable, Equatable, Sendable {
+    public var page: AgentPage?
+    /// A job's ID: a finished one opens its result in Library, any other its row in the Queue.
+    public var job: UUID?
+
+    public static func page(_ page: AgentPage) -> ShowCommand { ShowCommand(page: page, job: nil) }
+    public static func job(_ id: UUID) -> ShowCommand { ShowCommand(page: nil, job: id) }
+
+    private init(page: AgentPage?, job: UUID?) {
+        self.page = page
+        self.job = job
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case page, job
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        page = try container.decodeIfPresent(AgentPage.self, forKey: .page)
+        job = try container.decodeIfPresent(UUID.self, forKey: .job)
+        guard (page == nil) != (job == nil) else {
+            throw AgentError.badRequest("show takes exactly one of page or job")
+        }
+    }
+}
+
+/// What `show` opened.
+public struct AgentShown: Codable, Equatable, Sendable {
+    public var page: AgentPage
+    public var job: UUID?
+
+    public init(page: AgentPage, job: UUID? = nil) {
+        self.page = page
+        self.job = job
+    }
+}
+
+/// A file an agent named, sent by the helper as `size` raw bytes right after this line. The app stores it in a
+/// folder of its own in the inbox (`AgentInbox`) and answers with the copy's path, which the command that needs the
+/// file then names.
+public struct UploadCommand: Codable, Equatable, Sendable {
+    /// The file's own name, kept so its extension says what it is.
+    public var name: String
+    public var size: Int64
+    /// The request the file belongs to. The app checks it before reading a single byte, so a request ID that is
+    /// already taken by other parameters is refused while the files it would bring stay unread.
+    public var request: UploadRequest?
+
+    public init(name: String, size: Int64, request: UploadRequest? = nil) {
+        self.name = name
+        self.size = size
+        self.request = request
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case name, size, request
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        name = try container.decode(String.self, forKey: .name)
+        size = try container.decode(Int64.self, forKey: .size)
+        request = try container.decodeIfPresent(UploadRequest.self, forKey: .request)
+        if let problem = Self.problem(name: name, size: size) { throw AgentError.badRequest(problem) }
+    }
+
+    /// Why an upload of `name` with `size` bytes can't be taken, checked by the helper before it reads the file and
+    /// by the app before it reads the bytes; nil when it can.
+    public static func problem(name: String, size: Int64) -> String? {
+        guard AgentNames.isValidFileName(name) else { return "name is one file name, not hidden" }
+        guard (0...AgentInbox.maxFileSize).contains(size) else {
+            return "size is 0 to \(AgentInbox.maxFileSize >> 30) GiB"
+        }
+        return nil
+    }
+}
+
+/// Names the request an upload is for: the command, the agent's `request_id` and a digest of the parameters, so the
+/// app can tell a retry of the same request from a reused ID.
+public struct UploadRequest: Codable, Equatable, Hashable, Sendable {
+    public var command: String
+    public var requestID: String
+    /// Lowercase hex SHA-256 of the request's parameters as the helper normalized them.
+    public var fingerprint: String
+
+    public init(command: String, requestID: String, fingerprint: String) {
+        self.command = command
+        self.requestID = requestID
+        self.fingerprint = fingerprint
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case command
+        case requestID = "requestId"
+        case fingerprint
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        command = try container.decode(String.self, forKey: .command)
+        requestID = try container.decode(String.self, forKey: .requestID)
+        fingerprint = try container.decode(String.self, forKey: .fingerprint)
+        guard AgentNames.isValidRequestID(requestID) else { throw AgentError.badRequest(AgentNames.requestIDRule) }
+        guard AgentNames.isValidFingerprint(fingerprint) else {
+            throw AgentError.badRequest("fingerprint is 64 lowercase hex digits")
+        }
+    }
+}
+
+/// The rules for the names and IDs agents send, shared by the helper and the app.
+public enum AgentNames {
+    public static let requestIDRule = "request_id takes 1–64 letters, digits, '.', '_' or '-', not starting with '.'"
+
+    /// A request ID: no path separators and no leading dot, so it is also safe as a file or folder name.
+    public static func isValidRequestID(_ id: String) -> Bool {
+        (1...64).contains(id.utf8.count) && !id.hasPrefix(".") && id.utf8.allSatisfy(isNameByte)
+    }
+
+    /// A model ID as `models.json` spells them.
+    public static func isValidModelID(_ id: String) -> Bool { isValidRequestID(id) }
+
+    /// One path component up to 255 bytes that isn't hidden.
+    public static func isValidFileName(_ name: String) -> Bool {
+        (1...255).contains(name.utf8.count) && !name.hasPrefix(".") && !name.contains("/") && !name.contains("\0")
+    }
+
+    public static func isValidFingerprint(_ text: String) -> Bool {
+        text.utf8.count == 64 && text.utf8.allSatisfy { (0x30...0x39).contains($0) || (0x61...0x66).contains($0) }
+    }
+
+    private static func isNameByte(_ byte: UInt8) -> Bool {
+        switch byte {
+        case 0x30...0x39, 0x41...0x5A, 0x61...0x7A, UInt8(ascii: "."), UInt8(ascii: "_"), UInt8(ascii: "-"): true
+        default: false
+        }
+    }
+}

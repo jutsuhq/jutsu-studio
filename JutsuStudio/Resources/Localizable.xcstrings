@@ -1,6 +1,48 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Lets an AI agent on this Mac, such as Claude Code, see what the app offers and open its pages. Agents never see your API key or sign-in and can't delete anything. Turning this off refuses their next request and stops nothing already running." : {
+
+    },
+    "What agents may spend a day, apart from the daily cap. 0 lets them look but not spend. No tool spends in this version." : {
+
+    },
+    "Run this once in Terminal to add Jutsu Studio's tools to Claude Code." : {
+
+    },
+    "Agents" : {
+
+    },
+    "Daily agent budget" : {
+
+    },
+    "Claude Code" : {
+
+    },
+    "Allow agents" : {
+
+    },
+    "Not started" : {
+
+    },
+    "Ready for the jutsu helper" : {
+
+    },
+    "Unavailable in a build without a team signature" : {
+
+    },
+    "Can't listen for agents: %@" : {
+
+    },
+    "With an API key (USD)" : {
+
+    },
+    "With an account (credits)" : {
+
+    },
+    "Command" : {
+
+    },
     "Loading image models" : {
 
     },

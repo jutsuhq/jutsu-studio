@@ -125,6 +125,13 @@ Images and videos share one persistent material catalog. It retains versions, th
 - A Storage tab showing what the library, downloaded inputs and caches take on disk, which moves old drafts to the Trash.
 - Software Update: checks GitHub releases once a day, or with Check for Updates… in the app menu and Settings › General; downloads, verifies and installs the new version and relaunches. Automatic download is optional.
 
+## Agents
+
+- Lets an AI agent on your Mac, such as Claude Code, work with the app through the bundled `jutsu` helper, a Model Context Protocol server. Add it with the line Settings › Agents shows.
+- Off until you turn on Allow agents. Turning it off refuses the agent's next request and stops nothing already running.
+- A daily agent budget, apart from the daily cap: dollars with an API key, credits with an account. 0 by default.
+- For now an agent can read what the app offers (the connection, credits, budget and models) and open a page or a job for you. It can't start jobs, spend, delete anything or see your key or sign-in.
+
 ## Connection and privacy
 
 - Two ways to connect: your Higgsfield account (OAuth in your browser; the app never sees your password) or your own API key.

@@ -3,7 +3,7 @@ import Presentation
 import SwiftUI
 
 enum SettingsTab: String, CaseIterable, Identifiable {
-    case connection, general, output, storage, spending, notifications, shortcuts
+    case connection, general, output, storage, spending, notifications, agents, shortcuts
 
     var id: Self { self }
 
@@ -15,6 +15,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         case .storage: String(localized: "Storage")
         case .spending: String(localized: "Spending")
         case .notifications: String(localized: "Notifications")
+        case .agents: String(localized: "Agents")
         case .shortcuts: String(localized: "Shortcuts")
         }
     }
@@ -36,7 +37,7 @@ struct SettingsView: View {
             PageHeader(
                 title: "Settings",
                 subtitle: String(localized: "Your Higgsfield connection, where results go and what you hear about."))
-            // Seven tabs need about 625 pt, more than a minimum window with a widened sidebar has.
+            // Eight tabs need more width than a minimum window with a widened sidebar has.
             ViewThatFits(in: .horizontal) {
                 SegmentedControl(selection: $tab, options: tabs.map { ($0, $0.title) })
                     .fixedSize()
@@ -52,6 +53,7 @@ struct SettingsView: View {
                     case .storage: StorageSettingsView()
                     case .spending: SpendingSettingsView(unit: connection.state.kind == .account ? .credits : .usd)
                     case .notifications: NotificationSettingsView()
+                    case .agents: AgentSettingsView()
                     case .shortcuts: ShortcutSettingsView()
                     }
                 }

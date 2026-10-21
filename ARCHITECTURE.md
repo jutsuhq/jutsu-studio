@@ -23,6 +23,7 @@ One thin app target plus two local Swift packages: `JutsuKit` for the app's logi
 ```
 project.yml                   XcodeGen spec; JutsuStudio.xcodeproj is generated, not committed
 JutsuStudio/                  app target: scenes, views, app model, assets, entitlements
+JutsuCLI/                     the `jutsu` helper agents run (`jutsu mcp`), bundled at Contents/Helpers/jutsu
 Packages/JutsuKit/
   Package.swift
   Sources/
@@ -37,6 +38,8 @@ Packages/JutsuKit/
     Persistence/              SwiftData models, ModelActor stores, file layout
     JobEngine/                queue, scheduler, slots, polling, downloads, resume
     Presentation/             UI logic without UI: ConnectionStore, form validation, user-facing messages
+    JutsuAgent/               the agent socket: wire types, framing, listener, client, inbox (§12)
+    JutsuMCP/                 the MCP server `jutsu mcp` runs: JSON-RPC over stdio, tools, finding the app (§12)
   Tests/                      one test target per module, plus JutsuTestSupport (gated waits shared by suite tests)
 Packages/HiggsfieldKit/       the Higgsfield clients, with no app types: update them when Higgsfield changes
   Sources/
@@ -58,7 +61,10 @@ App ──► JobEngine ──────────────────�
  ├──► Persistence, MediaKit (implement the ports) ─► JutsuCore
  ├──► Presentation (ConnectionStore + its ports) ──► JutsuCore
  ├──► Secrets (adapter for Presentation's ports) ──► JutsuCore
- └──► HiggsfieldProviders (GenerationProvider adapters) ──► JutsuCore, HiggsfieldKit
+ ├──► HiggsfieldProviders (GenerationProvider adapters) ──► JutsuCore, HiggsfieldKit
+ └──► JutsuAgent (the agent socket's app side)
+
+jutsu (JutsuCLI) ──► JutsuMCP ──► JutsuAgent, HiggsfieldMCP (JSONValue only)
 ```
 
 `HiggsfieldKit` imports nothing of JutsuKit. It speaks Higgsfield's terms (workflows, model IDs, media IDs, `HiggsfieldError`), and `HiggsfieldProviders` translates between them and the app's (`JobSpec`, `RemoteJob`, `ProviderError`). A change on Higgsfield's side lands in `HiggsfieldKit` and its contract tests; the app changes only when the change means something to it. There is no published OpenAPI document, so the clients are written by hand rather than generated.
@@ -299,7 +305,7 @@ A custom output folder is stored as a security-scoped bookmark. After a switch, 
 Scenes:
 
 - `WindowGroup` — `NavigationSplitView`: sidebar (Create, Queue, Library) and detail. Library uses `.inspector` for the details panel. Menu commands: View › Create/Queue/Library (⌘1–⌘3), File › Open… (⌘O, the same path as Open With and Dock drops) and File › Generate (⌘↩, Create's main button, enabled only when it is). The Library menu (Star ⌘L, Render Final…, Delete from Library… ⌘⌫) acts on the open result or the grid's selection, and the Queue menu has Pause All, Resume All, and Cancel Job (⌘.) and Retry (⇧⌘R) for the Queue row selected by a click; each item is enabled only while it applies (`LibraryMenuTargets`, `QueueJobCommands`), and the screens publish their actions to the menus as `FocusedValues`. These, gallery search (⌘F) and Library's history refresh (⌘R) are the defaults of Settings › Shortcuts (`ShortcutAction`), read through `@StoredShortcut`. ⌘V in Create adds a copied video or images like opened files, a copied image (a screenshot) as a reference saved to `pasted/`, and a copied `https:` link like Paste URL… in the Source and References sections: `MediaLinkDownloader` downloads it to `links/` with progress and Cancel, refusing pages and other non-media by `Content-Type` (`MediaLink.classify`), and the file then goes where a dropped one would, remembering its link (`SourceClip.remoteOrigin`, `LocalImage.remoteOrigin`). A job that sends such a file as downloaded (whole, untrimmed, not upscaled, MP4 or JPEG/PNG/WebP/GIF: `linkableOrigin`) asks the provider for `linkedAsset` before uploading: an API key sends the link itself, up to 200 MiB; the account uploads as usual until `media_import_url` is verified. A link the provider refuses at submit is uploaded instead, once; ⌘A, ⌘V and ⌘⌫ go to the text being edited first (`TextAwareShortcut`).
-- Settings — a page of the main window (sidebar, account plate, ⌘,), not a window of its own, with Connection, General, Output, Storage, Spending (breakdown, CSV export and the daily cap: USD for an API key, credits for an account; only while connected), Notifications and Shortcuts tabs, drawn with the app's own tab switcher and themed rows. Before a connection exists, ⌘, shows it over the onboarding with a back button.
+- Settings — a page of the main window (sidebar, account plate, ⌘,), not a window of its own, with Connection, General, Output, Storage, Spending (breakdown, CSV export and the daily cap: USD for an API key, credits for an account; only while connected), Notifications, Agents (§12) and Shortcuts tabs, drawn with the app's own tab switcher and themed rows. Before a connection exists, ⌘, shows it over the onboarding with a back button.
 - `MenuBarExtra` — compact queue and today's spend.
 
 Composition root: `AppEnvironment` (`@Observable`, `@MainActor`), created once in `JutsuStudioApp`. It owns the `ModelContainer`, `JobEngine` (SwiftData store, `MediaPreparer`, `NWPathMonitor` connectivity) and `ConnectionStore`, and on every connection change builds the provider (`HiggsfieldAPIProvider`, or `HiggsfieldMCPProvider` with a `TokenProvider` that writes refreshed tokens back to Keychain) and hands it to `engine.setProvider`. Its extensions are wiring: the rules of Delete from Library, stars and likes, templates and Save to Higgsfield… live in Presentation (`LibraryDeletion`, `LibraryStarring`, `TemplateLibrary`, `CharacterSaving`) behind small ports (`LibraryRecords`, `LibraryTrash`, `LibraryStarStore`, `TemplateRecords`, `TemplateImages`) that the app implements with SwiftData and `FileLayout`, and the provider's optional services (`MotionLibrary`, `GenerationLikes`…) are cast in one place, `AppEnvironment+Capabilities`. Views read it with `@Environment(AppEnvironment.self)` and `@Environment(ConnectionStore.self)`.
@@ -310,7 +316,7 @@ First launch with no account shows Onboarding with the two cards: "Connect your 
 
 ## 10. Security and privacy
 
-- App Sandbox: `network.client`, `network.server` (the OAuth loopback redirect on 127.0.0.1), `files.user-selected.read-write`, `files.bookmarks.app-scope` (custom output folder), `assets.movies.read-write`. Hardened Runtime. No other entitlements.
+- App Sandbox: `network.client`, `network.server` (the OAuth loopback redirect on 127.0.0.1), `files.user-selected.read-write`, `files.bookmarks.app-scope` (custom output folder), `assets.movies.read-write`, and the app group `<team>.com.jutsustudio.jutsustudio` (`.debug` for Debug) whose container holds the agent socket (§12). Hardened Runtime. No other entitlements.
 - `os.Logger` everywhere; tokens, keys and signed URLs logged with `privacy: .private` so they are redacted in Console.
 - No telemetry, no backend. Only hosts contacted: `api.higgsfield.ai`, `mcp.higgsfield.ai`, the OAuth servers it advertises, and the storage hosts of presigned URLs.
 
@@ -322,3 +328,14 @@ First launch with no account shows Onboarding with the two cards: "Connect your 
 - `MediaKit`: small fixture clips (HEVC MOV, 720×480 MP4, 35 s clip) — trim length, output codec, upscale size, size limit.
 - `JobEngine`: fake provider + in-memory store — slot limits, 400-concurrency requeue, resume after "crash", idempotency key reuse.
 - CI: GitHub Actions. Lint and the Linux tests of the portable modules, then on a macOS runner the package tests of every module and an app build. No real API calls and no secrets in CI.
+- `JutsuAgent`: the wire format, the listener on real sockets in `/tmp` (long paths, mode 0600, Allow agents read per command, uploads that never overwrite). `JutsuMCP`: the JSON-RPC exchange for every protocol version, tool schemas and argument checks, and finding and starting the app against a fake launcher, so no test starts anything.
+
+## 12. Agents
+
+AI agents on the same Mac (Claude Code and other MCP clients) drive the app through `jutsu`, a command-line helper bundled at `Contents/Helpers/jutsu` and signed with the app. `claude mcp add jutsu -- "<app>/Contents/Helpers/jutsu" mcp` adds it; Settings › Agents shows that line for the copy of the app it is in.
+
+- **Helper.** `jutsu mcp` is an MCP server on stdin and stdout, one JSON-RPC message per line, written for the protocol without an SDK (`JutsuMCP.MCPServer`). It serves the stateless 2026-07-28 revision (`server/discover`, the version and client capabilities in each request's `_meta`, `resultType`, `-32022` for a version it doesn't speak) and the `initialize` handshake of 2025-11-25, 2025-06-18, 2025-03-26 and 2024-11-05. Tools have annotations and an output schema; a result carries `structuredContent` and the same JSON as text. A tool's own failure is a result with `isError` and `{code, message, retryable, next}`; a malformed call is a JSON-RPC error. Logs go to stderr. It is not sandboxed: it finds the app three folders up from itself, reads the app group from the app's Info.plist (`JutsuAppGroup`), and, when the socket doesn't answer, starts the app in the background through Launch Services and waits up to 10 s for it. A build without a team (ad hoc) has no group and the helper says so. `JUTSU_AGENT_SOCKET` points it at another socket for development and never starts anything.
+- **Socket.** `agent.sock` in the app group's container, mode 0600, listened on from launch by `AgentServer` (POSIX sockets, so the long container path fits). One JSON object per line with a protocol version; an upload's bytes follow its line. Allow agents (Settings › Agents, off by default) is read from the saved preferences for every command, never from launch arguments, so turning it off refuses the next command with `agents_off` and stops nothing already running. Both sides check every argument.
+- **Inbox.** An uploaded file goes into a folder of its own in `inbox/` next to the socket and is moved into place without replacing anything; a gate runs before any byte is read, where a command that takes files will check its request ID. No tool takes files yet, so the app refuses every upload.
+- **Tools.** `capabilities`: the connection (none, API key or account, with the plan and credits when known), the daily agent budget in whole cents or credits and what remains, and the tools on offer; with `models`, the video models, or one, with whether the connection runs it, from what Create last read rather than a network call. `show`: opens Create, Queue, Library or Settings, or a job (its result in Library when done, else its Queue row), and brings the window forward.
+- **Not yet.** Agents can't quote, start or manage jobs, so nothing spends and the budget's `spentToday` is always 0; images, library, export and the skill file come later.

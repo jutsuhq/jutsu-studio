@@ -175,7 +175,7 @@ struct ResultPager: View {
 }
 
 /// Copies a text and confirms with a checkmark for a moment.
-private struct CopyButton: View {
+struct CopyButton: View {
     let text: String
     @State private var didCopy = false
 

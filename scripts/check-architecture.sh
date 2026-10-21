@@ -18,11 +18,14 @@ allowed() {
         Persistence) echo "Foundation JutsuCore SwiftData os" ;;
         JobEngine) echo "Foundation FoundationNetworking JutsuCore HiggsfieldCore os" ;;
         Presentation) echo "Foundation JutsuCore Observation" ;;
+        # The helper links these two: nothing of the app, and no AppKit (it starts the app through its own target).
+        JutsuAgent) echo "Foundation Darwin Dispatch" ;;
+        JutsuMCP) echo "Foundation JutsuAgent HiggsfieldMCP" ;;
     esac
 }
 
 status=0
-for module in JutsuCore HiggsfieldProviders Secrets MediaKit Persistence JobEngine Presentation \
+for module in JutsuCore HiggsfieldProviders Secrets MediaKit Persistence JobEngine Presentation JutsuAgent JutsuMCP \
     HiggsfieldCore HiggsfieldAPI HiggsfieldMCP; do
     dir="Packages/JutsuKit/Sources/$module"
     [[ -d $dir ]] || dir="Packages/HiggsfieldKit/Sources/$module"

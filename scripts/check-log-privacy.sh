@@ -8,7 +8,7 @@ cd "$(dirname "$0")/.."
 
 files=()
 while IFS= read -r -d '' file; do files+=("$file"); done < <(
-    find JutsuStudio Packages -name '*.swift' -not -path '*/.build/*' -print0 | sort -z
+    find JutsuStudio JutsuCLI Packages -name '*.swift' -not -path '*/.build/*' -print0 | sort -z
 )
 
 perl -e '
