@@ -22,6 +22,10 @@ public struct AgentOrigin: Codable, Sendable, Hashable {
     /// How many jobs the submit that started this one started, itself included, when it was more than one: each is
     /// that share of the entry (`AgentSpendLedger.unbill`). Cleared by a retry.
     public var paidParts: Int?
+    /// An agent's `pause_queue` paused the job (`JobEngine.pauseAll(agentsOnly:)`), so its `resume_queue` may lift
+    /// that pause; `nil` once the person's own Pause all took it over, or the job was resumed.
+    // swiftlint:disable:next discouraged_optional_boolean
+    public var pausedByAgent: Bool?
 
     public init(
         client: String?, requestID: String, maxCost: AgentMoney, reservation: UUID? = nil, hold: AgentHold? = nil,
@@ -44,6 +48,7 @@ public struct AgentOrigin: Codable, Sendable, Hashable {
         reservation = nil
         paidBy = nil
         paidParts = nil
+        pausedByAgent = nil
     }
 
     /// The ledger entry this job's charge is part of: its own submit's, else its sender's.

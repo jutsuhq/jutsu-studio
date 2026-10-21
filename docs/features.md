@@ -129,7 +129,7 @@ Images and videos share one persistent material catalog. It retains versions, th
 
 - Lets an AI agent on your Mac, such as Claude Code, work with the app through the bundled `jutsu` helper, a Model Context Protocol server. Add it with the line Settings › Agents shows.
 - Off until you turn on Allow agents. Turning it off refuses the agent's next request and stops nothing already running.
-- An agent can read what the app offers (the connection, credits, budget, video and image models, styles and voices), get a price, queue videos and images from its own files, follow its jobs, cancel, retry or move up its own jobs, pause or resume the queue, and open a page or a job for you.
+- An agent can read what the app offers (the connection, credits, budget, video and image models, styles and voices), get a price, queue videos and images from its own files, follow its jobs, cancel, retry or move up its own jobs, pause or resume the agents' jobs (never yours, and never your own Pause all), and open a page or a job for you.
 - In the Library it can search results, keep, reject or star them, queue Enhance operations (except Topaz upscales, whose price is known only after they run), create, list and export delivery sets, and export takes for editing into the output folder's Exports folder. Exports never replace a file.
 - An export runs in the app on its own: the agent gets an ID at once and follows it like a job, with each file's result as it is written. It keeps going if the agent goes away. Quitting the app forgets these IDs, and the agent is told to look in the folder or export again.
 - It can't delete anything or see your key or sign-in. Reject only hides a result.

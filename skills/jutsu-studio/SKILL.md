@@ -59,6 +59,8 @@ says rather than guessing.
   (`request_conflict`). A new request needs a new `request_id`, and so does a retry the app refused.
 - **Nothing deletes.** Reject only hides a result in the Library; `job_action` cancels, retries or moves up a job.
   Removing results is the person's call, in the app.
+- **The queue is the person's.** `pause_queue` and `resume_queue` pause and resume only agents' jobs not yet sent;
+  `resume_queue` never lifts the person's own Pause all.
 - **Files are paths on this Mac.** Give absolute paths to your own files (`source.path`, `images`, `input`); the
   `jutsu` helper copies their bytes into the app. Paths the app gives back are in its output folder and readable as
   they are. Exports never replace a file.

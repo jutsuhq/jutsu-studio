@@ -347,8 +347,9 @@ extension AgentService {
         let engine = environment.engine
         guard let id = fields.job else {
             switch fields.action {
-            case .pauseQueue: await engine.pauseAll()
-            case .resumeQueue: await engine.resumeAll()
+            // Agents' jobs only: an agent never pauses the person's jobs or lifts their own Pause all.
+            case .pauseQueue: await engine.pauseAll(agentsOnly: true)
+            case .resumeQueue: await engine.resumeAll(agentsOnly: true)
             case .cancel, .retry, .runNext: throw .badRequest("\(fields.action.rawValue) needs job")
             }
             return AgentActed(action: fields.action)

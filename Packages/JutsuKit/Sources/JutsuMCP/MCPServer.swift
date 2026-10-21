@@ -342,9 +342,10 @@ extension MCPServer {
         agents use them (capabilities budget.unlimitedAllowed). Tell the person when something waits for \
         them. library_search finds results (paths on this Mac), library_mark keeps, rejects or stars them, \
         delivery_set and export write files for delivery or editing, never over a file. job_action cancels, \
-        retries or runs a job next, or pauses or resumes the queue; it never resumes a job waiting for the person, \
-        and nothing here deletes anything. show opens a page or a job for the person to see. A failed call returns \
-        error with code, message, retryable and next: follow next.
+        retries or runs a job next, or pauses or resumes the agents' jobs (never the person's own, or their \
+        Pause all); it never resumes a job waiting for the person, and nothing here deletes anything. show opens a \
+        page or a job for the person to see. A failed call returns error with code, message, retryable and next: \
+        follow next.
         """
 
     // MARK: Encoding

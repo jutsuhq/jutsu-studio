@@ -90,9 +90,10 @@ extension Tool {
         case .jobAction:
             """
             cancel, retry or run_next a job an agent queued (job: its ID), or pause_queue or resume_queue for every \
-            job not yet sent. retry is refused when the job may already have been charged or its files are gone; \
-            resume_queue never resumes a job paused for its price or the agent limits, which only the person can. \
-            An image request can only be canceled. Nothing is deleted.
+            job agents queued that isn't sent yet; the person's own jobs are never touched. retry is refused when \
+            the job may already have been charged or its files are gone; resume_queue resumes only what pause_queue \
+            paused, never the person's own Pause all or a job paused for its price or the agent limits, which only \
+            the person can lift. An image request can only be canceled. Nothing is deleted.
             """
         case .librarySearch:
             """

@@ -243,43 +243,11 @@ public actor JobEngine {
                 $0.agent?.hold = nil
             }
         } else if case .paused = job.state {
-            try await apply(.resume, to: id)
+            try await apply(.resume, to: id) { $0.agent?.pausedByAgent = nil }
         } else if !job.state.isActive {
             throw JobEngineError.notResumable(job.state)
         }
         startRunner(id)
-    }
-
-    /// Pauses every job not yet submitted with `byUser`, so none takes a slot until `resumeAll`. Submitted
-    /// jobs keep polling and downloading. An upload in progress stops; finished uploads are cached, so a
-    /// resume repeats only the interrupted file. A job whose submit is already sent is left to finish it.
-    public func pauseAll() async {
-        for job in jobs.values where job.state.isPausableByUser && job.submitAttempt == nil {
-            await stopRunner(job.id)
-            guard let current = jobs[job.id], current.state.isPausableByUser, current.submitAttempt == nil else {
-                startRunner(job.id)
-                continue
-            }
-            do {
-                try await apply(.paused(.byUser), to: job.id)
-            } catch {
-                log.error("Job \(job.id): can't pause", detail: String(describing: error))
-                startRunner(job.id)
-            }
-        }
-    }
-
-    /// Resumes the jobs `pauseAll` paused, oldest first. Other pauses stay: a job whose connection is
-    /// still missing pauses for it again, and funds pauses wait for the user's own resume.
-    public func resumeAll() async {
-        let paused = jobs.values.filter { $0.state == .paused(.byUser) }.sorted { $0.createdAt < $1.createdAt }
-        for job in paused {
-            do {
-                try await resume(job.id)
-            } catch {
-                log.error("Job \(job.id): can't resume", detail: String(describing: error))
-            }
-        }
     }
 
     /// Moves a job waiting for a slot ahead of the other waiters, so it takes the next free slot. Saved with the
@@ -341,6 +309,59 @@ public actor JobEngine {
         gate.open()
     }
 }
+// Pause all and Resume all, the person's and an agent's.
+extension JobEngine {
+    /// Pauses every job not yet submitted with `byUser`, so none takes a slot until `resumeAll`. Submitted
+    /// jobs keep polling and downloading. An upload in progress stops; finished uploads are cached, so a
+    /// resume repeats only the interrupted file. A job whose submit is already sent is left to finish it.
+    ///
+    /// `agentsOnly` is an agent's `pause_queue`: it pauses only the jobs agents queued and marks them
+    /// (`AgentOrigin.pausedByAgent`), so the agent's `resumeAll(agentsOnly:)` lifts only its own pause. The person's
+    /// Pause all takes over the jobs an agent paused, so no agent lifts it.
+    public func pauseAll(agentsOnly: Bool = false) async {
+        let pausable = { (job: Job) in
+            job.state.isPausableByUser && job.submitAttempt == nil && (!agentsOnly || job.agent != nil)
+        }
+        for job in jobs.values where pausable(job) {
+            await stopRunner(job.id)
+            guard let current = jobs[job.id], pausable(current) else {
+                startRunner(job.id)
+                continue
+            }
+            do {
+                try await apply(.paused(.byUser), to: job.id) { if agentsOnly { $0.agent?.pausedByAgent = true } }
+            } catch {
+                log.error("Job \(job.id): can't pause", detail: String(describing: error))
+                startRunner(job.id)
+            }
+        }
+        guard !agentsOnly else { return }
+        for job in jobs.values where job.state == .paused(.byUser) && job.agent?.pausedByAgent == true {
+            do {
+                try await save(job.id) { $0.agent?.pausedByAgent = nil }
+            } catch {
+                log.error("Job \(job.id): can't save", detail: String(describing: error))
+            }
+        }
+    }
+
+    /// Resumes the jobs `pauseAll` paused, oldest first. Other pauses stay: a job whose connection is
+    /// still missing pauses for it again, and funds pauses wait for the user's own resume. `agentsOnly`, an agent's
+    /// `resume_queue`, resumes only the jobs an agent's `pauseAll(agentsOnly:)` paused, never the person's own pause.
+    public func resumeAll(agentsOnly: Bool = false) async {
+        let paused = jobs.values.filter {
+            $0.state == .paused(.byUser) && (!agentsOnly || $0.agent?.pausedByAgent == true)
+        }
+        for job in paused.sorted(by: { $0.createdAt < $1.createdAt }) {
+            do {
+                try await resume(job.id)
+            } catch {
+                log.error("Job \(job.id): can't resume", detail: String(describing: error))
+            }
+        }
+    }
+}
+
 // Settings that apply from the next job on.
 extension JobEngine {
     public func setMaxConcurrency(_ limit: Int) async {
