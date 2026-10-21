@@ -7,6 +7,8 @@ import SwiftUI
 struct ImageRequestsSection: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(NavigationModel.self) private var navigation
+    /// The agent's held request the person is deciding on.
+    @State private var reviewing: ImageRun?
 
     var body: some View {
         let generator = environment.referenceGenerator
@@ -23,8 +25,36 @@ struct ImageRequestsSection: View {
             }
             .padding(.top, 18)
             ForEach(generator.runs) { run in
-                ImageRunRow(run: run) { generator.cancel(run.id) }
+                ImageRunRow(run: run, onCancel: { cancel(run) }, onReview: { reviewing = run })
+            }
+            .confirmationDialog(
+                String(localized: "Send this agent's request?"), isPresented: Binding(isPresenting: $reviewing),
+                presenting: reviewing
+            ) { run in
+                Button("Send") { environment.sendHeldImageRequest(run.id) }
+                Button("Cancel Request", role: .destructive) { cancel(run) }
+                Button("Not Now", role: .cancel) {}
+            } message: { run in
+                Text(Self.review(run))
             }
         }
+    }
+
+    /// An agent's request goes through its queue, which records how it ended; the person's own straight to Generate….
+    private func cancel(_ run: ImageRun) {
+        if run.agent != nil {
+            environment.agentImages.cancel(run.id)
+        } else {
+            environment.referenceGenerator.cancel(run.id)
+        }
+    }
+
+    /// What the person agrees to: who asked, what, at which price, and why it waited.
+    private static func review(_ run: ImageRun) -> String {
+        let price = run.price.map(ReferenceGenerator.priceText) ?? PostOperationText.unknownPriceNotice
+        var reason = ""
+        if case .held(let text) = run.state { reason = text }
+        return [run.agentTitle ?? "", run.title, price, run.agentDetail ?? "", reason]
+            .filter { !$0.isEmpty }.joined(separator: "\n")
     }
 }

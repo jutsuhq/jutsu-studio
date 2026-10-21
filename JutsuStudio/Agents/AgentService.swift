@@ -31,6 +31,10 @@ final class AgentService {
     @ObservationIgnored var creating:
         [String: (fingerprint: String, task: Task<Result<AgentCreated, AgentError>, Never>)] =
             [:]
+    /// `create_image` requests being taken, by request ID, likewise.
+    @ObservationIgnored var creatingImages:
+        [String: (fingerprint: String, task: Task<Result<AgentCreated, AgentError>, Never>)] =
+            [:]
 
     init(environment: AppEnvironment, system: SystemIntegration, preferences: AgentPreferences = AgentPreferences()) {
         self.environment = environment
@@ -119,6 +123,20 @@ final class AgentService {
             logger.info(
                 "Agent \(client ?? "unnamed", privacy: .private) ran \(fields.action.rawValue, privacy: .public)")
             return AgentResponse(acted: acted)
+        case .createImage(let fields):
+            return AgentResponse(created: try await createImage(fields, client: client))
+        case .librarySearch(let fields):
+            return AgentResponse(library: try await librarySearch(fields))
+        case .libraryMark(let fields):
+            let marked = try await libraryMark(fields)
+            logger.info("Agent \(client ?? "unnamed", privacy: .private) marked \(marked.changed, privacy: .private)")
+            return AgentResponse(marked: marked)
+        case .enhance(let fields):
+            return AgentResponse(created: try await enhance(fields, client: client))
+        case .deliverySet(let fields):
+            return AgentResponse(delivery: try await deliverySet(fields))
+        case .export(let fields):
+            return AgentResponse(exported: try await exportForEditing(fields))
         }
     }
 
@@ -145,6 +163,16 @@ final class AgentService {
         var answer = AgentCapabilities(appVersion: Self.appVersion, connection: connection, budget: budget)
         if fields.models {
             answer.models = try models(fields.model, connection: state.kind)
+        }
+        if fields.imageModels { answer.imageModels = imageModels() }
+        if fields.styles {
+            answer.styles = (PresetCatalog.cachedPresets(in: environment.layout.presetCacheFolder) ?? [])
+                .map { AgentCapabilities.Style(id: $0.id, name: $0.name) }
+        }
+        if fields.voices {
+            answer.voices =
+                await environment.voices()?.map { AgentCapabilities.Voice(id: $0.choice.id, name: $0.choice.name) }
+                ?? []
         }
         return answer
     }
@@ -192,7 +220,15 @@ final class AgentService {
     private func show(_ fields: ShowCommand) async throws(AgentError) -> AgentShown {
         let navigation = environment.navigation
         let shown: AgentShown
-        if let id = fields.job {
+        if let id = fields.job, await job(id) == nil, let image = environment.agentImages.record(id) {
+            if image.isOver {
+                navigation.selection = .library
+                shown = AgentShown(page: .library, job: id)
+            } else {
+                navigation.selection = .queue
+                shown = AgentShown(page: .queue, job: id)
+            }
+        } else if let id = fields.job {
             guard let job = await job(id) else {
                 throw AgentError(
                     .notFound, message: "There's no job \(id.uuidString).", retryable: false,

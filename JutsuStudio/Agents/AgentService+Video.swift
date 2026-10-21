@@ -17,12 +17,12 @@ extension AgentService {
     /// other parameters is refused (`request_conflict`), and one already queued with these needs no file again
     /// (`request_known`).
     func admit(_ upload: UploadCommand) throws(AgentError) {
-        guard let request = upload.request, request.command == "create_video" else {
+        guard let request = upload.request, ["create_video", "create_image"].contains(request.command) else {
             throw AgentError(
-                .fileRefused, message: "Only create_video takes files.", retryable: false,
-                next: "Send files with create_video.")
+                .fileRefused, message: "Only create_video and create_image take files.", retryable: false,
+                next: "Send files with create_video or create_image.")
         }
-        if let running = creating[request.requestID] {
+        if let running = creating[request.requestID] ?? creatingImages[request.requestID] {
             guard running.fingerprint == request.fingerprint else { throw .requestConflict }
             return
         }
@@ -32,11 +32,11 @@ extension AgentService {
         case .known:
             throw AgentError(
                 .requestKnown, message: "This request was already queued; its files aren't needed again.",
-                retryable: false, next: "Send create_video without uploading to get its job.")
+                retryable: false, next: "Send \(request.command) without uploading to get its job.")
         }
     }
 
-    private func lookup(_ requestID: String, fingerprint: String) throws(AgentError) -> AgentRequestLog.Lookup {
+    func lookup(_ requestID: String, fingerprint: String) throws(AgentError) -> AgentRequestLog.Lookup {
         do {
             return try environment.agentRequests.lookup(requestID, fingerprint: fingerprint)
         } catch {
@@ -123,7 +123,7 @@ extension AgentService {
     }
 
     /// The jobs of a known request. Throws when the store can't be read: a job not found there could still exist.
-    private func knownJobs(_ ids: [UUID]) async throws(AgentError) -> [Job] {
+    func knownJobs(_ ids: [UUID]) async throws(AgentError) -> [Job] {
         var jobs: [Job] = []
         for id in ids {
             if let live = environment.liveJobs.job(id) {
@@ -164,37 +164,19 @@ extension AgentService {
         let files = [video.source?.path].compactMap(\.self) + video.images
         do throws(AgentError) {
             guard let kind = environment.connection.state.kind else { throw Self.notConnected }
-            guard Self.unit(for: kind) == fields.maxCost.unit else {
-                throw .badRequest(
-                    "max_cost is in \(Self.unit(for: kind) == .usdCents ? "usd" : "credits") on this connection")
-            }
+            try Self.checkUnit(of: fields.maxCost, on: kind)
             var source: AgentVideoOrder.Source?
-            if let given = video.source {
-                guard let path = given.path else {
-                    throw .badRequest("create_video: source needs path, the clip on this Mac")
-                }
-                let file = try inboxFile(path)
-                let probed: SourceVideo
-                do {
-                    probed = try await AppEnvironment.probeSource(file, bookmark: nil)
-                } catch {
-                    throw .invalidRequest("The source clip can't be read as a video: \(error.localizedDescription)")
-                }
-                source = AgentVideoOrder.Source(video: probed, start: given.start, end: given.end)
-            }
+            if let given = video.source { source = try await sourceClip(given) }
             var images: [LocalImage] = []
             for path in video.images { images.append(LocalImage(fileURL: try inboxFile(path))) }
+            if let style = video.style,
+                let refusal = PresetCatalog.agentStyleRefusal(style, in: environment.layout.presetCacheFolder)
+            {
+                throw .invalidRequest(refusal)
+            }
             let spec = try await spec(for: Self.order(video, source: source, images: images))
             let jobID = UUID()
-            do {
-                try environment.agentRequests.add(
-                    AgentRequestLog.Record(
-                        requestID: fields.requestID, fingerprint: fields.fingerprint, jobIDs: [jobID], createdAt: .now))
-            } catch {
-                throw AgentError(
-                    .failed, message: "Jutsu Studio can't record the request, so nothing is queued.", retryable: true,
-                    next: "Ask the person to check the Mac has room, then send the request again.")
-            }
+            try recordRequest(fields.requestID, fingerprint: fields.fingerprint, jobIDs: [jobID])
             let origin = AgentOrigin(
                 client: client, requestID: fields.requestID,
                 maxCost: AgentMoney(fields.maxCost.amount, Self.unit(of: fields.maxCost.unit)))
@@ -208,6 +190,36 @@ extension AgentService {
         } catch {
             discard(files)
             throw error
+        }
+    }
+
+    /// The agent's source clip, probed as Create probes a dropped one.
+    private func sourceClip(_ given: AgentSource) async throws(AgentError) -> AgentVideoOrder.Source {
+        guard let path = given.path else { throw .badRequest("create_video: source needs path, the clip on this Mac") }
+        let file = try inboxFile(path)
+        do {
+            let probed = try await AppEnvironment.probeSource(file, bookmark: nil)
+            return AgentVideoOrder.Source(video: probed, start: given.start, end: given.end)
+        } catch {
+            throw .invalidRequest("The source clip can't be read as a video: \(error.localizedDescription)")
+        }
+    }
+
+    /// Refuses a `max_cost` in another unit than the connection's.
+    static func checkUnit(of maxCost: AgentAmount, on kind: ProviderKind) throws(AgentError) {
+        guard unit(for: kind) != maxCost.unit else { return }
+        throw .badRequest("max_cost is in \(unit(for: kind) == .usdCents ? "usd" : "credits") on this connection")
+    }
+
+    /// Records the request with the IDs of what it makes, before anything is queued or sent.
+    func recordRequest(_ requestID: String, fingerprint: String, jobIDs: [UUID]) throws(AgentError) {
+        do {
+            try environment.agentRequests.add(
+                AgentRequestLog.Record(requestID: requestID, fingerprint: fingerprint, jobIDs: jobIDs, createdAt: .now))
+        } catch {
+            throw AgentError(
+                .failed, message: "Jutsu Studio can't record the request, so nothing is queued or sent.",
+                retryable: true, next: "Ask the person to check the Mac has room, then send the request again.")
         }
     }
 
@@ -240,18 +252,18 @@ extension AgentService {
     }
 
     /// A path the helper's upload answered with: a file in the app's own inbox, and nowhere else.
-    private func inboxFile(_ path: String) throws(AgentError) -> URL {
+    func inboxFile(_ path: String) throws(AgentError) -> URL {
         guard let inbox = server?.inbox, inbox.uploadFolder(of: path) != nil,
             FileManager.default.fileExists(atPath: path)
         else {
             throw AgentError(
                 .fileRefused, message: "\(path) isn't a file the helper sent to Jutsu Studio.", retryable: false,
-                next: "Pass the file's path on this Mac to create_video; the jutsu helper sends it to the app.")
+                next: "Pass the file's path on this Mac; the jutsu helper sends it to the app.")
         }
         return URL(filePath: path)
     }
 
-    private func discard(_ files: [String]) {
+    func discard(_ files: [String]) {
         server?.inbox.remove(files)
     }
 
@@ -262,10 +274,13 @@ extension AgentService {
         let now = Date.now
         do {
             let jobs = try await environment.store.jobsUnfinishedOrFinished(since: now.addingTimeInterval(-7 * 86_400))
-            let kept: [String] = jobs.flatMap { job -> [String] in
-                let files: [URL?] = [job.spec.source?.fileURL] + job.spec.references.map(\.fileURL)
-                return files.compactMap { $0?.path(percentEncoded: false) }
-            }
+            let kept: [String] =
+                jobs.flatMap { job -> [String] in
+                    let files: [URL?] = [job.spec.source?.fileURL] + job.spec.references.map(\.fileURL)
+                    return files.compactMap { $0?.path(percentEncoded: false) }
+                }
+                + ((try? environment.agentImages.records()) ?? []).filter { !$0.isOver }
+                .compactMap { $0.input?.fileURL.path(percentEncoded: false) }
             let removed = inbox.sweep(keeping: Set(kept), before: now.addingTimeInterval(-86_400))
             if removed > 0 { logger.info("Removed \(removed, privacy: .private) old agent upload(s)") }
         } catch {
@@ -277,25 +292,39 @@ extension AgentService {
 
     func jobs(_ fields: JobsCommand) async throws(AgentError) -> AgentJobs {
         var ids = fields.ids
+        var next: String?
         if ids.isEmpty {
-            ids = environment.liveJobs.all.filter { $0.agent != nil }.sorted { $0.createdAt > $1.createdAt }
-                .prefix(fields.limit ?? 10).map(\.id)
+            let videos = environment.liveJobs.all.filter { $0.agent != nil }.map { ($0.createdAt, $0.id) }
+            let images = ((try? environment.agentImages.records()) ?? []).map { ($0.createdAt, $0.id) }
+            (ids, next) = AgentJobPage.page(videos + images, limit: fields.limit ?? 10, after: fields.cursor)
         }
         for id in ids {
-            guard await job(id) == nil else { continue }
+            guard await job(id) == nil, environment.agentImages.record(id) == nil else { continue }
             throw AgentError(
                 .notFound, message: "There's no job \(id.uuidString).", retryable: false,
                 next: "Call jobs without ids to list the latest agent jobs.")
         }
         let live = environment.liveJobs
+        let images = environment.agentImages
         let timedOut =
             fields.waitSeconds > 0
             ? await agentWait(seconds: fields.waitSeconds) {
-                ids.allSatisfy { id in live.job(id).map { AgentJobStatus.isSettled($0.state) } ?? true }
+                ids.allSatisfy { id in
+                    if let job = live.job(id) { return AgentJobStatus.isSettled(job.state) }
+                    guard let record = images.record(id) else { return true }
+                    return (record.isOver && !images.files(of: id).isEmpty) || record.state == .held
+                        || record.state == .failed || record.state == .canceled
+                }
             } : false
         var jobs: [AgentJob] = []
-        for id in ids { if let job = await job(id) { jobs.append(Self.agentJob(job)) } }
-        return AgentJobs(jobs: jobs, timedOut: timedOut)
+        for id in ids {
+            if let job = await job(id) {
+                jobs.append(Self.agentJob(job))
+            } else if let image = await imageJob(id) {
+                jobs.append(image)
+            }
+        }
+        return AgentJobs(jobs: jobs, timedOut: timedOut, nextCursor: next)
     }
 
     // MARK: job_action
@@ -311,12 +340,16 @@ extension AgentService {
             return AgentActed(action: fields.action)
         }
         guard let job = await job(id) else {
+            if environment.agentImages.record(id) != nil { return try await actOnImage(fields.action, id) }
             throw AgentError(.notFound, message: "There's no job \(id.uuidString).", retryable: false)
         }
         let refusal: String? =
             switch fields.action {
             case .cancel: AgentJobRules.cancelRefusal(job)
-            case .retry: AgentJobRules.retryRefusal(job)
+            case .retry:
+                AgentJobRules.retryRefusal(job) {
+                    FileManager.default.fileExists(atPath: $0.path(percentEncoded: false))
+                }
             case .runNext: AgentJobRules.runNextRefusal(job)
             case .pauseQueue, .resumeQueue: nil
             }

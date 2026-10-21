@@ -71,6 +71,9 @@ public struct AgentVideoOrder: Sendable, Hashable {
         "extend": .extend,
     ]
 
+    /// The mode an agent names; `nil` for a name that isn't one.
+    public static func mode(named name: String) -> Mode? { modes[name] }
+
     /// The agent's name for `mode`.
     public static func name(of mode: Mode) -> String {
         modes.first { $0.value == mode }?.key ?? mode.rawValue

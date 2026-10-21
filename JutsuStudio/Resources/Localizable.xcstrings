@@ -1,6 +1,24 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Review…" : {
+
+    },
+    "Send this agent's request?" : {
+
+    },
+    "Send" : {
+
+    },
+    "Cancel Request" : {
+
+    },
+    "Not Now" : {
+
+    },
+    "Review the price and send it, or cancel it" : {
+
+    },
     "An agent queued this job: %@" : {
 
     },

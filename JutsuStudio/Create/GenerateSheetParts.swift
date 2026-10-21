@@ -158,12 +158,18 @@ struct RequestRow: View {
         case finished(String?)
         case failed(String)
         case canceled
+        /// Stopped before anything was sent, until the person decides (an agent's request over its limits).
+        case waiting(String)
     }
 
     let title: String
     let status: Status
-    /// Shown while it runs, when the request can be canceled.
+    /// Under the title: who asked for it, for an agent's request.
+    var subtitle: String?
+    /// Shown while it runs or waits, when the request can be canceled.
     var onCancel: (() -> Void)?
+    /// Shown while it waits: opens the person's decision.
+    var onReview: (() -> Void)?
 
     var body: some View {
         HStack(spacing: 10) {
@@ -173,10 +179,22 @@ struct RequestRow: View {
                     .font(.callout)
                     .foregroundStyle(Theme.text)
                     .lineLimit(1)
+                if let subtitle {
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundStyle(Theme.faint)
+                        .lineLimit(1)
+                }
                 detail
             }
             Spacer(minLength: Theme.Spacing.small)
-            if case .working = status, let onCancel {
+            if case .waiting = status, let onReview {
+                Button("Review…", action: onReview)
+                    .buttonStyle(.secondaryAction)
+                    .controlSize(.small)
+                    .hoverHint("Review the price and send it, or cancel it")
+            }
+            if let onCancel, status.isCancelable {
                 Button("Cancel", action: onCancel)
                     .buttonStyle(.secondaryAction)
                     .controlSize(.small)
@@ -202,6 +220,9 @@ struct RequestRow: View {
         case .canceled:
             Image(systemName: "xmark.circle")
                 .foregroundStyle(Theme.faint)
+        case .waiting:
+            Image(systemName: "hand.raised.fill")
+                .foregroundStyle(Theme.warning)
         }
     }
 
@@ -226,6 +247,20 @@ struct RequestRow: View {
             Text("Canceled")
                 .font(.caption)
                 .foregroundStyle(Theme.faint)
+        case .waiting(let text):
+            Text(text)
+                .font(.caption)
+                .foregroundStyle(Theme.warning)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
+extension RequestRow.Status {
+    var isCancelable: Bool {
+        switch self {
+        case .working, .waiting: true
+        default: false
         }
     }
 }

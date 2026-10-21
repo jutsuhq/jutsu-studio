@@ -19,7 +19,10 @@ extension AppEnvironment {
     /// new connection's account still running are followed again.
     func followImageJobs() {
         referenceGenerator.reset()
-        if let provider = imageProvider { referenceGenerator.resume(provider: provider) }
+        if let provider = imageProvider {
+            referenceGenerator.resume(provider: provider)
+            agentImages.resume(provider: provider, upload: imageUploader(provider))
+        }
     }
 
     /// Why the prices and jobs of image requests can't be written down, with the job IDs only this launch knows;
@@ -30,6 +33,13 @@ extension AppEnvironment {
         return (
             error.localizedDescription, referenceGenerator.jobLog.unsavedIDs + characterBuilder.log.unsavedIDs
         )
+    }
+
+    /// The person's Send on an agent's image request the spending guard held: it goes out on the connection that
+    /// took it, at the price they saw.
+    func sendHeldImageRequest(_ id: UUID) {
+        guard let provider = imageProvider else { return }
+        agentImages.approve(id, provider: provider, upload: imageUploader(provider))
     }
 
     /// Writes the logs of image requests again after a failed write.
