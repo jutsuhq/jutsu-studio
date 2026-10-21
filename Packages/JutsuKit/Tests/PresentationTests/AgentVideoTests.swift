@@ -201,6 +201,8 @@ import Testing
         #expect(!byUser.needsPerson && byUser.hold == nil)
         #expect(AgentJobStatus(agentJob(.waitingForSlot, cost: .unknownUSD)).price == nil)
         #expect(AgentJobStatus(agentJob(.failed(reason: .outcomeUnknown))).error != nil)
+        // From the string catalog, as the Queue says it.
+        #expect(AgentJobStatus(agentJob(.rejected)).error == "Rejected by content moderation")
     }
 
     @Test func agentsActOnlyOnTheirOwnJobsAndNeverRetryWhatMayBeCharged() {

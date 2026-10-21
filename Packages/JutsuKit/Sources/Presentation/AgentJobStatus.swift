@@ -33,7 +33,8 @@ public struct AgentJobStatus: Sendable, Hashable {
         charged = job.isCharged || job.mayHaveBeenCharged || job.submitAttempt != nil || job.remote != nil
         switch job.state {
         case .failed(let reason): error = reason.text
-        case .rejected: error = job.rejection?.title ?? "Rejected by content moderation"
+        case .rejected:
+            error = job.rejection?.title ?? String(localized: "Rejected by content moderation", bundle: .module)
         default: error = nil
         }
         result = job.state == .done ? job.outputFile?.path(percentEncoded: false) : nil
