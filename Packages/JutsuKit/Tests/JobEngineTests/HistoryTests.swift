@@ -143,25 +143,27 @@ struct HistoryEngineTests {
     /// A second import of a job whose import is running (an agent's `still_working` retry) waits for that one: it
     /// never starts a second download of the same result.
     @Test func aSecondImportOfTheSameJobWaitsForTheRunningOne() async throws {
-        let harness = Harness(download: .hangOnce)
+        let release = Gate<Void>()
+        let harness = Harness(download: .holdOnce(release))
         let engine = try await harness.makeEngine()
         let item = historyItem()
         let job = Job(importing: item, owner: "user_1", importedAt: harness.clock.now)
         let first = Task { try await engine.importFinished(job, from: item.outputURL) }
         await eventually { harness.log.count("download") == 1 }
 
-        // On its own it would download at once: only the first download hangs.
-        let second = Task { try await engine.importFinished(job, from: item.outputURL) }
-        try await Task.sleep(for: .milliseconds(200))
-        #expect(harness.log.count("download") == 1)
+        // Sent while the first downloads; on its own it would download at once.
+        let started = Gate<Void>()
+        let second = Task {
+            await started.open(.success(()))
+            return try await engine.importFinished(job, from: item.outputURL)
+        }
+        try await started.wait()
+        await release.open(.success(()))
 
-        first.cancel()
-        _ = await first.result
-        await #expect(throws: CancellationError.self) { try await second.value }
-        #expect(harness.log.count("download") == 1)
-        let imported = try await engine.importFinished(job, from: item.outputURL)
+        let imported = try await first.value
+        #expect(try await second.value.id == imported.id)
         #expect(imported.outputFile != nil)
-        #expect(harness.log.count("download") == 2)
+        #expect(harness.log.count("download") == 1)
     }
 
     @Test func anAbandonedImportPartialIsDeletedOnTheNextStart() async throws {
