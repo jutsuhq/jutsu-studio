@@ -64,7 +64,8 @@ import Testing
         #expect(discards.value == 1)
     }
 
-    /// The same request sent while it runs waits for that run; the ID with other parameters is refused meanwhile.
+    /// The same request sent while it runs waits for that run, and its own copies of the files are discarded; the ID
+    /// with other parameters is refused meanwhile.
     @Test func theSameRequestSentWhileItRunsJoinsIt() async throws {
         let gate = AgentRequestGate<String, Refused>(log: log)
         let release = Gate<Void>()
@@ -90,6 +91,8 @@ import Testing
         #expect(try await first.value == "made")
         #expect(try await second.value == "made")
         #expect(runs.value == 1)
+        // The conflict's files and the second request's; the first run's files are its job's.
+        #expect(discards.value == 2)
     }
 
     /// A run that fails is forgotten and its files discarded, so the agent can fix it and send it again.

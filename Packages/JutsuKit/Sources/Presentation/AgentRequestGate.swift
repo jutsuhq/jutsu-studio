@@ -55,8 +55,8 @@ public final class AgentRequestGate<Answer: Sendable, Failure: Error> {
 
     /// Runs `queue` for a new request and answers with what it made. The same request running answers with what that
     /// run makes; one recorded answers with `known` for the IDs it recorded, or `refusals.neverQueued` when `known`
-    /// finds none of them. `discard` is called once the request's own files aren't needed: refused, already known, or
-    /// failed. A run that fails is forgotten.
+    /// finds none of them. `discard` is called once the request's own files aren't needed: refused, already known,
+    /// joining the run in flight, whose own files are the ones it reads, or failed. A run that fails is forgotten.
     public func run(
         _ requestID: String, fingerprint: String, refusals: Refusals, discard: () -> Void,
         known: ([UUID]) async throws(Failure) -> Answer?,
@@ -67,6 +67,7 @@ public final class AgentRequestGate<Answer: Sendable, Failure: Error> {
                 discard()
                 throw refusals.conflict
             }
+            discard()
             return try await running.task.value.get()
         }
         let lookup: AgentRequestLog.Lookup
