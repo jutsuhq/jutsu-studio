@@ -28,21 +28,16 @@ final class AgentService {
     @ObservationIgnored private let system: SystemIntegration
     @ObservationIgnored let preferences: AgentPreferences
     @ObservationIgnored var server: AgentServer?
-    /// `create_video` requests being queued, by request ID: the same one sent meanwhile waits for it.
-    @ObservationIgnored var creating:
-        [String: (fingerprint: String, task: Task<Result<AgentCreated, AgentError>, Never>)] =
-            [:]
+    /// The paid requests, `create_video`, `create_image` and `enhance`, each run once for its request ID.
+    @ObservationIgnored let requests: AgentRequestGate<AgentCreated, AgentError>
     /// The exports agents started, followed with `jobs`; in memory, so a relaunch forgets them.
     @ObservationIgnored let operations = AgentOperations()
-    /// `create_image` requests being taken, by request ID, likewise.
-    @ObservationIgnored var creatingImages:
-        [String: (fingerprint: String, task: Task<Result<AgentCreated, AgentError>, Never>)] =
-            [:]
 
     init(environment: AppEnvironment, system: SystemIntegration, preferences: AgentPreferences = AgentPreferences()) {
         self.environment = environment
         self.system = system
         self.preferences = preferences
+        requests = AgentRequestGate(log: environment.agentRequests)
     }
 
     /// Where the socket goes: the app group's container, which the helper finds from the group in Info.plist.

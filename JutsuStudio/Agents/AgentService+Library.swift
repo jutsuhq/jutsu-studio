@@ -118,36 +118,18 @@ extension AgentService {
     // MARK: enhance
 
     func enhance(_ fields: EnhanceCommand, client: String?) async throws(AgentError) -> AgentCreated {
-        if let running = creating[fields.requestID] {
-            guard running.fingerprint == fields.fingerprint else { throw .requestConflict }
-            return try await running.task.value.get()
-        }
-        switch try lookup(fields.requestID, fingerprint: fields.fingerprint) {
-        case .conflict:
-            throw .requestConflict
-        case .known(let ids):
-            let jobs = try await knownJobs(ids)
-            guard jobs.isEmpty else {
-                return AgentCreated(requestID: fields.requestID, known: true, jobs: jobs.map(Self.agentJob))
-            }
-            try? environment.agentRequests.remove(fields.requestID)
-            throw AgentError(
-                .failed, message: "The request was recorded but its job was never queued.", retryable: true,
-                next: "Send the same enhance again.")
-        case .new:
-            break
-        }
-        let task = Task { [weak self] () -> Result<AgentCreated, AgentError> in
-            guard let self else { return .failure(.agentsOff) }
-            do throws(AgentError) {
-                return .success(try await self.queueEnhancement(fields, client: client))
-            } catch {
-                return .failure(error)
-            }
-        }
-        creating[fields.requestID] = (fields.fingerprint, task)
-        defer { creating[fields.requestID] = nil }
-        return try await task.value.get()
+        try await requests.run(
+            fields.requestID, fingerprint: fields.fingerprint,
+            refusals: Self.refusals("enhance", made: "its job was never queued"), discard: {},
+            known: { ids throws(AgentError) in
+                let jobs = try await knownJobs(ids)
+                return jobs.isEmpty
+                    ? nil : AgentCreated(requestID: fields.requestID, known: true, jobs: jobs.map(Self.agentJob))
+            },
+            queue: { [weak self] () throws(AgentError) in
+                guard let self else { throw .agentsOff }
+                return try await self.queueEnhancement(fields, client: client)
+            })
     }
 
     /// Builds the job as the Enhance sheet would, records the request with its ID, then queues it with the agent's
@@ -175,7 +157,6 @@ extension AgentService {
                 "Agent \(client ?? "unnamed", privacy: .private) queued \(fields.operation.rawValue, privacy: .public)")
             return AgentCreated(requestID: fields.requestID, known: false, jobs: [Self.agentJob(job)])
         } catch {
-            try? environment.agentRequests.remove(fields.requestID)
             throw Self.agentError(enqueueing: error)
         }
     }

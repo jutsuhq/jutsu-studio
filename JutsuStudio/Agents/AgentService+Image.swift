@@ -11,49 +11,23 @@ private let logger = Logger(subsystem: "com.jutsustudio", category: "Agents")
 extension AgentService {
     func createImage(_ fields: CreateImageCommand, client: String?) async throws(AgentError) -> AgentCreated {
         let files = fields.image.inputs
-        if let running = creatingImages[fields.requestID] {
-            guard running.fingerprint == fields.fingerprint else {
-                discard(files)
-                throw .requestConflict
-            }
-            return try await running.task.value.get()
-        }
-        switch try lookup(fields.requestID, fingerprint: fields.fingerprint) {
-        case .conflict:
-            discard(files)
-            throw .requestConflict
-        case .known(let ids):
-            discard(files)
-            var jobs: [AgentJob] = []
-            for id in ids { if let job = await imageJob(id) { jobs.append(job) } }
-            guard jobs.isEmpty else { return AgentCreated(requestID: fields.requestID, known: true, jobs: jobs) }
-            // Recorded, but the app quit before the request was: nothing was sent, so it is forgotten and sent again.
-            try? environment.agentRequests.remove(fields.requestID)
-            throw AgentError(
-                .failed, message: "The request was recorded but never taken.", retryable: true,
-                next: "Send the same create_image again.")
-        case .new:
-            break
-        }
-        let task = Task { [weak self] () -> Result<AgentCreated, AgentError> in
-            guard let self else { return .failure(.agentsOff) }
-            do throws(AgentError) {
-                return .success(try await self.queueImage(fields, client: client))
-            } catch {
-                return .failure(error)
-            }
-        }
-        creatingImages[fields.requestID] = (fields.fingerprint, task)
-        defer { creatingImages[fields.requestID] = nil }
-        let result = await task.value
-        if case .failure = result { discard(files) }
-        let created = try result.get()
+        let created = try await requests.run(
+            fields.requestID, fingerprint: fields.fingerprint,
+            refusals: Self.refusals("create_image", made: "never taken"), discard: { discard(files) },
+            known: { ids in
+                var jobs: [AgentJob] = []
+                for id in ids { if let job = await imageJob(id) { jobs.append(job) } }
+                return jobs.isEmpty ? nil : AgentCreated(requestID: fields.requestID, known: true, jobs: jobs)
+            },
+            queue: { [weak self] () throws(AgentError) in
+                guard let self else { throw .agentsOff }
+                return try await self.queueImage(fields, client: client)
+            })
         logger.info("Agent \(client ?? "unnamed", privacy: .private) asked for images")
         return created
     }
 
-    /// Records the request with its run's ID, then hands it to the queue; one that can't be taken is forgotten, so
-    /// the agent can fix it and send it again.
+    /// Records the request with its run's ID, then hands it to the queue.
     private func queueImage(_ fields: CreateImageCommand, client: String?) async throws(AgentError) -> AgentCreated {
         guard let kind = environment.connection.state.kind, let provider = environment.imageProvider else {
             throw Self.notConnected
@@ -78,7 +52,6 @@ extension AgentService {
             _ = try environment.agentImages.create(
                 order, id: id, origin: origin, provider: provider, upload: environment.imageUploader(provider))
         } catch {
-            try? environment.agentRequests.remove(fields.requestID)
             throw error.isNotSaved
                 ? AgentError(.failed, message: error.message, retryable: true, next: "Send the request again.")
                 : AgentError.invalidRequest(error.message)
