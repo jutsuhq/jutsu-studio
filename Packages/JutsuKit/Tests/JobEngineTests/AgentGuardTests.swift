@@ -13,6 +13,7 @@ private struct BrokenLedger: AgentSpendLedger {
     func release(_ id: UUID) throws { throw Broken() }
     func settle(_ id: UUID, amount: Int?) throws { throw Broken() }
     func total(on day: Date, unit: AgentMoney.Unit) throws -> AgentSpendTotal { throw Broken() }
+    func unsettled() throws -> [AgentSpend] { throw Broken() }
 }
 
 /// The spending guard of agents' jobs: checked by the engine right before every paid submit.
@@ -45,6 +46,34 @@ struct AgentGuardTests {
         #expect(done.agent?.reservation != nil)
         let total = try await ledger.total(on: harness.clock.now, unit: .usdCents)
         #expect(total == AgentSpendTotal(spent: 130, reserved: 0))
+    }
+
+    /// A crash between the ledger's write and the job's: the job never held the reservation and has no submit
+    /// marker, so nothing was sent and the launch gives it back. One the job holds stays, as does an image
+    /// request's, whose job isn't in the store.
+    @Test func aLaunchReleasesReservationsNoSubmitTook() async throws {
+        let harness = Harness()
+        let ledger = ledger(harness)
+        var orphaned = Job(spec: makeSpec(), providerKind: .apiKey, cost: .usd(1.3, isEstimate: false))
+        orphaned.state = .paused(.byUser)
+        orphaned.agent = origin()
+        var holding = Job(spec: makeSpec(), providerKind: .apiKey, cost: .usd(1.3, isEstimate: false))
+        holding.state = .paused(.byUser)
+        holding.agent = origin(request: "r-2")
+        let held = AgentSpend(jobID: holding.id, money: AgentMoney(50, .usdCents), at: harness.clock.now)
+        holding.agent?.reservation = held.id
+        await harness.repository.save(orphaned)
+        await harness.repository.save(holding)
+        let lost = AgentSpend(jobID: orphaned.id, money: AgentMoney(130, .usdCents), at: harness.clock.now)
+        let image = AgentSpend(jobID: UUID(), money: AgentMoney(7, .usdCents), at: harness.clock.now)
+        for spend in [lost, held, image] { #expect(try await ledger.reserve(spend, dailyLimit: nil)) }
+
+        _ = try await harness.makeEngine(agentPolicy: policy(ledger))
+
+        #expect(
+            try await ledger.unsettled().map(\.id).sorted { $0.uuidString < $1.uuidString }
+                == [held.id, image.id].sorted { $0.uuidString < $1.uuidString })
+        #expect(harness.log.count("submit") == 0)
     }
 
     @Test func aPriceOverMaxCostPausesWithoutSending() async throws {

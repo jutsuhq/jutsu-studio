@@ -129,6 +129,7 @@ public actor JobEngine {
             throw error
         }
         await removeLeftovers(activeJobs: activeJobs, storedIDs: storedIDs)
+        await reconcileAgentReservations()
         for stored in activeJobs {
             let job = jobs[stored.id] ?? adoptingLegacyOwner(stored)
             jobs[job.id] = job

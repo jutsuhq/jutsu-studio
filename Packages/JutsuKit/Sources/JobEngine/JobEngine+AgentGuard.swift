@@ -64,6 +64,28 @@ extension JobEngine {
         return .paused
     }
 
+    /// Gives back the reservations a crash orphaned: saved to the ledger, but the app stopped before the job saved
+    /// it with its submit marker (`beginSubmit`), so nothing was sent. A reservation whose job holds it, or whose job
+    /// has a submit marker, may have been sent and stays; so does one whose job isn't in the store (an image
+    /// request, reconciled by its own log, or a job the store can't read). Runs at launch, before any job runs.
+    func reconcileAgentReservations() async {
+        guard let ledger = agentPolicy?.ledger else { return }
+        let reservations: [AgentSpend]
+        do {
+            reservations = try await ledger.unsettled()
+        } catch {
+            log.error("The agent spend ledger can't be read to reconcile it", detail: String(describing: error))
+            return
+        }
+        for spend in reservations {
+            guard let job = try? await repository.job(id: spend.jobID), job.agent?.reservation != spend.id,
+                job.submitAttempt == nil
+            else { continue }
+            log.error("Job \(job.id): released an agent reservation its submit never took")
+            await releaseAgentSpend(spend.id, of: job.id)
+        }
+    }
+
     /// Gives back a reservation whose submit certainly never reached the provider. A ledger that can't be written
     /// keeps it, which only counts too much.
     func releaseAgentSpend(_ reservation: UUID?, of id: UUID) async {

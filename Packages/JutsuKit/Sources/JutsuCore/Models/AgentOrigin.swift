@@ -139,6 +139,8 @@ public protocol AgentSpendLedger: Sendable {
     func settle(_ id: UUID, amount: Int?) async throws
     /// What is taken on `day` in `unit`.
     func total(on day: Date, unit: AgentMoney.Unit) async throws -> AgentSpendTotal
+    /// The reservations not settled yet, of every day the ledger keeps: what a launch reconciles with the jobs.
+    func unsettled() async throws -> [AgentSpend]
 }
 
 /// What the spending guard decides before an agent's job is sent.

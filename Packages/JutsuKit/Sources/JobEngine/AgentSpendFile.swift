@@ -59,6 +59,10 @@ public actor AgentSpendFile: AgentSpendLedger {
         try write(entries)
     }
 
+    public func unsettled() throws -> [AgentSpend] {
+        try load().filter { !$0.isSettled }
+    }
+
     public func total(on day: Date, unit: AgentMoney.Unit) throws -> AgentSpendTotal {
         Self.total(try load(), on: day, unit: unit, calendar: calendar)
     }
