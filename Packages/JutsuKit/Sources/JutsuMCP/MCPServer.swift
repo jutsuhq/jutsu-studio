@@ -14,7 +14,7 @@ import JutsuAgent
 /// Every tool is one `AgentCommand` passed through to the app; `send` makes the round trip and turns a failure to
 /// reach the app into an `AgentError`, which the model sees as a tool error. A malformed call (not JSON-RPC, an
 /// unknown method or tool, params of the wrong shape) is a JSON-RPC error instead.
-public struct MCPServer {
+public struct MCPServer: Sendable {
     /// Newest first. Requests with per-request `_meta` may name any of them; `initialize` negotiates one of the last
     /// four, the handshake revisions.
     public static let protocolVersions = ["2026-07-28", "2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"]

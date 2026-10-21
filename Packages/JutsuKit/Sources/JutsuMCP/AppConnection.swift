@@ -84,9 +84,9 @@ public struct AppConnection: Sendable {
         return response
     }
 
-    /// One round trip through the socket, `body` making it, starting the bundled app when nothing answers.
-    /// note: `body` blocks its thread on the socket; fine for the helper, which serves one request at a time.
-    func exchange(_ body: @Sendable (URL) throws -> AgentResponse) async -> AgentResponse {
+    /// One round trip through the socket, `body` making it, starting the bundled app when nothing answers. `body`
+    /// blocks its thread on the socket, so it runs on one of its own (`blocking`): the helper serves requests at once.
+    func exchange(_ body: @escaping @Sendable (URL) throws -> AgentResponse) async -> AgentResponse {
         switch location {
         case .unbundled:
             return AgentResponse(error: .unbundled)
@@ -96,7 +96,7 @@ public struct AppConnection: Sendable {
             // The app can't listen there either, so starting it and waiting would only end in a misleading timeout.
             guard AgentSocket.fits(socket) else { return AgentResponse(error: .socketPathTooLong(socket)) }
             do {
-                return try body(socket)
+                return try await Self.blocking(body, socket)
             } catch AgentClient.Failure.notListening {
                 guard case .bundled(let app, let bundleID, _) = location else {
                     return AgentResponse(error: .notListening(socket))
@@ -111,7 +111,7 @@ public struct AppConnection: Sendable {
     /// Nothing listens: the app isn't running or is still starting. A running app that doesn't answer within
     /// `launchWait` of its launch couldn't open the socket, and Settings › Agents says why.
     private func startAndSend(
-        _ body: @Sendable (URL) throws -> AgentResponse, app: URL, bundleID: String, socket: URL
+        _ body: @escaping @Sendable (URL) throws -> AgentResponse, app: URL, bundleID: String, socket: URL
     ) async -> AgentResponse {
         let running: RunningApp
         do {
@@ -122,7 +122,7 @@ public struct AppConnection: Sendable {
         let deadline = running.launchDate.addingTimeInterval(TimeInterval(launchWait.components.seconds))
         while true {
             do {
-                return try body(socket)
+                return try await Self.blocking(body, socket)
             } catch AgentClient.Failure.notListening {
                 // Not yet.
             } catch {
@@ -131,6 +131,16 @@ public struct AppConnection: Sendable {
             if running.isTerminated() { return AgentResponse(error: .notStarted(app, reason: "it quit")) }
             if Date.now >= deadline { return AgentResponse(error: .notListening(socket)) }
             try? await Task.sleep(for: .milliseconds(200))
+        }
+    }
+
+    /// Runs `body` on a thread of Dispatch's, not one of the few threads every task shares, which a few waits on the
+    /// app would otherwise all hold.
+    private static func blocking(
+        _ body: @escaping @Sendable (URL) throws -> AgentResponse, _ socket: URL
+    ) async throws -> AgentResponse {
+        try await withCheckedThrowingContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async { continuation.resume(with: Result { try body(socket) }) }
         }
     }
 }

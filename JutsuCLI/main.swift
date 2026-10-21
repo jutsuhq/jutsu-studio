@@ -35,7 +35,7 @@ let usage = """
 switch CommandLine.arguments.dropFirst().first {
 case "mcp":
     let connection = AppConnection(location: location, launcher: WorkspaceLauncher())
-    var server = MCPServer(
+    let server = MCPServer(
         version: version,
         stage: { path, request, client in
             do throws(AgentError) {
@@ -45,11 +45,19 @@ case "mcp":
             }
         },
         send: { await connection.send($0, client: $1) })
-    // One JSON-RPC message per line until the client closes stdin.
-    while let line = readLine(strippingNewline: true) {
-        guard !line.isEmpty, let reply = await server.reply(to: Data(line.utf8)) else { continue }
-        FileHandle.standardOutput.write(reply)
+    // One JSON-RPC message per line until the client closes stdin, each request answered as soon as it can be.
+    let session = MCPConnection(server: server) { FileHandle.standardOutput.write($0) }
+    // Read on a thread of its own: the main thread stays free for Launch Services (`WorkspaceLauncher`).
+    let lines = AsyncStream<String> { continuation in
+        Thread {
+            while let line = readLine(strippingNewline: true) { continuation.yield(line) }
+            continuation.finish()
+        }.start()
     }
+    for await line in lines where !line.isEmpty {
+        await session.receive(Data(line.utf8))
+    }
+    await session.drain()
 case "-h", "--help":
     FileHandle.standardOutput.write(Data((usage + "\n").utf8))
 case "--version":
