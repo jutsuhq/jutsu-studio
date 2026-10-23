@@ -183,15 +183,19 @@ public struct AgentCursor: Sendable, Hashable {
 }
 
 /// Waits up to `seconds` for `isSettled`, checking every `milliseconds`; `true` when the time ran out first. Waiting
-/// stops nothing.
+/// stops nothing. The time is read from the clock rather than counted in checks: in the background (App Nap) each
+/// sleep runs long, and a wait that counted 100 of them overran `AgentProtocol.answerDeadline`, so `jobs` answered
+/// still_working instead of timedOut.
 public func agentWait(
     seconds: Int, milliseconds: Int = 500, isolation: isolated (any Actor)? = #isolation, isSettled: () async -> Bool,
+    now: () -> ContinuousClock.Instant = { .now },
     sleep: (Duration) async throws -> Void = { try await Task.sleep(for: $0) }
 ) async -> Bool {
-    let step = max(1, milliseconds)
+    let step = Duration.milliseconds(max(1, milliseconds))
+    let deadline = now() + .seconds(max(0, seconds))
     if await isSettled() { return false }
-    for _ in 0..<(max(0, seconds) * 1000 / step) {
-        do { try await sleep(.milliseconds(step)) } catch { return true }
+    while now() < deadline {
+        do { try await sleep(min(step, deadline - now())) } catch { return true }
         if await isSettled() { return false }
     }
     return true
