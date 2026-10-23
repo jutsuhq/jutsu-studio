@@ -233,8 +233,28 @@ import Testing
             }, sleep: { _ in sleeps += 1 })
         #expect(!settledLater && sleeps == 2)
 
+        var clock = ContinuousClock.now
         sleeps = 0
-        let timedOut = await agentWait(seconds: 2, milliseconds: 500, isSettled: { false }, sleep: { _ in sleeps += 1 })
+        let timedOut = await agentWait(
+            seconds: 2, milliseconds: 500, isSettled: { false }, now: { clock },
+            sleep: {
+                sleeps += 1
+                clock += $0
+            })
         #expect(timedOut && sleeps == 4)
+    }
+
+    @Test func aWaitEndsByTheClockWhenSleepsRunLong() async {
+        var clock = ContinuousClock.now
+        let start = clock
+        var sleeps = 0
+        // Each 500 ms sleep takes 3 s, as in the background: the wait still ends at 50 s, not after 100 sleeps.
+        let timedOut = await agentWait(
+            seconds: 50, isSettled: { false }, now: { clock },
+            sleep: { _ in
+                sleeps += 1
+                clock += .seconds(3)
+            })
+        #expect(timedOut && sleeps == 17 && clock - start <= .seconds(51))
     }
 }
