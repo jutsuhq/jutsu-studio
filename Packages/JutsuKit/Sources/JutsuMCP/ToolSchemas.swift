@@ -98,6 +98,7 @@ extension Tool {
                     ],
                 ],
             ]
+            if self == .createVideo { properties["timedOut"] = ["type": "boolean"] }
         case .elements:
             properties["items"] = [
                 "type": "array",

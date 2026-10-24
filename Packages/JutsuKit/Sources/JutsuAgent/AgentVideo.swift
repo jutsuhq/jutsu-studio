@@ -1,4 +1,3 @@
-import CryptoKit
 import Foundation
 
 // The video commands: quote, create_video, jobs and job_action, and what they answer.
@@ -240,17 +239,23 @@ public struct CreateVideoCommand: Codable, Equatable, Sendable {
     public var video: AgentVideoRequest
     /// The most the agent agrees to pay for the job; the app pauses it for the person when the price is above.
     public var maxCost: AgentAmount
+    /// How long to wait, up to `JobsCommand.maxWaitSeconds`, until the job's price is known or it is held before
+    /// answering. Not part of the request: a retry with another wait is the same request.
+    public var waitSeconds: Int
 
-    public init(requestID: String, fingerprint: String, video: AgentVideoRequest, maxCost: AgentAmount) {
+    public init(
+        requestID: String, fingerprint: String, video: AgentVideoRequest, maxCost: AgentAmount, waitSeconds: Int = 0
+    ) {
         self.requestID = requestID
         self.fingerprint = fingerprint
         self.video = video
         self.maxCost = maxCost
+        self.waitSeconds = waitSeconds
     }
 
     private enum CodingKeys: String, CodingKey {
         case requestID = "requestId"
-        case fingerprint, video, maxCost
+        case fingerprint, video, maxCost, waitSeconds
     }
 
     public init(from decoder: any Decoder) throws {
@@ -259,10 +264,23 @@ public struct CreateVideoCommand: Codable, Equatable, Sendable {
         fingerprint = try container.decode(String.self, forKey: .fingerprint)
         video = try container.decode(AgentVideoRequest.self, forKey: .video)
         maxCost = try container.decode(AgentAmount.self, forKey: .maxCost)
+        waitSeconds = try container.decodeIfPresent(Int.self, forKey: .waitSeconds) ?? 0
         guard AgentNames.isValidRequestID(requestID) else { throw AgentError.badRequest(AgentNames.requestIDRule) }
         guard AgentNames.isValidFingerprint(fingerprint) else {
             throw AgentError.badRequest("fingerprint is 64 lowercase hex digits")
         }
+        guard (0...JobsCommand.maxWaitSeconds).contains(waitSeconds) else {
+            throw AgentError.badRequest("wait_seconds is 0 to \(JobsCommand.maxWaitSeconds)")
+        }
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(requestID, forKey: .requestID)
+        try container.encode(fingerprint, forKey: .fingerprint)
+        try container.encode(video, forKey: .video)
+        try container.encode(maxCost, forKey: .maxCost)
+        if waitSeconds != 0 { try container.encode(waitSeconds, forKey: .waitSeconds) }
     }
 }
 
@@ -452,17 +470,24 @@ public struct AgentCreated: Codable, Equatable, Sendable {
     /// The images a new request sent, in order, with the @ImageN tags its prompt names them by; left out for a known
     /// request and one without images.
     public var references: [AgentReference]?
+    /// With `wait_seconds`: the wait ran out before every job's price was known or it was held; nothing was stopped.
+    // swiftlint:disable:next discouraged_optional_boolean
+    public var timedOut: Bool?
 
-    public init(requestID: String, known: Bool, jobs: [AgentJob], references: [AgentReference]? = nil) {
+    public init(
+        // swiftlint:disable:next discouraged_optional_boolean
+        requestID: String, known: Bool, jobs: [AgentJob], references: [AgentReference]? = nil, timedOut: Bool? = nil
+    ) {
         self.requestID = requestID
         self.known = known
         self.jobs = jobs
         self.references = references
+        self.timedOut = timedOut
     }
 
     private enum CodingKeys: String, CodingKey {
         case requestID = "requestId"
-        case known, jobs, references
+        case known, jobs, references, timedOut
     }
 }
 
@@ -488,16 +513,5 @@ public struct AgentActed: Codable, Equatable, Sendable {
     public init(action: AgentJobAction, job: AgentJob? = nil) {
         self.action = action
         self.job = job
-    }
-}
-
-/// The digest that tells a retry of a request from another request under the same `request_id`: SHA-256 of the
-/// value as JSON with sorted keys, so the same parameters always give the same digest.
-public enum AgentFingerprint {
-    public static func of(_ value: some Encodable) throws -> String {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
-        let data = try encoder.encode(value)
-        return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
     }
 }

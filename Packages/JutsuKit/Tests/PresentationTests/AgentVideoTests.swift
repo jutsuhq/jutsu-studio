@@ -217,6 +217,22 @@ import Testing
         #expect(AgentJobStatus(agentJob(.rejected)).error == "Rejected by content moderation")
     }
 
+    /// A create_video wait ends once the guard can read the price, the job is past the guard, or it is held.
+    @Test func aCreateVideoWaitEndsOnceThePriceIsKnownOrTheJobIsHeld() {
+        let estimate = Cost.credits(24, isEstimate: true)
+        #expect(!AgentJobStatus.isPriced(agentJob(.preparing, cost: estimate)))
+        #expect(!AgentJobStatus.isPriced(agentJob(.uploading, cost: .unknownUSD)))
+        var quoted = agentJob(.waitingForSlot, cost: estimate)
+        quoted.serverPrice = .credits(24, isEstimate: false)
+        #expect(AgentJobStatus.isPriced(quoted))
+        #expect(AgentJobStatus.isPriced(agentJob(.preparing)))
+        #expect(AgentJobStatus.isPriced(agentJob(.paused(.agentLimit), hold: .unknownPrice, cost: estimate)))
+        #expect(AgentJobStatus.isPriced(agentJob(.failed(reason: .generationFailed), cost: estimate)))
+        var sending = agentJob(.waitingForSlot, cost: estimate)
+        sending.submitAttempt = SubmitAttempt(isIdempotent: true)
+        #expect(AgentJobStatus.isPriced(sending))
+    }
+
     @Test func agentsActOnlyOnTheirOwnJobsAndNeverRetryWhatMayBeCharged() {
         let own = agentJob(.failed(reason: .generationFailed))
         #expect(AgentJobRules.retryRefusal(own) == nil)
