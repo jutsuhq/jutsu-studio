@@ -405,9 +405,11 @@ extension AgentService {
 
     static func agentError(enqueueing error: any Error) -> AgentError {
         switch error {
-        case JobEngineError.overCap:
+        case JobEngineError.overCap(let over):
             AgentError(
-                .overCap, message: "The job would take today's spending over the person's daily cap.",
+                .overCap,
+                message: AgentCap.overCapMessage(
+                    cap: over.cap, committedToday: over.committedToday, price: over.price),
                 retryable: false, next: "Ask the person to raise the cap in Settings or queue it themselves.")
         case JobEngineError.notConnected:
             notConnected

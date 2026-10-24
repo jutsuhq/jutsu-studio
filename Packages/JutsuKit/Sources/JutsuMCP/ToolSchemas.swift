@@ -24,7 +24,8 @@ extension Tool {
                     "unit": ["type": "string", "enum": ["usd_cents", "credits"]],
                     "dailyLimit": ["type": "integer"], "spentToday": ["type": "integer"],
                     "reservedToday": ["type": "integer"], "remaining": ["type": "integer"],
-                    "unlimitedAllowed": ["type": "boolean"],
+                    "unlimitedAllowed": ["type": "boolean"], "dailyCap": ["type": "integer"],
+                    "capTakenToday": ["type": "integer"],
                 ],
             ]
             properties["toolGroups"] = [

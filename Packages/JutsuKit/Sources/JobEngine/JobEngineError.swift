@@ -11,7 +11,7 @@ public enum JobEngineError: Error, Sendable, Hashable {
     /// A submit sent with the idempotency key is waiting for its answer; the job can be canceled once queued.
     case submitInProgress
     /// The job would take today's spend over the cap, and the user hasn't agreed to that.
-    case overCap
+    case overCap(OverCap)
     case notRetryable(JobState)
     case notResumable(JobState)
     /// Run next only reorders jobs still waiting for a slot.
@@ -24,6 +24,21 @@ public enum JobEngineError: Error, Sendable, Hashable {
     case missingRequestID
     /// A bug in the engine: `event` can't happen in `state`.
     case invalidTransition(from: JobState, event: JobEvent)
+}
+
+/// What the person's daily cap counted when it refused a job.
+public struct OverCap: Sendable, Hashable {
+    public var cap: SpendCap
+    /// Every other job the cap counts today, charged or still queued, in the cap's unit.
+    public var committedToday: Decimal
+    /// What the job was counted at.
+    public var price: Cost
+
+    public init(cap: SpendCap, committedToday: Decimal, price: Cost) {
+        self.cap = cap
+        self.committedToday = committedToday
+        self.price = price
+    }
 }
 
 extension JobEngineError: LocalizedError {
