@@ -217,6 +217,18 @@ import Testing
         #expect(AgentJobStatus(agentJob(.rejected)).error == "Rejected by content moderation")
     }
 
+    /// over_cap says what the cap counted, in the whole units agents read, and that it isn't the agent budget.
+    @Test func overCapGivesTheCapTodayAndTheJobsPrice() {
+        let credits = AgentCap.overCapMessage(
+            cap: .credits(300), committedToday: 290, price: .credits(24, isEstimate: false))
+        #expect(credits.contains("daily cap of 300 credits") && credits.contains("290 credits are spent or queued"))
+        #expect(credits.contains("counts at 24 credits") && credits.contains("apart from the agent budget"))
+        let dollars = AgentCap.overCapMessage(cap: .usd(5), committedToday: 4.5, price: .usd(1.301, isEstimate: true))
+        #expect(dollars.contains("500 usd_cents") && dollars.contains("450 usd_cents"))
+        #expect(dollars.contains("counts at 131 usd_cents"))
+        #expect(AgentCap.overCapMessage(cap: .usd(5), committedToday: 0, price: .unknownUSD).contains("unknown price"))
+    }
+
     /// A create_video wait ends once the guard can read the price, the job is past the guard, or it is held.
     @Test func aCreateVideoWaitEndsOnceThePriceIsKnownOrTheJobIsHeld() {
         let estimate = Cost.credits(24, isEstimate: true)

@@ -163,10 +163,16 @@ final class AgentService {
         }
         if let kind = state.kind {
             let taken = try await agentSpendToday(for: kind)
+            let cap = environment.spendCap(for: kind)
+            var capTaken: Int?
+            if let cap, let committed = try? await environment.committedToday(in: cap.unit) {
+                capTaken = AgentCap.money(committed, cap.unit)?.amount
+            }
             budget = AgentCapabilities.Budget(
                 unit: Self.unit(for: kind), dailyLimit: preferences.dailyBudget(for: kind), spentToday: taken.spent,
                 reservedToday: taken.reserved,
-                unlimitedAllowed: preferences.allowsUnlimited && !taken.unlimitedCharged)
+                unlimitedAllowed: preferences.allowsUnlimited && !taken.unlimitedCharged,
+                dailyCap: cap.flatMap { AgentCap.money($0.amount, $0.unit)?.amount }, capTakenToday: capTaken)
         }
         var answer = AgentCapabilities(appVersion: Self.appVersion, connection: connection, budget: budget)
         if fields.models {

@@ -68,10 +68,10 @@ extension JobEngine {
         job.agent = agent
         // What the user agreed to: a server price above it asks them again.
         if overCapApproved { job.approvedPrice = cost }
-        if !spec.usesUnlimited, let status = try await spendStatus(job), !overCapApproved,
-            Budget.allows(cost: cost, committedToday: status.committedToday, cap: status.cap) != .allowed
+        if !spec.usesUnlimited, let status = try await spendStatus(job), !overCapApproved, let cap = status.cap,
+            Budget.allows(cost: cost, committedToday: status.committedToday, cap: cap) != .allowed
         {
-            throw JobEngineError.overCap
+            throw JobEngineError.overCap(OverCap(cap: cap, committedToday: status.committedToday, price: cost))
         }
         try await repository.save(job)
         jobs[job.id] = job

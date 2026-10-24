@@ -105,4 +105,15 @@ import Testing
         #expect(budget.remaining == 0)
         #expect(AgentCapabilities.Budget(unit: .usdCents, dailyLimit: -5, spentToday: -1).remaining == 0)
     }
+
+    /// The person's cap goes with the budget when there is one, and is left out of the answer when there isn't.
+    @Test func theBudgetCarriesThePersonsCap() throws {
+        let capped = AgentCapabilities.Budget(
+            unit: .credits, dailyLimit: 500, spentToday: 0, dailyCap: 300, capTakenToday: 290)
+        let json = String(decoding: try JSONEncoder().encode(capped), as: UTF8.self)
+        #expect(json.contains("\"dailyCap\":300") && json.contains("\"capTakenToday\":290"))
+        #expect(try JSONDecoder().decode(AgentCapabilities.Budget.self, from: Data(json.utf8)) == capped)
+        let open = AgentCapabilities.Budget(unit: .credits, dailyLimit: 500, spentToday: 0)
+        #expect(!String(decoding: try JSONEncoder().encode(open), as: UTF8.self).contains("dailyCap"))
+    }
 }

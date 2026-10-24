@@ -210,6 +210,17 @@ final class Switch: @unchecked Sendable {
         #expect(AgentInbox.roomProblem(size: size, freeSpace: room, stored: AgentInbox.maxStoredSize - size + 1) != nil)
     }
 
+    /// A refusal for room says how much is free and how much the file needs, the same on every Mac's locale.
+    @Test func aRefusalForRoomGivesTheNumbers() throws {
+        let volume = try #require(
+            AgentInbox.roomProblem(size: 1_200_000_000, freeSpace: 2_310_000_000, stored: 0))
+        #expect(volume.contains("2.31 GB free") && volume.contains("needs 1.20 GB"))
+        #expect(volume.contains("2.00 GB left free") && volume.contains("free up 0.89 GB"))
+        let inbox = try #require(
+            AgentInbox.roomProblem(size: 1 << 30, freeSpace: nil, stored: AgentInbox.maxStoredSize - (1 << 29)))
+        #expect(inbox.contains("take 7.50 GiB") && inbox.contains("1.00 GiB file") && inbox.contains("8.00 GiB"))
+    }
+
     @Test func anUploadWithoutRoomIsRefusedForGood() async throws {
         let server = AgentServer(socket: try temporarySocket(), isAllowed: { true }, freeSpace: { _ in 1 << 30 }) { _ in
             AgentResponse()

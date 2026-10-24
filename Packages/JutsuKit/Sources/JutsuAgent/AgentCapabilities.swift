@@ -37,13 +37,20 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
         /// `false` for the rest of the day once the allowance didn't pay for an agent's job sent for it: such jobs then
         /// keep every limit, as any other.
         public var unlimitedAllowed: Bool
+        /// The person's own daily cap (Settings › Spending), in the same unit; `nil` when they set none. It counts
+        /// every job, theirs and agents', apart from this budget, and a job over it is refused with over_cap.
+        public var dailyCap: Int?
+        /// What the cap counts today, charged or still queued; `nil` without a cap or when it can't be read.
+        public var capTakenToday: Int?
 
         public init(
             unit: AgentBudgetUnit, dailyLimit: Int, spentToday: Int, reservedToday: Int = 0,
-            unlimitedAllowed: Bool = false
+            unlimitedAllowed: Bool = false, dailyCap: Int? = nil, capTakenToday: Int? = nil
         ) {
             self.unit = unit
             self.unlimitedAllowed = unlimitedAllowed
+            self.dailyCap = dailyCap
+            self.capTakenToday = capTakenToday
             self.dailyLimit = max(0, dailyLimit)
             self.spentToday = max(0, spentToday)
             self.reservedToday = max(0, reservedToday)
