@@ -55,7 +55,8 @@ public struct AgentOrigin: Codable, Sendable, Hashable {
     public var ledgerEntry: UUID? { reservation ?? paidBy }
 }
 
-/// Why the spending guard stopped an agent's job before its submit. Only a person resumes it.
+/// Why the spending guard stopped an agent's job before its submit. Only a person resumes it; the agent may lift
+/// `overMaxCost` alone, by raising `max_cost` to a price that fits every limit (`JobEngine.raiseAgentMaxCost`).
 public enum AgentHold: String, Codable, Sendable, Hashable {
     /// Neither the provider nor the price list could say what it costs.
     case unknownPrice
@@ -253,6 +254,19 @@ public enum AgentSpendDecision: Sendable, Hashable {
         guard money.amount <= dailyLimit else { return .hold(.overDailyBudget) }
         return .send(money, limit: dailyLimit)
     }
+}
+
+/// What raising an agent's `max_cost` on its held job did (`JobEngine.raiseAgentMaxCost`).
+public enum AgentMaxCostRaise: Sendable, Hashable {
+    /// It fits every limit now: the job goes on with the new `max_cost`, and the guard checks it again at submit.
+    case lifted
+    /// It still doesn't fit; nothing changed.
+    case held(AgentHold)
+    /// It would take today's spending over the person's daily cap; nothing changed.
+    case overCap
+    /// Not a job the agent can lift: not held over its `max_cost` (or the person decided on it), already sent,
+    /// for the plan's unlimited allowance, or the new `max_cost` isn't higher in the same unit.
+    case notLiftable
 }
 
 extension AgentSpendDecision {

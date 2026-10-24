@@ -236,6 +236,9 @@ public struct CreateVideoCommand: Codable, Equatable, Sendable {
     /// `AgentFingerprint` of the request as the agent sent it: the parameters, the agent's own paths and the files'
     /// sizes. The uploads of the request carry the same one.
     public var fingerprint: String
+    /// The same digest without `max_cost`: what tells the request sent again with another `max_cost`, which may lift
+    /// its job's hold over the old one. `nil` from a helper older than it.
+    public var parameters: String?
     public var video: AgentVideoRequest
     /// The most the agent agrees to pay for the job; the app pauses it for the person when the price is above.
     public var maxCost: AgentAmount
@@ -244,10 +247,12 @@ public struct CreateVideoCommand: Codable, Equatable, Sendable {
     public var waitSeconds: Int
 
     public init(
-        requestID: String, fingerprint: String, video: AgentVideoRequest, maxCost: AgentAmount, waitSeconds: Int = 0
+        requestID: String, fingerprint: String, parameters: String? = nil, video: AgentVideoRequest,
+        maxCost: AgentAmount, waitSeconds: Int = 0
     ) {
         self.requestID = requestID
         self.fingerprint = fingerprint
+        self.parameters = parameters
         self.video = video
         self.maxCost = maxCost
         self.waitSeconds = waitSeconds
@@ -255,18 +260,19 @@ public struct CreateVideoCommand: Codable, Equatable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case requestID = "requestId"
-        case fingerprint, video, maxCost, waitSeconds
+        case fingerprint, parameters, video, maxCost, waitSeconds
     }
 
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         requestID = try container.decode(String.self, forKey: .requestID)
         fingerprint = try container.decode(String.self, forKey: .fingerprint)
+        parameters = try container.decodeIfPresent(String.self, forKey: .parameters)
         video = try container.decode(AgentVideoRequest.self, forKey: .video)
         maxCost = try container.decode(AgentAmount.self, forKey: .maxCost)
         waitSeconds = try container.decodeIfPresent(Int.self, forKey: .waitSeconds) ?? 0
         guard AgentNames.isValidRequestID(requestID) else { throw AgentError.badRequest(AgentNames.requestIDRule) }
-        guard AgentNames.isValidFingerprint(fingerprint) else {
+        guard AgentNames.isValidFingerprint(fingerprint), parameters.map(AgentNames.isValidFingerprint) ?? true else {
             throw AgentError.badRequest("fingerprint is 64 lowercase hex digits")
         }
         guard (0...JobsCommand.maxWaitSeconds).contains(waitSeconds) else {
@@ -278,6 +284,7 @@ public struct CreateVideoCommand: Codable, Equatable, Sendable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(requestID, forKey: .requestID)
         try container.encode(fingerprint, forKey: .fingerprint)
+        try container.encodeIfPresent(parameters, forKey: .parameters)
         try container.encode(video, forKey: .video)
         try container.encode(maxCost, forKey: .maxCost)
         if waitSeconds != 0 { try container.encode(waitSeconds, forKey: .waitSeconds) }

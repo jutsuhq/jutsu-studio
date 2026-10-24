@@ -236,19 +236,21 @@ public actor JobEngine {
     /// for `notEnoughDiskSpace` continues its download from the partial file instead.
     /// Resuming a job paused for `priceAboveCap` agrees to the price the provider quoted, so ask first. Resuming an
     /// agent's job paused for `agentLimit` is the person agreeing to send it past the agent's limits at its price,
-    /// which their own daily cap then counts as agreed too; only the person does this, never an agent.
+    /// which their own daily cap then counts as agreed too; only the person does this, never an agent. A job that
+    /// went on meanwhile (an agent raised its `max_cost`, or a Resume sent twice) is left as it is.
     public func resume(_ id: UUID) async throws {
         let job = try await loadJob(id)
+        let stillPaused = { (now: Job) in now.state == job.state }
         if job.state == .paused(.priceAboveCap) {
-            try await apply(.resume, to: id) { $0.approvedPrice = $0.serverPrice ?? $0.cost }
+            try await apply(.resume, to: id, ifStill: stillPaused) { $0.approvedPrice = $0.serverPrice ?? $0.cost }
         } else if job.state == .paused(.agentLimit) {
-            try await apply(.resume, to: id) {
+            try await apply(.resume, to: id, ifStill: stillPaused) {
                 $0.approvedPrice = $0.serverPrice ?? $0.cost
                 $0.agent?.approvedByPerson = true
                 $0.agent?.hold = nil
             }
         } else if case .paused = job.state {
-            try await apply(.resume, to: id) { $0.agent?.pausedByAgent = nil }
+            try await apply(.resume, to: id, ifStill: stillPaused) { $0.agent?.pausedByAgent = nil }
         } else if !job.state.isActive {
             throw JobEngineError.notResumable(job.state)
         }

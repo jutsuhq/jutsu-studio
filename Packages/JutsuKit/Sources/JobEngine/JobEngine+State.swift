@@ -17,25 +17,47 @@ extension JobEngine {
     @discardableResult
     func record(_ event: JobEvent, to id: UUID, _ update: (inout Job) -> Void = { _ in }) async throws -> Job {
         try await writing(id) {
-            guard var job = jobs[id] else { throw JobEngineError.unknownJob(id) }
-            guard let next = JobState.transition(job.state, event) else {
-                await rejectTransition(event, of: job)
-                throw JobEngineError.invalidTransition(from: job.state, event: event)
-            }
-            let partial = partialDownload(of: id)
-            // A new state is a step that got through; the concurrency limit keeps a job waiting for a slot.
-            if next != job.state { job.retrying = nil }
-            job.state = next
-            job.progress = 0
-            job.finishedAt = next.isTerminal ? clock.now : nil
-            if next.isTerminal { job.downloadFolder = nil }
-            update(&job)
-            try await repository.save(job)
-            jobs[id] = job
-            publish(job)
-            if next.isTerminal { try? FileManager.default.removeItem(at: partial) }
-            return job
+            guard let job = jobs[id] else { throw JobEngineError.unknownJob(id) }
+            return try await transition(job, by: event, update)
         }
+    }
+
+    /// `apply` for a change decided on a copy of the job read before a suspension, such as the agent raising its
+    /// `max_cost` or the person's Resume: `stillHolds` is checked again on the job as last saved, within its write
+    /// turn, and a job another writer moved on meanwhile is left as it is (`nil`) instead of rejected as an
+    /// impossible event. A save still in flight isn't in `jobs` yet, so a check made before the turn can't see it.
+    @discardableResult
+    func apply(
+        _ event: JobEvent, to id: UUID, ifStill stillHolds: (Job) -> Bool, _ update: (inout Job) -> Void = { _ in }
+    ) async throws -> Job? {
+        try Task.checkCancellation()
+        return try await writing(id) { () async throws -> Job? in
+            guard let job = jobs[id] else { throw JobEngineError.unknownJob(id) }
+            guard stillHolds(job) else { return nil }
+            return try await transition(job, by: event, update)
+        }
+    }
+
+    /// Moves `job` through `event` and saves it; runs within the job's write turn.
+    private func transition(_ job: Job, by event: JobEvent, _ update: (inout Job) -> Void) async throws -> Job {
+        var job = job
+        guard let next = JobState.transition(job.state, event) else {
+            await rejectTransition(event, of: job)
+            throw JobEngineError.invalidTransition(from: job.state, event: event)
+        }
+        let partial = partialDownload(of: job.id)
+        // A new state is a step that got through; the concurrency limit keeps a job waiting for a slot.
+        if next != job.state { job.retrying = nil }
+        job.state = next
+        job.progress = 0
+        job.finishedAt = next.isTerminal ? clock.now : nil
+        if next.isTerminal { job.downloadFolder = nil }
+        update(&job)
+        try await repository.save(job)
+        jobs[job.id] = job
+        publish(job)
+        if next.isTerminal { try? FileManager.default.removeItem(at: partial) }
+        return job
     }
 
     /// Saves a change that keeps the job's state, then publishes it.

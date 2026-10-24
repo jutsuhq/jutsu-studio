@@ -217,6 +217,15 @@ import Testing
         #expect(AgentJobStatus(agentJob(.rejected)).error == "Rejected by content moderation")
     }
 
+    /// A raise that didn't lift the job changed nothing: the note says it stays held over its old max_cost and how the
+    /// same request can lift it later, not that it now waits for the person.
+    @Test func aRaiseStillHeldSaysTheJobStaysOverItsOldMaxCost() {
+        for hold in [AgentHold.overDailyBudget, .ledgerUnavailable, nil] {
+            let note = AgentJobRules.stillHeldNote(hold)
+            #expect(note.contains("stays held over its old max_cost") && note.contains("Send the request again"))
+        }
+    }
+
     /// A create_video wait ends once the guard can read the price, the job is past the guard, or it is held.
     @Test func aCreateVideoWaitEndsOnceThePriceIsKnownOrTheJobIsHeld() {
         let estimate = Cost.credits(24, isEstimate: true)
