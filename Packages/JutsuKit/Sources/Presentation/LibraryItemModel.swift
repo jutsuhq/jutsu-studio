@@ -44,9 +44,11 @@ public struct LibraryItemModel: Sendable, Hashable, Identifiable {
     /// What the card's frame is taken from: the local result, else the remote one.
     public var thumbnailURL: URL? { outputFile ?? historyItem?.outputURL }
 
-    /// The source file name without its extension; the model for a source only the account has, whose name
-    /// on the server means nothing. A clip made without a source goes by its prompt (`JobSpec.name`).
+    /// The job's `title` when an agent gave one, else the source file name without its extension; the model for a
+    /// source only the account has, whose name on the server means nothing. A clip made without a source goes by its
+    /// prompt (`JobSpec.name`).
     public var sourceName: String {
+        if let title = spec.title { return title }
         guard let url = spec.source?.fileURL else { return spec.name }
         return url.isFileURL ? url.deletingPathExtension().lastPathComponent : spec.model.title
     }

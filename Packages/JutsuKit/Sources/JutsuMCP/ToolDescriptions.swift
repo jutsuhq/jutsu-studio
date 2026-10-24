@@ -45,6 +45,7 @@ extension Tool {
             Mac, copied into the app. elements names the account's characters and other reference elements (from \
             the elements tool, account only): their images are added first, in the element's order, then images; \
             the answer's references lists every image sent with its @ImageN tag, the N the prompt names it by. \
+            title names the job in the Queue, the Library and export file names instead of the source's file name. \
             Returns the job; follow it with jobs.
             """
         case .createImage:
@@ -53,7 +54,9 @@ extension Tool {
             capabilities with image_models; the first when left out), prompt, aspect_ratio, count, and inputs, \
             images on this Mac to edit, in order, for models that take them (up to the model's maxInputs; input is \
             the same with one image, never both); elements adds the account's reference elements by name, their \
-            images first, and references in the answer tags each image @ImageN. request_id and max_cost work as in create_video: the \
+            images first, and references in the answer tags each image @ImageN; title names the request in the Queue \
+            and the images in the Library and their file names instead of the start of the prompt. request_id and \
+            max_cost work as in create_video: the \
             same request_id with the same parameters returns the same request and never pays twice. Right before it \
             is sent, a price above max_cost, above what is left of the daily agent budget, over the person's daily \
             cap or not known holds it (state paused, needsPerson) until the person sends it from the Queue. Follow \

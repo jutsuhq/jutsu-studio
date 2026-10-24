@@ -79,6 +79,7 @@ extension Tool {
                     "items": ["type": "string", "maxLength": .number(Double(AgentElementNames.maxNameLength))],
                     "description": "The account's elements by name, from the elements tool; their images go first.",
                 ],
+                "title": Self.titleSchema,
             ]
             schema["required"] = ["request_id", "prompt", "max_cost"]
         case .librarySearch:
@@ -228,6 +229,11 @@ extension Tool {
         return schema
     }
 
+    private static let titleSchema: JSONValue = [
+        "type": "string", "maxLength": .number(Double(AgentVideoRequest.maxTitleLength)),
+        "description": "What the Queue, the Library and file names call it; the first 80 characters, on one line.",
+    ]
+
     private static let exportWaitSchema: JSONValue = [
         "type": "integer", "minimum": 0, "maximum": .number(Double(JobsCommand.maxWaitSeconds)),
         "description": "Wait up to this long for the export to finish before answering; it runs on either way.",
@@ -275,7 +281,9 @@ extension Tool {
                 "description": "The account's elements by name, from the elements tool; their images go first.",
             ],
         ]
-        if !files {
+        if files {
+            properties["title"] = titleSchema
+        } else {
             properties["image_count"] = [
                 "type": "integer", "minimum": 0, "description": "How many reference images there will be.",
             ]

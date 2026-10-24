@@ -94,7 +94,7 @@ public final class AgentImageQueue {
             id: id, origin: origin, providerKind: provider.kind, owner: provider.owner, model: draft.model,
             prompt: draft.prompt, aspectRatio: draft.aspectRatio, count: draft.count, input: draft.inputs.first,
             severalInputs: draft.inputs.count > 1 ? draft.inputs : nil, state: .pricing, priceIsKnown: false,
-            createdAt: now())
+            createdAt: now(), title: draft.title)
         do {
             try save(record)
         } catch {
@@ -227,6 +227,7 @@ extension AgentImageQueue {
         var run = ImageRun(id: record.id, model: record.model.title, count: record.count, state: state)
         run.agent = record.origin
         run.price = record.price
+        run.name = record.title
         if let index = generator.runs.firstIndex(where: { $0.id == record.id }) {
             generator.runs[index] = run
         } else {
