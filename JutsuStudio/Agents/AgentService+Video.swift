@@ -225,7 +225,7 @@ extension AgentService {
         AgentVideoOrder(
             mode: video.mode, model: video.model, prompt: video.prompt ?? "", source: source, images: images,
             style: video.style, resolution: video.resolution, isDraft: video.draft, length: video.length,
-            aspectRatio: video.aspectRatio, audio: video.audio, variants: video.variants)
+            aspectRatio: video.aspectRatio, audio: video.audio, variants: video.variants, title: video.title)
     }
 
     /// The one job `order` makes, built and checked as Create does, on the connection as it is now, and whether the

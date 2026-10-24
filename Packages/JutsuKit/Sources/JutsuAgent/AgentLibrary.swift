@@ -42,10 +42,12 @@ public struct AgentImageRequest: Codable, Equatable, Hashable, Sendable {
     public var inputs: [String]
     /// The account's reference elements by name (`elements`): their images go first, before `inputs`.
     public var elements: [String]
+    /// What the Queue and the Library call the images, and their files' names, instead of the start of the prompt.
+    public var title: String?
 
     public init(
         model: String? = nil, prompt: String, aspectRatio: String? = nil, count: Int? = nil, inputs: [String] = [],
-        elements: [String] = []
+        elements: [String] = [], title: String? = nil
     ) {
         self.model = model
         self.prompt = prompt
@@ -53,12 +55,13 @@ public struct AgentImageRequest: Codable, Equatable, Hashable, Sendable {
         self.count = count
         self.inputs = inputs
         self.elements = elements
+        self.title = title
     }
 
     /// One input goes as `input` and several as `inputs`: a request of one input encodes as 0.2.0 encodes it, so its
     /// fingerprint matches the one 0.2.0 recorded.
     private enum CodingKeys: String, CodingKey {
-        case model, prompt, aspectRatio, count, input, inputs, elements
+        case model, prompt, aspectRatio, count, input, inputs, elements, title
     }
 
     public init(from decoder: any Decoder) throws {
@@ -72,6 +75,7 @@ public struct AgentImageRequest: Codable, Equatable, Hashable, Sendable {
         if input != nil, inputs != nil { throw AgentError.badRequest(Self.bothInputs) }
         self.inputs = inputs ?? input.map { [$0] } ?? []
         elements = try container.decodeIfPresent([String].self, forKey: .elements) ?? []
+        title = try container.decodeIfPresent(String.self, forKey: .title)
     }
 
     public func encode(to encoder: any Encoder) throws {
@@ -86,6 +90,7 @@ public struct AgentImageRequest: Codable, Equatable, Hashable, Sendable {
         default: try container.encode(inputs, forKey: .inputs)
         }
         if !elements.isEmpty { try container.encode(elements, forKey: .elements) }
+        try container.encodeIfPresent(title, forKey: .title)
     }
 
     public static let bothInputs = "send inputs, the images in order, or input, one image; not both"
@@ -95,6 +100,9 @@ public struct AgentImageRequest: Codable, Equatable, Hashable, Sendable {
         if let model, !AgentNames.isValidImageModelID(model) { return "model is an image model ID from capabilities" }
         if prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return "prompt describes the image" }
         if prompt.unicodeScalars.count > 10_000 { return "prompt is at most 10 000 characters" }
+        if let title, title.unicodeScalars.count > AgentVideoRequest.maxTitleLength {
+            return "title is at most 1 000 characters"
+        }
         if let aspectRatio, aspectRatio.utf8.count > 16 { return "aspect_ratio is a ratio such as 16:9" }
         if let count, !(1...Self.maxCount).contains(count) { return "count is 1 to \(Self.maxCount)" }
         if inputs.count > Self.maxInputs { return "inputs takes at most \(Self.maxInputs) images" }

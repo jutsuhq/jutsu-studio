@@ -7,6 +7,7 @@ extension Tool {
     static func createImage(_ given: Arguments, workingDirectory: URL) throws(AgentError) -> AgentCommand {
         try given.allow([
             "request_id", "model", "prompt", "aspect_ratio", "count", "inputs", "input", "elements", "max_cost",
+            "title",
         ])
         let requestID = try given.requestID()
         let maxCost = try given.maxCost()
@@ -24,7 +25,8 @@ extension Tool {
         }
         var image = AgentImageRequest(
             model: try given.string("model"), prompt: prompt, aspectRatio: try given.string("aspect_ratio"),
-            count: try given.int("count"), inputs: inputs, elements: try given.strings("elements"))
+            count: try given.int("count"), inputs: inputs, elements: try given.strings("elements"),
+            title: try given.string("title"))
         if let problem = image.problem { throw .badRequest("create_image: \(problem)") }
         image.inputs = image.inputs.map { Inbox.resolve($0, from: workingDirectory).path(percentEncoded: false) }
         let fingerprint = try Self.fingerprint("create_image", image, files: image.inputs, maxCost)

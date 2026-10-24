@@ -43,6 +43,18 @@ import Testing
         #expect(spec.model == .genjutsu)
     }
 
+    /// The agent's title names the job in the Queue, the Library and export names; the source's name without one.
+    @Test func aTitleNamesTheJobInsteadOfTheSourceFile() throws {
+        let untitled = try order().spec(from: base, in: context).get()
+        #expect(untitled.title == nil)
+        let spec = try order { $0.title = "  Knight on the roof\n" }.spec(from: base, in: context).get()
+        #expect(spec.title == "Knight on the roof")
+        let job = Job(spec: spec, providerKind: .apiKey, cost: .usd(1, isEstimate: true), createdAt: .now)
+        #expect(LibraryItemModel(job: job).sourceName == "Knight on the roof")
+        #expect(JobRowModel(job, now: .now).title.hasPrefix("Knight on the roof · "))
+        #expect(LibraryFilter(query: "roof").matches(LibraryItemModel(job: job)))
+    }
+
     /// The form keeps a range inside the model's window by moving it; an agent's range is refused instead.
     @Test func aRangeOutsideTheModelsWindowIsRefusedNotMoved() throws {
         let limits = VideoModel.genjutsu.limits(for: .motionTransfer, hasSource: true)

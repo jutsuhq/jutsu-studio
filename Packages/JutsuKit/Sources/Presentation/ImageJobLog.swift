@@ -28,6 +28,8 @@ public struct ImageJobRecord: Codable, Sendable, Hashable, Identifiable {
     public var count: Int
     public var state: State
     public var providerKind: ProviderKind = .apiKey
+    /// An agent's name for the images (`GeneratedImage.title`); `nil` otherwise, and in records from before it.
+    public var title: String?
     public var request: ImageRequest?
     public var inputImages: [LocalImage] = []
 

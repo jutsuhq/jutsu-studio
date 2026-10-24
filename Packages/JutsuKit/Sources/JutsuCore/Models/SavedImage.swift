@@ -15,10 +15,12 @@ public struct SavedImage: Sendable, Hashable, Identifiable {
     public var remoteURL: URL?
     /// The catalog star, projected into the image card.
     public var isStarred = false
+    /// An agent's name for it (`MaterialGeneration.title`), which the card shows instead of the prompt.
+    public var title: String?
 
     public init(
         id: UUID = UUID(), fileURL: URL, prompt: String, model: String, aspectRatio: String?, createdAt: Date,
-        remoteURL: URL? = nil, isStarred: Bool = false
+        remoteURL: URL? = nil, isStarred: Bool = false, title: String? = nil
     ) {
         self.id = id
         self.fileURL = fileURL
@@ -28,6 +30,7 @@ public struct SavedImage: Sendable, Hashable, Identifiable {
         self.createdAt = createdAt
         self.remoteURL = remoteURL
         self.isStarred = isStarred
+        self.title = title
     }
 
     /// "2026-10-15 10.41.03 A knight in silver armor", without the extension: the date first, so the files sort
@@ -67,6 +70,7 @@ public struct PendingImage: Codable, Sendable, Hashable, Identifiable {
     public var parameters: Data?
     public var inputImages: [LocalImage] = []
     public var variantGroupID: UUID?
+    public var title: String?
 
     public init(id: UUID, remoteURL: URL, prompt: String, model: String, aspectRatio: String?, createdAt: Date) {
         self.id = id

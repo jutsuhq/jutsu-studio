@@ -53,6 +53,9 @@ public struct JobSpec: Codable, Sendable, Hashable {
     /// by its job ID (`draft_job_id`), instead of rendering the inputs again. Nothing is uploaded for it. `nil` for
     /// any other job, and in jobs stored before it existed.
     public var draftJobID: String?
+    /// What the job is called in lists instead of its source's file name (`name`): an agent's `title`, trimmed and
+    /// cut to `maxTitleLength` (`title(from:)`). `nil` for the person's own jobs, and in jobs stored before it existed.
+    public var title: String?
 
     /// The most variants one submit makes (`generate_video`'s `count`).
     public static let maximumVariants = 4
@@ -69,7 +72,7 @@ public struct JobSpec: Codable, Sendable, Hashable {
         length: TimeInterval? = nil, aspectRatio: AspectRatio? = nil, bitrate: SeedanceBitrate? = nil,
         characterOrientation: CharacterOrientation? = nil, cinemaControls: CinemaControls = CinemaControls(),
         referencesAreFrames: Bool = false, usesUnlimited: Bool = false, operation: PostOperation? = nil,
-        variants: Int = 1, draftJobID: String? = nil
+        variants: Int = 1, draftJobID: String? = nil, title: String? = nil
     ) {
         self.mode = mode
         self.model = model
@@ -92,12 +95,13 @@ public struct JobSpec: Codable, Sendable, Hashable {
         self.operation = operation
         self.variants = variants
         self.draftJobID = draftJobID
+        self.title = title
     }
 
     /// Jobs stored before `audio` existed decode as `.original`, before `model` as Genjutsu, before
     /// `keepsVideoBackground` with the image's background, before `referencesAreFrames` with references, and
     /// before `usesUnlimited` paid in credits, before `operation` as generations, before `variants` as one, and
-    /// before `cinemaControls` with none set.
+    /// before `cinemaControls` with none set, and before `title` named after their source.
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         mode = try container.decode(Mode.self, forKey: .mode)
@@ -121,6 +125,7 @@ public struct JobSpec: Codable, Sendable, Hashable {
         operation = try container.decodeIfPresent(PostOperation.self, forKey: .operation)
         variants = try container.decodeIfPresent(Int.self, forKey: .variants) ?? 1
         draftJobID = try container.decodeIfPresent(String.self, forKey: .draftJobID)
+        title = try container.decodeIfPresent(String.self, forKey: .title)
     }
 
     /// The model makes the clip from a start frame and an optional end frame (Seedance's `image-to-video`): the first
@@ -149,9 +154,10 @@ public struct JobSpec: Codable, Sendable, Hashable {
         return source?.selectedDuration ?? length ?? 0
     }
 
-    /// What the job is called in lists: the source file's name without its extension; for a clip made without
-    /// a source, the start of its prompt, else the model.
+    /// What the job is called in lists: its `title`, else the source file's name without its extension; for a clip
+    /// made without a source, the start of its prompt, else the model.
     public var name: String {
+        if let title { return title }
         if let source { return source.fileURL.deletingPathExtension().lastPathComponent }
         let prompt =
             prompt.split(whereSeparator: \.isNewline).first.map(String.init)?
@@ -162,4 +168,26 @@ public struct JobSpec: Codable, Sendable, Hashable {
     }
 
     static let maxPromptNameLength = 40
+
+    /// The longest `title`, in characters: what a Queue row or a Library card shows of it.
+    public static let maxTitleLength = 80
+
+    /// `text` as a `title`: one line with single spaces, trimmed, cut to `maxTitleLength`; `nil` when nothing is
+    /// left. An agent sends it, and it names rows, cards and files: control characters (tabs, newlines, NUL) read as
+    /// spaces, and format characters, which would reorder or hide what is shown (bidi overrides such as U+202E,
+    /// zero-width spaces), are dropped, except the joiner inside emoji.
+    public static func title(from text: String?) -> String? {
+        guard let text else { return nil }
+        var scalars = String.UnicodeScalarView()
+        for scalar in text.unicodeScalars {
+            switch scalar.properties.generalCategory {
+            case .format where scalar != "\u{200D}": continue
+            case .control, .lineSeparator, .paragraphSeparator: scalars.append(" ")
+            default: scalars.append(scalar)
+            }
+        }
+        let line = String(scalars).split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        guard !line.isEmpty else { return nil }
+        return String(line.prefix(maxTitleLength)).trimmingCharacters(in: .whitespaces)
+    }
 }

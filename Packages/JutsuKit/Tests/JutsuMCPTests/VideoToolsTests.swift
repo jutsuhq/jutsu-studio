@@ -97,6 +97,37 @@ actor FakeInbox {
         #expect(try fingerprint(create(source: source)) != first)
     }
 
+    /// A title goes to the app as the agent wrote it, and is part of the request; one past the protocol's bound is
+    /// refused before anything is sent.
+    @Test func aTitleIsSentWithTheRequest() async throws {
+        let source = try file("clip.mov")
+        guard
+            case .success(.createVideo(let titled)) = Tool.createVideo.command(
+                create(["title": "Knight, take 3"], source: source).objectValue ?? [:])
+        else {
+            Issue.record("no create_video")
+            return
+        }
+        #expect(titled.video.title == "Knight, take 3")
+        guard
+            case .success(.createVideo(let plain)) = Tool.createVideo.command(create(source: source).objectValue ?? [:])
+        else {
+            Issue.record("no create_video")
+            return
+        }
+        #expect(plain.video.title == nil && plain.fingerprint != titled.fingerprint)
+        let long = try await call("create_video", create(["title": .string(String(repeating: "a", count: 1_001))]))
+        #expect(long["structuredContent"]?["error"]?["code"] == "bad_request")
+        let image = try await call(
+            "create_image",
+            [
+                "request_id": "i1", "prompt": "a fox", "title": .string(String(repeating: "a", count: 1_001)),
+                "max_cost": ["amount": 1, "unit": "usd"],
+            ])
+        #expect(image["structuredContent"]?["error"]?["code"] == "bad_request")
+        #expect(await app.calls.isEmpty)
+    }
+
     /// A request the app already queued: nothing more is uploaded, and the command still goes for its job.
     @Test func aKnownRequestSkipsTheUploadsAndStillGetsItsJob() async throws {
         let source = try file("clip.mov")

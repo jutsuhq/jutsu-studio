@@ -13,13 +13,19 @@ public struct AgentImageOrder: Sendable, Hashable {
     public var count: Int?
     /// The images to edit, in order.
     public var inputs: [LocalImage]
+    /// The agent's name for the images, as it sent it; kept trimmed and cut (`JobSpec.title(from:)`).
+    public var title: String?
 
-    public init(model: String?, prompt: String, aspectRatio: String?, count: Int?, inputs: [LocalImage] = []) {
+    public init(
+        model: String?, prompt: String, aspectRatio: String?, count: Int?, inputs: [LocalImage] = [],
+        title: String? = nil
+    ) {
         self.model = model
         self.prompt = prompt
         self.aspectRatio = aspectRatio
         self.count = count
         self.inputs = inputs
+        self.title = title
     }
 
     /// The request the form would send, or why it can't be sent, in English for the agent.
@@ -62,7 +68,9 @@ public struct AgentImageOrder: Sendable, Hashable {
             return .failure(AgentImageRefusal("\(chosen.id) makes \(counts) images per request, not \(count)."))
         }
         return .success(
-            ReferenceGenerator.Draft(model: chosen, prompt: prompt, aspectRatio: ratio, count: count, inputs: inputs))
+            ReferenceGenerator.Draft(
+                model: chosen, prompt: prompt, aspectRatio: ratio, count: count, inputs: inputs,
+                title: JobSpec.title(from: title)))
     }
 }
 
@@ -125,12 +133,15 @@ public struct AgentImageRecord: Codable, Sendable, Hashable, Identifiable {
     public var error: String?
     public var createdAt: Date
     public var finishedAt: Date?
+    /// The agent's name for the images; `nil` without one, and in records from before it.
+    public var title: String?
 
     /// The images to edit, in order.
     public var inputs: [LocalImage] { severalInputs ?? input.map { [$0] } ?? [] }
 
     var draft: ReferenceGenerator.Draft {
-        ReferenceGenerator.Draft(model: model, prompt: prompt, aspectRatio: aspectRatio, count: count, inputs: inputs)
+        ReferenceGenerator.Draft(
+            model: model, prompt: prompt, aspectRatio: aspectRatio, count: count, inputs: inputs, title: title)
     }
 
     /// It may have reached the provider, so its price counts.

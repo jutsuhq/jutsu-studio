@@ -216,6 +216,25 @@ struct AgentImageQueueTests {
         #expect(queue.record(single)?.inputs == [picture])
     }
 
+    /// The agent's title names its row in the Queue and the images it makes, which the Library and their file names
+    /// then show instead of the prompt; a request without one is named as before.
+    @Test func aTitleNamesTheRequestAndItsImages() async throws {
+        let generator = generator()
+        let queue = queue(generator)
+        var titled = order()
+        titled.title = "  Fox portrait\n"
+        let id = try create(queue, titled)
+        await eventually { queue.record(id)?.state == .finished }
+        #expect(queue.record(id)?.title == "Fox portrait")
+        #expect(generator.runs.first { $0.id == id }?.title.hasPrefix("Fox portrait · Soul 2 · ") == true)
+        #expect(!generator.images.isEmpty && generator.images.allSatisfy { $0.title == "Fox portrait" })
+
+        let plain = try create(queue, order())
+        await eventually { queue.record(plain)?.state == .finished }
+        #expect(queue.record(plain)?.title == nil)
+        #expect(generator.runs.first { $0.id == plain }?.title.hasPrefix("Soul 2 · ") == true)
+    }
+
     @Test func theVisibleFormIsNeverTouched() throws {
         let generator = generator()
         generator.prompt = "the person's own prompt"
