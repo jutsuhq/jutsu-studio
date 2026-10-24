@@ -46,12 +46,26 @@ public struct AgentInbox: Sendable {
     /// `maxStoredSize`. `nil` when it fits.
     public static func roomProblem(size: Int64, freeSpace: Int64?, stored: Int64) -> String? {
         if let freeSpace, freeSpace - size < minFreeSpace {
-            return "The Mac would have less than 2 GB free with it."
+            return "The Mac has \(gigabytes(freeSpace)) free, and the file needs \(gigabytes(size)) with "
+                + "\(gigabytes(minFreeSpace)) left free after it: free up "
+                + "\(gigabytes(size + minFreeSpace - freeSpace)) or send a smaller file."
         }
         if stored + size > maxStoredSize {
-            return "Files from agents waiting in Jutsu Studio would take more than 8 GiB with it."
+            return "Files from agents waiting in Jutsu Studio take \(gibibytes(stored)), and with this "
+                + "\(gibibytes(size)) file they would pass the \(gibibytes(maxStoredSize)) they may take: wait for "
+                + "their jobs to finish, or send a smaller file."
         }
         return nil
+    }
+
+    /// Bytes as `1.25 GB`, in decimal gigabytes as the Finder counts free space, the same on every Mac.
+    static func gigabytes(_ bytes: Int64) -> String {
+        String(format: "%.2f GB", Double(max(0, bytes)) / 1e9)
+    }
+
+    /// Bytes as `1.25 GiB`, in binary gibibytes as the inbox's own limit is set.
+    static func gibibytes(_ bytes: Int64) -> String {
+        String(format: "%.2f GiB", Double(max(0, bytes)) / Double(1 << 30))
     }
 
     /// The bytes the upload folders hold now, partial files included; 0 when the inbox can't be read.

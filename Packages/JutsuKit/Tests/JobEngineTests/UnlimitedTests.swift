@@ -27,7 +27,11 @@ struct UnlimitedTests {
         var spec = makeSpec()
         spec.usesUnlimited = true
 
-        await #expect(throws: JobEngineError.overCap) { try await engine.enqueue(spec) }
+        let refused = await #expect(throws: JobEngineError.self) { try await engine.enqueue(spec) }
+        guard case .overCap = refused else {
+            Issue.record("not over the cap")
+            return
+        }
 
         let job = try await engine.enqueue(spec, overCapApproved: true)
         #expect(!job.spec.usesUnlimited)
