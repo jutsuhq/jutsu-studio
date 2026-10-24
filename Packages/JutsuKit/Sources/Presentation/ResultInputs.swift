@@ -37,11 +37,13 @@ public struct InputFile: Sendable, Hashable, Identifiable {
         return "\(Self.fileSafe(base)) – \(label).\(ext.lowercased())"
     }
 
-    /// `name` without the characters a file name can't hold; "Result" when nothing is left.
+    /// `name` without the characters a file name can't hold, and without leading dots, which would hide the file;
+    /// "Result" when nothing is left.
     static func fileSafe(_ name: String) -> String {
         let cleaned = name.components(separatedBy: CharacterSet(charactersIn: "/:\\")).joined(separator: "-")
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        return cleaned.isEmpty ? "Result" : cleaned
+        let visible = String(cleaned.drop { $0 == "." || $0.isWhitespace })
+        return visible.isEmpty ? "Result" : visible
     }
 
     /// The source and every reference of the item, in the job's order; inputs with no file anywhere are left out.

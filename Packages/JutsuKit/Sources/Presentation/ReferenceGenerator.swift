@@ -18,6 +18,8 @@ public struct GeneratedImage: Sendable, Hashable, Identifiable {
     public var parameters: Data?
     public var inputImages: [LocalImage] = []
     public var variantGroupID: UUID?
+    /// An agent's name for the images (`JobSpec.title(from:)`): their card and file name use it instead of the prompt.
+    public var title: String?
 
     public init(
         id: UUID = UUID(), url: URL, prompt: String, model: String, aspectRatio: String? = nil, fileURL: URL? = nil
@@ -54,6 +56,8 @@ public struct ImageRun: Sendable, Hashable, Identifiable {
     public var agent: AgentOrigin?
     /// An agent's request: its price as the guard saw it, for the person's confirmation.
     public var price: Cost?
+    /// An agent's name for the request, which its row starts with.
+    public var name: String?
 
     /// Its row stays when a new request replaces the rows of the ones that are over.
     var keepsRow: Bool {
@@ -71,9 +75,9 @@ public struct ImageRun: Sendable, Hashable, Identifiable {
         agent.map { String(localized: "Allowed up to \(JobRowModel.moneyText($0.maxCost))", bundle: .module) }
     }
 
-    /// "Soul 2 · 4 images".
+    /// "Soul 2 · 4 images", after the agent's name for it when it gave one.
     public var title: String {
-        "\(model) · " + String(localized: "\(count) images", bundle: .module)
+        (name.map { "\($0) · " } ?? "") + "\(model) · " + String(localized: "\(count) images", bundle: .module)
     }
 }
 
@@ -220,6 +224,8 @@ public final class ReferenceGenerator {
         var count: Int
         /// The images to edit, in order: the form's one, or an agent's several.
         var inputs: [LocalImage]
+        /// An agent's name for the images; `nil` for the person's own.
+        var title: String?
     }
 
     func draft(source: PixelSize?, mode: Mode) -> Draft? {

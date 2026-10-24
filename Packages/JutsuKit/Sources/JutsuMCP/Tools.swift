@@ -76,6 +76,7 @@ enum Tool: String, CaseIterable {
         }
         video.images = []
         video.source?.path = nil
+        video.title = nil
         if let count = try given.int("image_count") { video.imageCount = count }
         if let problem = video.problem { throw .badRequest("quote: \(problem)") }
         return .quote(QuoteCommand(video: video))
@@ -164,7 +165,7 @@ enum Tool: String, CaseIterable {
     /// What `quote` and `create_video` both take.
     static let videoKeys: Set<String> = [
         "mode", "model", "prompt", "source", "images", "style", "resolution", "draft", "length", "aspect_ratio",
-        "audio", "variants", "elements",
+        "audio", "variants", "elements", "title",
     ]
 
     /// What makes two `create_video` requests the same: the parameters, the files by path and size, and the most the
@@ -343,7 +344,8 @@ struct Arguments {
             mode: mode, model: try string("model"), prompt: try string("prompt"), source: source,
             images: try strings("images"), style: style, resolution: try string("resolution"),
             draft: try bool("draft"), length: try number("length"), aspectRatio: try string("aspect_ratio"),
-            audio: try string("audio"), variants: try int("variants"), elements: try strings("elements"))
+            audio: try string("audio"), variants: try int("variants"), elements: try strings("elements"),
+            title: try string("title"))
     }
 
     /// `max_cost` as whole units: dollars become cents, rounded down so the job never costs more than was said.

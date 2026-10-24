@@ -66,7 +66,7 @@ public enum LibraryMediaItem: Sendable, Hashable, Identifiable {
     public var searchText: String {
         switch self {
         case .video(let item): "\(item.spec.prompt) \(item.title)"
-        case .localImage(let image): "\(image.prompt) \(image.model)"
+        case .localImage(let image): "\(image.prompt) \(image.model) \(image.title ?? "")"
         case .remoteImage(let image): "\(image.prompt) \(image.model)"
         }
     }

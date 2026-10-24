@@ -38,6 +38,9 @@ import Testing
         let file = InputFile(role: .reference(3), local: nil, remote: URL(string: "https://cdn.example/media/abc"))
         #expect(file.fileName(base: "a/b: c") == "a-b- c – Reference 3.jpg")
         #expect(InputFile(role: .source, local: nil, remote: nil).fileName(base: " ") == "Result – Source.mp4")
+        // A leading dot would make it a hidden file.
+        #expect(file.fileName(base: ".x") == "x – Reference 3.jpg")
+        #expect(file.fileName(base: " .. ") == "Result – Reference 3.jpg")
     }
 
     @Test func takenNamesGetANumber() {

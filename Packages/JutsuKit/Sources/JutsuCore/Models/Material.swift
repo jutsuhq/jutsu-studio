@@ -52,11 +52,15 @@ public struct MaterialGeneration: Codable, Sendable, Hashable {
     public var model: String
     /// The exact known request, encoded as JSON. Absent for imported files and unknown provider parameters.
     public var parameters: Data?
+    /// An agent's name for the images, shown instead of the prompt (`JobSpec.title(from:)`); `nil` otherwise, and in
+    /// materials saved before it existed.
+    public var title: String?
 
-    public init(prompt: String, model: String, parameters: Data? = nil) {
+    public init(prompt: String, model: String, parameters: Data? = nil, title: String? = nil) {
         self.prompt = prompt
         self.model = model
         self.parameters = parameters
+        self.title = title
     }
 }
 

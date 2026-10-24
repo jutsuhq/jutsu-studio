@@ -49,7 +49,7 @@ struct SavedImageCard: View {
 
     var body: some View {
         ImageCardFrame(
-            title: image.prompt, detail: imageCardDetail(model: image.model, date: image.createdAt),
+            title: image.title ?? image.prompt, detail: imageCardDetail(model: image.model, date: image.createdAt),
             aspectRatio: image.aspectRatio.map(PixelSize.aspectLabel(of:)), isStarred: image.isStarred,
             isOnAccountOnly: false,
             isSelected: isSelected, picture: picture

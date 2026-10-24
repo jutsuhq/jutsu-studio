@@ -89,6 +89,8 @@ public struct AgentVideoRequest: Codable, Equatable, Hashable, Sendable {
     public static let maxVariants = 16
     /// Seconds a clip made without a source may be asked to run, or Extend to add.
     public static let maxLength: Double = 600
+    /// A bound of the protocol only: the app keeps the first 80 characters of a title (`JobSpec.maxTitleLength`).
+    public static let maxTitleLength = 1_000
 
     public var mode: String
     /// A model ID from `capabilities`; left out, the mode's default model.
@@ -113,12 +115,14 @@ public struct AgentVideoRequest: Codable, Equatable, Hashable, Sendable {
     public var variants: Int?
     /// The account's reference elements by name (`elements`): their images go first, before `images`.
     public var elements: [String]
+    /// What the Queue, the Library and export names call the job instead of the source's file name.
+    public var title: String?
 
     public init(
         mode: String, model: String? = nil, prompt: String? = nil, source: AgentSource? = nil, images: [String] = [],
         imageCount: Int? = nil, style: UUID? = nil, resolution: String? = nil, draft: Bool = false,
         length: Double? = nil, aspectRatio: String? = nil, audio: String? = nil, variants: Int? = nil,
-        elements: [String] = []
+        elements: [String] = [], title: String? = nil
     ) {
         self.mode = mode
         self.model = model
@@ -134,6 +138,7 @@ public struct AgentVideoRequest: Codable, Equatable, Hashable, Sendable {
         self.audio = audio
         self.variants = variants
         self.elements = elements
+        self.title = title
     }
 
     /// How many reference images the job has: the files, else the count a quote names.
@@ -141,7 +146,7 @@ public struct AgentVideoRequest: Codable, Equatable, Hashable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case mode, model, prompt, source, images, imageCount, style, resolution, draft, length, aspectRatio, audio
-        case variants, elements
+        case variants, elements, title
     }
 
     public init(from decoder: any Decoder) throws {
@@ -160,6 +165,7 @@ public struct AgentVideoRequest: Codable, Equatable, Hashable, Sendable {
         audio = try container.decodeIfPresent(String.self, forKey: .audio)
         variants = try container.decodeIfPresent(Int.self, forKey: .variants)
         elements = try container.decodeIfPresent([String].self, forKey: .elements) ?? []
+        title = try container.decodeIfPresent(String.self, forKey: .title)
         if let problem { throw AgentError.badRequest(problem) }
     }
 
@@ -179,6 +185,7 @@ public struct AgentVideoRequest: Codable, Equatable, Hashable, Sendable {
         try container.encodeIfPresent(audio, forKey: .audio)
         try container.encodeIfPresent(variants, forKey: .variants)
         if !elements.isEmpty { try container.encode(elements, forKey: .elements) }
+        try container.encodeIfPresent(title, forKey: .title)
     }
 
     /// Why the fields can't be a request, before the app's own rules; nil when they can. Shared by the helper, which
@@ -187,6 +194,7 @@ public struct AgentVideoRequest: Codable, Equatable, Hashable, Sendable {
         guard Self.modes.contains(mode) else { return "mode is one of \(Self.modes.joined(separator: ", "))" }
         if let model, !AgentNames.isValidModelID(model) { return "model is a model ID from capabilities" }
         if let prompt, prompt.unicodeScalars.count > 10_000 { return "prompt is at most 10 000 characters" }
+        if let title, title.unicodeScalars.count > Self.maxTitleLength { return "title is at most 1 000 characters" }
         if images.count > Self.protocolMaxImages {
             return "images takes at most \(Self.protocolMaxImages) files, more than any model takes"
         }
