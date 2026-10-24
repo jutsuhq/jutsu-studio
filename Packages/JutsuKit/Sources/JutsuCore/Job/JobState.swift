@@ -63,6 +63,7 @@ public enum PauseReason: String, Codable, Sendable, Hashable {
     case byUser
     /// An agent's job the spending guard stopped before its submit (`AgentOrigin.hold` says why): over the agent's
     /// `max_cost`, over today's agent budget, or at an unknown price. Nothing is charged; only the person resumes
-    /// it, which agrees to the price, and never an agent or Resume all.
+    /// it, which agrees to the price, and never an agent or Resume all. An agent may only raise the `max_cost` of its
+    /// job held over it (`JobEngine.raiseAgentMaxCost`), which goes on unapproved and is checked again in full.
     case agentLimit
 }

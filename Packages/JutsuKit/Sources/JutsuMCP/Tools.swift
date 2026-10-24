@@ -101,7 +101,8 @@ enum Tool: String, CaseIterable {
         let fingerprint = try Self.fingerprint(video, maxCost: maxCost)
         return .createVideo(
             CreateVideoCommand(
-                requestID: requestID, fingerprint: fingerprint, video: video, maxCost: maxCost, waitSeconds: wait))
+                requestID: requestID, fingerprint: fingerprint, parameters: try Self.parameters(video), video: video,
+                maxCost: maxCost, waitSeconds: wait))
     }
 
     private static func jobs(_ given: Arguments) throws(AgentError) -> AgentCommand {
@@ -181,12 +182,29 @@ enum Tool: String, CaseIterable {
             var sizes: [Int?]
             var maxCost: AgentAmount
         }
-        let files = [video.source?.path].compactMap(\.self) + video.images
-        let sizes = files.map { path in
-            (try? URL(filePath: path).resourceValues(forKeys: [.fileSizeKey]))?.fileSize
-        }
+        let sizes = Self.sizes([video.source?.path].compactMap(\.self) + video.images)
         do {
             return try AgentFingerprint.of(Fingerprinted(video: video, sizes: sizes, maxCost: maxCost))
+        } catch {
+            throw .badRequest("create_video: the parameters can't be read")
+        }
+    }
+
+    /// The files' sizes, `nil` for one that can't be read: a file that changed size makes another request.
+    static func sizes(_ files: [String]) -> [Int?] {
+        files.map { path in (try? URL(filePath: path).resourceValues(forKeys: [.fileSizeKey]))?.fileSize }
+    }
+
+    /// The same as `fingerprint` without `max_cost`: what a `create_video` sent again with a higher `max_cost` shares
+    /// with the request it raises.
+    static func parameters(_ video: AgentVideoRequest) throws(AgentError) -> String {
+        struct Parameters: Encodable {
+            var video: AgentVideoRequest
+            var sizes: [Int?]
+        }
+        let sizes = Self.sizes([video.source?.path].compactMap(\.self) + video.images)
+        do {
+            return try AgentFingerprint.of(Parameters(video: video, sizes: sizes))
         } catch {
             throw .badRequest("create_video: the parameters can't be read")
         }
@@ -197,9 +215,7 @@ enum Tool: String, CaseIterable {
     static func fingerprint(
         _ tool: String, _ fields: some Encodable, files: [String], _ maxCost: AgentAmount
     ) throws(AgentError) -> String {
-        let sizes = files.map { path in
-            (try? URL(filePath: path).resourceValues(forKeys: [.fileSizeKey]))?.fileSize
-        }
+        let sizes = Self.sizes(files)
         do {
             return try AgentFingerprint.of(ToolFingerprint(tool: tool, fields: fields, sizes: sizes, maxCost: maxCost))
         } catch {

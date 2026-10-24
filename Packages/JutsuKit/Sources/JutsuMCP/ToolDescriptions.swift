@@ -43,7 +43,9 @@ extension Tool {
             most you agree to pay: right before the job is paid for, a price above it, above what is left of the \
             daily agent budget or not known pauses the job (state paused, pauseReason agent_limit) until the person \
             confirms it in the app; so does a job the plan's unlimited generations would pay for while the person \
-            doesn't let agents use them (hold unlimited_not_allowed). Files (source.path, images) are paths on this \
+            doesn't let agents use them (hold unlimited_not_allowed). A job held over_max_cost goes on when the same \
+            request_id and parameters come again with a higher max_cost that covers its price, what is left of the \
+            budget and the person's cap (no files are sent again); otherwise it stays held, with next saying why. Files (source.path, images) are paths on this \
             Mac, copied into the app. elements names the account's characters and other reference elements (from \
             the elements tool, account only): their images are added first, in the element's order, then images; \
             the answer's references lists every image sent with its @ImageN tag, the N the prompt names it by. \

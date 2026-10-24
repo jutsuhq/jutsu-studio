@@ -9,6 +9,7 @@ Notable changes to Jutsu Studio. Versions follow [Semantic Versioning](https://s
 - `create_video` and `create_image` take an optional `title`, which names the job in the Queue, the Library, search and export file names instead of the source's file name (or, for images, the prompt).
 - `quote` gives Genjutsu Lite an estimate from its rate per second (2 credits a second at 720p) instead of an unknown price, with a `priceNote` saying the exact price is quoted before the job is sent and an estimate never runs on its own above max_cost or the budgets.
 - `create_video` takes `wait_seconds` (0–50) and answers once the job's price is known or it is held, so an agent can tell at once whether it waits for the person; `timedOut` says the wait ran out.
+- An agent can lift the hold on its own video job held over `max_cost`: sending the same `request_id` and parameters with a higher `max_cost` runs the job when its price fits the new `max_cost`, what is left of today's agent budget and the person's daily cap, without uploading the files again. Otherwise it stays held, and the answer says why.
 
 ## [0.2.1] - 2026-10-21
 

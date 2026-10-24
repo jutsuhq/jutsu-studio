@@ -119,6 +119,23 @@ public enum AgentJobRules {
         if job.agent == nil { return "Only jobs an agent queued can be moved ahead by an agent." }
         return nil
     }
+
+    /// Why a job sent again with a higher `max_cost` still waits: the hold it would get now, or `nil` for the
+    /// person's daily cap.
+    public static func stillHeldNote(_ hold: AgentHold?) -> String {
+        switch hold {
+        case .overMaxCost:
+            "The price is still above max_cost. Send the request again with a max_cost of at least the price, or ask "
+                + "the person to confirm it in the Queue."
+        case .overDailyBudget:
+            "The price is more than is left of today's agent budget; the job waits for the person in the Queue."
+        case nil:
+            "The price would take today's spending over the person's daily cap; the job waits for the person in the "
+                + "Queue."
+        case .unknownPrice, .ledgerUnavailable, .unlimitedNotAllowed, .aboveApprovedPrice:
+            "The job can't be checked against the new max_cost now; it waits for the person in the Queue."
+        }
+    }
 }
 
 /// A page of the agents' jobs, newest first, after a cursor an earlier page handed out.

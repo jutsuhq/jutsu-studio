@@ -77,6 +77,7 @@ actor FakeInbox {
         #expect(command.video.source?.path == "/tmp/inbox/1/clip.mov")
         #expect(command.video.images == ["/tmp/inbox/2/face.png"])
         #expect(command.fingerprint == staged.first?.request.fingerprint)
+        #expect(command.parameters != nil && command.parameters == staged.first?.request.parameters)
         // Dollars become whole cents, rounded down.
         #expect(command.maxCost == AgentAmount(250, .usdCents))
     }
@@ -95,6 +96,23 @@ actor FakeInbox {
         #expect(try fingerprint(create(["max_cost": ["amount": 3, "unit": "usd"]], source: source)) != first)
         try Data(repeating: 2, count: 10).write(to: URL(filePath: source))
         #expect(try fingerprint(create(source: source)) != first)
+    }
+
+    /// The parameters' digest leaves out max_cost only: a higher max_cost is the same parameters, anything else isn't.
+    @Test func theParametersFollowEverythingButMaxCost() async throws {
+        let source = try file("clip.mov")
+        func digests(_ arguments: JSONValue) throws -> (fingerprint: String, parameters: String?) {
+            guard case .success(.createVideo(let command)) = Tool.createVideo.command(arguments.objectValue ?? [:])
+            else { throw AgentError.badRequest("not a create_video") }
+            return (command.fingerprint, command.parameters)
+        }
+        let first = try digests(create(source: source))
+        let raised = try digests(create(["max_cost": ["amount": 3, "unit": "usd"]], source: source))
+        #expect(raised.fingerprint != first.fingerprint && raised.parameters == first.parameters)
+        #expect(first.parameters != first.fingerprint)
+        #expect(try digests(create(["prompt": "other"], source: source)).parameters != first.parameters)
+        try Data(repeating: 2, count: 10).write(to: URL(filePath: source))
+        #expect(try digests(create(source: source)).parameters != first.parameters)
     }
 
     /// A title goes to the app as the agent wrote it, and is part of the request; one past the protocol's bound is

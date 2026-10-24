@@ -19,7 +19,7 @@ extension JobEngine {
     /// Once such a job was charged anyway today (`AgentSpendTotal.unlimitedCharged`), the allowance is no longer
     /// trusted to pay: until the day ends, agents' jobs for it keep the cap, `max_cost` and the budget like any other.
     /// Over any limit, or when the ledger can't be read or written, the job pauses (`priceAboveCap` or `agentLimit`)
-    /// and only the person resumes it. A submit that may already have reached the server is resent with the
+    /// and only the person resumes it (the agent may raise `max_cost` alone, `raiseAgentMaxCost`). A submit that may already have reached the server is resent with the
     /// reservation it holds and no new check.
     func clearAgentSpend(_ id: UUID, inputs: RemoteInputs) async throws -> AgentClearance {
         let job = try await loadJob(id)
@@ -64,6 +64,62 @@ extension JobEngine {
             guard fits else { return try await holdAgentJob(id, .overDailyBudget, inputs: inputs) }
             return .send(reservation: spend.id)
         }
+    }
+
+    /// What raising an agent's `max_cost` on its held job did (`raiseAgentMaxCost`).
+    public enum AgentMaxCostRaise: Sendable, Hashable {
+        /// It fits every limit now: the job goes on with the new `max_cost`, and the guard checks it again at submit.
+        case lifted
+        /// It still doesn't fit; nothing changed.
+        case held(AgentHold)
+        /// It would take today's spending over the person's daily cap; nothing changed.
+        case overCap
+        /// Not a job the agent can lift: not held over its `max_cost` (or the person decided on it), already sent,
+        /// for the plan's unlimited allowance, or the new `max_cost` isn't higher in the same unit.
+        case notLiftable
+    }
+
+    /// An agent's own job held because its price is above `max_cost`, sent again by the agent with a higher one:
+    /// checked as the guard would check it now, the person's cap first, then the new `max_cost` and what is left of
+    /// today's agent budget. When it fits, the job goes on with the new `max_cost` and no approval, so the guard
+    /// checks it again in full right before its submit. Holds for any other reason stay for the person.
+    public func raiseAgentMaxCost(_ id: UUID, to maxCost: AgentMoney) async throws -> AgentMaxCostRaise {
+        guard Self.mayRaise(try await loadJob(id), to: maxCost) else { return .notLiftable }
+        let job = try await loadJob(id)
+        guard let agentPolicy, var origin = job.agent else { return .held(.ledgerUnavailable) }
+        if let status = try await spendStatus(job), let cap = status.cap,
+            Budget.allows(cost: job.price, committedToday: status.committedToday, cap: cap) != .allowed
+        {
+            return .overCap
+        }
+        let remaining: Int
+        do {
+            remaining = try await agentPolicy.ledger.total(on: clock.now, unit: maxCost.unit)
+                .remaining(of: agentPolicy.dailyLimit(job.providerKind))
+        } catch {
+            log.error("Job \(id): the agent spend ledger can't be read", detail: String(describing: error))
+            return .held(.ledgerUnavailable)
+        }
+        origin.maxCost = maxCost
+        let decision = AgentSpendDecision.decide(
+            price: job.price, isKnown: job.agentPriceIsKnown, origin: origin, dailyLimit: remaining)
+        if case .hold(let hold) = decision { return .held(hold) }
+        // The reads above may have let the person act on the job meanwhile.
+        guard Self.mayRaise(try await loadJob(id), to: maxCost) else { return .notLiftable }
+        log.notice("Job \(id): the agent raised its max_cost above the price; it goes on")
+        try await apply(.resume, to: id) {
+            $0.agent?.maxCost = maxCost
+            $0.agent?.hold = nil
+        }
+        startRunner(id)
+        return .lifted
+    }
+
+    private static func mayRaise(_ job: Job, to maxCost: AgentMoney) -> Bool {
+        guard job.state == .paused(.agentLimit), let origin = job.agent, origin.hold == .overMaxCost,
+            !origin.approvedByPerson, job.submitAttempt == nil, job.remote == nil, !job.spec.usesUnlimited
+        else { return false }
+        return maxCost.unit == origin.maxCost.unit && maxCost.amount > origin.maxCost.amount
     }
 
     private func holdAgentJob(_ id: UUID, _ hold: AgentHold, inputs: RemoteInputs) async throws -> AgentClearance {
