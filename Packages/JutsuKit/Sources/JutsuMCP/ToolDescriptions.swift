@@ -6,7 +6,8 @@ extension Tool {
         switch self {
         case .capabilities:
             """
-            What Jutsu Studio can do now: the app version, how it is connected to Higgsfield (none, apiKey or \
+            What Jutsu Studio can do now: the app version (and the helper's, with helperNote when the helper is older \
+            and the MCP server needs a reconnect for this version's tools), how it is connected to Higgsfield (none, apiKey or \
             account) with the account's plan and credits when known, today's agent budget in whole units \
             (usd_cents with an API key, credits on an account: dailyLimit, spentToday, reservedToday for submits \
             not answered yet, remaining, and unlimitedAllowed, whether the person lets agents use the plan's unlimited \
@@ -82,7 +83,7 @@ extension Tool {
             One place to follow work: video jobs, image requests and exports, by ID (ids, up to 20), or the latest \
             agents started (limit, up to 50, newest first; pass nextCursor back as cursor for the page after). Each \
             has kind (video, image, export, delivery_export), state, pauseReason, hold, needsPerson, progress, \
-            price, error and result (the finished video's path); an image request's results are its images' paths, \
+            price, error and result (the finished video's path, with next saying how to check it with frames); an image request's results are its images' paths, \
             an export's results the files written, with folder and files (each done, failed or skipped). An ID \
             Jutsu Studio doesn't know is state unknown with next: an export's ID is forgotten when the app quits. \
             wait_seconds (0–50) waits until everything named has settled (done, failed, rejected, canceled, paused \

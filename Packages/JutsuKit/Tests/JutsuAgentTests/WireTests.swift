@@ -106,6 +106,16 @@ import Testing
         #expect(AgentCapabilities.Budget(unit: .usdCents, dailyLimit: -5, spentToday: -1).remaining == 0)
     }
 
+    /// Versions compare as numbers; a development build or an unknown version is never called older.
+    @Test func aHelperIsOlderOnlyByItsReleaseNumber() {
+        #expect(AgentCapabilities.isOlder("0.2.1", than: "0.2.2"))
+        #expect(AgentCapabilities.isOlder("0.2.9", than: "0.2.10"))
+        #expect(!AgentCapabilities.isOlder("0.2.10", than: "0.2.9"))
+        #expect(!AgentCapabilities.isOlder("0.2.2", than: "0.2.2"))
+        #expect(!AgentCapabilities.isOlder("development", than: "0.2.2"))
+        #expect(!AgentCapabilities.isOlder("0.2.1", than: "unknown"))
+    }
+
     /// The person's cap goes with the budget when there is one, and is left out of the answer when there isn't.
     @Test func theBudgetCarriesThePersonsCap() throws {
         let capped = AgentCapabilities.Budget(

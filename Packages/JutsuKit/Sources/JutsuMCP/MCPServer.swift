@@ -222,7 +222,7 @@ public struct MCPServer: Sendable {
         case .object(let value)?: arguments = value
         default: return .failure(RPCError(.invalidParams, "Invalid params: arguments is an object."))
         }
-        let response: AgentResponse
+        var response: AgentResponse
         switch tool.command(arguments) {
         case .success(.createVideo(let command)): response = await createVideo(command, client: client)
         case .success(.createImage(let command)): response = await createImage(command, client: client)
@@ -230,6 +230,7 @@ public struct MCPServer: Sendable {
         case .success(let command): response = await send(command, client)
         case .failure(let error): response = AgentResponse(error: error)
         }
+        response.capabilities?.noteHelper(self.version)
         return .success(Self.toolResult(response, structured: Self.isStructured(version)))
     }
 
