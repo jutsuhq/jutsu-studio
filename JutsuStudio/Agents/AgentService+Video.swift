@@ -98,7 +98,7 @@ extension AgentService {
                 unlimitedAllowed: preferences.allowsUnlimited),
             priceNote: AgentQuote.priceNote(isEstimate: !isExact, hasPrice: money != nil, paysUnlimited: unlimited),
             maxVariants: variants.maximum, variantsUnavailable: variants.reason, images: spec.references.count,
-            minImages: limits.lowerBound, maxImages: limits.upperBound)
+            minImages: limits.lowerBound, maxImages: limits.upperBound, aspectRatio: AgentVideoOrder.frame(of: spec))
     }
 
     // MARK: create_video

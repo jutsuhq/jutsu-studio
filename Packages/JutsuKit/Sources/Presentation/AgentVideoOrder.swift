@@ -77,6 +77,12 @@ public struct AgentVideoOrder: Sendable, Hashable {
     /// The mode an agent names; `nil` for a name that isn't one.
     public static func mode(named name: String) -> Mode? { modes[name] }
 
+    /// The frame `spec`'s result gets, as `quote` says it: `source` when the job has one (its result keeps the
+    /// source's orientation, Seedance asking for the source's nearest ratio), else the ratio the job asks for.
+    public static func frame(of spec: JobSpec) -> String? {
+        spec.source == nil ? spec.aspectRatio?.rawValue : "source"
+    }
+
     /// The agent's name for `mode`.
     public static func name(of mode: Mode) -> String {
         modes.first { $0.value == mode }?.key ?? mode.rawValue

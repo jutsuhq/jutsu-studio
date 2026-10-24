@@ -56,7 +56,7 @@ extension JobEngine {
         guard let provider else { throw JobEngineError.notConnected }
         var spec = spec
         if spec.usesFrames, spec.aspectRatio == nil || spec.aspectRatio == .auto, let start = spec.references.first {
-            spec.aspectRatio = await media.imageSize(of: start).flatMap(AspectRatio.nearest(to:))
+            spec.aspectRatio = await media.imageSize(of: start).flatMap { AspectRatio.nearest(to: $0) }
         }
         spec.usesUnlimited = await provider.paysUnlimited(spec)
         if spec.usesUnlimited { spec.variants = 1 }

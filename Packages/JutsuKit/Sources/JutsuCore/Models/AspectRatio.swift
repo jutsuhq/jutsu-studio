@@ -19,13 +19,13 @@ public enum AspectRatio: String, Codable, Sendable, CaseIterable {
         return sides[0] / sides[1]
     }
 
-    /// The fixed frame closest in shape to `size` (never `auto`); `nil` for a size without both sides. A start
-    /// frame's ratio, which the account's Seedance doesn't derive itself: sent none, it made a 16:9 clip from a 9:16
-    /// start frame in a live run on 2026-10-15.
-    public static func nearest(to size: PixelSize) -> AspectRatio? {
+    /// The fixed frame among `candidates` closest in shape to `size` (never `auto`); `nil` for a size without both
+    /// sides. A start frame's ratio, which the account's Seedance doesn't derive itself: sent none, it made a 16:9 clip
+    /// from a 9:16 start frame in a live run on 2026-10-15.
+    public static func nearest(to size: PixelSize, among candidates: [AspectRatio] = allCases) -> AspectRatio? {
         guard size.isValid else { return nil }
         let target = log(Double(size.width) / Double(size.height))
-        return allCases.compactMap { ratio in ratio.widthOverHeight.map { (ratio, abs(log($0) - target)) } }
+        return candidates.compactMap { ratio in ratio.widthOverHeight.map { (ratio, abs(log($0) - target)) } }
             .min { $0.1 < $1.1 }?.0
     }
 }

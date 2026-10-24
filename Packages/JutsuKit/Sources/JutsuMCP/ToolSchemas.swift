@@ -88,6 +88,7 @@ extension Tool {
             properties["images"] = ["type": "integer"]
             properties["minImages"] = ["type": "integer"]
             properties["maxImages"] = ["type": "integer"]
+            properties["aspectRatio"] = ["type": "string"]
         case .createVideo, .createImage, .enhance:
             properties["requestId"] = ["type": "string"]
             properties["known"] = ["type": "boolean"]

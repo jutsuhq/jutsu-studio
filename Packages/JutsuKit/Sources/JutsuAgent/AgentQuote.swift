@@ -30,13 +30,17 @@ public struct AgentQuote: Codable, Equatable, Sendable {
     public var images: Int
     public var minImages: Int
     public var maxImages: Int
+    /// The result's frame: `source` when it keeps the source clip's orientation, else the ratio asked for (16:9,
+    /// 9:16, auto…); nil for a model that takes none.
+    public var aspectRatio: String?
 
     public init(
         price: AgentAmount?, isExact: Bool, mode: String, model: String, resolution: String, duration: Double,
         remainingToday: Int?, paysUnlimited: Bool = false, blocker: String?, priceNote: String? = nil,
         maxVariants: Int = 1, variantsUnavailable: String? = nil, images: Int = 0, minImages: Int = 0,
-        maxImages: Int = 0
+        maxImages: Int = 0, aspectRatio: String? = nil
     ) {
+        self.aspectRatio = aspectRatio
         self.paysUnlimited = paysUnlimited
         self.price = price
         self.isExact = isExact
