@@ -50,13 +50,14 @@ extension Network {
         }
 
         /// Billed by its source, like Genjutsu: `get_cost` quotes it once the source is uploaded, with the source in
-        /// `medias`. Before that there is no fallback rate yet, so the price is unknown and nothing is asked.
+        /// `medias`. Before that it is the catalog's estimate, 2 credits a second at 720p, and nothing is asked.
         @Test(arguments: [Mode.motionTransfer, .objectSwap])
         func itIsQuotedOnceTheSourceIsUploaded(mode: Mode) async throws {
             let (provider, stub) = Provider.provider(tools: Provider.fullSet) { _, _ in
                 ["cost": ["credits": 12, "credits_exact": .number(12.5)]]
             }
-            #expect(try await provider.estimate(Self.spec(mode)) == .unknownCredits)
+            #expect(try await provider.estimate(Self.spec(mode)) == .credits(24, isEstimate: true))
+            #expect(try await provider.estimate(Self.spec(mode, resolution: .p480)) == .credits(12, isEstimate: true))
             #expect(Provider.calls(stub).isEmpty)
 
             let quoted = try await provider.serverEstimate(Self.spec(mode), inputs: Provider.inputs)

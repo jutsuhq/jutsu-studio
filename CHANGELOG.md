@@ -7,6 +7,7 @@ Notable changes to Jutsu Studio. Versions follow [Semantic Versioning](https://s
 ### Added
 
 - `create_video` and `create_image` take an optional `title`, which names the job in the Queue, the Library, search and export file names instead of the source's file name (or, for images, the prompt).
+- `quote` gives Genjutsu Lite an estimate from its rate per second (2 credits a second at 720p) instead of an unknown price, with a `priceNote` saying the exact price is quoted before the job is sent and an estimate never runs on its own above max_cost or the budgets.
 
 ## [0.2.1] - 2026-10-21
 

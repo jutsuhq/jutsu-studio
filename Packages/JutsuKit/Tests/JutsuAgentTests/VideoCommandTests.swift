@@ -71,6 +71,28 @@ import Testing
     }
 }
 
+/// What a quote says about a job before upload: an estimate doesn't hold it, and says how its price is checked.
+@Suite struct QuoteAdviceTests {
+    @Test func anEstimateWithinTheBudgetIsNoBlockerAndSaysHowItRuns() throws {
+        #expect(AgentQuote.blocker(price: 24, remaining: 500, paysUnlimited: false, unlimitedAllowed: false) == nil)
+        let note = try #require(AgentQuote.priceNote(isEstimate: true, hasPrice: true, paysUnlimited: false))
+        #expect(note.contains("runs on its own") && note.contains("max_cost"))
+        #expect(AgentQuote.priceNote(isEstimate: false, hasPrice: true, paysUnlimited: false) == nil)
+        #expect(AgentQuote.priceNote(isEstimate: true, hasPrice: false, paysUnlimited: false) == nil)
+        #expect(AgentQuote.priceNote(isEstimate: true, hasPrice: true, paysUnlimited: true) == nil)
+    }
+
+    @Test func anUnknownPriceOrOneOverTheBudgetStillWaitsForThePerson() {
+        let unknown = AgentQuote.blocker(price: nil, remaining: 500, paysUnlimited: false, unlimitedAllowed: false)
+        #expect(unknown?.contains("isn't known") == true)
+        let over = AgentQuote.blocker(price: 501, remaining: 500, paysUnlimited: false, unlimitedAllowed: false)
+        #expect(over?.contains("more than is left") == true)
+        let unlimited = AgentQuote.blocker(price: 0, remaining: 0, paysUnlimited: true, unlimitedAllowed: false)
+        #expect(unlimited?.contains("unlimited") == true)
+        #expect(AgentQuote.blocker(price: 0, remaining: 0, paysUnlimited: true, unlimitedAllowed: true) == nil)
+    }
+}
+
 @Suite struct InboxSweepTests {
     let inbox = AgentInbox(folder: FileManager.default.temporaryDirectory.appendingPathComponent("inbox-\(UUID())"))
 
