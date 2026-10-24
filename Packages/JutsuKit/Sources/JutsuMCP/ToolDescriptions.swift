@@ -23,7 +23,8 @@ extension Tool {
             """
             What a video would cost now, with the same parameters as create_video, without uploading or queueing \
             anything: the price in whole usd_cents or credits (null when not known before upload), whether it is \
-            exact, what is left of today's agent budget, paysUnlimited (the plan's unlimited generations would pay \
+            exact (an estimate, isExact false, comes with priceNote: Higgsfield quotes the exact price before the job \
+            is sent, and the job runs on its own when that is within max_cost and today's budget), what is left of today's agent budget, paysUnlimited (the plan's unlimited generations would pay \
             for it: it costs the budget nothing, and waits for the person unless unlimitedAllowed), and blocker, \
             why create_video would hold or refuse it now, and maxVariants with variantsUnavailable, the most videos \
             one job of it makes and why only one (a style; the plan's unlimited generations, which make one video \

@@ -79,6 +79,7 @@ extension Tool {
             properties["remainingToday"] = ["type": "integer"]
             properties["paysUnlimited"] = ["type": "boolean"]
             properties["blocker"] = ["type": "string"]
+            properties["priceNote"] = ["type": "string"]
             properties["maxVariants"] = ["type": "integer"]
             properties["variantsUnavailable"] = ["type": "string"]
             properties["images"] = ["type": "integer"]

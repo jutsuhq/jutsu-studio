@@ -19,6 +19,8 @@ public struct AgentQuote: Codable, Equatable, Sendable {
     public var paysUnlimited: Bool
     /// What `create_video` would refuse it for now, in English; nil when it would queue it.
     public var blocker: String?
+    /// What an estimate (`isExact` false) means for the job, in English; nil for an exact price or none.
+    public var priceNote: String?
     /// The most `variants` takes for this request; 1 with `variantsUnavailable` saying why.
     public var maxVariants: Int
     /// Why it makes one video whatever `variants` asks, in English; nil when more are offered.
@@ -31,8 +33,9 @@ public struct AgentQuote: Codable, Equatable, Sendable {
 
     public init(
         price: AgentAmount?, isExact: Bool, mode: String, model: String, resolution: String, duration: Double,
-        remainingToday: Int?, paysUnlimited: Bool = false, blocker: String?, maxVariants: Int = 1,
-        variantsUnavailable: String? = nil, images: Int = 0, minImages: Int = 0, maxImages: Int = 0
+        remainingToday: Int?, paysUnlimited: Bool = false, blocker: String?, priceNote: String? = nil,
+        maxVariants: Int = 1, variantsUnavailable: String? = nil, images: Int = 0, minImages: Int = 0,
+        maxImages: Int = 0
     ) {
         self.paysUnlimited = paysUnlimited
         self.price = price
@@ -43,10 +46,42 @@ public struct AgentQuote: Codable, Equatable, Sendable {
         self.duration = duration
         self.remainingToday = remainingToday
         self.blocker = blocker
+        self.priceNote = priceNote
         self.maxVariants = maxVariants
         self.variantsUnavailable = variantsUnavailable
         self.images = images
         self.minImages = minImages
         self.maxImages = maxImages
+    }
+
+    /// What `create_video` would pause the job for, as far as a quote can tell before upload: the plan's unlimited
+    /// generations agents may not use, a price not known yet, or one above what is left of today's agent budget
+    /// (`remaining`). An estimate isn't a blocker: the guard checks the price Higgsfield quotes before the submit.
+    public static func blocker(price: Int?, remaining: Int?, paysUnlimited: Bool, unlimitedAllowed: Bool) -> String? {
+        if paysUnlimited {
+            return unlimitedAllowed
+                ? nil
+                : "It would be paid from the plan's unlimited generations, which the person hasn't let agents use "
+                    + "(Settings › Agents); the job would wait for the person."
+        }
+        guard let price else {
+            return "The price isn't known before upload; unless Higgsfield quotes it then, the job waits for the "
+                + "person."
+        }
+        if let remaining, price > remaining {
+            return "It costs more than is left of today's agent budget (\(remaining)); the job would wait for the "
+                + "person."
+        }
+        return nil
+    }
+
+    /// `priceNote` for a price that is an estimate; nil for an exact one, none, or one the plan's unlimited
+    /// generations pay.
+    public static func priceNote(isEstimate: Bool, hasPrice: Bool, paysUnlimited: Bool) -> String? {
+        guard isEstimate, hasPrice, !paysUnlimited else { return nil }
+        return "An estimate from the model's rate per second. Higgsfield quotes the exact price before the job is "
+            + "sent (once its source is uploaded); the job then runs on its own when that price is within max_cost, "
+            + "what is left of today's agent budget and the person's daily cap, and waits for the person only when "
+            + "it is above one of them."
     }
 }
