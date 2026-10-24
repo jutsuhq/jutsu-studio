@@ -226,6 +226,20 @@ import Testing
         }
     }
 
+    /// A finished video points the agent to frames, against its source when it has one.
+    @Test func aFinishedVideoSaysHowToCheckItWithFrames() throws {
+        var done = agentJob(.done)
+        done.outputFile = URL(filePath: "/tmp/out.mp4")
+        let plain = try #require(AgentJobRules.checkHint(done))
+        #expect(plain.contains("frames with item \(done.id.uuidString)") && !plain.contains("compare_source"))
+        done.spec.source = SourceClip(
+            fileURL: URL(filePath: "/tmp/in.mov"), duration: 5, pixelSize: PixelSize(width: 576, height: 1024),
+            range: 0...5)
+        #expect(AgentJobRules.checkHint(done)?.contains("compare_source true") == true)
+        #expect(AgentJobRules.checkHint(agentJob(.processing)) == nil)
+        #expect(AgentJobRules.checkHint(agentJob(.done)) == nil)
+    }
+
     /// over_cap says what the cap counted, in the whole units agents read, and that it isn't the agent budget.
     @Test func overCapGivesTheCapTodayAndTheJobsPrice() {
         let credits = AgentCap.overCapMessage(

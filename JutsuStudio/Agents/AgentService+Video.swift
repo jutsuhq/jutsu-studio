@@ -426,6 +426,6 @@ extension AgentService {
             price: status.price.map { AgentAmount($0.amount, unit(of: $0.unit)) }, isPriceExact: status.isPriceExact,
             charged: status.charged, error: status.error, result: status.result, requestID: job.agent?.requestID,
             client: job.agent?.client, mode: AgentVideoOrder.name(of: job.spec.mode), model: job.spec.model.rawValue,
-            createdAt: job.createdAt, finishedAt: job.finishedAt)
+            next: AgentJobRules.checkHint(job), createdAt: job.createdAt, finishedAt: job.finishedAt)
     }
 }
