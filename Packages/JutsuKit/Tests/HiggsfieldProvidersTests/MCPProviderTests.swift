@@ -243,6 +243,25 @@ extension Network {
             #expect(params.first?["generate_audio"] == true)
         }
 
+        /// Seedance with a source asks for the source's own shape: sent none, a 576×1024 source came back 1280×720.
+        /// Edit and Extend follow the clip and send none.
+        @Test(arguments: [
+            (PixelSize(width: 576, height: 1024), "9:16"), (PixelSize(width: 1280, height: 720), "16:9"),
+            (PixelSize(width: 1000, height: 1000), "1:1"),
+        ])
+        func seedanceWithASourceKeepsItsOrientation(size: PixelSize, ratio: String) async throws {
+            let (provider, stub) = Self.provider(tools: Self.fullSet) { _, _ in ["results": [["id": "job-8"]]] }
+            var seedance = Self.spec(.motionTransfer)
+            seedance.model = .seedance25
+            seedance.source?.pixelSize = size
+            seedance.aspectRatio = .landscape
+            _ = try await provider.submit(seedance, inputs: Self.inputs, idempotencyKey: UUID())
+
+            let params = Self.calls(stub).compactMap { $0["arguments"]?["params"]?.objectValue }
+            #expect(params.first?["mode"] == "omni_reference")
+            #expect(params.first?["aspect_ratio"] == .string(ratio))
+        }
+
         /// Seedance's frames and bitrate as `models_explore get` of `seedance_2_5` names them: the images as
         /// `start_image` and `end_image` under `omni_reference` with the start frame's shape as `aspect_ratio` (left
         /// out, a 9:16 start frame made a 16:9 clip live on 2026-10-15), and `bitrate_mode` only when picked (left

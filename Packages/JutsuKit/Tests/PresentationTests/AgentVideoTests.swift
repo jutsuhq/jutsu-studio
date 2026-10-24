@@ -122,6 +122,12 @@ import Testing
         #expect(spec.duration == 8)
         #expect(spec.references.count == 2)
         #expect(spec.source?.fileURL.path(percentEncoded: false).hasPrefix("/quote/") == true)
+        // A result from a source keeps its orientation; one without says the frame it asks for.
+        #expect(AgentVideoOrder.frame(of: spec) == "source")
+        let prompted = JobSpec(
+            mode: .motionTransfer, model: .seedance25, source: nil, prompt: "a fox", resolution: .p720,
+            aspectRatio: .portrait)
+        #expect(AgentVideoOrder.frame(of: prompted) == "9:16")
     }
 
     @Test func modeNamesRoundTrip() {
