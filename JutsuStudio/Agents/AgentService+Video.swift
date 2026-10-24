@@ -91,32 +91,12 @@ extension AgentService {
             price: price, isExact: isExact, mode: video.mode, model: spec.model.rawValue,
             resolution: spec.resolution.rawValue, duration: spec.duration, remainingToday: remaining,
             paysUnlimited: paysUnlimited,
-            blocker: Self.quoteBlocker(
-                price: money, remaining: remaining, paysUnlimited: unlimited,
+            blocker: AgentQuote.blocker(
+                price: money?.amount, remaining: remaining, paysUnlimited: unlimited,
                 unlimitedAllowed: preferences.allowsUnlimited),
+            priceNote: AgentQuote.priceNote(isEstimate: !isExact, hasPrice: money != nil, paysUnlimited: unlimited),
             maxVariants: variants.maximum, variantsUnavailable: variants.reason, images: spec.references.count,
             minImages: limits.lowerBound, maxImages: limits.upperBound)
-    }
-
-    /// What `create_video` would pause the job for, as far as a quote can tell before upload.
-    private static func quoteBlocker(
-        price: AgentMoney?, remaining: Int?, paysUnlimited: Bool, unlimitedAllowed: Bool
-    ) -> String? {
-        if paysUnlimited {
-            return unlimitedAllowed
-                ? nil
-                : "It would be paid from the plan's unlimited generations, which the person hasn't let agents use "
-                    + "(Settings › Agents); the job would wait for the person."
-        }
-        guard let price else {
-            return "The price isn't known before upload; unless Higgsfield quotes it then, the job waits for the "
-                + "person."
-        }
-        if let remaining, price.amount > remaining {
-            return "It costs more than is left of today's agent budget (\(remaining)); the job would wait for the "
-                + "person."
-        }
-        return nil
     }
 
     // MARK: create_video

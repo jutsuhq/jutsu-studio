@@ -10,7 +10,7 @@
     "request.shape: the code that encodes the body (genjutsu, seedance, klingMotionControl, klingVideoReference, klingVideoEdit, wanReference, cinemaStudio). request.endpoints: the REST endpoint by the first key that applies: the mode, frames, standard/pro, reference (with media) or text, then default. Every endpoint needs rates in pricing.json. Empty for a model the public REST docs don't list: it runs on the account only, and an API key isn't offered it.",
     "request.account: the account's generate_video model ID by mode, once its models_explore get schema confirms every field the shape sends (the snapshot tests check it); a model without one runs with an API key only.",
     "requiresPrompt: a job needs a prompt even with a source.",
-    "credits: the account's fallback estimate, base + perSecond[resolution] x billed seconds, rounded up; modes overrides it for a mode priced apart. The price Create shows is Higgsfield's get_cost quote: before upload for a model sent a length, after upload for one billed by its source (Genjutsu, Edit). The estimate stands in only until then, or when the quote fails. Rates from free get_cost quotes of 2026-10-15 (issue #113). Left out (or a resolution missing), a job the server can't quote shows 'Price unknown'."
+    "credits: the account's fallback estimate, base + perSecond[resolution] x billed seconds, rounded up; modes overrides it for a mode priced apart. The price Create shows is Higgsfield's get_cost quote: before upload for a model sent a length, after upload for one billed by its source (Genjutsu, Edit). The estimate stands in only until then, or when the quote fails. Rates from free get_cost quotes of 2026-10-15 (issue #113). Left out (or a resolution missing), a job the server can't quote shows 'Price unknown'. Genjutsu Lite's 720p rate is what an agent's Lite jobs were quoted after upload (2 credits a second, issue #22); its 480p and 1080p rates follow the 1:2:4 of its REST prices and aren't confirmed by a quote yet."
   ],
   "models": [
     {
@@ -54,7 +54,8 @@
           "motionTransfer": "hf_mult_motion_control_flash",
           "objectSwap": "hf_mult_replace_object_flash"
         }
-      }
+      },
+      "credits": { "perSecond": { "480p": 1, "720p": 2, "1080p": 4 } }
     },
     {
       "id": "seedance25",
