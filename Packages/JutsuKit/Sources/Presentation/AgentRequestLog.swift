@@ -10,12 +10,18 @@ public final class AgentRequestLog {
     public struct Record: Codable, Sendable, Hashable {
         public var requestID: String
         public var fingerprint: String
+        /// The fingerprint without `max_cost` (`CreateVideoCommand.parameters`); `nil` for other commands and for
+        /// requests recorded before it.
+        public var parameters: String?
         public var jobIDs: [UUID]
         public var createdAt: Date
 
-        public init(requestID: String, fingerprint: String, jobIDs: [UUID], createdAt: Date) {
+        public init(
+            requestID: String, fingerprint: String, parameters: String? = nil, jobIDs: [UUID], createdAt: Date
+        ) {
             self.requestID = requestID
             self.fingerprint = fingerprint
+            self.parameters = parameters
             self.jobIDs = jobIDs
             self.createdAt = createdAt
         }
@@ -27,6 +33,8 @@ public final class AgentRequestLog {
         case new
         /// The same request again: these are its jobs.
         case known([UUID])
+        /// The same parameters with another `max_cost`: these are its jobs, whose hold it may lift.
+        case otherMaxCost([UUID])
         /// The ID was used with other parameters.
         case conflict
     }
@@ -43,9 +51,21 @@ public final class AgentRequestLog {
         self.now = now
     }
 
-    public func lookup(_ requestID: String, fingerprint: String) throws(LogWriteError) -> Lookup {
+    public func lookup(
+        _ requestID: String, fingerprint: String, parameters: String? = nil
+    ) throws(LogWriteError) -> Lookup {
         guard let record = try load().first(where: { $0.requestID == requestID }) else { return .new }
-        return record.fingerprint == fingerprint ? .known(record.jobIDs) : .conflict
+        if record.fingerprint == fingerprint { return .known(record.jobIDs) }
+        if let parameters, record.parameters == parameters { return .otherMaxCost(record.jobIDs) }
+        return .conflict
+    }
+
+    /// The request now stands for `fingerprint`: its job goes on under the `max_cost` it was sent again with.
+    public func update(_ requestID: String, fingerprint: String) throws(LogWriteError) {
+        var records = try load()
+        guard let index = records.firstIndex(where: { $0.requestID == requestID }) else { return }
+        records[index].fingerprint = fingerprint
+        try save(records)
     }
 
     /// Records a request before its jobs are queued.

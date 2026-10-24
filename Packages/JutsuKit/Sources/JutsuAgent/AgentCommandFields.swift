@@ -143,17 +143,21 @@ public struct UploadRequest: Codable, Equatable, Hashable, Sendable {
     public var requestID: String
     /// Lowercase hex SHA-256 of the request's parameters as the helper normalized them.
     public var fingerprint: String
+    /// `create_video`'s digest without `max_cost` (`CreateVideoCommand.parameters`): the request sent again with
+    /// another `max_cost` needs no file again either.
+    public var parameters: String?
 
-    public init(command: String, requestID: String, fingerprint: String) {
+    public init(command: String, requestID: String, fingerprint: String, parameters: String? = nil) {
         self.command = command
         self.requestID = requestID
         self.fingerprint = fingerprint
+        self.parameters = parameters
     }
 
     private enum CodingKeys: String, CodingKey {
         case command
         case requestID = "requestId"
-        case fingerprint
+        case fingerprint, parameters
     }
 
     public init(from decoder: any Decoder) throws {
@@ -161,8 +165,9 @@ public struct UploadRequest: Codable, Equatable, Hashable, Sendable {
         command = try container.decode(String.self, forKey: .command)
         requestID = try container.decode(String.self, forKey: .requestID)
         fingerprint = try container.decode(String.self, forKey: .fingerprint)
+        parameters = try container.decodeIfPresent(String.self, forKey: .parameters)
         guard AgentNames.isValidRequestID(requestID) else { throw AgentError.badRequest(AgentNames.requestIDRule) }
-        guard AgentNames.isValidFingerprint(fingerprint) else {
+        guard AgentNames.isValidFingerprint(fingerprint), parameters.map(AgentNames.isValidFingerprint) ?? true else {
             throw AgentError.badRequest("fingerprint is 64 lowercase hex digits")
         }
     }

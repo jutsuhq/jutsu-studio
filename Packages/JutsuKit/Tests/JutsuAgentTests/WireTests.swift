@@ -105,4 +105,24 @@ import Testing
         #expect(budget.remaining == 0)
         #expect(AgentCapabilities.Budget(unit: .usdCents, dailyLimit: -5, spentToday: -1).remaining == 0)
     }
+
+    /// A create_video wait reads the job again: a raise still held keeps the note saying why while the job waits for
+    /// the same reason, and drops it once the job moved on or got a note of its own.
+    @Test func aJobReadAgainKeepsItsNoteWhileItWaitsTheSame() {
+        let id = UUID()
+        let held = AgentJob(
+            id: id, state: "paused", pauseReason: "agent_limit", hold: "over_daily_budget", needsPerson: true,
+            next: "Still held.", createdAt: nil)
+        var again = held
+        again.next = nil
+        #expect(again.keepingNext(of: held).next == "Still held.")
+        var otherHold = again
+        otherHold.hold = "over_max_cost"
+        #expect(otherHold.keepingNext(of: held).next == nil)
+        let running = AgentJob(id: id, state: "preparing", createdAt: nil)
+        #expect(running.keepingNext(of: held).next == nil)
+        var done = AgentJob(id: id, state: "done", createdAt: nil)
+        done.next = "Check it with frames."
+        #expect(done.keepingNext(of: held).next == "Check it with frames.")
+    }
 }
