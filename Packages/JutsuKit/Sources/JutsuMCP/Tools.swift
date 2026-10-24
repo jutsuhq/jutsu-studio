@@ -83,9 +83,13 @@ enum Tool: String, CaseIterable {
     }
 
     private static func createVideo(_ given: Arguments, workingDirectory: URL) throws(AgentError) -> AgentCommand {
-        try given.allow(videoKeys.union(["request_id", "max_cost"]))
+        try given.allow(videoKeys.union(["request_id", "max_cost", "wait_seconds"]))
         let requestID = try given.requestID()
         let maxCost = try given.maxCost()
+        let wait = try given.int("wait_seconds") ?? 0
+        guard (0...JobsCommand.maxWaitSeconds).contains(wait) else {
+            throw .badRequest("create_video: wait_seconds is 0 to \(JobsCommand.maxWaitSeconds)")
+        }
         var video = try given.video()
         if let problem = video.problem { throw .badRequest("create_video: \(problem)") }
         if video.imageCount != nil { throw .badRequest("create_video takes images, the files, not a count") }
@@ -96,7 +100,8 @@ enum Tool: String, CaseIterable {
         video.images = video.images.map(local)
         let fingerprint = try Self.fingerprint(video, maxCost: maxCost)
         return .createVideo(
-            CreateVideoCommand(requestID: requestID, fingerprint: fingerprint, video: video, maxCost: maxCost))
+            CreateVideoCommand(
+                requestID: requestID, fingerprint: fingerprint, video: video, maxCost: maxCost, waitSeconds: wait))
     }
 
     private static func jobs(_ given: Arguments) throws(AgentError) -> AgentCommand {

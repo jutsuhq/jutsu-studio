@@ -56,6 +56,10 @@ extension Tool {
             var properties = Self.videoProperties(files: true)
             properties["request_id"] = Self.requestIDSchema
             properties["max_cost"] = Self.maxCostSchema
+            properties["wait_seconds"] = [
+                "type": "integer", "minimum": 0, "maximum": .number(Double(JobsCommand.maxWaitSeconds)),
+                "description": "Wait up to this long for the job's price to be known, or for it to be held.",
+            ]
             schema["properties"] = .object(properties)
             schema["required"] = ["request_id", "mode", "max_cost"]
         case .createImage:
