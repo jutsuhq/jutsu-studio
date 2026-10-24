@@ -88,6 +88,7 @@ extension ReferenceGenerator {
                 record.providerKind = provider.kind
                 record.request = request
                 record.inputImages = draft.inputs
+                record.title = draft.title
                 return record
             })
     }
@@ -207,6 +208,7 @@ extension ReferenceGenerator {
                 image.parameters = record.request.flatMap { try? JSONEncoder().encode($0) }
                 image.inputImages = record.inputImages
                 image.variantGroupID = record.runID
+                image.title = record.title
                 return image
             }
             images.insert(contentsOf: new, at: 0)

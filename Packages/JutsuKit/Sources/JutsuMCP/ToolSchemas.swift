@@ -10,6 +10,8 @@ extension Tool {
         case .capabilities:
             properties["protocolVersion"] = ["type": "integer"]
             properties["appVersion"] = ["type": "string"]
+            properties["helperVersion"] = ["type": "string"]
+            properties["helperNote"] = ["type": "string"]
             properties["agentsAllowed"] = ["type": "boolean"]
             properties["connection"] = [
                 "type": "object",
@@ -24,7 +26,8 @@ extension Tool {
                     "unit": ["type": "string", "enum": ["usd_cents", "credits"]],
                     "dailyLimit": ["type": "integer"], "spentToday": ["type": "integer"],
                     "reservedToday": ["type": "integer"], "remaining": ["type": "integer"],
-                    "unlimitedAllowed": ["type": "boolean"],
+                    "unlimitedAllowed": ["type": "boolean"], "dailyCap": ["type": "integer"],
+                    "capTakenToday": ["type": "integer"],
                 ],
             ]
             properties["toolGroups"] = [
@@ -79,11 +82,13 @@ extension Tool {
             properties["remainingToday"] = ["type": "integer"]
             properties["paysUnlimited"] = ["type": "boolean"]
             properties["blocker"] = ["type": "string"]
+            properties["priceNote"] = ["type": "string"]
             properties["maxVariants"] = ["type": "integer"]
             properties["variantsUnavailable"] = ["type": "string"]
             properties["images"] = ["type": "integer"]
             properties["minImages"] = ["type": "integer"]
             properties["maxImages"] = ["type": "integer"]
+            properties["aspectRatio"] = ["type": "string"]
         case .createVideo, .createImage, .enhance:
             properties["requestId"] = ["type": "string"]
             properties["known"] = ["type": "boolean"]
@@ -97,6 +102,7 @@ extension Tool {
                     ],
                 ],
             ]
+            if self == .createVideo { properties["timedOut"] = ["type": "boolean"] }
         case .elements:
             properties["items"] = [
                 "type": "array",

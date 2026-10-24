@@ -78,6 +78,7 @@ final class ImageLibrary {
             image.parameters = $0.parameters
             image.inputImages = $0.inputImages
             image.variantGroupID = $0.variantGroupID
+            image.title = $0.title
             return image
         }
         guard !images.isEmpty else { return }
@@ -107,6 +108,7 @@ final class ImageLibrary {
                 image.parameters = $0.parameters
                 image.inputImages = $0.inputImages
                 image.variantGroupID = $0.variantGroupID
+                image.title = $0.title
                 return image
             }
             do {
@@ -171,17 +173,18 @@ final class ImageLibrary {
             let folder = folder
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             let file = Self.unusedFile(
-                in: folder, baseName: SavedImage.baseName(prompt: generated.prompt, createdAt: date),
+                in: folder, baseName: SavedImage.baseName(prompt: generated.title ?? generated.prompt, createdAt: date),
                 pathExtension: media.fileURL.pathExtension)
             try FileManager.default.moveItem(at: media.fileURL, to: file)
             var saved = SavedImage(
                 id: generated.id, fileURL: file, prompt: generated.prompt, model: generated.model,
-                aspectRatio: generated.aspectRatio, createdAt: date, remoteURL: generated.url)
+                aspectRatio: generated.aspectRatio, createdAt: date, remoteURL: generated.url, title: generated.title)
             do {
                 let material = try await catalog.saveImage(
                     saved, remote: generated.remote,
                     generation: MaterialGeneration(
-                        prompt: generated.prompt, model: generated.model, parameters: generated.parameters),
+                        prompt: generated.prompt, model: generated.model, parameters: generated.parameters,
+                        title: generated.title),
                     inputs: generated.inputImages, variantGroupID: generated.variantGroupID)
                 saved = MaterialLibrary.savedImage(material) ?? saved
             } catch {

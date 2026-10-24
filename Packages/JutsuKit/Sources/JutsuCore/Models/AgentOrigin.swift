@@ -55,7 +55,8 @@ public struct AgentOrigin: Codable, Sendable, Hashable {
     public var ledgerEntry: UUID? { reservation ?? paidBy }
 }
 
-/// Why the spending guard stopped an agent's job before its submit. Only a person resumes it.
+/// Why the spending guard stopped an agent's job before its submit. Only a person resumes it; the agent may lift
+/// `overMaxCost` alone, by raising `max_cost` to a price that fits every limit (`JobEngine.raiseAgentMaxCost`).
 public enum AgentHold: String, Codable, Sendable, Hashable {
     /// Neither the provider nor the price list could say what it costs.
     case unknownPrice

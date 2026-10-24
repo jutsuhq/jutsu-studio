@@ -56,6 +56,10 @@ extension Tool {
             var properties = Self.videoProperties(files: true)
             properties["request_id"] = Self.requestIDSchema
             properties["max_cost"] = Self.maxCostSchema
+            properties["wait_seconds"] = [
+                "type": "integer", "minimum": 0, "maximum": .number(Double(JobsCommand.maxWaitSeconds)),
+                "description": "Wait up to this long for the job's price to be known, or for it to be held.",
+            ]
             schema["properties"] = .object(properties)
             schema["required"] = ["request_id", "mode", "max_cost"]
         case .createImage:
@@ -79,6 +83,7 @@ extension Tool {
                     "items": ["type": "string", "maxLength": .number(Double(AgentElementNames.maxNameLength))],
                     "description": "The account's elements by name, from the elements tool; their images go first.",
                 ],
+                "title": Self.titleSchema,
             ]
             schema["required"] = ["request_id", "prompt", "max_cost"]
         case .librarySearch:
@@ -228,6 +233,11 @@ extension Tool {
         return schema
     }
 
+    private static let titleSchema: JSONValue = [
+        "type": "string", "maxLength": .number(Double(AgentVideoRequest.maxTitleLength)),
+        "description": "What the Queue, the Library and file names call it; the first 80 characters, on one line.",
+    ]
+
     private static let exportWaitSchema: JSONValue = [
         "type": "integer", "minimum": 0, "maximum": .number(Double(JobsCommand.maxWaitSeconds)),
         "description": "Wait up to this long for the export to finish before answering; it runs on either way.",
@@ -264,7 +274,10 @@ extension Tool {
                 "type": "number", "exclusiveMinimum": 0,
                 "description": "Seconds a clip without a source runs, or extend adds.",
             ],
-            "aspect_ratio": ["type": "string", "description": "A clip without a source: 16:9, 9:16, 1:1…"],
+            "aspect_ratio": [
+                "type": "string",
+                "description": "A clip without a source: 16:9, 9:16, 1:1…; with one it keeps the source's orientation.",
+            ],
             "audio": ["type": "string", "enum": .array(AgentVideoRequest.audioOptions.map { .string($0) })],
             "variants": [
                 "type": "integer", "minimum": 1, "description": "Videos one submit makes, up to quote's maxVariants.",
@@ -275,7 +288,9 @@ extension Tool {
                 "description": "The account's elements by name, from the elements tool; their images go first.",
             ],
         ]
-        if !files {
+        if files {
+            properties["title"] = titleSchema
+        } else {
             properties["image_count"] = [
                 "type": "integer", "minimum": 0, "description": "How many reference images there will be.",
             ]

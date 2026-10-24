@@ -67,7 +67,11 @@ struct EnqueueTests {
         await release.open(.success(()))
 
         let queued = try await first
-        await #expect(throws: JobEngineError.overCap) { try await second.value }
+        let refused = await #expect(throws: JobEngineError.self) { try await second.value }
+        guard case .overCap = refused else {
+            Issue.record("not over the cap: \(String(describing: refused))")
+            return
+        }
         #expect(try await repository.activeJobs().map(\.id) == [queued.id])
     }
 
@@ -75,7 +79,14 @@ struct EnqueueTests {
         let harness = Harness(spendStatus: SpendStatus(committedToday: 2, cap: .usd(3)))
         let engine = try await harness.makeEngine()
 
-        await #expect(throws: JobEngineError.overCap) { try await engine.enqueue(makeSpec()) }
+        // The refusal says what the cap counted: the cap, the rest of today and the job's own price.
+        let refused = await #expect(throws: JobEngineError.self) { try await engine.enqueue(makeSpec()) }
+        guard case .overCap(let over) = refused else {
+            Issue.record("not over the cap")
+            return
+        }
+        #expect(over.cap == .usd(3) && over.committedToday == 2)
+        #expect(over.price.unit == .usd && over.price.amount > 1)
         #expect(try await harness.repository.activeJobs().isEmpty)
 
         let job = try await engine.enqueue(makeSpec(), overCapApproved: true)

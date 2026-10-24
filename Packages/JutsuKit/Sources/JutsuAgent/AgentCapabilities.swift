@@ -37,13 +37,20 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
         /// `false` for the rest of the day once the allowance didn't pay for an agent's job sent for it: such jobs then
         /// keep every limit, as any other.
         public var unlimitedAllowed: Bool
+        /// The person's own daily cap (Settings › Spending), in the same unit; `nil` when they set none. It counts
+        /// every job, theirs and agents', apart from this budget, and a job over it is refused with over_cap.
+        public var dailyCap: Int?
+        /// What the cap counts today, charged or still queued; `nil` without a cap or when it can't be read.
+        public var capTakenToday: Int?
 
         public init(
             unit: AgentBudgetUnit, dailyLimit: Int, spentToday: Int, reservedToday: Int = 0,
-            unlimitedAllowed: Bool = false
+            unlimitedAllowed: Bool = false, dailyCap: Int? = nil, capTakenToday: Int? = nil
         ) {
             self.unit = unit
             self.unlimitedAllowed = unlimitedAllowed
+            self.dailyCap = dailyCap
+            self.capTakenToday = capTakenToday
             self.dailyLimit = max(0, dailyLimit)
             self.spentToday = max(0, spentToday)
             self.reservedToday = max(0, reservedToday)
@@ -220,6 +227,10 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
     public var styles: [Style]?
     /// Only when asked for (`CapabilitiesCommand.voices`); empty without an account.
     public var voices: [Voice]?
+    /// The `jutsu` helper's own version, added by the helper (`noteHelper`); the app leaves it out.
+    public var helperVersion: String?
+    /// Added by a helper older than the app: what the agent should do about it.
+    public var helperNote: String?
 
     public init(
         appVersion: String, agentsAllowed: Bool = true, connection: Connection, budget: Budget?,
@@ -232,6 +243,27 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
         self.budget = budget
         self.toolGroups = toolGroups
         self.models = models
+    }
+
+    /// The helper `version` that relays this answer: an MCP client keeps the helper process it started, so after the
+    /// app is updated it can run an older helper, with that version's tools, until it reconnects. Only a helper that
+    /// has this can say so; one from before it relays the answer without either field.
+    public mutating func noteHelper(_ version: String) {
+        helperVersion = version
+        helperNote =
+            Self.isOlder(version, than: appVersion)
+            ? "This jutsu helper is \(version), older than Jutsu Studio \(appVersion): the MCP client still runs the "
+                + "helper it started before the app was updated, with that version's tools. Reconnect the jutsu MCP "
+                + "server (/mcp in Claude Code, or restart the client) to get this version's tools."
+            : nil
+    }
+
+    /// Whether release `helper` is older than release `app`, compared as numbers (0.2.10 after 0.2.9); a development
+    /// build or a version that isn't a number is never called older.
+    static func isOlder(_ helper: String, than app: String) -> Bool {
+        let isRelease = { (version: String) in version.first?.isNumber == true }
+        guard isRelease(helper), isRelease(app) else { return false }
+        return helper.compare(app, options: .numeric) == .orderedAscending
     }
 }
 

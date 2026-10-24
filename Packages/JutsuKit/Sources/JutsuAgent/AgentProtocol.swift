@@ -23,6 +23,13 @@ public enum AgentProtocol {
     /// How long the helper waits on the socket for each write and for the answer: the answer deadline and a margin
     /// for the line to arrive.
     public static let helperTimeout = answerDeadline + .seconds(5)
+
+    /// How long a command that already took `elapsed` may still wait for `seconds` and answer in time: its wait,
+    /// cut to what is left of the answer deadline less a margin for the answer itself.
+    public static func waitSeconds(_ seconds: Int, after elapsed: Duration) -> Int {
+        let left = answerDeadline - .seconds(5) - elapsed
+        return max(0, min(seconds, Int(left.components.seconds)))
+    }
 }
 
 public enum AgentCommand: Equatable, Sendable {

@@ -117,7 +117,7 @@ struct AgentGuardTests {
         #expect(harness.log.count("submit") == 0)
     }
 
-    @Test(arguments: [Cost.unknownUSD, Cost.usd(1, isEstimate: true)])
+    @Test(arguments: [Cost.unknownUSD, Cost.usd(1, isEstimate: true), Cost.credits(24, isEstimate: true)])
     func aPriceNotKnownPauses(preliminary: Cost) async throws {
         let harness = Harness()
         await harness.provider.setPreliminary(preliminary)

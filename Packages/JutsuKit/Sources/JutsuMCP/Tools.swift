@@ -76,15 +76,20 @@ enum Tool: String, CaseIterable {
         }
         video.images = []
         video.source?.path = nil
+        video.title = nil
         if let count = try given.int("image_count") { video.imageCount = count }
         if let problem = video.problem { throw .badRequest("quote: \(problem)") }
         return .quote(QuoteCommand(video: video))
     }
 
     private static func createVideo(_ given: Arguments, workingDirectory: URL) throws(AgentError) -> AgentCommand {
-        try given.allow(videoKeys.union(["request_id", "max_cost"]))
+        try given.allow(videoKeys.union(["request_id", "max_cost", "wait_seconds"]))
         let requestID = try given.requestID()
         let maxCost = try given.maxCost()
+        let wait = try given.int("wait_seconds") ?? 0
+        guard (0...JobsCommand.maxWaitSeconds).contains(wait) else {
+            throw .badRequest("create_video: wait_seconds is 0 to \(JobsCommand.maxWaitSeconds)")
+        }
         var video = try given.video()
         if let problem = video.problem { throw .badRequest("create_video: \(problem)") }
         if video.imageCount != nil { throw .badRequest("create_video takes images, the files, not a count") }
@@ -95,7 +100,9 @@ enum Tool: String, CaseIterable {
         video.images = video.images.map(local)
         let fingerprint = try Self.fingerprint(video, maxCost: maxCost)
         return .createVideo(
-            CreateVideoCommand(requestID: requestID, fingerprint: fingerprint, video: video, maxCost: maxCost))
+            CreateVideoCommand(
+                requestID: requestID, fingerprint: fingerprint, parameters: try Self.parameters(video), video: video,
+                maxCost: maxCost, waitSeconds: wait))
     }
 
     private static func jobs(_ given: Arguments) throws(AgentError) -> AgentCommand {
@@ -164,7 +171,7 @@ enum Tool: String, CaseIterable {
     /// What `quote` and `create_video` both take.
     static let videoKeys: Set<String> = [
         "mode", "model", "prompt", "source", "images", "style", "resolution", "draft", "length", "aspect_ratio",
-        "audio", "variants", "elements",
+        "audio", "variants", "elements", "title",
     ]
 
     /// What makes two `create_video` requests the same: the parameters, the files by path and size, and the most the
@@ -175,12 +182,29 @@ enum Tool: String, CaseIterable {
             var sizes: [Int?]
             var maxCost: AgentAmount
         }
-        let files = [video.source?.path].compactMap(\.self) + video.images
-        let sizes = files.map { path in
-            (try? URL(filePath: path).resourceValues(forKeys: [.fileSizeKey]))?.fileSize
-        }
+        let sizes = Self.sizes([video.source?.path].compactMap(\.self) + video.images)
         do {
             return try AgentFingerprint.of(Fingerprinted(video: video, sizes: sizes, maxCost: maxCost))
+        } catch {
+            throw .badRequest("create_video: the parameters can't be read")
+        }
+    }
+
+    /// The files' sizes, `nil` for one that can't be read: a file that changed size makes another request.
+    static func sizes(_ files: [String]) -> [Int?] {
+        files.map { path in (try? URL(filePath: path).resourceValues(forKeys: [.fileSizeKey]))?.fileSize }
+    }
+
+    /// The same as `fingerprint` without `max_cost`: what a `create_video` sent again with a higher `max_cost` shares
+    /// with the request it raises.
+    static func parameters(_ video: AgentVideoRequest) throws(AgentError) -> String {
+        struct Parameters: Encodable {
+            var video: AgentVideoRequest
+            var sizes: [Int?]
+        }
+        let sizes = Self.sizes([video.source?.path].compactMap(\.self) + video.images)
+        do {
+            return try AgentFingerprint.of(Parameters(video: video, sizes: sizes))
         } catch {
             throw .badRequest("create_video: the parameters can't be read")
         }
@@ -191,9 +215,7 @@ enum Tool: String, CaseIterable {
     static func fingerprint(
         _ tool: String, _ fields: some Encodable, files: [String], _ maxCost: AgentAmount
     ) throws(AgentError) -> String {
-        let sizes = files.map { path in
-            (try? URL(filePath: path).resourceValues(forKeys: [.fileSizeKey]))?.fileSize
-        }
+        let sizes = Self.sizes(files)
         do {
             return try AgentFingerprint.of(ToolFingerprint(tool: tool, fields: fields, sizes: sizes, maxCost: maxCost))
         } catch {
@@ -343,7 +365,8 @@ struct Arguments {
             mode: mode, model: try string("model"), prompt: try string("prompt"), source: source,
             images: try strings("images"), style: style, resolution: try string("resolution"),
             draft: try bool("draft"), length: try number("length"), aspectRatio: try string("aspect_ratio"),
-            audio: try string("audio"), variants: try int("variants"), elements: try strings("elements"))
+            audio: try string("audio"), variants: try int("variants"), elements: try strings("elements"),
+            title: try string("title"))
     }
 
     /// `max_cost` as whole units: dollars become cents, rounded down so the job never costs more than was said.

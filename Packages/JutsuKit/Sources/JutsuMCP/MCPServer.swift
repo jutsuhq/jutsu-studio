@@ -222,7 +222,7 @@ public struct MCPServer: Sendable {
         case .object(let value)?: arguments = value
         default: return .failure(RPCError(.invalidParams, "Invalid params: arguments is an object."))
         }
-        let response: AgentResponse
+        var response: AgentResponse
         switch tool.command(arguments) {
         case .success(.createVideo(let command)): response = await createVideo(command, client: client)
         case .success(.createImage(let command)): response = await createImage(command, client: client)
@@ -230,6 +230,7 @@ public struct MCPServer: Sendable {
         case .success(let command): response = await send(command, client)
         case .failure(let error): response = AgentResponse(error: error)
         }
+        response.capabilities?.noteHelper(self.version)
         return .success(Self.toolResult(response, structured: Self.isStructured(version)))
     }
 
@@ -238,7 +239,8 @@ public struct MCPServer: Sendable {
     /// file again: the command goes without them and gets the jobs it queued before.
     private func createVideo(_ command: CreateVideoCommand, client: String?) async -> AgentResponse {
         let request = UploadRequest(
-            command: "create_video", requestID: command.requestID, fingerprint: command.fingerprint)
+            command: "create_video", requestID: command.requestID, fingerprint: command.fingerprint,
+            parameters: command.parameters)
         var staged = command
         do throws(AgentError) {
             if let path = command.video.source?.path {
@@ -359,7 +361,9 @@ extension MCPServer {
         their own wait_seconds): follow it with jobs too. No call blocks longer than about a minute; still_working \
         means the work goes on, so send the same request again. Jutsu Studio checks every paid request right before \
         it is sent: a price above max_cost, above what is left of the daily agent budget or not known holds it \
-        (paused, needsPerson) until the person decides in the Queue; the person's own daily cap applies too. A video \
+        (paused, needsPerson) until the person decides in the Queue; one held over max_cost (hold over_max_cost) goes \
+        on when the same request_id and parameters come again with a max_cost that covers its price and still fits \
+        the budget. The person's own daily cap applies too. A video \
         the plan's unlimited generations would pay for (quote's paysUnlimited) costs the budget nothing, but is held \
         the same way unless the person lets agents use them (capabilities budget.unlimitedAllowed). Tell the person \
         when something waits for them. elements lists the account's characters and other elements, which \

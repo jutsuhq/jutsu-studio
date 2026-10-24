@@ -36,6 +36,7 @@ public enum MaterialLibrary {
         return SavedImage(
             id: material.id, fileURL: file, prompt: material.current.generation?.prompt ?? "",
             model: material.current.generation?.model ?? "", aspectRatio: material.current.aspectRatio,
-            createdAt: material.createdAt, remoteURL: material.current.remoteURL, isStarred: material.isStarred)
+            createdAt: material.createdAt, remoteURL: material.current.remoteURL, isStarred: material.isStarred,
+            title: material.current.generation?.title)
     }
 }

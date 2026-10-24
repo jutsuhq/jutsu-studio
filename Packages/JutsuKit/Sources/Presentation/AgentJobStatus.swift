@@ -83,6 +83,13 @@ public struct AgentJobStatus: Sendable, Hashable {
     public static func isSettled(_ state: JobState) -> Bool {
         state.isTerminal || state.isPaused
     }
+
+    /// The price is known as the spending guard reads it, or the job got past the guard, or it was held or finished:
+    /// a `create_video` wait ends once every job it queued is. A known price can still be held at submit, above
+    /// max_cost or the budgets; the agent sees both in the answer.
+    public static func isPriced(_ job: Job) -> Bool {
+        isSettled(job.state) || job.agentPriceIsKnown || job.submitAttempt != nil || job.remote != nil
+    }
 }
 
 /// What an agent may do to a job with `job_action`, and why not. Only jobs an agent queued; nothing that could pay
@@ -111,6 +118,34 @@ public enum AgentJobRules {
     public static func runNextRefusal(_ job: Job) -> String? {
         if job.agent == nil { return "Only jobs an agent queued can be moved ahead by an agent." }
         return nil
+    }
+
+    /// For a finished video: how to look at it with `frames`, against its own source when it has one, rather than
+    /// grabbing frames by hand.
+    public static func checkHint(_ job: Job) -> String? {
+        guard job.state == .done, job.outputFile != nil else { return nil }
+        let item = job.id.uuidString
+        return job.spec.source == nil
+            ? "To check it, call frames with item \(item) and a few times; it writes the frames and a contact sheet."
+            : "To check it against its source, call frames with item \(item), a few times and compare_source true; "
+                + "it writes both clips' frames side by side on a contact sheet."
+    }
+
+    /// Why a job sent again with a higher `max_cost` still waits: the hold it would get now, or `nil` for the
+    /// person's daily cap.
+    public static func stillHeldNote(_ hold: AgentHold?) -> String {
+        switch hold {
+        case .overMaxCost:
+            "The price is still above max_cost. Send the request again with a max_cost of at least the price, or ask "
+                + "the person to confirm it in the Queue."
+        case .overDailyBudget:
+            "The price is more than is left of today's agent budget; the job waits for the person in the Queue."
+        case nil:
+            "The price would take today's spending over the person's daily cap; the job waits for the person in the "
+                + "Queue."
+        case .unknownPrice, .ledgerUnavailable, .unlimitedNotAllowed, .aboveApprovedPrice:
+            "The job can't be checked against the new max_cost now; it waits for the person in the Queue."
+        }
     }
 }
 
@@ -183,15 +218,19 @@ public struct AgentCursor: Sendable, Hashable {
 }
 
 /// Waits up to `seconds` for `isSettled`, checking every `milliseconds`; `true` when the time ran out first. Waiting
-/// stops nothing.
+/// stops nothing. The time is read from the clock rather than counted in checks: in the background (App Nap) each
+/// sleep runs long, and a wait that counted 100 of them overran `AgentProtocol.answerDeadline`, so `jobs` answered
+/// still_working instead of timedOut.
 public func agentWait(
     seconds: Int, milliseconds: Int = 500, isolation: isolated (any Actor)? = #isolation, isSettled: () async -> Bool,
+    now: () -> ContinuousClock.Instant = { .now },
     sleep: (Duration) async throws -> Void = { try await Task.sleep(for: $0) }
 ) async -> Bool {
-    let step = max(1, milliseconds)
+    let step = Duration.milliseconds(max(1, milliseconds))
+    let deadline = now() + .seconds(max(0, seconds))
     if await isSettled() { return false }
-    for _ in 0..<(max(0, seconds) * 1000 / step) {
-        do { try await sleep(.milliseconds(step)) } catch { return true }
+    while now() < deadline {
+        do { try await sleep(min(step, deadline - now())) } catch { return true }
         if await isSettled() { return false }
     }
     return true

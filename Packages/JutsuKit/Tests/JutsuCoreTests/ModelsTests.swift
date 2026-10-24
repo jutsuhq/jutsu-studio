@@ -147,6 +147,30 @@ func costRoundTripsExactly(cost: Cost) throws {
     #expect(AspectRatio.auto.widthOverHeight == nil)
 }
 
+@Test func aTitleNamesTheSpecInsteadOfItsSource() {
+    var spec = makeSpec()
+    spec.title = JobSpec.title(from: "  Knight, take 3 \n  rooftop  \n")
+    #expect(spec.title == "Knight, take 3 rooftop")
+    #expect(spec.name == "Knight, take 3 rooftop")
+    #expect(ExportNaming.baseName(for: spec, presetName: nil).hasPrefix("Knight, take 3 rooftop_00m00.0s"))
+    #expect(JobSpec.title(from: String(repeating: "a", count: 200))?.count == JobSpec.maxTitleLength)
+    #expect(JobSpec.title(from: " \n ") == nil)
+    #expect(JobSpec.title(from: nil) == nil)
+}
+
+@Test func aSpecStoredBeforeTitlesDecodesNamedByItsSource() throws {
+    var spec = makeSpec()
+    spec.title = "Knight"
+    var object = try #require(try JSONSerialization.jsonObject(with: JSONEncoder().encode(spec)) as? [String: Any])
+    #expect(object.removeValue(forKey: "title") as? String == "Knight")
+
+    let decoded = try JSONDecoder().decode(JobSpec.self, from: JSONSerialization.data(withJSONObject: object))
+
+    #expect(decoded.title == nil)
+    #expect(decoded.name == "source")
+    #expect(try JSONDecoder().decode(JobSpec.self, from: JSONEncoder().encode(spec)) == spec)
+}
+
 @Test func aSpecStoredBeforeTheModelParametersDecodesWithout() throws {
     let json = #"""
         {"mode": "motionTransfer", "model": "seedance25", "references": [], "prompt": "a fox",

@@ -42,7 +42,7 @@ extension AgentService {
         let image = fields.image
         let order = AgentImageOrder(
             model: image.model, prompt: image.prompt, aspectRatio: image.aspectRatio, count: image.count,
-            inputs: elements.flatMap(\.images) + files)
+            inputs: elements.flatMap(\.images) + files, title: image.title)
         let id = UUID()
         try recordRequest(fields.requestID, fingerprint: fields.fingerprint, jobIDs: [id])
         let origin = AgentOrigin(

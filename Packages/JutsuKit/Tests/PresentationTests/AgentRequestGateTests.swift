@@ -66,6 +66,45 @@ import Testing
 
     /// The same request sent while it runs waits for that run, and its own copies of the files are discarded; the ID
     /// with other parameters is refused meanwhile.
+    /// The same parameters with another max_cost go to `otherMaxCost`, which may answer or refuse; a request without
+    /// parameters, or recorded without them, stays a conflict.
+    @Test func theSameParametersWithAnotherMaxCostAskWhetherTheHoldLifts() async throws {
+        let gate = AgentRequestGate<String, Refused>(log: log)
+        let job = UUID()
+        try gate.record("r1", fingerprint: "f1", parameters: "p1", ids: [job], at: .now)
+        #expect(try gate.state(of: "r1", fingerprint: "f2", parameters: "p1") == .otherMaxCost([job]))
+        #expect(try gate.state(of: "r1", fingerprint: "f2", parameters: "p2") == .conflict)
+        #expect(try gate.state(of: "r1", fingerprint: "f2") == .conflict)
+        let discards = Box(0)
+        let raise = { (fingerprint: String, answer: String?) async throws(Refused) -> String in
+            try await gate.run(
+                "r1", fingerprint: fingerprint, parameters: "p1", refusals: refusals,
+                discard: { discards.update { $0 += 1 } }, known: { _ in "known" },
+                otherMaxCost: { $0 == [job] ? answer : nil }
+            ) {
+                Issue.record("A request sent again ran again")
+                return "ran"
+            }
+        }
+        #expect(try await raise("f2", "lifted") == "lifted")
+        await #expect(throws: Refused(reason: "conflict")) { try await raise("f3", nil) }
+        #expect(discards.value == 2)
+
+        try gate.update("r1", fingerprint: "f2")
+        #expect(try gate.state(of: "r1", fingerprint: "f2", parameters: "p1") == .known([job]))
+        #expect(try gate.state(of: "r1", fingerprint: "f1", parameters: "p1") == .otherMaxCost([job]))
+
+        try gate.record("r2", fingerprint: "f1", ids: [job], at: .now)
+        #expect(try gate.state(of: "r2", fingerprint: "f2", parameters: "p1") == .conflict)
+    }
+
+    /// Records written before parameters existed still read.
+    @Test func aRecordWithoutParametersDecodes() throws {
+        let json = #"{"requestID":"r1","fingerprint":"f1","jobIDs":[],"createdAt":0}"#
+        let record = try JSONDecoder().decode(AgentRequestLog.Record.self, from: Data(json.utf8))
+        #expect(record.parameters == nil && record.fingerprint == "f1")
+    }
+
     @Test func theSameRequestSentWhileItRunsJoinsIt() async throws {
         let gate = AgentRequestGate<String, Refused>(log: log)
         let release = Gate<Void>()

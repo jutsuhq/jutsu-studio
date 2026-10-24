@@ -15,6 +15,8 @@ public final class AgentRequestGate<Answer: Sendable, Failure: Error> {
         case running
         /// The same request again: these are what it made.
         case known([UUID])
+        /// The same parameters with another `max_cost`: what it made, whose hold the new one may lift.
+        case otherMaxCost([UUID])
         /// The ID was used with other parameters.
         case conflict
     }
@@ -44,22 +46,28 @@ public final class AgentRequestGate<Answer: Sendable, Failure: Error> {
         self.log = log
     }
 
-    public func state(of requestID: String, fingerprint: String) throws(LogWriteError) -> State {
+    public func state(
+        of requestID: String, fingerprint: String, parameters: String? = nil
+    ) throws(LogWriteError) -> State {
         if let running = running[requestID] { return running.fingerprint == fingerprint ? .running : .conflict }
-        switch try log.lookup(requestID, fingerprint: fingerprint) {
+        switch try log.lookup(requestID, fingerprint: fingerprint, parameters: parameters) {
         case .new: return .new
         case .known(let ids): return .known(ids)
+        case .otherMaxCost(let ids): return .otherMaxCost(ids)
         case .conflict: return .conflict
         }
     }
 
     /// Runs `queue` for a new request and answers with what it made. The same request running answers with what that
     /// run makes; one recorded answers with `known` for the IDs it recorded, or `refusals.neverQueued` when `known`
-    /// finds none of them. `discard` is called once the request's own files aren't needed: refused, already known,
-    /// joining the run in flight, whose own files are the ones it reads, or failed. A run that fails is forgotten.
+    /// finds none of them. One recorded with the same `parameters` and another `max_cost` answers with what
+    /// `otherMaxCost` makes of what it recorded, `refusals.conflict` when that is `nil` or not given. `discard` is
+    /// called once the request's own files aren't needed: refused, already known, joining the run in flight, whose own
+    /// files are the ones it reads, or failed. A run that fails is forgotten.
     public func run(
-        _ requestID: String, fingerprint: String, refusals: Refusals, discard: () -> Void,
+        _ requestID: String, fingerprint: String, parameters: String? = nil, refusals: Refusals, discard: () -> Void,
         known: ([UUID]) async throws(Failure) -> Answer?,
+        otherMaxCost: (([UUID]) async throws(Failure) -> Answer?)? = nil,
         queue: @escaping @MainActor () async throws(Failure) -> Answer
     ) async throws(Failure) -> Answer {
         if let running = running[requestID] {
@@ -72,7 +80,7 @@ public final class AgentRequestGate<Answer: Sendable, Failure: Error> {
         }
         let lookup: AgentRequestLog.Lookup
         do {
-            lookup = try log.lookup(requestID, fingerprint: fingerprint)
+            lookup = try log.lookup(requestID, fingerprint: fingerprint, parameters: parameters)
         } catch {
             events.error("The agent requests can't be read", detail: String(describing: error))
             throw refusals.unreadable
@@ -86,6 +94,10 @@ public final class AgentRequestGate<Answer: Sendable, Failure: Error> {
             if let answer = try await known(ids) { return answer }
             forget(requestID)
             throw refusals.neverQueued
+        case .otherMaxCost(let ids):
+            discard()
+            if let otherMaxCost, let answer = try await otherMaxCost(ids) { return answer }
+            throw refusals.conflict
         case .new:
             break
         }
@@ -107,9 +119,17 @@ public final class AgentRequestGate<Answer: Sendable, Failure: Error> {
     }
 
     /// Records the request with the IDs of what it makes, before anything is queued or sent.
-    public func record(_ requestID: String, fingerprint: String, ids: [UUID], at date: Date) throws(LogWriteError) {
+    public func record(
+        _ requestID: String, fingerprint: String, parameters: String? = nil, ids: [UUID], at date: Date
+    ) throws(LogWriteError) {
         try log.add(
-            AgentRequestLog.Record(requestID: requestID, fingerprint: fingerprint, jobIDs: ids, createdAt: date))
+            AgentRequestLog.Record(
+                requestID: requestID, fingerprint: fingerprint, parameters: parameters, jobIDs: ids, createdAt: date))
+    }
+
+    /// The request sent again with another `max_cost` lifted its job's hold: from now on that one is the request.
+    public func update(_ requestID: String, fingerprint: String) throws(LogWriteError) {
+        try log.update(requestID, fingerprint: fingerprint)
     }
 
     /// Forgets a request that queued nothing, so the agent can send it again. A log that can't be written keeps it,

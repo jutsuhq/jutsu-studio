@@ -100,10 +100,20 @@ enum AccountModel {
         return unlimited
     }
 
+    /// Seedance's `aspect_ratio` outside frames, edit and extend: without a source the one asked for, or `auto`;
+    /// with one, the source's own shape. Sent none, a 576×1024 source made a 1280×720 clip (an agent's job, issue
+    /// #22), as a start frame did. Whether the server keeps to it with `video_references` isn't confirmed live; the
+    /// catalog says it ignores `aspect_ratio` only for `video_edit` and `video_extension`.
+    static func seedanceFrame(of spec: JobSpec) -> String? {
+        guard let source = spec.source else { return (spec.aspectRatio ?? .auto).rawValue }
+        return AspectRatio.nearest(to: source.pixelSize)?.rawValue
+    }
+
     /// Seedance and Kling make a clip as long as the source selection. Without a source, Seedance makes one as long
     /// and in the frame the job asks for, from the prompt alone (`t2v`) or with the images as references; it then
     /// makes the soundtrack too, unless the job is muted. With a source it makes one only when asked to
-    /// (`AudioOption.generated`); otherwise the source's sound is put back after download.
+    /// (`AudioOption.generated`); otherwise the source's sound is put back after download. It keeps the source's
+    /// frame (`seedanceFrame`).
     static func request(
         for spec: JobSpec, model: VideoRequest.Model, media: [VideoRequest.Media],
         parameters: Set<ModelParameter> = AccountModel.parameters, constraints: ModelConstraintTable = .builtIn
@@ -139,7 +149,7 @@ enum AccountModel {
                     }
                 } else {
                     request.mode = media.isEmpty ? VideoRequest.textToVideo : VideoRequest.omniReference
-                    if spec.source == nil { request.aspectRatio = (spec.aspectRatio ?? .auto).rawValue }
+                    request.aspectRatio = seedanceFrame(of: spec)
                 }
                 request.draft = sendsNativeDraft(spec, model: model)
             }

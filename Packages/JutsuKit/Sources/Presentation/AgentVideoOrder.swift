@@ -32,11 +32,13 @@ public struct AgentVideoOrder: Sendable, Hashable {
     public var aspectRatio: String?
     public var audio: String?
     public var variants: Int?
+    /// The job's name in lists, as the agent sent it; the job keeps it trimmed and cut (`JobSpec.title(from:)`).
+    public var title: String?
 
     public init(
         mode: String, model: String? = nil, prompt: String = "", source: Source? = nil, images: [LocalImage] = [],
         style: UUID? = nil, resolution: String? = nil, isDraft: Bool = false, length: TimeInterval? = nil,
-        aspectRatio: String? = nil, audio: String? = nil, variants: Int? = nil
+        aspectRatio: String? = nil, audio: String? = nil, variants: Int? = nil, title: String? = nil
     ) {
         self.mode = mode
         self.model = model
@@ -50,6 +52,7 @@ public struct AgentVideoOrder: Sendable, Hashable {
         self.aspectRatio = aspectRatio
         self.audio = audio
         self.variants = variants
+        self.title = title
     }
 
     /// A quote's stand-in for a source of `end` seconds: only its length and frame matter to a price.
@@ -73,6 +76,12 @@ public struct AgentVideoOrder: Sendable, Hashable {
 
     /// The mode an agent names; `nil` for a name that isn't one.
     public static func mode(named name: String) -> Mode? { modes[name] }
+
+    /// The frame `spec`'s result gets, as `quote` says it: `source` when the job has one (its result keeps the
+    /// source's orientation, Seedance asking for the source's nearest ratio), else the ratio the job asks for.
+    public static func frame(of spec: JobSpec) -> String? {
+        spec.source == nil ? spec.aspectRatio?.rawValue : "source"
+    }
 
     /// The agent's name for `mode`.
     public static func name(of mode: Mode) -> String {
@@ -143,7 +152,7 @@ public struct AgentVideoOrder: Sendable, Hashable {
         try setAudio(in: &form)
         try setVariants(in: &form, context: context)
         let specs = form.makeSpecs(isDraft: isDraft, in: context)
-        guard specs.count == 1, let spec = specs.first else {
+        guard specs.count == 1, var spec = specs.first else {
             throw Refusal(
                 form.source == nil
                     ? "\(model.title) needs a source clip in \(self.mode)." : "The request makes no job.")
@@ -151,6 +160,7 @@ public struct AgentVideoOrder: Sendable, Hashable {
         if let issue = Validation.check(spec, constraints: constraints ?? .builtIn).first {
             throw Refusal(Self.text(for: issue, spec: spec, constraints: constraints ?? .builtIn))
         }
+        spec.title = JobSpec.title(from: title)
         return spec
     }
 

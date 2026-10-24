@@ -43,6 +43,18 @@ import Testing
         #expect(spec.model == .genjutsu)
     }
 
+    /// The agent's title names the job in the Queue, the Library and export names; the source's name without one.
+    @Test func aTitleNamesTheJobInsteadOfTheSourceFile() throws {
+        let untitled = try order().spec(from: base, in: context).get()
+        #expect(untitled.title == nil)
+        let spec = try order { $0.title = "  Knight on the roof\n" }.spec(from: base, in: context).get()
+        #expect(spec.title == "Knight on the roof")
+        let job = Job(spec: spec, providerKind: .apiKey, cost: .usd(1, isEstimate: true), createdAt: .now)
+        #expect(LibraryItemModel(job: job).sourceName == "Knight on the roof")
+        #expect(JobRowModel(job, now: .now).title.hasPrefix("Knight on the roof · "))
+        #expect(LibraryFilter(query: "roof").matches(LibraryItemModel(job: job)))
+    }
+
     /// The form keeps a range inside the model's window by moving it; an agent's range is refused instead.
     @Test func aRangeOutsideTheModelsWindowIsRefusedNotMoved() throws {
         let limits = VideoModel.genjutsu.limits(for: .motionTransfer, hasSource: true)
@@ -110,6 +122,12 @@ import Testing
         #expect(spec.duration == 8)
         #expect(spec.references.count == 2)
         #expect(spec.source?.fileURL.path(percentEncoded: false).hasPrefix("/quote/") == true)
+        // A result from a source keeps its orientation; one without says the frame it asks for.
+        #expect(AgentVideoOrder.frame(of: spec) == "source")
+        let prompted = JobSpec(
+            mode: .motionTransfer, model: .seedance25, source: nil, prompt: "a fox", resolution: .p720,
+            aspectRatio: .portrait)
+        #expect(AgentVideoOrder.frame(of: prompted) == "9:16")
     }
 
     @Test func modeNamesRoundTrip() {
@@ -205,6 +223,48 @@ import Testing
         #expect(AgentJobStatus(agentJob(.rejected)).error == "Rejected by content moderation")
     }
 
+    /// A finished video points the agent to frames, against its source when it has one.
+    @Test func aFinishedVideoSaysHowToCheckItWithFrames() throws {
+        var done = agentJob(.done)
+        done.outputFile = URL(filePath: "/tmp/out.mp4")
+        let plain = try #require(AgentJobRules.checkHint(done))
+        #expect(plain.contains("frames with item \(done.id.uuidString)") && !plain.contains("compare_source"))
+        done.spec.source = SourceClip(
+            fileURL: URL(filePath: "/tmp/in.mov"), duration: 5, pixelSize: PixelSize(width: 576, height: 1024),
+            range: 0...5)
+        #expect(AgentJobRules.checkHint(done)?.contains("compare_source true") == true)
+        #expect(AgentJobRules.checkHint(agentJob(.processing)) == nil)
+        #expect(AgentJobRules.checkHint(agentJob(.done)) == nil)
+    }
+
+    /// over_cap says what the cap counted, in the whole units agents read, and that it isn't the agent budget.
+    @Test func overCapGivesTheCapTodayAndTheJobsPrice() {
+        let credits = AgentCap.overCapMessage(
+            cap: .credits(300), committedToday: 290, price: .credits(24, isEstimate: false))
+        #expect(credits.contains("daily cap of 300 credits") && credits.contains("290 credits are spent or queued"))
+        #expect(credits.contains("counts at 24 credits") && credits.contains("apart from the agent budget"))
+        let dollars = AgentCap.overCapMessage(cap: .usd(5), committedToday: 4.5, price: .usd(1.301, isEstimate: true))
+        #expect(dollars.contains("500 usd_cents") && dollars.contains("450 usd_cents"))
+        #expect(dollars.contains("counts at 131 usd_cents"))
+        #expect(AgentCap.overCapMessage(cap: .usd(5), committedToday: 0, price: .unknownUSD).contains("unknown price"))
+    }
+
+    /// A create_video wait ends once the guard can read the price, the job is past the guard, or it is held.
+    @Test func aCreateVideoWaitEndsOnceThePriceIsKnownOrTheJobIsHeld() {
+        let estimate = Cost.credits(24, isEstimate: true)
+        #expect(!AgentJobStatus.isPriced(agentJob(.preparing, cost: estimate)))
+        #expect(!AgentJobStatus.isPriced(agentJob(.uploading, cost: .unknownUSD)))
+        var quoted = agentJob(.waitingForSlot, cost: estimate)
+        quoted.serverPrice = .credits(24, isEstimate: false)
+        #expect(AgentJobStatus.isPriced(quoted))
+        #expect(AgentJobStatus.isPriced(agentJob(.preparing)))
+        #expect(AgentJobStatus.isPriced(agentJob(.paused(.agentLimit), hold: .unknownPrice, cost: estimate)))
+        #expect(AgentJobStatus.isPriced(agentJob(.failed(reason: .generationFailed), cost: estimate)))
+        var sending = agentJob(.waitingForSlot, cost: estimate)
+        sending.submitAttempt = SubmitAttempt(isIdempotent: true)
+        #expect(AgentJobStatus.isPriced(sending))
+    }
+
     @Test func agentsActOnlyOnTheirOwnJobsAndNeverRetryWhatMayBeCharged() {
         let own = agentJob(.failed(reason: .generationFailed))
         #expect(AgentJobRules.retryRefusal(own) == nil)
@@ -233,8 +293,28 @@ import Testing
             }, sleep: { _ in sleeps += 1 })
         #expect(!settledLater && sleeps == 2)
 
+        var clock = ContinuousClock.now
         sleeps = 0
-        let timedOut = await agentWait(seconds: 2, milliseconds: 500, isSettled: { false }, sleep: { _ in sleeps += 1 })
+        let timedOut = await agentWait(
+            seconds: 2, milliseconds: 500, isSettled: { false }, now: { clock },
+            sleep: {
+                sleeps += 1
+                clock += $0
+            })
         #expect(timedOut && sleeps == 4)
+    }
+
+    @Test func aWaitEndsByTheClockWhenSleepsRunLong() async {
+        var clock = ContinuousClock.now
+        let start = clock
+        var sleeps = 0
+        // Each 500 ms sleep takes 3 s, as in the background: the wait still ends at 50 s, not after 100 sleeps.
+        let timedOut = await agentWait(
+            seconds: 50, isSettled: { false }, now: { clock },
+            sleep: { _ in
+                sleeps += 1
+                clock += .seconds(3)
+            })
+        #expect(timedOut && sleeps == 17 && clock - start <= .seconds(51))
     }
 }

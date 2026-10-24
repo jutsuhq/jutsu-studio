@@ -27,7 +27,8 @@ extension AgentService {
         if request.command == "frames" { return }
         let state: AgentRequestGate<AgentCreated, AgentError>.State
         do {
-            state = try requests.state(of: request.requestID, fingerprint: request.fingerprint)
+            state = try requests.state(
+                of: request.requestID, fingerprint: request.fingerprint, parameters: request.parameters)
         } catch {
             logger.error("Can't read the agent requests: \(error.localizedDescription, privacy: .private)")
             throw Self.requestsUnreadable
@@ -35,7 +36,8 @@ extension AgentService {
         switch state {
         case .new, .running: return
         case .conflict: throw .requestConflict
-        case .known:
+        // Sent again with another max_cost: its job has the files already, whatever the new one decides.
+        case .known, .otherMaxCost:
             throw AgentError(
                 .requestKnown, message: "This request was already queued; its files aren't needed again.",
                 retryable: false, next: "Send \(request.command) without uploading to get its job.")
@@ -91,51 +93,36 @@ extension AgentService {
             price: price, isExact: isExact, mode: video.mode, model: spec.model.rawValue,
             resolution: spec.resolution.rawValue, duration: spec.duration, remainingToday: remaining,
             paysUnlimited: paysUnlimited,
-            blocker: Self.quoteBlocker(
-                price: money, remaining: remaining, paysUnlimited: unlimited,
+            blocker: AgentQuote.blocker(
+                price: money?.amount, remaining: remaining, paysUnlimited: unlimited,
                 unlimitedAllowed: preferences.allowsUnlimited),
+            priceNote: AgentQuote.priceNote(isEstimate: !isExact, hasPrice: money != nil, paysUnlimited: unlimited),
             maxVariants: variants.maximum, variantsUnavailable: variants.reason, images: spec.references.count,
-            minImages: limits.lowerBound, maxImages: limits.upperBound)
-    }
-
-    /// What `create_video` would pause the job for, as far as a quote can tell before upload.
-    private static func quoteBlocker(
-        price: AgentMoney?, remaining: Int?, paysUnlimited: Bool, unlimitedAllowed: Bool
-    ) -> String? {
-        if paysUnlimited {
-            return unlimitedAllowed
-                ? nil
-                : "It would be paid from the plan's unlimited generations, which the person hasn't let agents use "
-                    + "(Settings › Agents); the job would wait for the person."
-        }
-        guard let price else {
-            return "The price isn't known before upload; unless Higgsfield quotes it then, the job waits for the "
-                + "person."
-        }
-        if let remaining, price.amount > remaining {
-            return "It costs more than is left of today's agent budget (\(remaining)); the job would wait for the "
-                + "person."
-        }
-        return nil
+            minImages: limits.lowerBound, maxImages: limits.upperBound, aspectRatio: AgentVideoOrder.frame(of: spec))
     }
 
     // MARK: create_video
 
     func createVideo(_ fields: CreateVideoCommand, client: String?) async throws(AgentError) -> AgentCreated {
+        let started = ContinuousClock.now
         let files = [fields.video.source?.path].compactMap(\.self) + fields.video.images
         defer { Task { await sweepInbox() } }
-        return try await requests.run(
-            fields.requestID, fingerprint: fields.fingerprint,
+        let created = try await requests.run(
+            fields.requestID, fingerprint: fields.fingerprint, parameters: fields.parameters,
             refusals: Self.refusals("create_video", made: "its job was never queued"), discard: { discard(files) },
             known: { ids throws(AgentError) in
                 let jobs = try await knownJobs(ids)
                 return jobs.isEmpty
                     ? nil : AgentCreated(requestID: fields.requestID, known: true, jobs: jobs.map(Self.agentJob))
             },
+            otherMaxCost: { [weak self] ids throws(AgentError) in try await self?.raiseMaxCost(fields, of: ids) },
             queue: { [weak self] () throws(AgentError) in
                 guard let self else { throw .agentsOff }
                 return try await self.queue(fields, client: client)
             })
+        guard fields.waitSeconds > 0 else { return created }
+        let seconds = AgentProtocol.waitSeconds(fields.waitSeconds, after: ContinuousClock.now - started)
+        return await waitForPrice(of: created, seconds: seconds)
     }
 
     /// The jobs of a known request. Throws when the store can't be read: a job not found there could still exist.
@@ -175,7 +162,8 @@ extension AgentService {
         }
         let (spec, _) = try await spec(for: Self.order(video, source: source, images: images))
         let jobID = UUID()
-        try recordRequest(fields.requestID, fingerprint: fields.fingerprint, jobIDs: [jobID])
+        try recordRequest(
+            fields.requestID, fingerprint: fields.fingerprint, parameters: fields.parameters, jobIDs: [jobID])
         let origin = AgentOrigin(
             client: client, requestID: fields.requestID,
             maxCost: AgentMoney(fields.maxCost.amount, Self.unit(of: fields.maxCost.unit)))
@@ -208,9 +196,11 @@ extension AgentService {
     }
 
     /// Records the request with the IDs of what it makes, before anything is queued or sent.
-    func recordRequest(_ requestID: String, fingerprint: String, jobIDs: [UUID]) throws(AgentError) {
+    func recordRequest(
+        _ requestID: String, fingerprint: String, parameters: String? = nil, jobIDs: [UUID]
+    ) throws(AgentError) {
         do {
-            try requests.record(requestID, fingerprint: fingerprint, ids: jobIDs, at: .now)
+            try requests.record(requestID, fingerprint: fingerprint, parameters: parameters, ids: jobIDs, at: .now)
         } catch {
             throw AgentError(
                 .failed, message: "Jutsu Studio can't record the request, so nothing is queued or sent.",
@@ -225,7 +215,7 @@ extension AgentService {
         AgentVideoOrder(
             mode: video.mode, model: video.model, prompt: video.prompt ?? "", source: source, images: images,
             style: video.style, resolution: video.resolution, isDraft: video.draft, length: video.length,
-            aspectRatio: video.aspectRatio, audio: video.audio, variants: video.variants)
+            aspectRatio: video.aspectRatio, audio: video.audio, variants: video.variants, title: video.title)
     }
 
     /// The one job `order` makes, built and checked as Create does, on the connection as it is now, and whether the
@@ -408,9 +398,11 @@ extension AgentService {
 
     static func agentError(enqueueing error: any Error) -> AgentError {
         switch error {
-        case JobEngineError.overCap:
+        case JobEngineError.overCap(let over):
             AgentError(
-                .overCap, message: "The job would take today's spending over the person's daily cap.",
+                .overCap,
+                message: AgentCap.overCapMessage(
+                    cap: over.cap, committedToday: over.committedToday, price: over.price),
                 retryable: false, next: "Ask the person to raise the cap in Settings or queue it themselves.")
         case JobEngineError.notConnected:
             notConnected
@@ -427,6 +419,6 @@ extension AgentService {
             price: status.price.map { AgentAmount($0.amount, unit(of: $0.unit)) }, isPriceExact: status.isPriceExact,
             charged: status.charged, error: status.error, result: status.result, requestID: job.agent?.requestID,
             client: job.agent?.client, mode: AgentVideoOrder.name(of: job.spec.mode), model: job.spec.model.rawValue,
-            createdAt: job.createdAt, finishedAt: job.finishedAt)
+            next: AgentJobRules.checkHint(job), createdAt: job.createdAt, finishedAt: job.finishedAt)
     }
 }

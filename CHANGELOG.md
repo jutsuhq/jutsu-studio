@@ -4,6 +4,19 @@ Notable changes to Jutsu Studio. Versions follow [Semantic Versioning](https://s
 
 ## [Unreleased]
 
+### Added
+
+- `create_video` and `create_image` take an optional `title`, which names the job in the Queue, the Library, search and export file names instead of the source's file name (or, for images, the prompt).
+- `quote` gives Genjutsu Lite an estimate from its rate per second (2 credits a second at 720p) instead of an unknown price, with a `priceNote` saying the exact price is quoted before the job is sent and an estimate never runs on its own above max_cost or the budgets.
+- `create_video` takes `wait_seconds` (0–50) and answers once the job's price is known or it is held, so an agent can tell at once whether it waits for the person; `timedOut` says the wait ran out.
+- An agent can lift the hold on its own video job held over `max_cost`: sending the same `request_id` and parameters with a higher `max_cost` runs the job when its price fits the new `max_cost`, what is left of today's agent budget and the person's daily cap, without uploading the files again. Otherwise it stays held, and the answer says why.
+- `over_cap` gives the person's daily cap, what it counts today and what the job was counted at, and `capabilities` lists the cap with the agent budget (`dailyCap`, `capTakenToday`). An upload refused for room says how much is free and how much the file needs.
+- A finished video in `jobs` and `create_video` carries `next` pointing to `frames`, with `compare_source: true` when it has a source, and `capabilities` says when the running `jutsu` helper is older than the app (`helperVersion`, `helperNote`) and needs a reconnect (`/mcp` in Claude Code). Helpers from 0.2.1 and before can't tell.
+
+### Fixed
+
+- Seedance 2.5 on an account keeps a source clip's orientation: a portrait source made a landscape video, because no aspect ratio was sent with it. The source's nearest ratio is sent now, and `quote` gives the result's frame (`aspectRatio`, `source` when it follows the source).
+
 ## [0.2.1] - 2026-10-21
 
 ### Added

@@ -6,12 +6,14 @@ extension Tool {
         switch self {
         case .capabilities:
             """
-            What Jutsu Studio can do now: the app version, how it is connected to Higgsfield (none, apiKey or \
+            What Jutsu Studio can do now: the app version (and the helper's, with helperNote when the helper is older \
+            and the MCP server needs a reconnect for this version's tools), how it is connected to Higgsfield (none, apiKey or \
             account) with the account's plan and credits when known, today's agent budget in whole units \
             (usd_cents with an API key, credits on an account: dailyLimit, spentToday, reservedToday for submits \
             not answered yet, remaining, and unlimitedAllowed, whether the person lets agents use the plan's unlimited \
-            generations, false for the rest of the day once one was charged anyway) and the tool groups this version \
-            offers. models: true adds the video models \
+            generations, false for the rest of the day once one was charged anyway; dailyCap and capTakenToday, the \
+            person's own daily cap and what it counts today, every job theirs and agents' together, apart from the \
+            budget: a job over it is refused with over_cap) and the tool groups this version offers. models: true adds the video models \
             (id, title, modes, resolutions, whether the connection runs it); model: an ID returns only that one, with \
             its limits per mode (seconds, images, whether it needs a style or a source, and maxVariants, the most \
             variants takes there on this connection, with variantsUnavailable saying why it is 1). image_models: true adds the \
@@ -23,13 +25,16 @@ extension Tool {
             """
             What a video would cost now, with the same parameters as create_video, without uploading or queueing \
             anything: the price in whole usd_cents or credits (null when not known before upload), whether it is \
-            exact, what is left of today's agent budget, paysUnlimited (the plan's unlimited generations would pay \
-            for it: it costs the budget nothing, and waits for the person unless unlimitedAllowed), and blocker, \
+            exact (an estimate, isExact false, comes with priceNote: Higgsfield quotes the exact price before the job \
+            is sent, and the job runs on its own when that is within max_cost and today's budget), what is left of \
+            today's agent budget, paysUnlimited (the plan's unlimited generations would pay for it: it costs the \
+            budget nothing, and waits for the person unless unlimitedAllowed), and blocker, \
             why create_video would hold or refuse it now, and maxVariants with variantsUnavailable, the most videos \
             one job of it makes and why only one (a style; the plan's unlimited generations, which make one video \
             per job while the person uses them; a connection without variants), and images with minImages and \
             maxImages, the reference images the job has (elements' included) and the most and fewest its model takes \
-            in this mode, the server's limits where it states them, else the app's. A source \
+            in this mode, the server's limits where it states them, else the app's, and aspectRatio, the result's \
+            frame (source: it keeps the source clip's orientation). A source \
             needs end (its start and end in seconds) instead of a file; images may be paths or image_count. Free.
             """
         case .createVideo:
@@ -41,11 +46,16 @@ extension Tool {
             most you agree to pay: right before the job is paid for, a price above it, above what is left of the \
             daily agent budget or not known pauses the job (state paused, pauseReason agent_limit) until the person \
             confirms it in the app; so does a job the plan's unlimited generations would pay for while the person \
-            doesn't let agents use them (hold unlimited_not_allowed). Files (source.path, images) are paths on this \
+            doesn't let agents use them (hold unlimited_not_allowed). A job held over_max_cost goes on when the same \
+            request_id and parameters come again with a higher max_cost that covers its price, what is left of the \
+            budget and the person's cap (no files are sent again); otherwise it stays held, with next saying why. Files (source.path, images) are paths on this \
             Mac, copied into the app. elements names the account's characters and other reference elements (from \
             the elements tool, account only): their images are added first, in the element's order, then images; \
             the answer's references lists every image sent with its @ImageN tag, the N the prompt names it by. \
-            Returns the job; follow it with jobs.
+            title names the job in the Queue, the Library and export file names instead of the source's file name. \
+            Returns the job; follow it with jobs. With wait_seconds (0–50) the answer comes once the job's price is \
+            known (isPriceExact) or it is held or finished, else when the wait runs out, with timedOut; waiting \
+            stops nothing.
             """
         case .createImage:
             """
@@ -53,7 +63,9 @@ extension Tool {
             capabilities with image_models; the first when left out), prompt, aspect_ratio, count, and inputs, \
             images on this Mac to edit, in order, for models that take them (up to the model's maxInputs; input is \
             the same with one image, never both); elements adds the account's reference elements by name, their \
-            images first, and references in the answer tags each image @ImageN. request_id and max_cost work as in create_video: the \
+            images first, and references in the answer tags each image @ImageN; title names the request in the Queue \
+            and the images in the Library and their file names instead of the start of the prompt. request_id and \
+            max_cost work as in create_video: the \
             same request_id with the same parameters returns the same request and never pays twice. Right before it \
             is sent, a price above max_cost, above what is left of the daily agent budget, over the person's daily \
             cap or not known holds it (state paused, needsPerson) until the person sends it from the Queue. Follow \
@@ -72,7 +84,7 @@ extension Tool {
             One place to follow work: video jobs, image requests and exports, by ID (ids, up to 20), or the latest \
             agents started (limit, up to 50, newest first; pass nextCursor back as cursor for the page after). Each \
             has kind (video, image, export, delivery_export), state, pauseReason, hold, needsPerson, progress, \
-            price, error and result (the finished video's path); an image request's results are its images' paths, \
+            price, error and result (the finished video's path, with next saying how to check it with frames); an image request's results are its images' paths, \
             an export's results the files written, with folder and files (each done, failed or skipped). An ID \
             Jutsu Studio doesn't know is state unknown with next: an export's ID is forgotten when the app quits. \
             wait_seconds (0–50) waits until everything named has settled (done, failed, rejected, canceled, paused \
