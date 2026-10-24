@@ -4,6 +4,8 @@ Notable changes to Jutsu Studio. Versions follow [Semantic Versioning](https://s
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-10-24
+
 ### Added
 
 - `create_video` and `create_image` take an optional `title`, which names the job in the Queue, the Library, search and export file names instead of the source's file name (or, for images, the prompt).
@@ -15,6 +17,7 @@ Notable changes to Jutsu Studio. Versions follow [Semantic Versioning](https://s
 
 ### Fixed
 
+- `jobs` with `wait_seconds` answered `still_working` instead of `timedOut` while the app was in the background: the wait counted its checks, which ran long under App Nap, and missed the answer deadline. Waits now end by the clock.
 - Seedance 2.5 on an account keeps a source clip's orientation: a portrait source made a landscape video, because no aspect ratio was sent with it. The source's nearest ratio is sent now, and `quote` gives the result's frame (`aspectRatio`, `source` when it follows the source).
 
 ## [0.2.1] - 2026-10-21
@@ -66,7 +69,8 @@ The first public release.
 - The restyle preset gallery with search, favorites and recents.
 - Menu bar status, Dock badge, notifications and open at login.
 
-[Unreleased]: https://github.com/jutsuhq/jutsu-studio/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/jutsuhq/jutsu-studio/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/jutsuhq/jutsu-studio/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/jutsuhq/jutsu-studio/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/jutsuhq/jutsu-studio/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/jutsuhq/jutsu-studio/compare/v0.1.0...v0.1.1
