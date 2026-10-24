@@ -422,7 +422,8 @@ public struct AgentJob: Codable, Equatable, Sendable {
     public var files: [AgentExportFile]?
     /// A delivery export's set.
     public var set: UUID?
-    /// What to do about it, for state unknown.
+    /// What to do about it: for state unknown; for a finished video, how to check it with `frames`; for a request
+    /// sent again with a higher max_cost, why its job is still held.
     public var next: String?
     /// nil for state unknown.
     public var createdAt: Date?

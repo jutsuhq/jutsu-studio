@@ -10,6 +10,8 @@ extension Tool {
         case .capabilities:
             properties["protocolVersion"] = ["type": "integer"]
             properties["appVersion"] = ["type": "string"]
+            properties["helperVersion"] = ["type": "string"]
+            properties["helperNote"] = ["type": "string"]
             properties["agentsAllowed"] = ["type": "boolean"]
             properties["connection"] = [
                 "type": "object",

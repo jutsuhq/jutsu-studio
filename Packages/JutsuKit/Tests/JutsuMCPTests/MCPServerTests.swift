@@ -215,6 +215,21 @@ actor FakeApp {
         #expect(again == tools)
     }
 
+    /// The helper adds its own version, and a note to reconnect when it is older than the app it talks to.
+    @Test func capabilitiesSayWhenTheHelperIsOlderThanTheApp() async throws {
+        let same = try #require(try await reply("tools/call", ["name": "capabilities"])["result"]?["structuredContent"])
+        #expect(same["helperVersion"] == "0.2.0" && same["helperNote"] == nil)
+
+        var updated = Self.capabilities
+        updated.appVersion = "0.2.10"
+        let app = FakeApp(AgentResponse(capabilities: updated))
+        var server = MCPServer(version: "0.2.9") { await app.receive($0, $1) }
+        let older = try #require(
+            try await reply(&server, "tools/call", ["name": "capabilities"])["result"]?["structuredContent"])
+        #expect(older["helperVersion"] == "0.2.9")
+        #expect(older["helperNote"]?.stringValue?.contains("/mcp") == true)
+    }
+
     @Test func aToolResultIsStructuredAndTheSameJSONAsText() async throws {
         let result = try #require(try await reply("tools/call", ["name": "capabilities"])["result"])
         let structured = try #require(result["structuredContent"])

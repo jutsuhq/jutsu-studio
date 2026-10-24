@@ -120,6 +120,17 @@ public enum AgentJobRules {
         return nil
     }
 
+    /// For a finished video: how to look at it with `frames`, against its own source when it has one, rather than
+    /// grabbing frames by hand.
+    public static func checkHint(_ job: Job) -> String? {
+        guard job.state == .done, job.outputFile != nil else { return nil }
+        let item = job.id.uuidString
+        return job.spec.source == nil
+            ? "To check it, call frames with item \(item) and a few times; it writes the frames and a contact sheet."
+            : "To check it against its source, call frames with item \(item), a few times and compare_source true; "
+                + "it writes both clips' frames side by side on a contact sheet."
+    }
+
     /// Why a job sent again with a higher `max_cost` still waits: the hold it would get now, or `nil` for the
     /// person's daily cap. Nothing changed, so the job stays held over its old `max_cost`, which the same request can
     /// lift later, once the budget or the cap has room.
