@@ -99,12 +99,7 @@ struct APIModel {
     /// source's frame among `candidates`; without a source, the one asked for, or the server's default for Auto.
     static func aspectRatio(of spec: JobSpec, among candidates: [AspectRatio] = AspectRatio.allCases) -> AspectRatio? {
         guard let source = spec.source else { return spec.aspectRatio == .auto ? nil : spec.aspectRatio }
-        guard source.pixelSize.isValid else { return nil }
-        let ratio = log(Double(source.pixelSize.width) / Double(source.pixelSize.height))
-        return candidates.compactMap { candidate in
-            candidate.widthOverHeight.map { (candidate, abs(log($0) - ratio)) }
-        }
-        .min { $0.1 < $1.1 }?.0
+        return AspectRatio.nearest(to: source.pixelSize, among: candidates)
     }
 
     /// Kling O3 takes the source as its one reference video and the images in order, and makes a clip as long as the

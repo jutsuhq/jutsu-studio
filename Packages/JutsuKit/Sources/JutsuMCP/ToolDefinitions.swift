@@ -274,7 +274,10 @@ extension Tool {
                 "type": "number", "exclusiveMinimum": 0,
                 "description": "Seconds a clip without a source runs, or extend adds.",
             ],
-            "aspect_ratio": ["type": "string", "description": "A clip without a source: 16:9, 9:16, 1:1…"],
+            "aspect_ratio": [
+                "type": "string",
+                "description": "A clip without a source: 16:9, 9:16, 1:1…; with one it keeps the source's orientation.",
+            ],
             "audio": ["type": "string", "enum": .array(AgentVideoRequest.audioOptions.map { .string($0) })],
             "variants": [
                 "type": "integer", "minimum": 1, "description": "Videos one submit makes, up to quote's maxVariants.",
