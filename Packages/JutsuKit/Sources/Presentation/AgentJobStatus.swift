@@ -83,6 +83,13 @@ public struct AgentJobStatus: Sendable, Hashable {
     public static func isSettled(_ state: JobState) -> Bool {
         state.isTerminal || state.isPaused
     }
+
+    /// The price is known as the spending guard reads it, or the job got past the guard, or it was held or finished:
+    /// a `create_video` wait ends once every job it queued is. A known price can still be held at submit, above
+    /// max_cost or the budgets; the agent sees both in the answer.
+    public static func isPriced(_ job: Job) -> Bool {
+        isSettled(job.state) || job.agentPriceIsKnown || job.submitAttempt != nil || job.remote != nil
+    }
 }
 
 /// What an agent may do to a job with `job_action`, and why not. Only jobs an agent queued; nothing that could pay

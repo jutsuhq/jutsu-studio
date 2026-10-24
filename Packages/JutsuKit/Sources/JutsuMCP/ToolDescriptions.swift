@@ -24,8 +24,9 @@ extension Tool {
             What a video would cost now, with the same parameters as create_video, without uploading or queueing \
             anything: the price in whole usd_cents or credits (null when not known before upload), whether it is \
             exact (an estimate, isExact false, comes with priceNote: Higgsfield quotes the exact price before the job \
-            is sent, and the job runs on its own when that is within max_cost and today's budget), what is left of today's agent budget, paysUnlimited (the plan's unlimited generations would pay \
-            for it: it costs the budget nothing, and waits for the person unless unlimitedAllowed), and blocker, \
+            is sent, and the job runs on its own when that is within max_cost and today's budget), what is left of \
+            today's agent budget, paysUnlimited (the plan's unlimited generations would pay for it: it costs the \
+            budget nothing, and waits for the person unless unlimitedAllowed), and blocker, \
             why create_video would hold or refuse it now, and maxVariants with variantsUnavailable, the most videos \
             one job of it makes and why only one (a style; the plan's unlimited generations, which make one video \
             per job while the person uses them; a connection without variants), and images with minImages and \
@@ -47,7 +48,9 @@ extension Tool {
             the elements tool, account only): their images are added first, in the element's order, then images; \
             the answer's references lists every image sent with its @ImageN tag, the N the prompt names it by. \
             title names the job in the Queue, the Library and export file names instead of the source's file name. \
-            Returns the job; follow it with jobs.
+            Returns the job; follow it with jobs. With wait_seconds (0–50) the answer comes once the job's price is \
+            known (isPriceExact) or it is held or finished, else when the wait runs out, with timedOut; waiting \
+            stops nothing.
             """
         case .createImage:
             """

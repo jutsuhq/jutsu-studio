@@ -102,9 +102,10 @@ extension AgentService {
     // MARK: create_video
 
     func createVideo(_ fields: CreateVideoCommand, client: String?) async throws(AgentError) -> AgentCreated {
+        let started = ContinuousClock.now
         let files = [fields.video.source?.path].compactMap(\.self) + fields.video.images
         defer { Task { await sweepInbox() } }
-        return try await requests.run(
+        let created = try await requests.run(
             fields.requestID, fingerprint: fields.fingerprint,
             refusals: Self.refusals("create_video", made: "its job was never queued"), discard: { discard(files) },
             known: { ids throws(AgentError) in
@@ -116,6 +117,25 @@ extension AgentService {
                 guard let self else { throw .agentsOff }
                 return try await self.queue(fields, client: client)
             })
+        guard fields.waitSeconds > 0 else { return created }
+        let seconds = AgentProtocol.waitSeconds(fields.waitSeconds, after: ContinuousClock.now - started)
+        return await waitForPrice(of: created, seconds: seconds)
+    }
+
+    /// The answer once every job's price is known or it is held (`AgentJobStatus.isPriced`), or when the wait ran
+    /// out. A job gone from the live jobs has finished; waiting stops nothing.
+    private func waitForPrice(of created: AgentCreated, seconds: Int) async -> AgentCreated {
+        let ids = created.jobs.map(\.id)
+        let live = environment.liveJobs
+        let timedOut = await agentWait(seconds: seconds) {
+            ids.allSatisfy { id in live.job(id).map(AgentJobStatus.isPriced) ?? true }
+        }
+        var answer = created
+        var jobs: [AgentJob] = []
+        for job in created.jobs { jobs.append(await self.job(job.id).map(Self.agentJob) ?? job) }
+        answer.jobs = jobs
+        answer.timedOut = timedOut
+        return answer
     }
 
     /// The jobs of a known request. Throws when the store can't be read: a job not found there could still exist.

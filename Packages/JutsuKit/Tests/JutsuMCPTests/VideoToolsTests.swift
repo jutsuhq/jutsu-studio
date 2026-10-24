@@ -99,6 +99,23 @@ actor FakeInbox {
 
     /// A title goes to the app as the agent wrote it, and is part of the request; one past the protocol's bound is
     /// refused before anything is sent.
+    /// wait_seconds is how the call answers, not what it asks for: a retry with another wait is the same request.
+    @Test func aWaitIsSentButIsNotPartOfTheRequest() async throws {
+        let source = try file("clip.mov")
+        guard
+            case .success(.createVideo(let waiting)) = Tool.createVideo.command(
+                create(["wait_seconds": 30], source: source).objectValue ?? [:]),
+            case .success(.createVideo(let plain)) = Tool.createVideo.command(create(source: source).objectValue ?? [:])
+        else {
+            Issue.record("no create_video")
+            return
+        }
+        #expect(waiting.waitSeconds == 30 && plain.waitSeconds == 0)
+        #expect(waiting.fingerprint == plain.fingerprint)
+        let long = try await call("create_video", create(["wait_seconds": 51]))
+        #expect(long["structuredContent"]?["error"]?["code"] == "bad_request")
+    }
+
     @Test func aTitleIsSentWithTheRequest() async throws {
         let source = try file("clip.mov")
         guard

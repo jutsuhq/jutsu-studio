@@ -71,6 +71,50 @@ import Testing
     }
 }
 
+/// create_video's wait: carried only when asked for, 0 to 50 s, and cut to what is left of the answer deadline.
+@Suite struct CreateVideoWaitTests {
+    private let video = AgentVideoRequest(mode: "motion_transfer", source: AgentSource(path: "/tmp/a.mov"))
+
+    @Test func aWaitRoundTripsAndIsLeftOutWhenNone() throws {
+        let fingerprint = String(repeating: "b", count: 64)
+        let waiting = CreateVideoCommand(
+            requestID: "r-1", fingerprint: fingerprint, video: video, maxCost: AgentAmount(40, .credits),
+            waitSeconds: 30)
+        let line = try AgentWire.line(AgentRequest(.createVideo(waiting), id: "1"))
+        #expect(try AgentWire.request(from: line.dropLast()).request.get().command == .createVideo(waiting))
+        var plain = waiting
+        plain.waitSeconds = 0
+        let plainLine = try AgentWire.line(AgentRequest(.createVideo(plain), id: "1"))
+        #expect(!String(decoding: plainLine, as: UTF8.self).contains("waitSeconds"))
+        #expect(String(decoding: line, as: UTF8.self).contains("\"waitSeconds\":30"))
+    }
+
+    @Test func aWaitOutsideZeroToFiftyIsRefused() throws {
+        let fingerprint = String(repeating: "b", count: 64)
+        for seconds in [-1, 51] {
+            var command = CreateVideoCommand(
+                requestID: "r-1", fingerprint: fingerprint, video: video, maxCost: AgentAmount(40, .credits))
+            command.waitSeconds = seconds
+            let line = try AgentWire.line(AgentRequest(.createVideo(command), id: "1"))
+            guard case .failure(let error) = AgentWire.request(from: line.dropLast()).request else {
+                Issue.record("wait_seconds \(seconds) was taken")
+                continue
+            }
+            #expect(error.code == .badRequest)
+        }
+    }
+
+    @Test func aWaitLeavesTimeToAnswerWithinTheDeadline() {
+        #expect(AgentProtocol.waitSeconds(50, after: .zero) == 50)
+        #expect(AgentProtocol.waitSeconds(50, after: .seconds(10)) == 40)
+        #expect(AgentProtocol.waitSeconds(20, after: .seconds(10)) == 20)
+        #expect(AgentProtocol.waitSeconds(50, after: .seconds(60)) == 0)
+        let elapsed = Duration.seconds(12)
+        #expect(
+            Duration.seconds(AgentProtocol.waitSeconds(50, after: elapsed)) + elapsed < AgentProtocol.answerDeadline)
+    }
+}
+
 /// What a quote says about a job before upload: an estimate doesn't hold it, and says how its price is checked.
 @Suite struct QuoteAdviceTests {
     @Test func anEstimateWithinTheBudgetIsNoBlockerAndSaysHowItRuns() throws {
