@@ -1,6 +1,24 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Smooth Motion…" : {
+
+    },
+    "Cancel %@" : {
+
+    },
+    "Smooth Motion" : {
+
+    },
+    "This file can't be read." : {
+
+    },
+    "Free" : {
+
+    },
+    "Motion" : {
+
+    },
     "Let agents use unlimited generations" : {
 
     },

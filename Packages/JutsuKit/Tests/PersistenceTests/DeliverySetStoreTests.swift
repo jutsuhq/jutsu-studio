@@ -113,6 +113,30 @@ import Testing
         #expect(try await store.usedIn(source) == [stored.reference])
     }
 
+    @Test func aVersionMadeOnThisMacCarriesItsOwnLengthAndSize() async throws {
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let store = try store()
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        var job = makeJob(state: .done)
+        job.outputMedia = OutputMedia(duration: 5, pixelSize: PixelSize(width: 854, height: 480))
+        let original = folder.appending(path: "rooftop.mp4")
+        try Data("original".utf8).write(to: original)
+        let material = try await store.saveMaterial(
+            Material(id: job.id, kind: .video, version: MaterialVersion(fileURL: original, video: job)))
+        let slow = folder.appending(path: "rooftop slow 2x.mp4")
+        try Data("slow".utf8).write(to: slow)
+        let media = OutputMedia(duration: 10, pixelSize: PixelSize(width: 854, height: 480))
+
+        let stored = try await store.addEditedVersion(of: material.reference, file: slow, media: media)
+
+        #expect(stored.current.video?.outputMedia == media)
+        #expect(stored.current.video?.outputFile == slow)
+        #expect(stored.current.pixelSize == media.pixelSize)
+        #expect(stored.current.inputs == [MaterialInput(source: material.reference, role: .parent)])
+        #expect(stored.versions.first?.video?.outputMedia?.duration == 5)
+        #expect(try Data(contentsOf: original) == Data("original".utf8))
+    }
+
     @Test func anEditOfAMissingVersionIsRefused() async throws {
         defer { try? FileManager.default.removeItem(at: folder) }
         let store = try store()
