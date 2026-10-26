@@ -1,4 +1,5 @@
 import Foundation
+import JutsuAgent
 import JutsuCore
 import Testing
 
@@ -211,16 +212,27 @@ import Testing
     }
 
     @Test func agentsSeeStableNamesAndWhoMustAct() {
-        let held = AgentJobStatus(agentJob(.paused(.agentLimit), hold: .overDailyBudget))
+        let held = AgentJob(agentJob(.paused(.agentLimit), hold: .overDailyBudget))
         #expect(held.state == "paused" && held.pauseReason == "agent_limit" && held.hold == "over_daily_budget")
         #expect(held.needsPerson)
-        #expect(held.price == AgentMoney(130, .usdCents) && held.isPriceExact)
-        let byUser = AgentJobStatus(agentJob(.paused(.byUser)))
+        #expect(held.price == AgentAmount(130, .usdCents) && held.isPriceExact)
+        let byUser = AgentJob(agentJob(.paused(.byUser)))
         #expect(!byUser.needsPerson && byUser.hold == nil)
-        #expect(AgentJobStatus(agentJob(.waitingForSlot, cost: .unknownUSD)).price == nil)
-        #expect(AgentJobStatus(agentJob(.failed(reason: .outcomeUnknown))).error != nil)
+        #expect(AgentJob(agentJob(.waitingForSlot, cost: .unknownUSD)).price == nil)
+        #expect(AgentJob(agentJob(.failed(reason: .outcomeUnknown))).error != nil)
         // From the string catalog, as the Queue says it.
-        #expect(AgentJobStatus(agentJob(.rejected)).error == "Rejected by content moderation")
+        #expect(AgentJob(agentJob(.rejected)).error == "Rejected by content moderation")
+    }
+
+    /// The wire job carries who asked for it and what it is, as `jobs` lists it.
+    @Test func theWireJobNamesItsRequestModeAndModel() {
+        let job = agentJob(.queued)
+        let wire = AgentJob(job)
+        #expect(wire.id == job.id && wire.kind == "video" && wire.createdAt == job.createdAt)
+        #expect(wire.requestID == job.agent?.requestID && wire.client == job.agent?.client)
+        #expect(wire.mode == AgentVideoOrder.name(of: job.spec.mode) && wire.model == job.spec.model.rawValue)
+        #expect(AgentMoney(AgentAmount(AgentMoney(250, .credits))) == AgentMoney(250, .credits))
+        #expect(AgentBudgetUnit(for: .apiKey) == .usdCents && AgentBudgetUnit(for: .account) == .credits)
     }
 
     /// A raise that didn't lift the job changed nothing: the note says it stays held over its old max_cost and how the
@@ -261,17 +273,17 @@ import Testing
     /// A create_video wait ends once the guard can read the price, the job is past the guard, or it is held.
     @Test func aCreateVideoWaitEndsOnceThePriceIsKnownOrTheJobIsHeld() {
         let estimate = Cost.credits(24, isEstimate: true)
-        #expect(!AgentJobStatus.isPriced(agentJob(.preparing, cost: estimate)))
-        #expect(!AgentJobStatus.isPriced(agentJob(.uploading, cost: .unknownUSD)))
+        #expect(!AgentJob.isPriced(agentJob(.preparing, cost: estimate)))
+        #expect(!AgentJob.isPriced(agentJob(.uploading, cost: .unknownUSD)))
         var quoted = agentJob(.waitingForSlot, cost: estimate)
         quoted.serverPrice = .credits(24, isEstimate: false)
-        #expect(AgentJobStatus.isPriced(quoted))
-        #expect(AgentJobStatus.isPriced(agentJob(.preparing)))
-        #expect(AgentJobStatus.isPriced(agentJob(.paused(.agentLimit), hold: .unknownPrice, cost: estimate)))
-        #expect(AgentJobStatus.isPriced(agentJob(.failed(reason: .generationFailed), cost: estimate)))
+        #expect(AgentJob.isPriced(quoted))
+        #expect(AgentJob.isPriced(agentJob(.preparing)))
+        #expect(AgentJob.isPriced(agentJob(.paused(.agentLimit), hold: .unknownPrice, cost: estimate)))
+        #expect(AgentJob.isPriced(agentJob(.failed(reason: .generationFailed), cost: estimate)))
         var sending = agentJob(.waitingForSlot, cost: estimate)
         sending.submitAttempt = SubmitAttempt(isIdempotent: true)
-        #expect(AgentJobStatus.isPriced(sending))
+        #expect(AgentJob.isPriced(sending))
     }
 
     @Test func agentsActOnlyOnTheirOwnJobsAndNeverRetryWhatMayBeCharged() {

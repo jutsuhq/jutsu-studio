@@ -1,5 +1,8 @@
-import Darwin
 import Foundation
+
+#if canImport(Darwin)
+    import Darwin
+#endif
 
 /// Where files from agents wait until the command that names them takes them: `inbox/` next to the socket, in the app
 /// group's container. The sandboxed app may not open an agent's paths, and macOS keeps the helper out of the group
@@ -29,17 +32,19 @@ public struct AgentInbox: Sendable {
         folder = socket.deletingLastPathComponent().appending(path: Self.folderName, directoryHint: .isDirectory)
     }
 
-    /// A new, empty folder for one upload. `mkdir` fails on an existing name, so a folder is never shared even if
-    /// two UUIDs ever met; it then tries another.
-    public func makeUploadFolder() throws -> URL {
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        for _ in 0..<3 {
-            let candidate = folder.appending(path: UUID().uuidString, directoryHint: .isDirectory)
-            if mkdir(candidate.path(percentEncoded: false), 0o700) == 0 { return candidate }
-            guard errno == EEXIST else { throw POSIXError.current }
+    #if canImport(Darwin)
+        /// A new, empty folder for one upload. `mkdir` fails on an existing name, so a folder is never shared even if
+        /// two UUIDs ever met; it then tries another.
+        public func makeUploadFolder() throws -> URL {
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            for _ in 0..<3 {
+                let candidate = folder.appending(path: UUID().uuidString, directoryHint: .isDirectory)
+                if mkdir(candidate.path(percentEncoded: false), 0o700) == 0 { return candidate }
+                guard errno == EEXIST else { throw POSIXError.current }
+            }
+            throw POSIXError(.EEXIST)
         }
-        throw POSIXError(.EEXIST)
-    }
+    #endif
 
     /// Why an upload of `size` bytes is refused: it would leave less than `minFreeSpace` on the volume (`freeSpace`,
     /// `nil` when unknown, which doesn't refuse it), or take the inbox (`stored`, what it holds now) past
@@ -121,10 +126,12 @@ public struct AgentInbox: Sendable {
         return removed
     }
 
-    /// Moves the finished `partial` to `destination` in one step, refusing with `EEXIST` when anything is there.
-    public static func place(_ partial: URL, at destination: URL) throws {
-        let moved = renamex_np(
-            partial.path(percentEncoded: false), destination.path(percentEncoded: false), UInt32(RENAME_EXCL))
-        guard moved == 0 else { throw POSIXError.current }
-    }
+    #if canImport(Darwin)
+        /// Moves the finished `partial` to `destination` in one step, refusing with `EEXIST` when anything is there.
+        public static func place(_ partial: URL, at destination: URL) throws {
+            let moved = renamex_np(
+                partial.path(percentEncoded: false), destination.path(percentEncoded: false), UInt32(RENAME_EXCL))
+            guard moved == 0 else { throw POSIXError.current }
+        }
+    #endif
 }

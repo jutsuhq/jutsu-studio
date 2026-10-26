@@ -47,7 +47,7 @@ extension AgentService {
         try recordRequest(fields.requestID, fingerprint: fields.fingerprint, jobIDs: [id])
         let origin = AgentOrigin(
             client: client, requestID: fields.requestID,
-            maxCost: AgentMoney(fields.maxCost.amount, Self.unit(of: fields.maxCost.unit)))
+            maxCost: AgentMoney(fields.maxCost))
         do throws(AgentImageRefusal) {
             _ = try environment.agentImages.create(
                 order, id: id, origin: origin, provider: provider, upload: environment.imageUploader(provider))
@@ -66,15 +66,7 @@ extension AgentService {
     func imageJob(_ id: UUID) async -> AgentJob? {
         guard let record = environment.agentImages.record(id) else { return nil }
         let files = await imageFiles(of: record)
-        let status = AgentJobStatus(record, files: files)
-        return AgentJob(
-            id: id, state: status.state, pauseReason: status.pauseReason, hold: status.hold,
-            needsPerson: status.needsPerson, progress: nil,
-            price: status.price.map { AgentAmount($0.amount, Self.unit(of: $0.unit)) },
-            isPriceExact: status.isPriceExact, charged: status.charged, error: status.error, result: status.result,
-            results: files.isEmpty ? nil : files.map { $0.path(percentEncoded: false) }, kind: "image",
-            requestID: record.origin.requestID, client: record.origin.client, mode: "image", model: record.model.id,
-            createdAt: record.createdAt, finishedAt: record.finishedAt)
+        return AgentJob(record, files: files)
     }
 
     /// The images a finished request saved in Library › Images: this session's results, else the catalog's images
@@ -113,17 +105,6 @@ extension AgentService {
 
     /// The image models Create offers on this connection, as last read; never a network call.
     func imageModels() -> [AgentCapabilities.ImageModel] {
-        environment.referenceGenerator.models.map { model in
-            let input =
-                switch model.input {
-                case .none: "none"
-                case .optional: "optional"
-                case .required: "required"
-                }
-            return AgentCapabilities.ImageModel(
-                id: model.id, title: model.title, counts: model.variantCounts, aspectRatios: model.aspectRatios,
-                input: input, maxInputs: min(model.inputLimit, AgentImageRequest.maxInputs),
-                maxInputsNote: model.inputLimitIsBound ? AgentCapabilities.ImageModel.boundNote : nil)
-        }
+        environment.referenceGenerator.models.map(AgentCapabilities.ImageModel.init)
     }
 }

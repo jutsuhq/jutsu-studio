@@ -17,8 +17,10 @@ allowed() {
         MediaKit) echo "Foundation JutsuCore AVFoundation CoreMedia CoreVideo CoreImage CoreGraphics ImageIO UniformTypeIdentifiers CryptoKit os" ;;
         Persistence) echo "Foundation JutsuCore SwiftData os" ;;
         JobEngine) echo "Foundation FoundationNetworking JutsuCore HiggsfieldCore os" ;;
-        Presentation) echo "Foundation JutsuCore Observation os" ;;
+        # JutsuAgent for the agents' wire types it builds from jobs and Library rows.
+        Presentation) echo "Foundation JutsuCore JutsuAgent Observation os" ;;
         # The helper links these two: nothing of the app, and no AppKit (it starts the app through its own target).
+        # JutsuAgent's Darwin and CryptoKit code sits behind `#if canImport`, so its wire types build on Linux.
         JutsuAgent) echo "Foundation Darwin Dispatch CryptoKit" ;;
         JutsuMCP) echo "Foundation JutsuAgent HiggsfieldMCP" ;;
     esac

@@ -1,4 +1,5 @@
 import Foundation
+import JutsuAgent
 import JutsuCore
 
 /// `library_get`: one Library result in full, read from the catalog as the Library's details show it: the whole
@@ -6,11 +7,9 @@ import JutsuCore
 /// are), and the settings it was made with. Rejected results too, and results only on Higgsfield as far as the
 /// history says them, with no file; read-only.
 public struct AgentLibraryDetail: Sendable, Hashable {
-    public enum InputRole: Sendable, Hashable {
-        case source, startFrame, endFrame, reference
-        /// The result an Enhance operation, a final or an edit was made from.
-        case editedFrom
-    }
+    /// The wire's roles: source, start and end frames, references, and the result an Enhance operation, a final or
+    /// an edit was made from (`editedFrom`).
+    public typealias InputRole = AgentLibraryInput.Role
 
     public struct Input: Sendable, Hashable {
         public var role: InputRole

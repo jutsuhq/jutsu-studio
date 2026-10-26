@@ -1,5 +1,8 @@
-import Darwin
 import Foundation
+
+#if canImport(Darwin)
+    import Darwin
+#endif
 
 /// Newline-delimited JSON: compact JSON never contains a raw newline, so a line is always one whole message.
 public enum AgentWire {
@@ -110,21 +113,23 @@ public enum AgentSocket {
 
     public static func fits(_ path: URL) -> Bool { path.path(percentEncoded: false).utf8.count <= maxPathLength }
 
-    /// Calls `body` with the address of `path` for `bind` or `connect`; nil, without calling it, when the path is
-    /// longer than `maxPathLength`.
-    public static func withAddress<T>(_ path: URL, _ body: (UnsafePointer<sockaddr>, socklen_t) -> T) -> T? {
-        guard fits(path) else { return nil }
-        let bytes = Array(path.path(percentEncoded: false).utf8)
-        let offset = MemoryLayout<sockaddr_un>.offset(of: \.sun_path) ?? 2
-        // Never shorter than a plain sockaddr_un, so a short path goes exactly as it always did.
-        let length = max(MemoryLayout<sockaddr_un>.size, offset + bytes.count + 1)
-        let address = UnsafeMutableRawPointer.allocate(
-            byteCount: length, alignment: MemoryLayout<sockaddr_un>.alignment)
-        defer { address.deallocate() }
-        address.initializeMemory(as: UInt8.self, repeating: 0, count: length)
-        address.storeBytes(of: UInt8(length), as: UInt8.self)
-        address.storeBytes(of: UInt8(AF_UNIX), toByteOffset: 1, as: UInt8.self)
-        (address + offset).copyMemory(from: bytes, byteCount: bytes.count)
-        return body(address.assumingMemoryBound(to: sockaddr.self), socklen_t(length))
-    }
+    #if canImport(Darwin)
+        /// Calls `body` with the address of `path` for `bind` or `connect`; nil, without calling it, when the path is
+        /// longer than `maxPathLength`.
+        public static func withAddress<T>(_ path: URL, _ body: (UnsafePointer<sockaddr>, socklen_t) -> T) -> T? {
+            guard fits(path) else { return nil }
+            let bytes = Array(path.path(percentEncoded: false).utf8)
+            let offset = MemoryLayout<sockaddr_un>.offset(of: \.sun_path) ?? 2
+            // Never shorter than a plain sockaddr_un, so a short path goes exactly as it always did.
+            let length = max(MemoryLayout<sockaddr_un>.size, offset + bytes.count + 1)
+            let address = UnsafeMutableRawPointer.allocate(
+                byteCount: length, alignment: MemoryLayout<sockaddr_un>.alignment)
+            defer { address.deallocate() }
+            address.initializeMemory(as: UInt8.self, repeating: 0, count: length)
+            address.storeBytes(of: UInt8(length), as: UInt8.self)
+            address.storeBytes(of: UInt8(AF_UNIX), toByteOffset: 1, as: UInt8.self)
+            (address + offset).copyMemory(from: bytes, byteCount: bytes.count)
+            return body(address.assumingMemoryBound(to: sockaddr.self), socklen_t(length))
+        }
+    #endif
 }
