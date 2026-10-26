@@ -34,6 +34,22 @@ extension AgentMoney {
     }
 }
 
+extension AgentCapabilities.Budget {
+    /// Today's agent budget on `kind`'s connection as `capabilities` reports it: what is left is counted as the
+    /// spending guard and `quote` count it (`AgentSpendTotal.remaining`), and the plan's unlimited generations are
+    /// offered only while none of them was charged anyway today.
+    public init(
+        for kind: ProviderKind, dailyLimit: Int, taken: AgentSpendTotal, allowsUnlimited: Bool, dailyCap: Int? = nil,
+        capTakenToday: Int? = nil
+    ) {
+        self.init(
+            unit: AgentBudgetUnit(for: kind), dailyLimit: max(0, dailyLimit), spentToday: max(0, taken.spent),
+            reservedToday: max(0, taken.reserved), remaining: taken.remaining(of: dailyLimit),
+            unlimitedAllowed: allowsUnlimited && !taken.unlimitedCharged, dailyCap: dailyCap,
+            capTakenToday: capTakenToday)
+    }
+}
+
 extension LibraryKind {
     /// Everything when left out.
     public init(_ kind: AgentLibraryKind?) {

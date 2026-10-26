@@ -1,4 +1,5 @@
 import Foundation
+import JutsuAgent
 import JutsuCore
 
 /// Settings › Agents as the person saved it. `UserDefaults` also reads the argument domain, so anything that can
@@ -13,10 +14,10 @@ public struct AgentPreferences {
     /// Let agents use unlimited generations: whether an agent's job the plan's unlimited allowance would pay for goes
     /// out without the person.
     public static let unlimitedKey = "agents.allowUnlimited"
-    /// The most a daily budget may be: $10,000, or ten million credits. Whatever is stored is read within these,
-    /// so no sum of budgets and prices can overflow.
-    public static let maxBudgetCents = 1_000_000
-    public static let maxBudgetCredits = 10_000_000
+    /// The most a daily budget may be: $10,000, or ten million credits, the most an agent's `max_cost` may be too
+    /// (`AgentAmount.maximum`). Whatever is stored is read within these, so no sum of budgets and prices can overflow.
+    public static let maxBudgetCents = AgentAmount.maximum(for: .usdCents)
+    public static let maxBudgetCredits = AgentAmount.maximum(for: .credits)
 
     let defaults: UserDefaults
     /// The app's own defaults domain, its bundle ID; nil reads `defaults` as it is, for tests and previews.

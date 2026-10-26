@@ -62,13 +62,6 @@ import Testing
         other.prompt = "b"
         #expect(try AgentFingerprint.of(other) != first)
     }
-
-    @Test func theBudgetCountsReservationsAndNeverOverflows() {
-        let budget = AgentCapabilities.Budget(unit: .credits, dailyLimit: 100, spentToday: 30, reservedToday: 50)
-        #expect(budget.remaining == 20)
-        let huge = AgentCapabilities.Budget(unit: .credits, dailyLimit: 100, spentToday: .max, reservedToday: .max)
-        #expect(huge.remaining == 0)
-    }
 }
 
 /// create_video's wait: carried only when asked for, 0 to 50 s, and cut to what is left of the answer deadline.

@@ -13,7 +13,8 @@ public struct AgentAmount: Codable, Equatable, Hashable, Sendable {
         self.unit = unit
     }
 
-    /// The largest amount an agent can name: $10 000 or 10 000 000 credits, the most a daily budget can be.
+    /// The largest amount an agent can name: $10 000 or 10 000 000 credits, the most a daily budget can be. The one
+    /// place these are set: Settings › Agents' budget (`AgentPreferences`) and the helper's `max_cost` read them here.
     public static func maximum(for unit: AgentBudgetUnit) -> Int {
         unit == .usdCents ? 1_000_000 : 10_000_000
     }
