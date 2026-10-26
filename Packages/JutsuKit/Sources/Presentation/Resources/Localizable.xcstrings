@@ -4,25 +4,25 @@
     "Would use your plan's unlimited generations, which agents may not use · confirm to send it" : {
 
     },
-    "Waiting for you: it would use your plan's unlimited generations, which agents may not use." : {
+    "An agent's job at a price not known yet · review to send it" : {
 
     },
-    "Waiting for you: its price isn't known." : {
+    "Costs more than the agent was allowed · review to send it" : {
 
     },
-    "Waiting for you: it costs more than the agent was allowed." : {
+    "Over today's agent budget · review to send it" : {
 
     },
-    "Waiting for you: it's over today's agent budget." : {
+    "Agent spending couldn't be read · nothing was sent, review to send it" : {
 
     },
-    "Waiting for you: agent spending can't be recorded." : {
+    "Would use your plan's unlimited generations, which agents may not use · review to send it" : {
 
     },
-    "Waiting for you: it takes today past your spend cap." : {
+    "Costs more now than the price you approved · review to send it" : {
 
     },
-    "Waiting for you: it costs more now than the price you approved." : {
+    "Price from Higgsfield goes over today's spending cap · review to send it" : {
 
     },
     "Jutsu Studio lost the record of this request." : {

@@ -167,7 +167,7 @@ public final class AgentImageQueue {
             let followed = generator.jobLog.records.contains { $0.runID == record.id }
             switch record.state {
             case .held:
-                showRun(record, state: .held(Self.text(of: record.hold ?? .unknownPrice)))
+                showRun(record, state: .held(Self.text(of: record.hold ?? .agent(.unknownPrice))))
             case .sending where followed:
                 update(record.id) { $0.state = .following }
             case .sending:
@@ -281,7 +281,7 @@ extension AgentImageQueue {
             paysUnlimited: false, approved: record.approvedPrice)
         switch decision {
         case .hold(let reason):
-            return hold(id, Self.hold(reason), price: price, isKnown: isKnown)
+            return hold(id, .agent(reason), price: price, isKnown: isKnown)
         case .send(let money, let limit):
             return await reserve(record, money: money, limit: limit, price: price, isKnown: isKnown)
         }
@@ -313,11 +313,11 @@ extension AgentImageQueue {
         let spend = AgentSpend(jobID: id, money: money, at: now())
         do {
             guard try await ledger.reserve(spend, dailyLimit: limit) else {
-                return hold(id, .overDailyBudget, price: price, isKnown: isKnown)
+                return hold(id, .agent(.overDailyBudget), price: price, isKnown: isKnown)
             }
         } catch {
             log.error("Image request \(id): the agent spend ledger can't be written", detail: String(describing: error))
-            return hold(id, .ledgerUnavailable, price: price, isKnown: isKnown)
+            return hold(id, .agent(.ledgerUnavailable), price: price, isKnown: isKnown)
         }
         var sending = record
         sending.origin.reservation = spend.id

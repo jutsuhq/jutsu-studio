@@ -102,11 +102,34 @@ public struct AgentImageRecord: Codable, Sendable, Hashable, Identifiable {
         case finished, failed, canceled
     }
 
-    /// Why it is held.
-    public enum Hold: String, Codable, Sendable, Hashable {
-        case unknownPrice, overMaxCost, overDailyBudget, ledgerUnavailable, unlimitedNotAllowed, aboveApprovedPrice
+    /// Why it is held: one of the agent spending guard's holds, as a video job's, or the person's own daily cap.
+    /// Stored as the case's name, as `AgentHold`'s raw values are: "overMaxCost", "priceAboveCap"…
+    public enum Hold: Codable, Sendable, Hashable {
+        case agent(AgentHold)
         /// It takes today past the person's own daily cap.
         case priceAboveCap
+
+        public init(from decoder: any Decoder) throws {
+            let name = try decoder.singleValueContainer().decode(String.self)
+            if name == Self.priceAboveCapName {
+                self = .priceAboveCap
+            } else if let hold = AgentHold(rawValue: name) {
+                self = .agent(hold)
+            } else {
+                throw DecodingError.dataCorrupted(
+                    DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "No hold \(name)"))
+            }
+        }
+
+        public func encode(to encoder: any Encoder) throws {
+            var container = encoder.singleValueContainer()
+            switch self {
+            case .agent(let hold): try container.encode(hold.rawValue)
+            case .priceAboveCap: try container.encode(Self.priceAboveCapName)
+            }
+        }
+
+        private static let priceAboveCapName = "priceAboveCap"
     }
 
     /// Also the image run's ID: what `jobs` and `job_action` take.
@@ -181,15 +204,9 @@ extension AgentJob {
         results = files.isEmpty ? nil : files.map { $0.path(percentEncoded: false) }
     }
 
+    /// The agent hold's name; nil for the person's cap, which `pauseReason` names.
     static func name(of hold: AgentImageRecord.Hold) -> String? {
-        switch hold {
-        case .unknownPrice: "unknown_price"
-        case .overMaxCost: "over_max_cost"
-        case .overDailyBudget: "over_daily_budget"
-        case .ledgerUnavailable: "ledger_unavailable"
-        case .unlimitedNotAllowed: "unlimited_not_allowed"
-        case .aboveApprovedPrice: "above_approved_price"
-        case .priceAboveCap: nil
-        }
+        guard case .agent(let hold) = hold else { return nil }
+        return name(of: hold)
     }
 }

@@ -270,10 +270,10 @@ struct AgentImageQueueTests {
 
         await eventually { queue.record(id)?.state == .held }
 
-        #expect(queue.record(id)?.hold == .overMaxCost)
+        #expect(queue.record(id)?.hold == .agent(.overMaxCost))
         #expect(await provider.submitted.isEmpty)
         #expect(await ledger.spends.isEmpty)
-        #expect(generator.runs.first?.state == .held(AgentImageQueue.text(of: .overMaxCost)))
+        #expect(generator.runs.first?.state == .held(AgentImageQueue.text(of: .agent(.overMaxCost))))
         let status = AgentJob(try #require(queue.record(id)), files: [])
         #expect(status.state == "paused")
         #expect(status.needsPerson)
@@ -289,7 +289,7 @@ struct AgentImageQueueTests {
         await eventually { queue.record(id)?.state == .held }
 
         // The list price is only an estimate: never trusted for an agent.
-        #expect(queue.record(id)?.hold == .unknownPrice)
+        #expect(queue.record(id)?.hold == .agent(.unknownPrice))
         #expect(await provider.submitted.isEmpty)
     }
 
@@ -320,7 +320,7 @@ struct AgentImageQueueTests {
         let queue = queue(generator(), limit: 5)
         let id = try create(queue, order())
         await eventually { queue.record(id)?.state == .held }
-        #expect(queue.record(id)?.hold == .overDailyBudget)
+        #expect(queue.record(id)?.hold == .agent(.overDailyBudget))
         #expect(await provider.submitted.isEmpty)
     }
 
@@ -330,7 +330,7 @@ struct AgentImageQueueTests {
         let queue = queue(generator(), limit: 100)
         let id = try create(queue, order())
         await eventually { queue.record(id)?.state == .held }
-        #expect(queue.record(id)?.hold == .overDailyBudget)
+        #expect(queue.record(id)?.hold == .agent(.overDailyBudget))
     }
 
     @Test func aLedgerThatCantBeWrittenSendsNothing() async throws {
@@ -338,7 +338,7 @@ struct AgentImageQueueTests {
         let queue = queue(generator())
         let id = try create(queue, order())
         await eventually { queue.record(id)?.state == .held }
-        #expect(queue.record(id)?.hold == .ledgerUnavailable)
+        #expect(queue.record(id)?.hold == .agent(.ledgerUnavailable))
         #expect(await provider.submitted.isEmpty)
     }
 
@@ -375,7 +375,7 @@ struct AgentImageQueueTests {
 
         await provider.set(estimate: .success(.usd(0.2, isEstimate: false)))
         queue.approve(id, provider: provider, upload: Self.upload(provider))
-        await eventually { queue.record(id)?.hold == .aboveApprovedPrice }
+        await eventually { queue.record(id)?.hold == .agent(.aboveApprovedPrice) }
         #expect(queue.record(id)?.state == .held)
         #expect(await provider.submitted.isEmpty)
         #expect(AgentJob(try #require(queue.record(id)), files: []).hold == "above_approved_price")
@@ -518,5 +518,46 @@ extension JSONEncoder {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         return encoder
+    }
+}
+
+@Suite struct AgentImageHoldTests {
+    /// `agent-images.json` keeps the holds as 0.2.2 wrote them: read back as the same holds, and written the same.
+    @Test func storedHoldsReadAndWriteAsBefore() throws {
+        let stored = #"""
+            ["unknownPrice","overMaxCost","overDailyBudget","ledgerUnavailable","unlimitedNotAllowed",\#
+            "aboveApprovedPrice","priceAboveCap"]
+            """#
+        let holds = try JSONDecoder().decode([AgentImageRecord.Hold].self, from: Data(stored.utf8))
+        #expect(
+            holds == [
+                .agent(.unknownPrice), .agent(.overMaxCost), .agent(.overDailyBudget), .agent(.ledgerUnavailable),
+                .agent(.unlimitedNotAllowed), .agent(.aboveApprovedPrice), .priceAboveCap,
+            ])
+        #expect(String(decoding: try JSONEncoder().encode(holds), as: UTF8.self) == stored)
+        #expect(throws: DecodingError.self) {
+            try JSONDecoder().decode([AgentImageRecord.Hold].self, from: Data(#"["overBudget"]"#.utf8))
+        }
+    }
+
+    /// A held image request says why in the words a held video job's row uses.
+    /// The same reason as a held video job's row; only the action differs, as the image row has Review… for Confirm.
+    @MainActor @Test func heldImagesAndVideosShareTheirWords() {
+        let holds: [AgentHold] = [
+            .unknownPrice, .overMaxCost, .overDailyBudget, .ledgerUnavailable, .unlimitedNotAllowed,
+            .aboveApprovedPrice,
+        ]
+        for hold in holds {
+            let video = JobRowModel.agentNote(hold).text
+            #expect(video.hasSuffix("confirm to send it"), "\(hold)")
+            #expect(
+                AgentImageQueue.text(of: .agent(hold))
+                    == video.replacingOccurrences(of: "confirm to send it", with: "review to send it"), "\(hold)")
+        }
+        let capped = JobRowModel.note(.paused(.priceAboveCap), providerKind: .account, charged: false)?.text
+        #expect(capped == "Price from Higgsfield goes over today's spending cap · confirm to resume")
+        #expect(
+            AgentImageQueue.text(of: .priceAboveCap)
+                == "Price from Higgsfield goes over today's spending cap · review to send it")
     }
 }
