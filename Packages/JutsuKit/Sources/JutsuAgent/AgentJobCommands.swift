@@ -1,6 +1,6 @@
 import Foundation
 
-// jobs and job_action: following the agents' work and acting on it. Their answers are in AgentVideo.swift.
+// jobs and job_action: following the agents' work and acting on it. Their answers are in AgentJob.swift.
 
 /// The state of the named jobs, or of the agents' latest jobs; with `waitSeconds`, once they have all settled or the
 /// wait is over, whichever comes first. A wait that runs out returns the state as it is and stops nothing.
