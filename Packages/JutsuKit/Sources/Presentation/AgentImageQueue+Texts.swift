@@ -12,36 +12,30 @@ extension AgentImageQueue {
         }
     }
 
-    static func hold(_ hold: AgentHold) -> AgentImageRecord.Hold {
-        switch hold {
-        case .unknownPrice: .unknownPrice
-        case .overMaxCost: .overMaxCost
-        case .overDailyBudget: .overDailyBudget
-        case .ledgerUnavailable: .ledgerUnavailable
-        case .unlimitedNotAllowed: .unlimitedNotAllowed
-        case .aboveApprovedPrice: .aboveApprovedPrice
-        }
-    }
-
-    /// Why a held request waits, for its row in the Queue.
+    /// Why a held request waits, for its row in the Queue and its tile in Create: the reason in the words a held video
+    /// job's row gives it (`JobRowModel.note`), then what an image request's row offers, Review… and then Send, where
+    /// a video job's row has Confirm.
     public static func text(of hold: AgentImageRecord.Hold) -> String {
         switch hold {
-        case .unknownPrice:
-            String(localized: "Waiting for you: its price isn't known.", bundle: .module)
-        case .overMaxCost:
-            String(localized: "Waiting for you: it costs more than the agent was allowed.", bundle: .module)
-        case .overDailyBudget:
-            String(localized: "Waiting for you: it's over today's agent budget.", bundle: .module)
-        case .ledgerUnavailable:
-            String(localized: "Waiting for you: agent spending can't be recorded.", bundle: .module)
-        case .unlimitedNotAllowed:
+        case .agent(.unknownPrice):
+            String(localized: "An agent's job at a price not known yet · review to send it", bundle: .module)
+        case .agent(.overMaxCost):
+            String(localized: "Costs more than the agent was allowed · review to send it", bundle: .module)
+        case .agent(.overDailyBudget):
+            String(localized: "Over today's agent budget · review to send it", bundle: .module)
+        case .agent(.ledgerUnavailable):
             String(
-                localized: "Waiting for you: it would use your plan's unlimited generations, which agents may not use.",
-                bundle: .module)
-        case .aboveApprovedPrice:
-            String(localized: "Waiting for you: it costs more now than the price you approved.", bundle: .module)
+                localized: "Agent spending couldn't be read · nothing was sent, review to send it", bundle: .module)
+        case .agent(.unlimitedNotAllowed):
+            String(
+                localized: """
+                    Would use your plan's unlimited generations, which agents may not use · review to send it
+                    """, bundle: .module)
+        case .agent(.aboveApprovedPrice):
+            String(localized: "Costs more now than the price you approved · review to send it", bundle: .module)
         case .priceAboveCap:
-            String(localized: "Waiting for you: it takes today past your spend cap.", bundle: .module)
+            String(
+                localized: "Price from Higgsfield goes over today's spending cap · review to send it", bundle: .module)
         }
     }
 

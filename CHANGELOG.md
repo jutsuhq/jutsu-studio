@@ -7,6 +7,7 @@ Notable changes to Jutsu Studio. Versions follow [Semantic Versioning](https://s
 ### Changed
 
 - The agent tools' input schemas state the maximums the app already enforced: `variants`, `image_count`, `length`, `source` `start`/`end`, `library_search`'s `model` and `enhance`'s `voice`.
+- An agent's image request that waits for you, held by the agent spending limits or over today's spending cap, gives its reason in the same words as a held agent video job, followed by "review to send it", in the Queue and on its tile in Create.
 
 ## [0.2.2] - 2026-10-24
 
