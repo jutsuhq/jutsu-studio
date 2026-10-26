@@ -52,8 +52,8 @@ extension AgentService {
     }
 
     /// The images of the elements named, downloaded once each as From Higgsfield adds them.
-    func elementImages(_ names: [String]) async throws(AgentError) -> [(name: String, images: [LocalImage])] {
-        var result: [(name: String, images: [LocalImage])] = []
+    func elementImages(_ names: [String]) async throws(AgentError) -> [AgentElementLookup.ElementImages] {
+        var result: [AgentElementLookup.ElementImages] = []
         for element in try await namedElements(names) {
             guard !element.images.isEmpty else {
                 throw .invalidRequest("The element \(element.name) has no images to use.")
@@ -64,14 +64,14 @@ extension AgentService {
                     try await Self.reading { try await environment.downloadElementImage(image, at: index, of: element) }
                 )
             }
-            result.append((element.name, images))
+            result.append(AgentElementLookup.ElementImages(name: element.name, images: images))
         }
         return result
     }
 
     /// The references answer of a request: every image in the order sent, with its tag.
     static func references(
-        elements: [(name: String, images: [LocalImage])], files: [LocalImage]
+        elements: [AgentElementLookup.ElementImages], files: [LocalImage]
     ) -> [AgentReference]? {
         let references = AgentElementLookup.references(elements: elements, files: files)
         guard !references.isEmpty else { return nil }

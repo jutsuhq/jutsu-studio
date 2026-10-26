@@ -111,7 +111,10 @@ private struct PagedElements: AccountElements {
     @Test func theElementsImagesComeFirstThenTheAgentsFilesEachWithItsTag() {
         let image = { (name: String) in LocalImage(fileURL: URL(fileURLWithPath: "/tmp/\(name).png")) }
         let references = AgentElementLookup.references(
-            elements: [("Mara", [image("m1"), image("m2")]), ("Roof", [image("r1")])], files: [image("own")])
+            elements: [
+                AgentElementLookup.ElementImages(name: "Mara", images: [image("m1"), image("m2")]),
+                AgentElementLookup.ElementImages(name: "Roof", images: [image("r1")]),
+            ], files: [image("own")])
         #expect(references.map(\.tag) == ["@Image1", "@Image2", "@Image3", "@Image4"])
         #expect(references.map(\.element) == ["Mara", "Mara", "Roof", nil])
         #expect(references.map(\.image.fileURL.lastPathComponent) == ["m1.png", "m2.png", "r1.png", "own.png"])

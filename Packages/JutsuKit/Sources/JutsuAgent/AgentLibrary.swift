@@ -28,7 +28,8 @@ public struct AgentImageRequest: Codable, Equatable, Hashable, Sendable {
     /// More than any model makes, so the model's own counts refuse the rest with a reason.
     public static let maxCount = 16
     /// A bound of the protocol: the most a model may take where its catalog states no limit (`capabilities`
-    /// imageModels `maxInputs` with `maxInputsNote`); a model's own limit refuses the rest with a reason.
+    /// imageModels `maxInputs` with `maxInputsNote`); a model's own limit refuses the rest with a reason. The same as
+    /// JutsuCore's `ImageModel.inputBound`, which the helper can't link; a test keeps the two equal.
     public static let maxInputs = 14
 
     /// An image model ID from `capabilities` (`imageModels`); left out, the connection's first.
@@ -341,7 +342,7 @@ public struct LibraryMarkCommand: Codable, Equatable, Sendable, AgentFields {
     }
 
     public var problem: String? {
-        guard (1...Self.maxIDs).contains(ids.count) else { return "ids takes 1 to \(Self.maxIDs) Library item IDs" }
+        if let problem = AgentLibraryIDs.problem(ids, limit: Self.maxIDs, allowsRepeats: true) { return problem }
         guard verdict != nil || star != nil else { return "library_mark needs verdict, star or both" }
         return nil
     }

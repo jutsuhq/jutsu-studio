@@ -3,6 +3,14 @@ import JutsuCore
 
 /// Adapts catalog entries to existing Library cards without maintaining separate image/video stores.
 public enum MaterialLibrary {
+    /// The Library rows of `materials` (`row`) that `include` keeps, by ID; the first row of an ID seen twice.
+    public static func rowsByID(
+        _ materials: [Material], where include: (LibraryMediaItem) -> Bool = { _ in true }
+    ) -> [UUID: LibraryMediaItem] {
+        Dictionary(
+            materials.compactMap(row).filter(include).map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+    }
+
     public static func row(_ material: Material) -> LibraryMediaItem? {
         guard !material.isHidden else { return nil }
         let version = material.current

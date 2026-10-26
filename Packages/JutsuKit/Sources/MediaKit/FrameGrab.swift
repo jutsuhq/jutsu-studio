@@ -53,12 +53,15 @@ public enum FrameGrab {
         return context.makeImage()
     }
 
-    /// The height of a contact sheet's cells.
+    /// The height of a contact sheet's cells: a 16:9 frame becomes 640 × 360, where framing, faces and large text
+    /// still read, and a row of frames is a third as wide as the same frames at 1080p.
     public static let sheetCellHeight = 360
+    /// The black between a contact sheet's cells, so two frames of the same scene side by side still read as two.
+    public static let sheetGap = 8
 
     /// One image of `rows`, each frame scaled to `cellHeight` keeping its shape, `gap` pixels apart on black: a row
     /// per clip, a column per time. `nil` when there is nothing to draw.
-    public static func sheet(_ rows: [[CGImage]], cellHeight: Int = sheetCellHeight, gap: Int = 8) -> CGImage? {
+    public static func sheet(_ rows: [[CGImage]], cellHeight: Int = sheetCellHeight, gap: Int = sheetGap) -> CGImage? {
         let scaled = rows.map { row in
             row.map { image in
                 let width = Double(image.width) * Double(cellHeight) / Double(max(1, image.height))
