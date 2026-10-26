@@ -1,6 +1,9 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "This Mac can't do this to this file." : {
+
+    },
     "Even re-encoded, this video is %@, over the %@ upload limit. Select a shorter range." : {
       "localizations" : {
         "en" : {

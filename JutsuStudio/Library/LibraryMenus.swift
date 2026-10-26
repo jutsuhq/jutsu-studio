@@ -65,6 +65,11 @@ struct LibraryCardMenu: View {
             Button("Copy Prompt", systemImage: "text.quote") { NSPasteboard.general.copyText(item.spec.prompt) }
         }
         followUps
+        if let run = environment.onDevice.run(for: item.id) {
+            Button(String(localized: "Cancel \(run.request.action.title)"), systemImage: "xmark.circle") {
+                environment.onDevice.cancel(run.id)
+            }
+        }
         if item.outputFile != nil, !item.needsImport {
             OutsideEditButtons(
                 edit: { actions.editInOtherApp(item.id) }, importVersion: { actions.importEditedVersion(item.id) })

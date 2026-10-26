@@ -1,6 +1,45 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Wait until %@ finishes" : {
+
+    },
+    "Smooth Motion, free on this Mac" : {
+
+    },
+    "Free · runs on this Mac" : {
+
+    },
+    "The result is added as a new version of this item; the version it is made from stays as it is." : {
+
+    },
+    "New frames are made between the clip's own. Across a cut a frame is repeated instead." : {
+
+    },
+    "Slow motion plays without sound." : {
+
+    },
+    "Waiting for the run before it" : {
+
+    },
+    "Takes %@ on this Mac" : {
+
+    },
+    "Can't finish %@" : {
+
+    },
+    "60 fps" : {
+
+    },
+    "2× Slow Motion" : {
+
+    },
+    "4× Slow Motion" : {
+
+    },
+    "Smooth Motion to 60 fps" : {
+
+    },
     "Would use your plan's unlimited generations, which agents may not use · confirm to send it" : {
 
     },

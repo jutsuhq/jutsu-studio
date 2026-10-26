@@ -32,6 +32,13 @@ import Testing
         #expect(ScratchFile(name: JobEngine.partialFile(of: kept, in: folder).lastPathComponent) == .job(kept))
         #expect(ScratchFile(name: JobEngine.audioFile(of: kept, in: folder).lastPathComponent) == .job(kept))
     }
+
+    /// Enhance on this Mac writes `.ondevice-<UUID>.partial` and clears its own; the sweep leaves a running one be.
+    @Test func onDevicePartialsAreNotAJobs() {
+        let name = ".ondevice-\(UUID().uuidString).partial"
+        #expect(ScratchFile(name: name) == nil)
+        #expect(ScratchFile.leftovers([name], keeping: [], isAnyJobRunning: false).isEmpty)
+    }
 }
 
 @Suite(.timeLimit(.minutes(1)))

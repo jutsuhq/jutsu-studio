@@ -33,6 +33,8 @@ final class AppEnvironment {
     let referenceGenerator: ReferenceGenerator
     /// Library › Images: the images Generate… made, saved in the output folder.
     let imageLibrary: ImageLibrary
+    /// Enhance's free runs on this Mac: Smooth Motion.
+    let onDevice: OnDeviceRuns
     /// Create Character: its form and runs, and every character sheet job the app started.
     let characterBuilder: CharacterBuilder
     /// Score Variants in batch comparison: its runs, which outlive the comparison, and why a score is missing.
@@ -98,6 +100,8 @@ final class AppEnvironment {
         self.referenceGenerator = referenceGenerator
         let imageLibrary = ImageLibrary(layout: layout, outputFolder: outputFolder, catalog: store)
         self.imageLibrary = imageLibrary
+        onDevice = Self.onDeviceRuns(
+            store: store, imageLibrary: imageLibrary, scratch: outputFolder.url(of: .videos))
         Self.saveGeneratedImages(of: referenceGenerator, into: imageLibrary)
         // The Image side of the Create draft, kept across launches; the models arrive later and settle the choice.
         referenceGenerator.restore(navigation.imageDraft)

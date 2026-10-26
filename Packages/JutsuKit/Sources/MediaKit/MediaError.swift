@@ -11,6 +11,8 @@ public enum MediaError: Error, Sendable, Equatable {
     case exportFailed(String)
     /// Even the re-encode at the computed bitrate came out over the upload limit.
     case tooLarge(byteCount: Int64)
+    /// This Mac's VideoToolbox has no engine for an on-device enhancement, or it won't take this file's frames.
+    case engineUnavailable
 }
 
 extension MediaError: LocalizedError {
@@ -30,6 +32,8 @@ extension MediaError: LocalizedError {
                     Even re-encoded, this video is \(Self.size(byteCount)), over the \
                     \(Self.size(MediaPreparer.fileLengthLimit)) upload limit. Select a shorter range.
                     """, bundle: .module)
+        case .engineUnavailable:
+            String(localized: "This Mac can't do this to this file.", bundle: .module)
         }
     }
 
