@@ -109,12 +109,6 @@ import Testing
         #expect(!AgentNames.isValidFingerprint(String(repeating: "0F", count: 32)))
     }
 
-    @Test func theBudgetNeverGoesBelowZero() {
-        let budget = AgentCapabilities.Budget(unit: .credits, dailyLimit: 100, spentToday: 140)
-        #expect(budget.remaining == 0)
-        #expect(AgentCapabilities.Budget(unit: .usdCents, dailyLimit: -5, spentToday: -1).remaining == 0)
-    }
-
     /// Versions compare as numbers; a development build or an unknown version is never called older.
     @Test func aHelperIsOlderOnlyByItsReleaseNumber() {
         #expect(AgentCapabilities.isOlder("0.2.1", than: "0.2.2"))
@@ -128,11 +122,11 @@ import Testing
     /// The person's cap goes with the budget when there is one, and is left out of the answer when there isn't.
     @Test func theBudgetCarriesThePersonsCap() throws {
         let capped = AgentCapabilities.Budget(
-            unit: .credits, dailyLimit: 500, spentToday: 0, dailyCap: 300, capTakenToday: 290)
+            unit: .credits, dailyLimit: 500, spentToday: 0, remaining: 500, dailyCap: 300, capTakenToday: 290)
         let json = String(decoding: try JSONEncoder().encode(capped), as: UTF8.self)
         #expect(json.contains("\"dailyCap\":300") && json.contains("\"capTakenToday\":290"))
         #expect(try JSONDecoder().decode(AgentCapabilities.Budget.self, from: Data(json.utf8)) == capped)
-        let open = AgentCapabilities.Budget(unit: .credits, dailyLimit: 500, spentToday: 0)
+        let open = AgentCapabilities.Budget(unit: .credits, dailyLimit: 500, spentToday: 0, remaining: 500)
         #expect(!String(decoding: try JSONEncoder().encode(open), as: UTF8.self).contains("dailyCap"))
     }
 

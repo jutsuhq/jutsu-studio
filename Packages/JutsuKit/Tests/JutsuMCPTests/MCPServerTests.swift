@@ -21,7 +21,7 @@ actor FakeApp {
 @Suite struct MCPServerTests {
     static let capabilities = AgentCapabilities(
         appVersion: "0.2.0", connection: .init(kind: .account, plan: "Pro", credits: 1200),
-        budget: .init(unit: .credits, dailyLimit: 0, spentToday: 0))
+        budget: .init(unit: .credits, dailyLimit: 0, spentToday: 0, remaining: 0))
 
     private let app = FakeApp(AgentResponse(capabilities: Self.capabilities))
 

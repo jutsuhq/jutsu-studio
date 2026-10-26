@@ -31,6 +31,8 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
         public var spentToday: Int
         /// Held today for agents' submits sent and not answered yet; counts against the budget like a charge.
         public var reservedToday: Int
+        /// What is left of `dailyLimit` once spent and reserved are taken, never below 0, as the app's spending guard
+        /// counts it.
         public var remaining: Int
         /// Settings › Agents › Let agents use unlimited generations. Off, a job the plan's unlimited allowance would pay
         /// for waits for the person (hold unlimited_not_allowed); on, it runs without counting against the budget.
@@ -43,19 +45,22 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
         /// What the cap counts today, charged or still queued; `nil` without a cap or when it can't be read.
         public var capTakenToday: Int?
 
+        /// The fields as given, unchecked. The app builds its budget with `Budget(for:dailyLimit:taken:...)` in
+        /// Presentation, which takes `remaining` from `AgentSpendTotal.remaining`, the spending guard's own count;
+        /// any other caller must pass that number too, never one worked out here. Public for Presentation, which
+        /// JutsuAgent can't see.
         public init(
-            unit: AgentBudgetUnit, dailyLimit: Int, spentToday: Int, reservedToday: Int = 0,
+            unit: AgentBudgetUnit, dailyLimit: Int, spentToday: Int, reservedToday: Int = 0, remaining: Int,
             unlimitedAllowed: Bool = false, dailyCap: Int? = nil, capTakenToday: Int? = nil
         ) {
             self.unit = unit
+            self.dailyLimit = dailyLimit
+            self.spentToday = spentToday
+            self.reservedToday = reservedToday
+            self.remaining = remaining
             self.unlimitedAllowed = unlimitedAllowed
             self.dailyCap = dailyCap
             self.capTakenToday = capTakenToday
-            self.dailyLimit = max(0, dailyLimit)
-            self.spentToday = max(0, spentToday)
-            self.reservedToday = max(0, reservedToday)
-            let (taken, overflow) = self.spentToday.addingReportingOverflow(self.reservedToday)
-            remaining = overflow ? 0 : max(0, self.dailyLimit - taken)
         }
     }
 
