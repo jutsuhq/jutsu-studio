@@ -186,7 +186,8 @@ struct LibraryDetail: View {
                 }
                 // An operation's spec re-runs as the operation, not as the generation Edit & Re-run loads.
                 if item.spec.operation == nil { editButton }
-                EnhanceMenu(item: item)
+                EnhanceMenu(item: item, version: (try? record?.material())?.reference)
+                OnDeviceRunRow(materialID: item.id)
                 if JoinWithOriginal.isAvailable(for: item) {
                     joinButton
                 }

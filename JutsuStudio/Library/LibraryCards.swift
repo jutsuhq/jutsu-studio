@@ -13,6 +13,8 @@ struct LibraryCard: View {
     var isPicked = false
     /// In the selection bulk actions act on.
     var isSelected = false
+    /// An Enhance run on this Mac making the item's next version.
+    var onDeviceRun: OnDeviceRuns.Run?
     @State private var isHovered = false
 
     var body: some View {
@@ -40,6 +42,8 @@ struct LibraryCard: View {
                 .overlay {
                     if isImporting {
                         ProgressView().controlSize(.small).accessibilityLabel("Downloading")
+                    } else if let onDeviceRun {
+                        OnDeviceRunBadge(run: onDeviceRun)
                     }
                 }
                 .overlay(alignment: .bottomLeading) {

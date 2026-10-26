@@ -142,7 +142,7 @@ enum VideoReencoder {
         return input
     }
 
-    private static func audioInput() -> AVAssetWriterInput {
+    static func audioInput() -> AVAssetWriterInput {
         let input = AVAssetWriterInput(
             mediaType: .audio,
             outputSettings: [
@@ -157,7 +157,7 @@ enum VideoReencoder {
     }
 
     /// Decoded audio in the shape the AAC input above expects.
-    private static var pcmSettings: [String: Any] {
+    static var pcmSettings: [String: Any] {
         [
             AVFormatIDKey: kAudioFormatLinearPCM,
             AVSampleRateKey: 44_100,

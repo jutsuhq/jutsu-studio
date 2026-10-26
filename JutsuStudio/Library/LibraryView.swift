@@ -219,6 +219,11 @@ struct LibraryView: View {
             .onChange(of: environment.imageLibrary.failure) { _, failure in
                 if let failure { exportMessage = failure }
             }
+            .onChange(of: environment.onDevice.failure, initial: true) { _, failure in
+                guard let failure else { return }
+                exportMessage = failure
+                environment.onDevice.failure = nil
+            }
     }
 }
 

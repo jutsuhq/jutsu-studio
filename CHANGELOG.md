@@ -4,6 +4,10 @@ Notable changes to Jutsu Studio. Versions follow [Semantic Versioning](https://s
 
 ## [Unreleased]
 
+### Added
+
+- Enhance › Smooth Motion… makes new frames between a result's own on this Mac, free and without an account: 60 fps keeps the clip's length and sound, 2× and 4× Slow Motion play it longer at its own frame rate without sound. Across a hard cut a frame is repeated instead of blending the two shots. The sheet says how long it takes; the result becomes a new version of the item, linked to the version it was made from, which stays as it is. Runs go one at a time at background priority, one per item until its new version is in, show their progress on the card and the result's page, and can be canceled, leaving no file behind. Needs macOS 15.4 or later.
+
 ### Changed
 
 - The agent tools' input schemas state the maximums the app already enforced: `variants`, `image_count`, `length`, `source` `start`/`end`, `library_search`'s `model` and `enhance`'s `voice`.

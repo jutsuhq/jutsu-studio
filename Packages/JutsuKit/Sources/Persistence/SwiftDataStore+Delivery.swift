@@ -30,10 +30,12 @@ extension SwiftDataStore {
     /// Adds `file`, an edit of `source` made in another app and already copied into the output folder, as the new
     /// current version of the same material, linked to that exact version as its parent. The source version and its
     /// file are untouched, and so is every delivery set that holds it.
+    /// - Parameter media: the file's length and size when known, as an on-device Enhance run reads them back; the
+    ///   version then carries them rather than the source's.
     /// - Returns: the material with its new version.
     @discardableResult
     public func addEditedVersion(
-        of source: MaterialReference, file: URL, at date: Date = Date()
+        of source: MaterialReference, file: URL, media: OutputMedia? = nil, at date: Date = Date()
     ) throws -> Material {
         do {
             guard let record = try materialRecord(id: source.materialID) else { throw MaterialError.missingMaterial }
@@ -45,9 +47,11 @@ extension SwiftDataStore {
             let generation = original.generation.map { MaterialGeneration(prompt: $0.prompt, model: $0.model) }
             var video = original.video
             video?.outputFile = file
+            if let media { video?.outputMedia = media }
             let version = MaterialVersion(
                 createdAt: date, fileURL: file, generation: generation,
-                inputs: [MaterialInput(source: source, role: .parent)], video: video)
+                inputs: [MaterialInput(source: source, role: .parent)], aspectRatio: media?.pixelSize.aspectLabel,
+                pixelSize: media?.pixelSize, video: video)
             try material.addVersion(version)
             // An edit brought back lists the material again, like saving a file does.
             material.isHidden = false
