@@ -9,8 +9,8 @@ import UniformTypeIdentifiers
 /// the right; all decisions come from `CreateForm`, and this view loads what it needs and queues the job. Image:
 /// Generate…'s form and results (`CreateImageSide`).
 struct CreateView: View {
-    @Environment(AppEnvironment.self) private var environment
-    @Environment(NavigationModel.self) private var navigation
+    @Environment(AppEnvironment.self) var environment
+    @Environment(NavigationModel.self) var navigation
     @Environment(ConnectionStore.self) private var connection
     // Read only so the cap line updates when Settings changes; the value comes from `AppSettings.spendCap`.
     @AppStorage(AppSettings.spendCapEnabledKey) private var capEnabled = AppSettings.defaultSpendCapEnabled
@@ -21,9 +21,9 @@ struct CreateView: View {
     @AppStorage(AppSettings.draftResolutionKey) private var draftResolution = AppSettings.defaultDraftResolution
     @AppStorage(AppSettings.useUnlimitedKey) private var useUnlimited = AppSettings.defaultUseUnlimited
 
-    @State private var loader = CreateLoader()
+    @State var loader = CreateLoader()
     @State private var submitting = SubmitController()
-    @State private var alert: UserMessage?
+    @State var alert: UserMessage?
     @State private var isPicking = false
     @State private var pickTarget = FilePickTarget.source
     /// The in-flight source probe, cancelled when the next pick supersedes it. It finishes after a tab
@@ -40,14 +40,14 @@ struct CreateView: View {
     @State private var elements: AccountElementsModel?
     @State private var isBrowsingUploads = false
     /// The link being downloaded from Paste URL… or ⌘V, and its task; one at a time.
-    @State private var linkDownload: LinkDownload?
-    @State private var linkTask: Task<Void, Never>?
+    @State var linkDownload: LinkDownload?
+    @State var linkTask: Task<Void, Never>?
     /// The kind Paste URL… asks a link for while its field is open.
-    @State private var linkEntry: MediaLink.Kind?
-    @State private var linkText = ""
-    @State private var isGeneratingReferences = false
+    @State var linkEntry: MediaLink.Kind?
+    @State var linkText = ""
+    @State var isGeneratingReferences = false
     /// Generated images being downloaded to become references.
-    @State private var addingGenerated: Set<UUID> = []
+    @State var addingGenerated: Set<UUID> = []
     /// The Image side's Generate: the price, the cap question and the result shown large.
     @State private var imageController = ImageGenerateController()
 
@@ -202,7 +202,7 @@ struct CreateView: View {
         }
     }
 
-    private func importSource(_ url: URL, origin: URL? = nil) {
+    func importSource(_ url: URL, origin: URL? = nil) {
         // Access lasts for the probe only; the preview and the job reopen the file through the bookmark,
         // which has to be made while access is held.
         let access = SecurityScopedAccess(url: url, bookmark: nil)
@@ -265,7 +265,7 @@ struct CreateView: View {
 }
 
 extension CreateView {
-    private var spendCap: SpendCap? {
+    var spendCap: SpendCap? {
         _ = (capEnabled, capUSD, creditCapEnabled, capCredits)
         return environment.spendCap(for: connection.state.kind)
     }
@@ -274,69 +274,6 @@ extension CreateView {
     fileprivate func addCharacter(_ urls: [URL]) {
         guard !urls.isEmpty else { return }
         alert = navigation.createDraft.addCharacterSet(ReferencesSection.references(urls)) ?? alert
-    }
-
-    /// Opens the Paste URL… field, filled with the clipboard's link if it holds one.
-    fileprivate func askForLink(_ kind: MediaLink.Kind) {
-        let text = NSPasteboard.general.string(forType: .string) ?? ""
-        linkText = (try? MediaLink.parse(text))?.absoluteString ?? ""
-        linkEntry = kind
-    }
-
-    fileprivate func downloadTypedLink(as kind: MediaLink.Kind) {
-        do {
-            downloadLink(try MediaLink.parse(linkText), expected: kind)
-        } catch {
-            alert = UserMessage(error)
-        }
-    }
-
-    /// Downloads `link`, then takes the file like a dropped one: a video becomes the source, an image a reference.
-    /// The file remembers the link, so a job that sends it whole can pass the link instead of uploading it.
-    fileprivate func downloadLink(_ link: URL, expected: MediaLink.Kind?) {
-        linkTask?.cancel()
-        let download = LinkDownload(link: link, expected: expected)
-        linkDownload = download
-        linkTask = Task {
-            defer {
-                if linkDownload?.id == download.id { linkDownload = nil }
-            }
-            do {
-                let throttle = ProgressThrottle()
-                let media = try await environment.downloadLink(link, expected: expected) { fraction in
-                    guard throttle.admits(fraction) else { return }
-                    Task { @MainActor in showLinkProgress(fraction, of: download.id) }
-                }
-                try Task.checkCancellation()
-                switch media.kind {
-                case .video:
-                    importSource(media.fileURL, origin: media.origin)
-                case .image:
-                    let image = LocalImage(
-                        fileURL: media.fileURL, bookmark: AppEnvironment.bookmark(for: media.fileURL),
-                        remoteOrigin: media.origin)
-                    alert = navigation.createDraft.addOpenedReferences([image]) ?? alert
-                }
-            } catch is CancellationError {
-                return
-            } catch {
-                alert = UserMessage(error)
-            }
-        }
-    }
-
-    /// Only reports that change the whole percent get here (`ProgressThrottle`); a late one of an earlier link is
-    /// dropped.
-    fileprivate func showLinkProgress(_ fraction: Double?, of id: UUID) {
-        guard var current = linkDownload, current.id == id else { return }
-        current.fraction = fraction
-        linkDownload = current
-    }
-
-    fileprivate func cancelLinkDownload() {
-        linkTask?.cancel()
-        linkTask = nil
-        linkDownload = nil
     }
 
     /// The video form with its stage.
@@ -383,45 +320,6 @@ extension CreateView {
         .background { referenceGenerationHost }
     }
 
-    /// Generate…'s loads, kept off `body`'s modifier chain so it type-checks in time. Behind the header, so both
-    /// sides share them.
-    fileprivate var referenceGenerationLoads: some View {
-        Color.clear
-            .task(id: environment.providerGeneration) {
-                await environment.loadImageModels()
-            }
-            // A reference image request counts toward today from its submit until it is taken off again.
-            .task(id: environment.imageSpend.charges.map(\.id)) {
-                await loader.refreshCommitted(environment, unit: spendCap?.unit ?? .usd)
-            }
-    }
-
-    /// Generate…'s sheet for the References quick action, kept off `body`'s modifier chain so it type-checks
-    /// in time.
-    fileprivate var referenceGenerationHost: some View {
-        Color.clear
-            .sheet(isPresented: $isGeneratingReferences) {
-                let form = navigation.createDraft
-                GenerateReferenceSheet(
-                    source: form.source?.pixelSize, mode: form.mode, room: form.referenceRoom,
-                    adding: addingGenerated, onAdd: { await addGenerated($0) })
-            }
-    }
-
-    /// Generate… for References; `nil` while disconnected.
-    fileprivate var referenceGeneration: ReferenceGeneration? {
-        guard environment.imageProvider != nil else { return nil }
-        return ReferenceGeneration(
-            disabledReason: environment.referenceGenerationBlocker, onOpen: { isGeneratingReferences = true })
-    }
-
-    /// Downloads a generated image and adds it like an opened file; the message says why it wasn't added.
-    fileprivate func addGenerated(_ image: GeneratedImage) async -> UserMessage? {
-        guard addingGenerated.insert(image.id).inserted else { return nil }
-        defer { addingGenerated.remove(image.id) }
-        return await environment.addGenerated(image, to: navigation)
-    }
-
     /// Downloads a Motion Library clip, then imports it like a picked file.
     fileprivate func useClip(_ preset: MotionPreset) {
         guard downloadingClip == nil else { return }
@@ -450,31 +348,5 @@ extension CreateView {
         }
         let primary = navigation.createDraft.primarySubmit(in: context, isSubmitting: submitting.isBusy)
         return CreateSubmit(title: primary.title, isEnabled: primary.isEnabled) { submit(isDraft: primary.isDraft) }
-    }
-
-    /// Takes the clipboard the way opened files are taken (bookmarks, the source probe, the reference limit);
-    /// image data, such as a screenshot, is saved to a file first, and an `https:` link is downloaded first.
-    fileprivate func paste() {
-        let pasteboard = NSPasteboard.general
-        let files = pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true])
-        let links = pasteboard.readObjects(forClasses: [NSURL.self]) as? [URL] ?? []
-        let input = PastedInput(
-            fileURLs: files as? [URL] ?? [], hasImage: NSImage.canInit(with: pasteboard), links: links,
-            text: pasteboard.string(forType: .string))
-        switch input {
-        case .link(let link)?:
-            downloadLink(link, expected: nil)
-        case .files(let urls)?:
-            navigation.open(urls)
-        case .image?:
-            do {
-                navigation.open([try environment.savePastedImage(from: pasteboard)])
-            } catch {
-                alert = UserMessage(
-                    title: String(localized: "Can't paste the image"), message: error.localizedDescription)
-            }
-        case nil:
-            NSSound.beep()
-        }
     }
 }

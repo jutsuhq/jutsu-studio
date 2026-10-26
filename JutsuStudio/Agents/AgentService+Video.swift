@@ -7,56 +7,11 @@ import os
 
 private let logger = Logger(subsystem: "com.jutsustudio", category: "Agents")
 
-// quote, create_video, jobs and job_action: the commands that make videos. Every job is built from a fresh Create
-// form (`AgentVideoOrder`), never the Create screen's draft, and every paid submit passes the engine's spending
-// guard (`JobEngine.clearAgentSpend`); nothing here decides what may be spent.
+// quote and create_video: the commands that make videos. Every job is built from a fresh Create form
+// (`AgentVideoOrder`), never the Create screen's draft, and every paid submit passes the engine's spending
+// guard (`JobEngine.clearAgentSpend`); nothing here decides what may be spent. jobs and job_action are in
+// AgentService+Jobs.swift, uploads and the request record in AgentService+Requests.swift.
 extension AgentService {
-    // MARK: Uploads
-
-    /// Checks an upload's request before a byte of it is read: only `create_video` takes files, a request ID taken by
-    /// other parameters is refused (`request_conflict`), and one already queued with these needs no file again
-    /// (`request_known`).
-    func admit(_ upload: UploadCommand) throws(AgentError) {
-        guard let request = upload.request, ["create_video", "create_image", "frames"].contains(request.command)
-        else {
-            throw AgentError(
-                .fileRefused, message: "Only create_video, create_image and frames take files.", retryable: false,
-                next: "Send files with create_video, create_image or frames.")
-        }
-        // Free and never logged as a request: its files are removed once its frames are written.
-        if request.command == "frames" { return }
-        let state: AgentRequestGate<AgentCreated, AgentError>.State
-        do {
-            state = try requests.state(
-                of: request.requestID, fingerprint: request.fingerprint, parameters: request.parameters)
-        } catch {
-            logger.error("Can't read the agent requests: \(error.localizedDescription, privacy: .private)")
-            throw Self.requestsUnreadable
-        }
-        switch state {
-        case .new, .running: return
-        case .conflict: throw .requestConflict
-        // Sent again with another max_cost: its job has the files already, whatever the new one decides.
-        case .known, .otherMaxCost:
-            throw AgentError(
-                .requestKnown, message: "This request was already queued; its files aren't needed again.",
-                retryable: false, next: "Send \(request.command) without uploading to get its job.")
-        }
-    }
-
-    static let requestsUnreadable = AgentError(
-        .failed, message: "Jutsu Studio can't read its record of agent requests, so nothing is queued.",
-        retryable: true, next: "Ask the person to check the app's data folder, then send the request again.")
-
-    /// What the request gate answers a paid command with instead of running it.
-    static func refusals(_ command: String, made: String) -> AgentRequestGate<AgentCreated, AgentError>.Refusals {
-        AgentRequestGate.Refusals(
-            conflict: .requestConflict, unreadable: requestsUnreadable,
-            neverQueued: AgentError(
-                .failed, message: "The request was recorded but \(made).", retryable: true,
-                next: "Send the same \(command) again."))
-    }
-
     // MARK: quote
 
     func quote(_ fields: QuoteCommand) async throws(AgentError) -> AgentQuote {
@@ -199,19 +154,6 @@ extension AgentService {
         throw .badRequest("max_cost is in \(unit == .usdCents ? "usd" : "credits") on this connection")
     }
 
-    /// Records the request with the IDs of what it makes, before anything is queued or sent.
-    func recordRequest(
-        _ requestID: String, fingerprint: String, parameters: String? = nil, jobIDs: [UUID]
-    ) throws(AgentError) {
-        do {
-            try requests.record(requestID, fingerprint: fingerprint, parameters: parameters, ids: jobIDs, at: .now)
-        } catch {
-            throw AgentError(
-                .failed, message: "Jutsu Studio can't record the request, so nothing is queued or sent.",
-                retryable: true, next: "Ask the person to check the Mac has room, then send the request again.")
-        }
-    }
-
     /// The request's fields as an order, with its files as the app holds them.
     private static func order(
         _ video: AgentVideoRequest, source: AgentVideoOrder.Source?, images: [LocalImage]
@@ -239,134 +181,6 @@ extension AgentService {
         case .success(let spec): return (spec, context.paysUnlimited(spec))
         case .failure(let refusal): throw .invalidRequest(refusal.message)
         }
-    }
-
-    /// A path the helper's upload answered with: a file in the app's own inbox, and nowhere else.
-    func inboxFile(_ path: String) throws(AgentError) -> URL {
-        guard let inbox = server?.inbox, inbox.uploadFolder(of: path) != nil,
-            FileManager.default.fileExists(atPath: path)
-        else {
-            throw AgentError(
-                .fileRefused, message: "\(path) isn't a file the helper sent to Jutsu Studio.", retryable: false,
-                next: "Pass the file's path on this Mac; the jutsu helper sends it to the app.")
-        }
-        return URL(filePath: path)
-    }
-
-    func discard(_ files: [String]) {
-        server?.inbox.remove(files)
-    }
-
-    /// Removes the inbox's files that no job still reads, a day after they came: refused requests, and jobs gone
-    /// from the store or finished more than a week ago. Skipped when the store can't be read.
-    func sweepInbox() async {
-        guard let inbox = server?.inbox else { return }
-        let now = Date.now
-        do {
-            let jobs = try await environment.store.jobsUnfinishedOrFinished(since: now.addingTimeInterval(-7 * 86_400))
-            let kept: [String] =
-                jobs.flatMap { job -> [String] in
-                    let files: [URL?] = [job.spec.source?.fileURL] + job.spec.references.map(\.fileURL)
-                    return files.compactMap { $0?.path(percentEncoded: false) }
-                }
-                + ((try? environment.agentImages.records()) ?? []).filter { !$0.isOver }
-                .flatMap { $0.inputs.map { $0.fileURL.path(percentEncoded: false) } }
-            let removed = inbox.sweep(keeping: Set(kept), before: now.addingTimeInterval(-86_400))
-            if removed > 0 { logger.info("Removed \(removed, privacy: .private) old agent upload(s)") }
-        } catch {
-            logger.error("Can't check the agent inbox: \(String(describing: error), privacy: .private)")
-        }
-    }
-
-    // MARK: jobs
-
-    func jobs(_ fields: JobsCommand) async throws(AgentError) -> AgentJobs {
-        let started = ContinuousClock.now
-        var ids = fields.ids
-        var next: String?
-        let operations = operations
-        if ids.isEmpty {
-            let videos = environment.liveJobs.all.filter { $0.agent != nil }.map { ($0.createdAt, $0.id) }
-            let images = ((try? environment.agentImages.records()) ?? []).map { ($0.createdAt, $0.id) }
-            let exports = operations.all.map { ($0.createdAt, $0.id) }
-            (ids, next) = AgentJobPage.page(videos + images + exports, limit: fields.limit ?? 10, after: fields.cursor)
-        }
-        let live = environment.liveJobs
-        let images = environment.agentImages
-        // Cut to what is left of the answer deadline, as create_video's wait is, so the answer keeps its margin
-        // before the deadline whatever reading the page took.
-        let seconds = AgentProtocol.waitSeconds(fields.waitSeconds, after: ContinuousClock.now - started)
-        let timedOut =
-            fields.waitSeconds > 0
-            ? await agentWait(seconds: seconds) {
-                ids.allSatisfy { id in
-                    if let job = live.job(id) { return AgentJob.isSettled(job.state) }
-                    if let operation = operations.operation(id) { return operation.state != .running }
-                    guard let record = images.record(id) else { return true }
-                    return (record.isOver && !images.files(of: id).isEmpty) || record.state == .held
-                        || record.state == .failed || record.state == .canceled
-                }
-            } : false
-        var jobs: [AgentJob] = []
-        for id in ids {
-            if let job = await job(id) {
-                jobs.append(AgentJob(job))
-            } else if let image = await imageJob(id) {
-                jobs.append(image)
-            } else if let operation = operations.operation(id) {
-                jobs.append(operation.job)
-            } else {
-                jobs.append(.unknown(id))
-            }
-        }
-        return AgentJobs(jobs: jobs, timedOut: timedOut, nextCursor: next)
-    }
-
-    // MARK: job_action
-
-    func act(_ fields: JobActionCommand) async throws(AgentError) -> AgentActed {
-        let engine = environment.engine
-        guard let id = fields.job else {
-            switch fields.action {
-            // Agents' jobs only: an agent never pauses the person's jobs or lifts their own Pause all.
-            case .pauseQueue: await engine.pauseAll(agentsOnly: true)
-            case .resumeQueue: await engine.resumeAll(agentsOnly: true)
-            case .cancel, .retry, .runNext: throw .badRequest("\(fields.action.rawValue) needs job")
-            }
-            return AgentActed(action: fields.action)
-        }
-        guard let job = await job(id) else {
-            if environment.agentImages.record(id) != nil { return try await actOnImage(fields.action, id) }
-            throw AgentError(.notFound, message: "There's no job \(id.uuidString).", retryable: false)
-        }
-        let refusal: String? =
-            switch fields.action {
-            case .cancel: AgentJobRules.cancelRefusal(job)
-            case .retry:
-                AgentJobRules.retryRefusal(job) {
-                    FileManager.default.fileExists(atPath: $0.path(percentEncoded: false))
-                }
-            case .runNext: AgentJobRules.runNextRefusal(job)
-            case .pauseQueue, .resumeQueue: nil
-            }
-        if let refusal {
-            throw AgentError(
-                .needsPerson, message: refusal, retryable: false, next: "Ask the person to decide in the Queue.")
-        }
-        do {
-            switch fields.action {
-            case .cancel: try await engine.cancel(id)
-            case .retry: try await engine.retry(id)
-            case .runNext: try await engine.runNext(id)
-            case .pauseQueue, .resumeQueue: break
-            }
-        } catch {
-            throw AgentError(
-                .notApplicable, message: error.localizedDescription,
-                retryable: Self.isSubmitInProgress(error),
-                next: "Call jobs to see the job's state now.")
-        }
-        return AgentActed(action: fields.action, job: await self.job(id).map(AgentJob.init))
     }
 
     // MARK: Helpers
