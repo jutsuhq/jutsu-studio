@@ -42,9 +42,13 @@ public struct CapabilitiesCommand: Codable, Equatable, Sendable {
         imageModels = try container.decodeIfPresent(Bool.self, forKey: .imageModels) ?? false
         styles = try container.decodeIfPresent(Bool.self, forKey: .styles) ?? false
         voices = try container.decodeIfPresent(Bool.self, forKey: .voices) ?? false
-        if let model, !AgentNames.isValidModelID(model) {
-            throw AgentError.badRequest("model is a model ID from capabilities, such as seedance25")
-        }
+        if let problem = Self.problem(model: model) { throw AgentError.badRequest(problem) }
+    }
+
+    /// Why `model` can't name a model; nil when it can. Shared by the helper and the app.
+    public static func problem(model: String?) -> String? {
+        guard let model, !AgentNames.isValidModelID(model) else { return nil }
+        return "model is a model ID, such as seedance25"
     }
 
     public func encode(to encoder: any Encoder) throws {
@@ -79,9 +83,14 @@ public struct ShowCommand: Codable, Equatable, Sendable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         page = try container.decodeIfPresent(AgentPage.self, forKey: .page)
         job = try container.decodeIfPresent(UUID.self, forKey: .job)
-        guard (page == nil) != (job == nil) else {
-            throw AgentError.badRequest("show takes exactly one of page or job")
-        }
+        if let problem = Self.problem(hasPage: page != nil, hasJob: job != nil) { throw AgentError.badRequest(problem) }
+    }
+
+    /// Why `show` can't open these; nil when it can. It names the tool itself, so the helper sends it as it is.
+    public static func problem(hasPage: Bool, hasJob: Bool) -> String? {
+        guard hasPage == hasJob else { return nil }
+        let pages = AgentPage.allCases.map(\.rawValue).joined(separator: ", ")
+        return "show takes exactly one of page (\(pages)) or job (a job ID)"
     }
 }
 
@@ -175,6 +184,17 @@ public struct UploadRequest: Codable, Equatable, Hashable, Sendable {
 
 /// The rules for the names and IDs agents send, shared by the helper and the app.
 public enum AgentNames {
+    /// `number` as the messages write it, with a space between thousands: 10 000.
+    public static func spaced(_ number: Int) -> String {
+        var digits = Array(String(number))
+        var index = digits.count - 3
+        while index > 0 {
+            digits.insert(" ", at: index)
+            index -= 3
+        }
+        return String(digits)
+    }
+
     public static let requestIDRule = "request_id takes 1–64 letters, digits, '.', '_' or '-', not starting with '.'"
 
     /// A request ID: no path separators and no leading dot, so it is also safe as a file or folder name.

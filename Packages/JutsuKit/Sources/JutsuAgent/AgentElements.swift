@@ -8,6 +8,8 @@ import Foundation
 public struct ElementsCommand: Codable, Equatable, Sendable, AgentFields {
     public static let defaultLimit = 20
     public static let maxLimit = 50
+    /// In Unicode scalars.
+    public static let maxQueryLength = 200
     public static let categories = ["character", "environment", "prop"]
 
     /// Words that all appear in the name, in any case.
@@ -25,7 +27,9 @@ public struct ElementsCommand: Codable, Equatable, Sendable, AgentFields {
     }
 
     public var problem: String? {
-        if let query, query.unicodeScalars.count > 200 { return "query is at most 200 characters" }
+        if let query, query.unicodeScalars.count > Self.maxQueryLength {
+            return "query is at most \(Self.maxQueryLength) characters"
+        }
         if let category, !Self.categories.contains(category) {
             return "category is one of \(Self.categories.joined(separator: ", "))"
         }

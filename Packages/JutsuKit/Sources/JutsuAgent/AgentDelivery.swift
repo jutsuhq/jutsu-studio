@@ -11,6 +11,8 @@ public enum AgentDeliveryAction: String, Codable, Sendable, CaseIterable {
 /// Delivery sets as Library › Delivery Sets keeps them: a named set of exact versions, exported with its outputs.
 public struct DeliverySetCommand: Codable, Equatable, Sendable, AgentFields {
     public static let maxItems = 200
+    /// In Unicode scalars.
+    public static let maxNameLength = 120
 
     public var action: AgentDeliveryAction
     /// create: the set's name; the date's when left out.
@@ -63,15 +65,16 @@ public struct DeliverySetCommand: Codable, Equatable, Sendable, AgentFields {
     }
 
     public var problem: String? {
-        if let name, name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || name.unicodeScalars.count > 120 {
-            return "name is 1 to 120 characters"
+        if let name,
+            name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                || name.unicodeScalars.count > Self.maxNameLength
+        {
+            return "name is 1 to \(Self.maxNameLength) characters"
         }
         if let folder, !AgentVideoRequest.isValidPath(folder) { return "folder is a folder path from list" }
         if let waitSeconds {
             guard action == .export else { return "wait_seconds is for export" }
-            guard (0...JobsCommand.maxWaitSeconds).contains(waitSeconds) else {
-                return "wait_seconds is 0 to \(JobsCommand.maxWaitSeconds)"
-            }
+            if let problem = JobsCommand.waitProblem(waitSeconds) { return problem }
         }
         switch action {
         case .create:
@@ -210,9 +213,7 @@ public struct ExportCommand: Codable, Equatable, Sendable, AgentFields {
     public var problem: String? {
         guard (1...Self.maxItems).contains(items.count) else { return "items takes 1 to \(Self.maxItems) video IDs" }
         guard Set(items).count == items.count else { return "items names each video once" }
-        if let waitSeconds, !(0...JobsCommand.maxWaitSeconds).contains(waitSeconds) {
-            return "wait_seconds is 0 to \(JobsCommand.maxWaitSeconds)"
-        }
+        if let problem = waitSeconds.flatMap(JobsCommand.waitProblem) { return problem }
         return nil
     }
 }

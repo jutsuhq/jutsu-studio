@@ -66,7 +66,7 @@ extension Tool {
             schema["properties"] = [
                 "request_id": Self.requestIDSchema, "max_cost": Self.maxCostSchema,
                 "model": ["type": "string", "description": "An image model ID from capabilities."],
-                "prompt": ["type": "string", "maxLength": 10_000],
+                "prompt": Self.promptSchema,
                 "aspect_ratio": ["type": "string", "description": "One the model takes: 1:1, 16:9, 9:16…"],
                 "count": [
                     "type": "integer", "minimum": 1, "maximum": .number(Double(AgentImageRequest.maxCount)),
@@ -88,12 +88,15 @@ extension Tool {
             schema["required"] = ["request_id", "prompt", "max_cost"]
         case .librarySearch:
             schema["properties"] = [
-                "query": ["type": "string", "maxLength": 500],
+                "query": ["type": "string", "maxLength": .number(Double(LibrarySearchCommand.maxQueryLength))],
                 "kind": ["type": "string", "enum": .array(AgentLibraryKind.allCases.map { .string($0.rawValue) })],
                 "starred": ["type": "boolean"],
                 "verdict": ["type": "string", "enum": .array(AgentVerdict.allCases.map { .string($0.rawValue) })],
                 "include_rejected": ["type": "boolean"],
-                "model": ["type": "string", "description": "A video model ID or an image model's name."],
+                "model": [
+                    "type": "string", "maxLength": .number(Double(LibrarySearchCommand.maxModelLength)),
+                    "description": "A video model ID or an image model's name.",
+                ],
                 "mode": ["type": "string", "enum": .array(AgentVideoRequest.modes.map { .string($0) })],
                 "from": ["type": "string", "format": "date-time"],
                 "to": ["type": "string", "format": "date-time"],
@@ -144,7 +147,10 @@ extension Tool {
                 "engine": ["type": "string", "enum": ["standard"]],
                 "aspect_ratio": ["type": "string", "enum": ["9:16", "1:1", "16:9"]],
                 "language": ["type": "string", "description": "An ISO 639-3 code, such as fra."],
-                "voice": ["type": "string", "description": "A voice ID from capabilities."],
+                "voice": [
+                    "type": "string", "minLength": 1, "maxLength": .number(Double(EnhanceCommand.maxVoiceLength)),
+                    "description": "A voice ID from capabilities.",
+                ],
             ]
             schema["required"] = ["request_id", "item", "operation", "max_cost"]
         case .deliverySet:
@@ -152,7 +158,10 @@ extension Tool {
                 "action": [
                     "type": "string", "enum": .array(AgentDeliveryAction.allCases.map { .string($0.rawValue) }),
                 ],
-                "name": ["type": "string", "maxLength": 120, "description": "create: the set's name."],
+                "name": [
+                    "type": "string", "maxLength": .number(Double(DeliverySetCommand.maxNameLength)),
+                    "description": "create: the set's name.",
+                ],
                 "items": [
                     "type": "array", "maxItems": .number(Double(DeliverySetCommand.maxItems)),
                     "items": ["type": "string", "format": "uuid"], "description": "create: Library item IDs.",
@@ -214,7 +223,10 @@ extension Tool {
             schema["required"] = ["times"]
         case .elements:
             schema["properties"] = [
-                "query": ["type": "string", "maxLength": 200, "description": "Words of the name."],
+                "query": [
+                    "type": "string", "maxLength": .number(Double(ElementsCommand.maxQueryLength)),
+                    "description": "Words of the name.",
+                ],
                 "category": ["type": "string", "enum": .array(ElementsCommand.categories.map { .string($0) })],
                 "limit": ["type": "integer", "minimum": 1, "maximum": .number(Double(ElementsCommand.maxLimit))],
                 "cursor": ["type": "string", "description": "nextCursor of the page before."],
@@ -238,26 +250,41 @@ extension Tool {
         "description": "What the Queue, the Library and file names call it; the first 80 characters, on one line.",
     ]
 
+    private static let promptSchema: JSONValue = [
+        "type": "string", "maxLength": .number(Double(AgentVideoRequest.maxPromptLength)),
+    ]
+
     private static let exportWaitSchema: JSONValue = [
         "type": "integer", "minimum": 0, "maximum": .number(Double(JobsCommand.maxWaitSeconds)),
         "description": "Wait up to this long for the export to finish before answering; it runs on either way.",
     ]
 
-    /// The video fields of `quote` and `create_video`; `files` for paths to send, else counts and lengths only.
-    private static func videoProperties(files: Bool) -> [String: JSONValue] {
+    /// The source clip's range, and for `create_video` its file.
+    private static func sourceProperties(files: Bool) -> [String: JSONValue] {
         var source: [String: JSONValue] = [
-            "start": ["type": "number", "minimum": 0, "description": "Seconds from the start of the file."],
-            "end": ["type": "number", "minimum": 0, "description": "Where the job's range ends, in seconds."],
+            "start": [
+                "type": "number", "minimum": 0, "maximum": .number(AgentSource.maxSeconds),
+                "description": "Seconds from the start of the file.",
+            ],
+            "end": [
+                "type": "number", "minimum": 0, "maximum": .number(AgentSource.maxSeconds),
+                "description": "Where the job's range ends, in seconds.",
+            ],
         ]
         if files { source["path"] = ["type": "string", "description": "The clip on this Mac."] }
+        return source
+    }
+
+    /// The video fields of `quote` and `create_video`; `files` for paths to send, else counts and lengths only.
+    private static func videoProperties(files: Bool) -> [String: JSONValue] {
         var properties: [String: JSONValue] = [
             "mode": ["type": "string", "enum": .array(AgentVideoRequest.modes.map { .string($0) })],
             "model": [
                 "type": "string", "description": "A model ID from capabilities; the mode's default if left out.",
             ],
-            "prompt": ["type": "string", "maxLength": 10_000],
+            "prompt": Self.promptSchema,
             "source": [
-                "type": "object", "additionalProperties": false, "properties": .object(source),
+                "type": "object", "additionalProperties": false, "properties": .object(sourceProperties(files: files)),
                 "description": files
                     ? "The source clip; left out, a model that can makes the clip from the prompt and images."
                     : "The source clip's range; end is needed.",
@@ -271,7 +298,7 @@ extension Tool {
             "resolution": ["type": "string", "description": "One from capabilities, such as 720p."],
             "draft": ["type": "boolean", "description": "A cheaper lower-resolution preview, on models with drafts."],
             "length": [
-                "type": "number", "exclusiveMinimum": 0,
+                "type": "number", "exclusiveMinimum": 0, "maximum": .number(AgentVideoRequest.maxLength),
                 "description": "Seconds a clip without a source runs, or extend adds.",
             ],
             "aspect_ratio": [
@@ -280,7 +307,8 @@ extension Tool {
             ],
             "audio": ["type": "string", "enum": .array(AgentVideoRequest.audioOptions.map { .string($0) })],
             "variants": [
-                "type": "integer", "minimum": 1, "description": "Videos one submit makes, up to quote's maxVariants.",
+                "type": "integer", "minimum": 1, "maximum": .number(Double(AgentVideoRequest.maxVariants)),
+                "description": "Videos one submit makes, up to quote's maxVariants.",
             ],
             "elements": [
                 "type": "array", "maxItems": .number(Double(AgentElementNames.maxNames)),
@@ -292,7 +320,8 @@ extension Tool {
             properties["title"] = titleSchema
         } else {
             properties["image_count"] = [
-                "type": "integer", "minimum": 0, "description": "How many reference images there will be.",
+                "type": "integer", "minimum": 0, "maximum": .number(Double(AgentVideoRequest.protocolMaxImages)),
+                "description": "How many reference images there will be.",
             ]
         }
         return properties

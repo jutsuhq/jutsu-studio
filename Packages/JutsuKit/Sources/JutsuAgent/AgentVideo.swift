@@ -1,6 +1,7 @@
 import Foundation
 
-// The video commands: quote, create_video, jobs and job_action, and what they answer.
+// The video commands quote and create_video, and what the video commands answer (jobs and job_action are in
+// AgentJobCommands.swift).
 
 /// An amount in whole units of what the connection pays with: cents with an API key, credits on an account.
 public struct AgentAmount: Codable, Equatable, Hashable, Sendable {
@@ -90,6 +91,8 @@ public struct AgentVideoRequest: Codable, Equatable, Hashable, Sendable {
     public static let maxLength: Double = 600
     /// A bound of the protocol only: the app keeps the first 80 characters of a title (`JobSpec.maxTitleLength`).
     public static let maxTitleLength = 1_000
+    /// In Unicode scalars, as Create counts a prompt; `create_image` takes the same.
+    public static let maxPromptLength = 10_000
 
     public var mode: String
     /// A model ID from `capabilities`; left out, the mode's default model.
@@ -192,8 +195,12 @@ public struct AgentVideoRequest: Codable, Equatable, Hashable, Sendable {
     public var problem: String? {
         guard Self.modes.contains(mode) else { return "mode is one of \(Self.modes.joined(separator: ", "))" }
         if let model, !AgentNames.isValidModelID(model) { return "model is a model ID from capabilities" }
-        if let prompt, prompt.unicodeScalars.count > 10_000 { return "prompt is at most 10 000 characters" }
-        if let title, title.unicodeScalars.count > Self.maxTitleLength { return "title is at most 1 000 characters" }
+        if let prompt, prompt.unicodeScalars.count > Self.maxPromptLength {
+            return "prompt is at most \(AgentNames.spaced(Self.maxPromptLength)) characters"
+        }
+        if let title, title.unicodeScalars.count > Self.maxTitleLength {
+            return "title is at most \(AgentNames.spaced(Self.maxTitleLength)) characters"
+        }
         if images.count > Self.protocolMaxImages {
             return "images takes at most \(Self.protocolMaxImages) files, more than any model takes"
         }
@@ -275,9 +282,7 @@ public struct CreateVideoCommand: Codable, Equatable, Sendable {
         guard AgentNames.isValidFingerprint(fingerprint), parameters.map(AgentNames.isValidFingerprint) ?? true else {
             throw AgentError.badRequest("fingerprint is 64 lowercase hex digits")
         }
-        guard (0...JobsCommand.maxWaitSeconds).contains(waitSeconds) else {
-            throw AgentError.badRequest("wait_seconds is 0 to \(JobsCommand.maxWaitSeconds)")
-        }
+        if let problem = JobsCommand.waitProblem(waitSeconds) { throw AgentError.badRequest(problem) }
     }
 
     public func encode(to encoder: any Encoder) throws {
@@ -288,97 +293,6 @@ public struct CreateVideoCommand: Codable, Equatable, Sendable {
         try container.encode(video, forKey: .video)
         try container.encode(maxCost, forKey: .maxCost)
         if waitSeconds != 0 { try container.encode(waitSeconds, forKey: .waitSeconds) }
-    }
-}
-
-/// The state of the named jobs, or of the agents' latest jobs; with `waitSeconds`, once they have all settled or the
-/// wait is over, whichever comes first. A wait that runs out returns the state as it is and stops nothing.
-public struct JobsCommand: Codable, Equatable, Sendable {
-    public static let maxIDs = 20
-    public static let maxLimit = 50
-    /// The longest wait: under the minute MCP clients usually allow a tool call.
-    public static let maxWaitSeconds = 50
-
-    public var ids: [UUID]
-    /// Without `ids`: how many of the agents' latest jobs, newest first.
-    public var limit: Int?
-    public var waitSeconds: Int
-    /// Without `ids`: the `nextCursor` of the page before.
-    public var cursor: String?
-
-    public init(ids: [UUID] = [], limit: Int? = nil, waitSeconds: Int = 0, cursor: String? = nil) {
-        self.ids = ids
-        self.limit = limit
-        self.waitSeconds = waitSeconds
-        self.cursor = cursor
-    }
-
-    private enum CodingKeys: String, CodingKey {
-        case ids, limit, waitSeconds, cursor
-    }
-
-    public init(from decoder: any Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        ids = try container.decodeIfPresent([UUID].self, forKey: .ids) ?? []
-        limit = try container.decodeIfPresent(Int.self, forKey: .limit)
-        waitSeconds = try container.decodeIfPresent(Int.self, forKey: .waitSeconds) ?? 0
-        cursor = try container.decodeIfPresent(String.self, forKey: .cursor)
-        if let cursor {
-            guard ids.isEmpty else { throw AgentError.badRequest("cursor pages the latest jobs; leave out ids") }
-            guard AgentNames.isValidCursor(cursor) else {
-                throw AgentError.badRequest("cursor is a nextCursor from an earlier answer")
-            }
-        }
-        guard ids.count <= Self.maxIDs else { throw AgentError.badRequest("ids takes at most \(Self.maxIDs) job IDs") }
-        if let limit, !(1...Self.maxLimit).contains(limit) {
-            throw AgentError.badRequest("limit is 1 to \(Self.maxLimit)")
-        }
-        guard (0...Self.maxWaitSeconds).contains(waitSeconds) else {
-            throw AgentError.badRequest("wait_seconds is 0 to \(Self.maxWaitSeconds)")
-        }
-    }
-
-    public func encode(to encoder: any Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        if !ids.isEmpty { try container.encode(ids, forKey: .ids) }
-        try container.encodeIfPresent(limit, forKey: .limit)
-        if waitSeconds > 0 { try container.encode(waitSeconds, forKey: .waitSeconds) }
-        try container.encodeIfPresent(cursor, forKey: .cursor)
-    }
-}
-
-/// What `job_action` can do. None of them deletes anything.
-public enum AgentJobAction: String, Codable, Sendable, CaseIterable {
-    case cancel, retry
-    case runNext = "run_next"
-    case pauseQueue = "pause_queue"
-    case resumeQueue = "resume_queue"
-
-    /// The actions on one job, which need its ID; the queue's take none.
-    public var needsJob: Bool { self == .cancel || self == .retry || self == .runNext }
-}
-
-public struct JobActionCommand: Codable, Equatable, Sendable {
-    public var action: AgentJobAction
-    public var job: UUID?
-
-    public init(action: AgentJobAction, job: UUID? = nil) {
-        self.action = action
-        self.job = job
-    }
-
-    private enum CodingKeys: String, CodingKey {
-        case action, job
-    }
-
-    public init(from decoder: any Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        action = try container.decode(AgentJobAction.self, forKey: .action)
-        job = try container.decodeIfPresent(UUID.self, forKey: .job)
-        guard action.needsJob == (job != nil) else {
-            throw AgentError.badRequest(
-                action.needsJob ? "\(action.rawValue) needs job, a job ID" : "\(action.rawValue) takes no job")
-        }
     }
 }
 

@@ -4,6 +4,10 @@ Notable changes to Jutsu Studio. Versions follow [Semantic Versioning](https://s
 
 ## [Unreleased]
 
+### Changed
+
+- The agent tools' input schemas state the maximums the app already enforced: `variants`, `image_count`, `length`, `source` `start`/`end`, `library_search`'s `model` and `enhance`'s `voice`.
+
 ## [0.2.2] - 2026-10-24
 
 ### Added
