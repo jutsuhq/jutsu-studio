@@ -179,6 +179,18 @@ actor FakeApp {
             #expect(schemas[tool]??["properties"]?[field]?["type"] == "array", "\(tool)")
             #expect(schemas[tool]??["properties"]?[field]?["maxItems"] == nil, "\(tool)")
         }
+        // The bounds the commands check are the schemas' too.
+        let video = schemas["create_video"]??["properties"]
+        #expect(video?["variants"]?["maximum"] == .number(Double(AgentVideoRequest.maxVariants)))
+        #expect(video?["length"]?["maximum"] == .number(AgentVideoRequest.maxLength))
+        #expect(video?["source"]?["properties"]?["end"]?["maximum"] == .number(AgentSource.maxSeconds))
+        #expect(video?["prompt"]?["maxLength"] == .number(Double(AgentVideoRequest.maxPromptLength)))
+        let quote = schemas["quote"]??["properties"]
+        #expect(quote?["image_count"]?["maximum"] == .number(Double(AgentVideoRequest.protocolMaxImages)))
+        let search = schemas["library_search"]??["properties"]
+        #expect(search?["model"]?["maxLength"] == .number(Double(LibrarySearchCommand.maxModelLength)))
+        let enhance = schemas["enhance"]??["properties"]
+        #expect(enhance?["voice"]?["maxLength"] == .number(Double(EnhanceCommand.maxVoiceLength)))
         let hints = Dictionary(uniqueKeysWithValues: tools.map { ($0["name"]?.stringValue ?? "", $0["annotations"]) })
         for name in ["capabilities", "quote", "jobs", "elements", "library_search", "library_get"] {
             #expect(hints[name]??["readOnlyHint"] == true, "\(name)")

@@ -99,9 +99,11 @@ public struct AgentImageRequest: Codable, Equatable, Hashable, Sendable {
     public var problem: String? {
         if let model, !AgentNames.isValidImageModelID(model) { return "model is an image model ID from capabilities" }
         if prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return "prompt describes the image" }
-        if prompt.unicodeScalars.count > 10_000 { return "prompt is at most 10 000 characters" }
+        if prompt.unicodeScalars.count > AgentVideoRequest.maxPromptLength {
+            return "prompt is at most \(AgentNames.spaced(AgentVideoRequest.maxPromptLength)) characters"
+        }
         if let title, title.unicodeScalars.count > AgentVideoRequest.maxTitleLength {
-            return "title is at most 1 000 characters"
+            return "title is at most \(AgentNames.spaced(AgentVideoRequest.maxTitleLength)) characters"
         }
         if let aspectRatio, aspectRatio.utf8.count > 16 { return "aspect_ratio is a ratio such as 16:9" }
         if let count, !(1...Self.maxCount).contains(count) { return "count is 1 to \(Self.maxCount)" }
@@ -160,6 +162,10 @@ public struct LibrarySearchCommand: Codable, Equatable, Sendable, AgentFields {
     public static let maxLimit = 50
     /// Prompts are cut to this many characters in the answer.
     public static let promptLength = 200
+    /// In Unicode scalars.
+    public static let maxQueryLength = 500
+    /// In UTF-8 bytes, which the schema's `maxLength` states for the ASCII IDs and names it takes.
+    public static let maxModelLength = 128
 
     /// Words that all appear in the prompt, the title or the model.
     public var query: String?
@@ -216,8 +222,10 @@ public struct LibrarySearchCommand: Codable, Equatable, Sendable, AgentFields {
         if refreshHiggsfield == true, includeHiggsfield != true {
             return "refresh_higgsfield loads the history include_higgsfield lists; send both"
         }
-        if let query, query.unicodeScalars.count > 500 { return "query is at most 500 characters" }
-        if let model, model.utf8.count > 128 { return "model is a model ID or an image model's name" }
+        if let query, query.unicodeScalars.count > Self.maxQueryLength {
+            return "query is at most \(Self.maxQueryLength) characters"
+        }
+        if let model, model.utf8.count > Self.maxModelLength { return "model is a model ID or an image model's name" }
         if let mode, !AgentVideoRequest.modes.contains(mode) {
             return "mode is one of \(AgentVideoRequest.modes.joined(separator: ", "))"
         }
@@ -375,6 +383,9 @@ public enum AgentEnhancement: String, Codable, Sendable, CaseIterable {
 
 /// One Enhance operation on a video result, queued as the Enhance sheet queues it, idempotent by its request ID.
 public struct EnhanceCommand: Codable, Equatable, Sendable, AgentFields {
+    /// A voice ID's length, in UTF-8 bytes, which the schema's `maxLength` states for the ASCII IDs it takes.
+    public static let maxVoiceLength = 128
+
     public var requestID: String
     /// `AgentFingerprint` of the request's parameters and `max_cost`.
     public var fingerprint: String
@@ -447,7 +458,9 @@ public struct EnhanceCommand: Codable, Equatable, Sendable, AgentFields {
                 return "\(value.prefix(16)) is not an option of \(operation.rawValue)"
             }
         }
-        if let voice, !(1...128).contains(voice.utf8.count) { return "voice is a voice ID from capabilities" }
+        if let voice, !(1...Self.maxVoiceLength).contains(voice.utf8.count) {
+            return "voice is a voice ID from capabilities"
+        }
         if let frameRate, ![24, 30, 60].contains(frameRate) { return "frame_rate is 24, 30 or 60" }
         return nil
     }

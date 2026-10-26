@@ -223,6 +223,35 @@ actor FakeInbox {
         #expect(await inbox.staged.isEmpty)
     }
 
+    /// The helper and the app refuse a call with the same words: each command's own check (`problem`) runs on both
+    /// sides, and the helper only names the tool before it.
+    @Test func theHelperAndTheAppRefuseWithTheSameWords() async throws {
+        let job = JSONValue.string(UUID().uuidString)
+        let cases: [(String, [String: JSONValue])] = [
+            ("jobs", ["limit": 0]), ("jobs", ["wait_seconds": 51]), ("jobs", ["ids": [job], "cursor": "x"]),
+            ("jobs", ["cursor": "no pe"]), ("job_action", ["action": "cancel"]),
+            ("job_action", ["action": "pause_queue", "job": job]), ("capabilities", ["model": "../x"]), ("show", [:]),
+        ]
+        for (tool, arguments) in cases {
+            let helper = try await call(tool, .object(arguments))["structuredContent"]?["error"]?["message"]
+            // The same call as the app's command line: camelCase keys beside version and command.
+            var fields = Dictionary(
+                uniqueKeysWithValues: arguments.map { key, value in
+                    (key == "wait_seconds" ? "waitSeconds" : key, value)
+                })
+            fields["version"] = 1
+            fields["command"] = .string(tool)
+            guard case .failure(let app) = AgentWire.request(from: try JSONEncoder().encode(fields)).request else {
+                Issue.record("\(tool) \(arguments) decoded")
+                continue
+            }
+            // show's rule names the tool itself.
+            let named = tool == "show" ? "Malformed request: " : "Malformed request: \(tool): "
+            let expected = app.message.replacingOccurrences(of: "Malformed request: ", with: named)
+            #expect(helper == .string(expected), "\(tool) \(arguments)")
+        }
+    }
+
     @Test func aQuoteSendsNoFilesOnlyHowManyThereAre() async throws {
         _ = try await call(
             "quote", ["mode": "motion_transfer", "images": ["/tmp/a.png", "/tmp/b.png"], "source": ["end": 8]])

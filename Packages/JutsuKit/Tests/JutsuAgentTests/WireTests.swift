@@ -39,6 +39,15 @@ import Testing
         }
     }
 
+    /// The limits in the messages are the constants', written as the agents have always read them.
+    @Test func theMessagesSpellTheirLimitsWithSpacedThousands() {
+        #expect(AgentNames.spaced(AgentVideoRequest.maxPromptLength) == "10 000")
+        #expect(AgentNames.spaced(AgentVideoRequest.maxTitleLength) == "1 000")
+        #expect(AgentNames.spaced(999) == "999" && AgentNames.spaced(1_000_000) == "1 000 000")
+        let long = AgentVideoRequest(mode: "restyle", prompt: String(repeating: "a", count: 10_001))
+        #expect(long.problem == "prompt is at most 10 000 characters")
+    }
+
     @Test func theVersionIsCheckedBeforeTheCommand() {
         #expect(error(#"{"version":2,"id":"a","command":"later"}"#)?.code == .unsupportedVersion)
         #expect(request(#"{"version":2,"id":"a","command":"later"}"#).id == "a")

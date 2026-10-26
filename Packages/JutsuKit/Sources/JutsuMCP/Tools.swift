@@ -57,9 +57,7 @@ enum Tool: String, CaseIterable {
     private static func capabilities(_ given: Arguments) throws(AgentError) -> AgentCommand {
         try given.allow(["models", "model", "image_models", "styles", "voices"])
         let model = try given.string("model")
-        if let model, !AgentNames.isValidModelID(model) {
-            throw .badRequest("capabilities: model is a model ID, such as seedance25")
-        }
+        if let problem = CapabilitiesCommand.problem(model: model) { throw .badRequest("capabilities: \(problem)") }
         let models = try given.bool("models")
         return .capabilities(
             CapabilitiesCommand(
@@ -87,9 +85,7 @@ enum Tool: String, CaseIterable {
         let requestID = try given.requestID()
         let maxCost = try given.maxCost()
         let wait = try given.int("wait_seconds") ?? 0
-        guard (0...JobsCommand.maxWaitSeconds).contains(wait) else {
-            throw .badRequest("create_video: wait_seconds is 0 to \(JobsCommand.maxWaitSeconds)")
-        }
+        if let problem = JobsCommand.waitProblem(wait) { throw .badRequest("create_video: \(problem)") }
         var video = try given.video()
         if let problem = video.problem { throw .badRequest("create_video: \(problem)") }
         if video.imageCount != nil { throw .badRequest("create_video takes images, the files, not a count") }
@@ -111,21 +107,11 @@ enum Tool: String, CaseIterable {
             guard let id = UUID(uuidString: text) else { throw .badRequest("jobs: ids are job IDs (UUIDs)") }
             return id
         }
-        guard ids.count <= JobsCommand.maxIDs else {
-            throw .badRequest("jobs: ids takes at most \(JobsCommand.maxIDs) job IDs")
-        }
         let limit = try given.int("limit")
-        if let limit, !(1...JobsCommand.maxLimit).contains(limit) {
-            throw .badRequest("jobs: limit is 1 to \(JobsCommand.maxLimit)")
-        }
         let wait = try given.int("wait_seconds") ?? 0
-        guard (0...JobsCommand.maxWaitSeconds).contains(wait) else {
-            throw .badRequest("jobs: wait_seconds is 0 to \(JobsCommand.maxWaitSeconds)")
-        }
         let cursor = try given.string("cursor")
-        if let cursor {
-            guard ids.isEmpty else { throw .badRequest("jobs: cursor pages the latest jobs; leave out ids") }
-            guard AgentNames.isValidCursor(cursor) else { throw .badRequest("jobs: cursor is a next_cursor from jobs") }
+        if let problem = JobsCommand.problem(idCount: ids.count, limit: limit, waitSeconds: wait, cursor: cursor) {
+            throw .badRequest("jobs: \(problem)")
         }
         return .jobs(JobsCommand(ids: ids, limit: limit, waitSeconds: wait, cursor: cursor))
     }
@@ -136,11 +122,8 @@ enum Tool: String, CaseIterable {
             throw .badRequest("job_action: action is one of \(actionNames)")
         }
         let job = try given.string("job")
-        guard action.needsJob == (job != nil) else {
-            throw .badRequest(
-                action.needsJob
-                    ? "job_action: \(action.rawValue) needs job, a job ID"
-                    : "job_action: \(action.rawValue) acts on the whole queue and takes no job")
+        if let problem = JobActionCommand.problem(action: action, hasJob: job != nil) {
+            throw .badRequest("job_action: \(problem)")
         }
         let id = try job.map { text throws(AgentError) -> UUID in
             guard let id = UUID(uuidString: text) else { throw .badRequest("job_action: job is a job ID") }
@@ -151,18 +134,14 @@ enum Tool: String, CaseIterable {
 
     private static func show(_ given: Arguments) throws(AgentError) -> AgentCommand {
         try given.allow(["page", "job"])
-        switch (try given.string("page"), try given.string("job")) {
-        case (let page?, nil):
-            guard let page = AgentPage(rawValue: page) else {
-                throw .badRequest("show: page is one of \(pageNames)")
-            }
+        let (page, job) = (try given.string("page"), try given.string("job"))
+        if let problem = ShowCommand.problem(hasPage: page != nil, hasJob: job != nil) { throw .badRequest(problem) }
+        if let page {
+            guard let page = AgentPage(rawValue: page) else { throw .badRequest("show: page is one of \(pageNames)") }
             return .show(.page(page))
-        case (nil, let job?):
-            guard let id = UUID(uuidString: job) else { throw .badRequest("show: job is a job ID (a UUID)") }
-            return .show(.job(id))
-        default:
-            throw .badRequest("show takes exactly one of page (\(pageNames)) or job (a job ID)")
         }
+        guard let id = job.flatMap(UUID.init(uuidString:)) else { throw .badRequest("show: job is a job ID (a UUID)") }
+        return .show(.job(id))
     }
 
     static let pageNames = AgentPage.allCases.map(\.rawValue).joined(separator: ", ")
