@@ -44,7 +44,8 @@ public struct ImageModel: Codable, Sendable, Hashable, Identifiable {
     }
 
     /// The most input images any request sends, where a model's catalog states no limit of its own: as many as
-    /// Nano Banana Pro takes, the most of the account's models. The same as `AgentImageRequest.maxInputs`.
+    /// Nano Banana Pro takes, the most of the account's models. The same as JutsuAgent's `AgentImageRequest.maxInputs`,
+    /// the bound agents are told; a test keeps the two equal.
     public static let inputBound = 14
 
     /// How many input images one request may send: none for a text-only model, else the catalog's limit, else

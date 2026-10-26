@@ -99,6 +99,17 @@ public enum AgentElementLookup {
         return named.first.map(Found.element) ?? .missing
     }
 
+    /// A named element's images as files on this Mac, in the element's order, as a request sends them.
+    public struct ElementImages: Sendable, Hashable {
+        public var name: String
+        public var images: [LocalImage]
+
+        public init(name: String, images: [LocalImage]) {
+            self.name = name
+            self.images = images
+        }
+    }
+
     /// One image a request sends, by the tag its prompt names it with.
     public struct Reference: Sendable, Hashable {
         /// "@Image1", "@Image2"…
@@ -111,7 +122,7 @@ public enum AgentElementLookup {
     /// Each image of a request, in the order it is sent, with the element it belongs to: the elements' images first,
     /// in the order named, then the agent's own files.
     public static func references(
-        elements: [(name: String, images: [LocalImage])], files: [LocalImage]
+        elements: [ElementImages], files: [LocalImage]
     ) -> [Reference] {
         let all =
             elements.flatMap { element in element.images.map { (Optional(element.name), $0) } }

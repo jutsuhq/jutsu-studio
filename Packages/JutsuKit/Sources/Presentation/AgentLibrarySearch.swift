@@ -204,9 +204,7 @@ public struct AgentLibraryMarks: Sendable, Hashable {
     // swiftlint:disable:next discouraged_optional_boolean
     public init(ids: [UUID], verdict: CullingAction?, star: Bool?, materials: [Material]) {
         let index = LibraryCatalogIndex(materials)
-        let rows = Dictionary(
-            materials.compactMap(MaterialLibrary.row).filter(\.isLocal).map { ($0.id, $0) },
-            uniquingKeysWith: { first, _ in first })
+        let rows = MaterialLibrary.rowsByID(materials, where: \.isLocal)
         missing = ids.filter { rows[$0] == nil }
         var history = CullingHistory()
         culling = missing.isEmpty ? (verdict.flatMap { history.apply($0, to: ids, in: index) } ?? [:]) : [:]
@@ -243,8 +241,7 @@ public enum AgentLibraryDownload: Sendable, Hashable {
     case missing
 
     public static func plan(_ ids: [UUID], in materials: [Material]) -> [AgentLibraryDownload] {
-        let rows = Dictionary(
-            materials.compactMap(MaterialLibrary.row).map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let rows = MaterialLibrary.rowsByID(materials)
         return ids.map { id in
             switch rows[id] {
             case .video(let item)?:

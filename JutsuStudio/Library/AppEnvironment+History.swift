@@ -76,6 +76,15 @@ extension AppEnvironment {
         }
     }
 
+    /// The same, reading the stored records of `items` first: for a caller without the Library's own query of them,
+    /// such as an agent's `library_mark`.
+    func setStarred(_ isStarred: Bool, _ items: [LibraryItemModel]) async throws {
+        let ids = Set(items.map(\.id))
+        let records = try modelContainer.mainContext.fetch(
+            FetchDescriptor<MaterialRecord>(predicate: #Predicate { ids.contains($0.id) }))
+        try await setStarred(isStarred, items, records: records)
+    }
+
     /// Likes or unlikes account images to match their stars; the first like Higgsfield refuses stops the rest.
     /// Without an account connection there is nothing to like on, so nothing happens.
     func setImageLiked(_ isLiked: Bool, for images: [HistoryImageItem]) async throws {

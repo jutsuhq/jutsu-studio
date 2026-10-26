@@ -50,9 +50,7 @@ public struct AgentLibraryDetail: Sendable, Hashable {
     public static func of(_ ids: [UUID], in materials: [Material]) -> (details: [AgentLibraryDetail], missing: [UUID]) {
         let index = LibraryCatalogIndex(materials)
         let byID = Dictionary(materials.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        let rows = Dictionary(
-            materials.compactMap(MaterialLibrary.row).map { ($0.id, $0) },
-            uniquingKeysWith: { first, _ in first })
+        let rows = MaterialLibrary.rowsByID(materials)
         let relations = MaterialRelations(materials)
         var details: [AgentLibraryDetail] = []
         var missing: [UUID] = []

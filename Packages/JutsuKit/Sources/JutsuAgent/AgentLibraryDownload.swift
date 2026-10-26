@@ -13,11 +13,7 @@ public struct LibraryDownloadCommand: Codable, Equatable, Sendable, AgentFields 
         self.ids = ids
     }
 
-    public var problem: String? {
-        guard (1...Self.maxIDs).contains(ids.count) else { return "ids takes 1 to \(Self.maxIDs) Library item IDs" }
-        guard Set(ids).count == ids.count else { return "ids names an item twice" }
-        return nil
-    }
+    public var problem: String? { AgentLibraryIDs.problem(ids, limit: Self.maxIDs) }
 }
 
 /// What came of one download, in the order asked.

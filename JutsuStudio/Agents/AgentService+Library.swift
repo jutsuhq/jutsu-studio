@@ -6,7 +6,6 @@ import JutsuCore
 import MediaKit
 import Persistence
 import Presentation
-import SwiftData
 import os
 
 private let logger = Logger(subsystem: "com.jutsustudio", category: "Agents")
@@ -51,10 +50,7 @@ extension AgentService {
         do {
             if !marks.culling.isEmpty { try await environment.store.setCulling(marks.culling) }
             if let star = fields.star, !marks.videos.isEmpty {
-                let ids = Set(marks.videos.map(\.id))
-                let records = try environment.modelContainer.mainContext.fetch(
-                    FetchDescriptor<MaterialRecord>(predicate: #Predicate { ids.contains($0.id) }))
-                try await environment.setStarred(star, marks.videos, records: records)
+                try await environment.setStarred(star, marks.videos)
             }
             if let star = fields.star, !marks.images.isEmpty {
                 try await environment.imageLibrary.setStarred(star, for: marks.images)

@@ -88,6 +88,8 @@ public struct AgentReference: Codable, Equatable, Sendable {
 
 /// The checks `elements` gets in `create_video`, `quote` and `create_image`.
 public enum AgentElementNames {
+    /// A bound of the protocol, kept small: every element named has all its images downloaded before the job is
+    /// checked against the model, whose own limit on references then refuses too many with a reason.
     public static let maxNames = 4
     public static let maxNameLength = 64
 

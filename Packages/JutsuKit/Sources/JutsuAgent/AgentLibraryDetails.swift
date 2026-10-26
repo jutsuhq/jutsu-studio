@@ -2,6 +2,15 @@ import Foundation
 
 // library_get: the full details of Library items, beside library_search's short rows.
 
+/// The Library item IDs a command takes: 1 to `limit`, and, unless `allowsRepeats`, none named twice.
+enum AgentLibraryIDs {
+    static func problem(_ ids: [UUID], limit: Int, allowsRepeats: Bool = false) -> String? {
+        guard (1...limit).contains(ids.count) else { return "ids takes 1 to \(limit) Library item IDs" }
+        guard allowsRepeats || Set(ids).count == ids.count else { return "ids names an item twice" }
+        return nil
+    }
+}
+
 /// The full details of Library items by ID: the whole prompt, what went into each, in order, and its settings.
 /// Rejected items too, since an agent names them by ID, and results only on Higgsfield (no `file`); an ID no item
 /// has is listed in `notFound` while the others are answered. Read-only.
@@ -14,11 +23,7 @@ public struct LibraryGetCommand: Codable, Equatable, Sendable, AgentFields {
         self.ids = ids
     }
 
-    public var problem: String? {
-        guard (1...Self.maxIDs).contains(ids.count) else { return "ids takes 1 to \(Self.maxIDs) Library item IDs" }
-        guard Set(ids).count == ids.count else { return "ids names an item twice" }
-        return nil
-    }
+    public var problem: String? { AgentLibraryIDs.problem(ids, limit: Self.maxIDs) }
 }
 
 /// One file that went into a result, in the order its job sent it.
