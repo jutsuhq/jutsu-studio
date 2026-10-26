@@ -169,7 +169,8 @@ final class AgentService {
                 capTaken = AgentCap.money(committed, cap.unit)?.amount
             }
             budget = AgentCapabilities.Budget(
-                unit: Self.unit(for: kind), dailyLimit: preferences.dailyBudget(for: kind), spentToday: taken.spent,
+                unit: AgentBudgetUnit(for: kind), dailyLimit: preferences.dailyBudget(for: kind),
+                spentToday: taken.spent,
                 reservedToday: taken.reserved,
                 unlimitedAllowed: preferences.allowsUnlimited && !taken.unlimitedCharged,
                 dailyCap: cap.flatMap { AgentCap.money($0.amount, $0.unit)?.amount }, capTakenToday: capTaken)

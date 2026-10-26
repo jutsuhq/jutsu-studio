@@ -1,4 +1,5 @@
 import Foundation
+import JutsuAgent
 import JutsuCore
 
 /// An agent's `create_image` fields, checked against the connection's image models with the Image side of Create's
@@ -150,30 +151,34 @@ public struct AgentImageRecord: Codable, Sendable, Hashable, Identifiable {
     public var isOver: Bool { [.finished, .failed, .canceled].contains(state) }
 }
 
-extension AgentJobStatus {
+extension AgentJob {
     /// An agent's image request as `jobs` sees it.
     /// - Parameter files: its images saved in Library › Images.
     public init(_ record: AgentImageRecord, files: [URL]) {
-        switch record.state {
-        case .pricing: state = "preparing"
-        case .held: state = "paused"
-        case .sending, .following: state = "processing"
-        case .finished: state = files.isEmpty ? "downloading" : "done"
-        case .failed: state = "failed"
-        case .canceled: state = "canceled"
-        }
+        let state =
+            switch record.state {
+            case .pricing: "preparing"
+            case .held: "paused"
+            case .sending, .following: "processing"
+            case .finished: files.isEmpty ? "downloading" : "done"
+            case .failed: "failed"
+            case .canceled: "canceled"
+            }
+        self.init(
+            id: record.id, state: state, kind: "image", requestID: record.origin.requestID,
+            client: record.origin.client, mode: "image", model: record.model.id, createdAt: record.createdAt,
+            finishedAt: record.finishedAt)
         if record.state == .held {
             pauseReason = record.hold == .priceAboveCap ? "price_above_cap" : "agent_limit"
             hold = record.hold.flatMap(Self.name(of:))
             needsPerson = true
-        } else {
-            needsPerson = false
         }
-        price = record.price.flatMap(AgentMoney.init)
+        price = record.price.flatMap(AgentMoney.init).map(AgentAmount.init)
         isPriceExact = record.priceIsKnown
         charged = record.mayHaveBeenSent
         error = record.state == .failed ? record.error : nil
         result = files.first?.path(percentEncoded: false)
+        results = files.isEmpty ? nil : files.map { $0.path(percentEncoded: false) }
     }
 
     static func name(of hold: AgentImageRecord.Hold) -> String? {

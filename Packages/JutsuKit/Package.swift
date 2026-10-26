@@ -1,7 +1,8 @@
 // swift-tools-version: 6.0
 import PackageDescription
 
-// JutsuCore, HiggsfieldProviders, JobEngine and Presentation use Foundation only, so they also build on Linux:
+// JutsuCore, HiggsfieldProviders, JobEngine, JutsuAgent and Presentation use Foundation only, so they also build on
+// Linux (JutsuAgent's socket and digest code is macOS-only behind `#if canImport`):
 // CI and Windows contributors (via Docker) run their tests without a Mac.
 // Everything that needs Apple frameworks is added on macOS only.
 var products: [Product] = [
@@ -9,6 +10,7 @@ var products: [Product] = [
     .library(name: "HiggsfieldProviders", targets: ["HiggsfieldProviders"]),
     .library(name: "JobEngine", targets: ["JobEngine"]),
     .library(name: "Presentation", targets: ["Presentation"]),
+    .library(name: "JutsuAgent", targets: ["JutsuAgent"]),
 ]
 
 var targets: [Target] = [
@@ -40,8 +42,13 @@ var targets: [Target] = [
             .product(name: "HiggsfieldTestSupport", package: "HiggsfieldKit"),
         ]),
     .testTarget(name: "JobEngineTests", dependencies: ["JobEngine", "JutsuCore", "JutsuTestSupport"]),
-    .target(name: "Presentation", dependencies: ["JutsuCore"], resources: [.process("Resources")]),
-    .testTarget(name: "PresentationTests", dependencies: ["Presentation", "JutsuCore", "JutsuTestSupport"]),
+    // The agent socket's wire types, commands, framing and server, shared by the app and the `jutsu` helper, and
+    // nothing of the app's other modules, so the helper links no resource bundles. The sockets are Darwin's.
+    .target(name: "JutsuAgent"),
+    // JutsuAgent for the agents' wire types, which Presentation builds from jobs and Library rows.
+    .target(name: "Presentation", dependencies: ["JutsuCore", "JutsuAgent"], resources: [.process("Resources")]),
+    .testTarget(
+        name: "PresentationTests", dependencies: ["Presentation", "JutsuCore", "JutsuAgent", "JutsuTestSupport"]),
 ]
 
 #if os(macOS)
@@ -49,7 +56,6 @@ var targets: [Target] = [
         .library(name: "Secrets", targets: ["Secrets"]),
         .library(name: "MediaKit", targets: ["MediaKit"]),
         .library(name: "Persistence", targets: ["Persistence"]),
-        .library(name: "JutsuAgent", targets: ["JutsuAgent"]),
         .library(name: "JutsuMCP", targets: ["JutsuMCP"]),
     ]
 
@@ -60,9 +66,6 @@ var targets: [Target] = [
         .testTarget(name: "SecretsTests", dependencies: ["Secrets"]),
         .testTarget(name: "PersistenceTests", dependencies: ["Persistence"]),
         .testTarget(name: "MediaKitTests", dependencies: ["MediaKit", "JutsuCore"]),
-        // The agent socket's commands, framing and server, shared by the app and the `jutsu` helper. Darwin sockets,
-        // and nothing of the app's other modules, so the helper links no resource bundles.
-        .target(name: "JutsuAgent"),
         // `jutsu mcp`: the MCP server agents run, over JutsuAgent. HiggsfieldMCP only for its JSONValue.
         .target(
             name: "JutsuMCP",

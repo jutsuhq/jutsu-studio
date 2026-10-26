@@ -1,4 +1,5 @@
 import Foundation
+import JutsuAgent
 import JutsuCore
 import JutsuTestSupport
 import Testing
@@ -273,10 +274,11 @@ struct AgentImageQueueTests {
         #expect(await provider.submitted.isEmpty)
         #expect(await ledger.spends.isEmpty)
         #expect(generator.runs.first?.state == .held(AgentImageQueue.text(of: .overMaxCost)))
-        let status = AgentJobStatus(try #require(queue.record(id)), files: [])
+        let status = AgentJob(try #require(queue.record(id)), files: [])
         #expect(status.state == "paused")
         #expect(status.needsPerson)
         #expect(status.hold == "over_max_cost")
+        #expect(status.kind == "image" && status.mode == "image" && status.results == nil)
     }
 
     @Test func anUnknownPriceIsHeld() async throws {
@@ -346,7 +348,7 @@ struct AgentImageQueueTests {
         let id = try create(queue, order())
         await eventually { queue.record(id)?.state == .held }
         #expect(queue.record(id)?.hold == .priceAboveCap)
-        #expect(AgentJobStatus(try #require(queue.record(id)), files: []).pauseReason == "price_above_cap")
+        #expect(AgentJob(try #require(queue.record(id)), files: []).pauseReason == "price_above_cap")
         #expect(await provider.submitted.isEmpty)
     }
 
@@ -376,7 +378,7 @@ struct AgentImageQueueTests {
         await eventually { queue.record(id)?.hold == .aboveApprovedPrice }
         #expect(queue.record(id)?.state == .held)
         #expect(await provider.submitted.isEmpty)
-        #expect(AgentJobStatus(try #require(queue.record(id)), files: []).hold == "above_approved_price")
+        #expect(AgentJob(try #require(queue.record(id)), files: []).hold == "above_approved_price")
 
         queue.approve(id, provider: provider, upload: Self.upload(provider))
         await eventually { queue.record(id)?.state == .finished }
@@ -400,7 +402,7 @@ struct AgentImageQueueTests {
         await eventually { queue.record(id)?.state == .failed }
         #expect(await ledger.spends.map(\.isSettled) == [false])
         #expect(queue.record(id)?.mayHaveBeenSent == true)
-        #expect(AgentJobStatus(try #require(queue.record(id)), files: []).charged)
+        #expect(AgentJob(try #require(queue.record(id)), files: []).charged)
     }
 
     // MARK: What it was charged

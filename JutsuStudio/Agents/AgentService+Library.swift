@@ -18,73 +18,30 @@ extension AgentService {
 
     func librarySearch(_ fields: LibrarySearchCommand) async throws(AgentError) -> AgentLibraryPage {
         let query = AgentLibraryQuery(
-            text: fields.query ?? "", kind: Self.kind(fields.kind), starred: fields.starred,
-            verdict: fields.verdict.map(Self.culling), includeRejected: fields.includeRejected ?? false,
+            text: fields.query ?? "", kind: LibraryKind(fields.kind), starred: fields.starred,
+            verdict: fields.verdict.map(Culling.init), includeRejected: fields.includeRejected ?? false,
             model: fields.model, mode: fields.mode.flatMap(AgentVideoOrder.mode(named:)), from: fields.from,
             to: fields.to, limit: fields.limit ?? LibrarySearchCommand.defaultLimit, cursor: fields.cursor,
             includeHiggsfield: fields.includeHiggsfield ?? false)
         // From Higgsfield's own refresh: it reads the history, never spends, and does nothing without an account.
         if fields.refreshHiggsfield == true { await environment.loadHistory(refresh: true) }
         let (hits, next) = AgentLibrarySearch.page(try await materials(), query)
-        return AgentLibraryPage(items: hits.map(Self.item), nextCursor: next)
+        return AgentLibraryPage(items: hits.map(AgentLibraryItem.init), nextCursor: next)
     }
 
     // MARK: library_get
 
     func libraryGet(_ fields: LibraryGetCommand) async throws(AgentError) -> AgentLibraryDetailsPage {
         let (details, missing) = AgentLibraryDetail.of(fields.ids, in: try await materials())
-        return AgentLibraryDetailsPage(
-            items: details.map { detail in
-                AgentLibraryDetails(
-                    item: Self.item(detail.hit), inputs: detail.inputs.map(Self.input),
-                    settings: Self.settings(detail.settings),
-                    next: detail.hit.isOnHiggsfield ? AgentLibraryDetails.downloadNext : nil)
-            }, notFound: missing)
-    }
-
-    private static func input(_ input: AgentLibraryDetail.Input) -> AgentLibraryInput {
-        let role: AgentLibraryInput.Role =
-            switch input.role {
-            case .source: .source
-            case .startFrame: .startFrame
-            case .endFrame: .endFrame
-            case .reference: .reference
-            case .editedFrom: .editedFrom
-            }
-        return AgentLibraryInput(
-            role: role, position: input.position, file: input.file?.path(percentEncoded: false), item: input.item,
-            onHiggsfield: input.isOnHiggsfield, start: input.range?.lowerBound, end: input.range?.upperBound)
-    }
-
-    private static func settings(_ settings: AgentLibraryDetail.Settings) -> AgentLibrarySettings {
-        AgentLibrarySettings(
-            resolution: settings.resolution, draft: settings.isDraft, audio: settings.audio, style: settings.style,
-            length: settings.length, aspectRatio: settings.aspectRatio, paidWithUnlimited: settings.paidWithUnlimited,
-            operation: settings.operation, count: settings.count)
-    }
-
-    private static func item(_ hit: AgentLibraryHit) -> AgentLibraryItem {
-        AgentLibraryItem(
-            id: hit.id, kind: hit.isVideo ? .video : .image, file: hit.file?.path(percentEncoded: false),
-            model: hit.model, mode: hit.mode, aspectRatio: hit.aspectRatio, duration: hit.duration,
-            price: hit.price.flatMap(AgentMoney.init).map { AgentAmount($0.amount, unit(of: $0.unit)) },
-            verdict: verdict(hit.culling), starred: hit.isStarred, createdAt: hit.createdAt, prompt: hit.prompt,
-            promptTruncated: hit.isPromptTruncated, versionID: hit.versionID, version: hit.version,
-            versionCount: hit.versionCount, jobID: hit.jobID, onHiggsfield: hit.isOnHiggsfield ? true : nil)
+        return AgentLibraryDetailsPage(items: details.map(AgentLibraryDetails.init), notFound: missing)
     }
 
     // MARK: library_mark
 
     func libraryMark(_ fields: LibraryMarkCommand) async throws(AgentError) -> AgentMarked {
-        let action = fields.verdict.map { verdict -> CullingAction in
-            switch verdict {
-            case .keep: .keep
-            case .reject: .reject
-            case .clear: .clear
-            }
-        }
         let marks = AgentLibraryMarks(
-            ids: fields.ids, verdict: action, star: fields.star, materials: try await materials())
+            ids: fields.ids, verdict: fields.verdict.map(CullingAction.init), star: fields.star,
+            materials: try await materials())
         if let missing = marks.missing.first {
             throw AgentError(
                 .notFound,
@@ -110,7 +67,7 @@ extension AgentService {
         }
         return AgentMarked(
             items: marks.results.map {
-                AgentMarked.Item(id: $0.id, verdict: Self.verdict($0.culling), starred: $0.isStarred)
+                AgentMarked.Item(id: $0.id, verdict: AgentVerdict($0.culling), starred: $0.isStarred)
             },
             changed: marks.changes)
     }
@@ -124,7 +81,7 @@ extension AgentService {
             known: { ids throws(AgentError) in
                 let jobs = try await knownJobs(ids)
                 return jobs.isEmpty
-                    ? nil : AgentCreated(requestID: fields.requestID, known: true, jobs: jobs.map(Self.agentJob))
+                    ? nil : AgentCreated(requestID: fields.requestID, known: true, jobs: jobs.map(AgentJob.init))
             },
             queue: { [weak self] () throws(AgentError) in
                 guard let self else { throw .agentsOff }
@@ -150,12 +107,12 @@ extension AgentService {
         try recordRequest(fields.requestID, fingerprint: fields.fingerprint, jobIDs: [jobID])
         let origin = AgentOrigin(
             client: client, requestID: fields.requestID,
-            maxCost: AgentMoney(fields.maxCost.amount, Self.unit(of: fields.maxCost.unit)))
+            maxCost: AgentMoney(fields.maxCost))
         do {
             let job = try await environment.engine.enqueue(spec, parentID: item.id, id: jobID, agent: origin)
             logger.info(
                 "Agent \(client ?? "unnamed", privacy: .private) queued \(fields.operation.rawValue, privacy: .public)")
-            return AgentCreated(requestID: fields.requestID, known: false, jobs: [Self.agentJob(job)])
+            return AgentCreated(requestID: fields.requestID, known: false, jobs: [AgentJob(job)])
         } catch {
             throw Self.agentError(enqueueing: error)
         }
@@ -166,7 +123,7 @@ extension AgentService {
         _ fields: EnhanceCommand, on item: LibraryItemModel, connection kind: ProviderKind
     ) async throws(AgentError) -> JobSpec {
         let order = AgentEnhanceOrder(
-            kind: Self.kind(of: fields.operation), target: fields.target, frameRate: fields.frameRate,
+            kind: PostAction.Kind(fields.operation), target: fields.target, frameRate: fields.frameRate,
             engine: fields.engine, aspectRatio: fields.aspectRatio, language: fields.language, voice: fields.voice)
         let voices = fields.operation == .changeVoice ? await environment.voices()?.map(\.choice) : nil
         let action: PostAction
@@ -283,7 +240,8 @@ extension AgentService {
             }
             return .success(
                 zip(tasks, results).map { task, result in
-                    Self.file(of: task, status: Self.status(result.status), message: result.message, in: directory)
+                    Self.file(
+                        of: task, status: AgentExportFile.Status(result.status), message: result.message, in: directory)
                 })
         }
         let timedOut = await waitFor(started.id, seconds: fields.waitSeconds ?? 0)
@@ -356,14 +314,6 @@ extension AgentService {
             outputs: set.outputs.map(DeliveryContent.summary(of:)))
     }
 
-    private static func status(_ status: DeliveryResult.Status) -> AgentExportFile.Status {
-        switch status {
-        case .done: .done
-        case .failed: .failed
-        case .skipped: .skipped
-        }
-    }
-
     // MARK: Helpers
 
     func materials() async throws(AgentError) -> [Material] {
@@ -384,40 +334,6 @@ extension AgentService {
             throw AgentError(
                 .failed, message: "Jutsu Studio can't read its delivery sets right now.", retryable: true,
                 next: "Try again in a moment.")
-        }
-    }
-
-    private static func kind(_ kind: AgentLibraryKind?) -> LibraryKind {
-        switch kind {
-        case .video?: .video
-        case .image?: .image
-        case .all?, nil: .all
-        }
-    }
-
-    private static func kind(of operation: AgentEnhancement) -> PostAction.Kind {
-        switch operation {
-        case .upscale: .upscale
-        case .reframe: .reframe
-        case .removeBackground: .removeBackground
-        case .dub: .dub
-        case .changeVoice: .changeVoice
-        }
-    }
-
-    private static func culling(_ verdict: AgentVerdict) -> Culling {
-        switch verdict {
-        case .unreviewed: .unreviewed
-        case .kept: .kept
-        case .rejected: .rejected
-        }
-    }
-
-    private static func verdict(_ culling: Culling) -> AgentVerdict {
-        switch culling {
-        case .unreviewed: .unreviewed
-        case .kept: .kept
-        case .rejected: .rejected
         }
     }
 }

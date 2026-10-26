@@ -1,34 +1,23 @@
 import Foundation
+import JutsuAgent
 import JutsuCore
 
-/// A job as an agent's `jobs` sees it: stable snake_case names rather than the Queue's words, and whether only the
-/// person can move it on.
-public struct AgentJobStatus: Sendable, Hashable {
-    public var state: String
-    public var pauseReason: String?
-    public var hold: String?
-    public var needsPerson: Bool
-    public var progress: Double?
-    /// The best known price in whole units; `nil` when it isn't known.
-    public var price: AgentMoney?
-    public var isPriceExact: Bool
-    /// Charged, or may have been.
-    public var charged: Bool
-    public var error: String?
-    /// The finished video's path.
-    public var result: String?
-
+extension AgentJob {
+    /// A video job as an agent's `jobs` sees it: stable snake_case names rather than the Queue's words, and whether
+    /// only the person can move it on.
     public init(_ job: Job) {
-        state = Self.name(of: job.state)
+        self.init(
+            id: job.id, state: Self.name(of: job.state), requestID: job.agent?.requestID, client: job.agent?.client,
+            mode: AgentVideoOrder.name(of: job.spec.mode), model: job.spec.model.rawValue,
+            next: AgentJobRules.checkHint(job), createdAt: job.createdAt, finishedAt: job.finishedAt)
         if case .paused(let reason) = job.state {
             pauseReason = Self.name(of: reason)
             hold = reason == .agentLimit ? job.agent?.hold.map(Self.name(of:)) : nil
             needsPerson = reason != .byUser
-        } else {
-            needsPerson = false
         }
         if job.state.reportsProgress { progress = min(max(job.progress, 0), 1) }
-        price = job.spec.usesUnlimited ? AgentMoney(.credits(0, isEstimate: false)) : AgentMoney(job.price)
+        price = (job.spec.usesUnlimited ? AgentMoney(.credits(0, isEstimate: false)) : AgentMoney(job.price))
+            .map(AgentAmount.init)
         isPriceExact = job.agentPriceIsKnown
         charged = job.isCharged || job.mayHaveBeenCharged || job.submitAttempt != nil || job.remote != nil
         switch job.state {

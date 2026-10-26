@@ -13,7 +13,7 @@ extension AgentService {
     /// Starts Export for Editing of the videos asked for, into the output folder's Exports folder under names no file
     /// has. It runs in the app (`AgentOperations`); the answer comes at once, or once it finished within `waitSeconds`.
     func exportForEditing(_ fields: ExportCommand) async throws(AgentError) -> AgentExported {
-        let preset = Self.preset(fields.preset)
+        let preset = ExportPreset(fields.preset)
         let folder = environment.outputFolder.url(of: .exports)
         try Self.makeFolder(folder)
         let byID = Dictionary(
@@ -50,15 +50,6 @@ extension AgentService {
         }
         let timedOut = await waitFor(started.id, seconds: fields.waitSeconds ?? 0)
         return AgentExported(job: (operations.operation(started.id) ?? started).job, timedOut: timedOut)
-    }
-
-    private static func preset(_ preset: AgentExportPreset) -> ExportPreset {
-        switch preset {
-        case .premiere: .premiere
-        case .davinciResolve: .davinciResolve
-        case .finalCutPro: .finalCutPro
-        case .editingH264: .editingH264
-        }
     }
 
     /// Writes one take as Export for Editing does, under a name no file has.

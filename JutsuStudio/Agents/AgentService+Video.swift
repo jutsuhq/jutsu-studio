@@ -81,7 +81,7 @@ extension AgentService {
             paysUnlimited, allowsUnlimited: preferences.allowsUnlimited, chargedToday: taken?.unlimitedCharged == true)
         let cost: Cost? = unlimited ? .credits(0, isEstimate: false) : await environment.estimate(spec)
         let money = cost.flatMap(AgentMoney.init)
-        let price = money.map { AgentAmount($0.amount, Self.unit(of: $0.unit)) }
+        let price = money.map(AgentAmount.init)
         var remaining: Int?
         if let kind, let taken { remaining = taken.remaining(of: preferences.dailyBudget(for: kind)) }
         let isExact = cost.map { !$0.isEstimate && !$0.isUnknownPrice } ?? false
@@ -113,7 +113,7 @@ extension AgentService {
             known: { ids throws(AgentError) in
                 let jobs = try await knownJobs(ids)
                 return jobs.isEmpty
-                    ? nil : AgentCreated(requestID: fields.requestID, known: true, jobs: jobs.map(Self.agentJob))
+                    ? nil : AgentCreated(requestID: fields.requestID, known: true, jobs: jobs.map(AgentJob.init))
             },
             otherMaxCost: { [weak self] ids throws(AgentError) in
                 guard let self else { throw .agentsOff }
@@ -169,11 +169,11 @@ extension AgentService {
             fields.requestID, fingerprint: fields.fingerprint, parameters: fields.parameters, jobIDs: [jobID])
         let origin = AgentOrigin(
             client: client, requestID: fields.requestID,
-            maxCost: AgentMoney(fields.maxCost.amount, Self.unit(of: fields.maxCost.unit)))
+            maxCost: AgentMoney(fields.maxCost))
         do {
             let job = try await environment.engine.enqueue(spec, id: jobID, agent: origin)
             return AgentCreated(
-                requestID: fields.requestID, known: false, jobs: [Self.agentJob(job)],
+                requestID: fields.requestID, known: false, jobs: [AgentJob(job)],
                 references: Self.references(elements: elements, files: files))
         } catch {
             throw Self.agentError(enqueueing: error)
@@ -194,8 +194,9 @@ extension AgentService {
 
     /// Refuses a `max_cost` in another unit than the connection's.
     static func checkUnit(of maxCost: AgentAmount, on kind: ProviderKind) throws(AgentError) {
-        guard unit(for: kind) != maxCost.unit else { return }
-        throw .badRequest("max_cost is in \(unit(for: kind) == .usdCents ? "usd" : "credits") on this connection")
+        let unit = AgentBudgetUnit(for: kind)
+        guard unit != maxCost.unit else { return }
+        throw .badRequest("max_cost is in \(unit == .usdCents ? "usd" : "credits") on this connection")
     }
 
     /// Records the request with the IDs of what it makes, before anything is queued or sent.
@@ -299,7 +300,7 @@ extension AgentService {
             fields.waitSeconds > 0
             ? await agentWait(seconds: seconds) {
                 ids.allSatisfy { id in
-                    if let job = live.job(id) { return AgentJobStatus.isSettled(job.state) }
+                    if let job = live.job(id) { return AgentJob.isSettled(job.state) }
                     if let operation = operations.operation(id) { return operation.state != .running }
                     guard let record = images.record(id) else { return true }
                     return (record.isOver && !images.files(of: id).isEmpty) || record.state == .held
@@ -309,7 +310,7 @@ extension AgentService {
         var jobs: [AgentJob] = []
         for id in ids {
             if let job = await job(id) {
-                jobs.append(Self.agentJob(job))
+                jobs.append(AgentJob(job))
             } else if let image = await imageJob(id) {
                 jobs.append(image)
             } else if let operation = operations.operation(id) {
@@ -365,7 +366,7 @@ extension AgentService {
                 retryable: Self.isSubmitInProgress(error),
                 next: "Call jobs to see the job's state now.")
         }
-        return AgentActed(action: fields.action, job: await self.job(id).map(Self.agentJob))
+        return AgentActed(action: fields.action, job: await self.job(id).map(AgentJob.init))
     }
 
     // MARK: Helpers
@@ -380,18 +381,6 @@ extension AgentService {
                 .failed, message: "Jutsu Studio can't read what agents spent today, so agents can't spend.",
                 retryable: true, next: "Ask the person to check the app's data folder.")
         }
-    }
-
-    static func unit(for kind: ProviderKind) -> AgentBudgetUnit {
-        AgentMoney.unit(for: kind) == .usdCents ? .usdCents : .credits
-    }
-
-    static func unit(of unit: AgentMoney.Unit) -> AgentBudgetUnit {
-        unit == .usdCents ? .usdCents : .credits
-    }
-
-    static func unit(of unit: AgentBudgetUnit) -> AgentMoney.Unit {
-        unit == .usdCents ? .usdCents : .credits
     }
 
     static func isSubmitInProgress(_ error: any Error) -> Bool {
@@ -416,16 +405,5 @@ extension AgentService {
         default:
             AgentError(.failed, message: error.localizedDescription, retryable: true)
         }
-    }
-
-    static func agentJob(_ job: Job) -> AgentJob {
-        let status = AgentJobStatus(job)
-        return AgentJob(
-            id: job.id, state: status.state, pauseReason: status.pauseReason, hold: status.hold,
-            needsPerson: status.needsPerson, progress: status.progress,
-            price: status.price.map { AgentAmount($0.amount, unit(of: $0.unit)) }, isPriceExact: status.isPriceExact,
-            charged: status.charged, error: status.error, result: status.result, requestID: job.agent?.requestID,
-            client: job.agent?.client, mode: AgentVideoOrder.name(of: job.spec.mode), model: job.spec.model.rawValue,
-            next: AgentJobRules.checkHint(job), createdAt: job.createdAt, finishedAt: job.finishedAt)
     }
 }
