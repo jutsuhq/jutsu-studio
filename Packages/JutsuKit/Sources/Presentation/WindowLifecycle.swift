@@ -32,6 +32,13 @@ public enum WindowLifecycle {
     public static func isOpen(_ window: Window) -> Bool {
         isAppWindow(window) && window.isShown
     }
+
+    /// Whether closing `window` lets go of the window-only memory (`WindowMemory`): an app window's close that leaves
+    /// none open. The menu bar panel, an alert or an open panel closing changes nothing. The closing window is still on
+    /// screen, so only whether it is an app window counts.
+    public static func releasesMemory(closing window: Window, remaining: [Window]) -> Bool {
+        isAppWindow(window) && !remaining.contains(where: isOpen)
+    }
 }
 
 /// A start with no window (`MenuBarMode.startsHidden`): every app window SwiftUI opens or restores during the launch is

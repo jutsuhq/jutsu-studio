@@ -37,4 +37,15 @@ import Testing
         #expect(!WindowLifecycle.isOpen(panel))
         #expect(!WindowLifecycle.isOpen(helper))
     }
+
+    @Test func onlyTheLastAppWindowsCloseLetsGoOfWindowMemory() {
+        #expect(WindowLifecycle.releasesMemory(closing: appWindow, remaining: [panel, helper]))
+        // About still open, or the main window in the Dock.
+        #expect(!WindowLifecycle.releasesMemory(closing: appWindow, remaining: [appWindow]))
+        // A closed window AppKit hasn't let go of yet.
+        let closed = WindowLifecycle.Window(isPanel: false, isTitled: true, isShown: false)
+        #expect(WindowLifecycle.releasesMemory(closing: appWindow, remaining: [closed]))
+        #expect(!WindowLifecycle.releasesMemory(closing: panel, remaining: []))
+        #expect(!WindowLifecycle.releasesMemory(closing: helper, remaining: []))
+    }
 }
