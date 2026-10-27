@@ -94,6 +94,7 @@ import Testing
             upscaleImage: .init(available: false, maxLongSide: 1920, maxShortSide: 1080, model: "agreed"))
         var capabilities = AgentCapabilities(appVersion: "1", connection: .init(kind: .none), budget: nil)
         capabilities.onDevice = engines
+        capabilities.window = AgentCapabilities.Window(open: false, menuBarMode: true)
         let response = AgentResponse(capabilities: capabilities, jobs: AgentJobs(jobs: [job]))
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601

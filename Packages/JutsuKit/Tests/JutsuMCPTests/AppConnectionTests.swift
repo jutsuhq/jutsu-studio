@@ -8,13 +8,15 @@ import Testing
 actor FakeLauncher: AppLauncher {
     var starts: [String] = []
     var activations: [String] = []
+    var arguments: [[String]] = []
     /// What a start does: an app that quits at once, so the wait for it ends without sleeping.
     let quits: Bool
 
     init(quits: Bool = true) { self.quits = quits }
 
-    func start(_ app: URL, bundleID: String) async throws -> RunningApp {
+    func start(_ app: URL, bundleID: String, arguments: [String]) async throws -> RunningApp {
         starts.append(bundleID)
+        self.arguments.append(arguments)
         let quits = quits
         return RunningApp(launchDate: .now, isTerminated: { quits })
     }
@@ -112,6 +114,8 @@ actor FakeLauncher: AppLauncher {
             .capabilities(CapabilitiesCommand()), client: nil)
         #expect(answer.error?.code == .notStarted)
         #expect(await launcher.starts == ["com.jutsustudio.JutsuStudio"])
+        // With no window and without the focus: the app reads this as a helper launch.
+        #expect(await launcher.arguments == [[AgentProtocol.helperLaunchArgument]])
     }
 
     @Test func aSocketPathTooLongIsRefusedWithoutStartingAnything() async {

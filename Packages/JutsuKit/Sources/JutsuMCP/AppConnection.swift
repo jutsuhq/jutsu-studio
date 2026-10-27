@@ -5,8 +5,8 @@ import JutsuAgent
 /// out of the packages). Tests pass one that records its calls.
 public protocol AppLauncher: Sendable {
     /// The app with `bundleID` when it is running already, else the one at `app` started in the background, without
-    /// activating it.
-    func start(_ app: URL, bundleID: String) async throws -> RunningApp
+    /// activating it, and given `arguments`.
+    func start(_ app: URL, bundleID: String, arguments: [String]) async throws -> RunningApp
     /// Brings the running app forward after `show`.
     func activate(bundleID: String) async
 }
@@ -23,7 +23,7 @@ public struct RunningApp: Sendable {
 }
 
 /// How the helper reaches the app. It keeps no state: every command opens the socket, sends one request and closes
-/// it. When nothing answers, it starts the app it is bundled in, in the background, and waits a bounded time for it.
+/// it. When nothing answers, it starts the app it is bundled in, in the background and with no window, and waits a bounded time for it.
 public struct AppConnection: Sendable {
     public enum Location: Equatable, Sendable {
         /// Inside Jutsu Studio.app (`Contents/Helpers/jutsu`): the app to start and the socket in its app group's
@@ -115,7 +115,7 @@ public struct AppConnection: Sendable {
     ) async -> AgentResponse {
         let running: RunningApp
         do {
-            running = try await launcher.start(app, bundleID: bundleID)
+            running = try await launcher.start(app, bundleID: bundleID, arguments: [AgentProtocol.helperLaunchArgument])
         } catch {
             return AgentResponse(error: .notStarted(app, reason: error.localizedDescription))
         }

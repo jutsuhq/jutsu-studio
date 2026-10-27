@@ -378,6 +378,7 @@ extension MCPServer {
         video's subtitles from its speech on this Mac the same way, free, and reads or exports them as SRT or VTT. \
         job_action cancels, retries or runs a job next, or pauses or resumes the agents' jobs (never the person's \
         own, or their Pause all); it never resumes a job waiting for the person, and nothing here deletes anything. \
+        Jutsu Studio may run with no window, in the menu bar or started by this helper in the background; \
         show opens a page, a job or an item's sheet for the person to see. A failed call returns error with code, message, retryable \
         and next: follow next.
         """
