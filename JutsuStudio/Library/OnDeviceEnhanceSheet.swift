@@ -7,6 +7,7 @@ import SwiftUI
 struct OnDeviceTarget: Identifiable {
     enum Kind {
         case smoothMotion
+        case upscaleVideo
     }
 
     let id = UUID()
@@ -17,7 +18,8 @@ struct OnDeviceTarget: Identifiable {
     let title: String
 }
 
-/// The options of an Enhance run on this Mac, how long it takes and that it is free. Starting it adds it to
+/// The options of an Enhance run on this Mac, how long it takes and that it is free. Before an engine's first run it
+/// asks to let macOS download its model, and nothing touches the model until then. Starting the run adds it to
 /// `OnDeviceRuns`, which runs one at a time; the item's card shows how far it is.
 struct OnDeviceEnhanceSheet: View {
     let target: OnDeviceTarget
@@ -29,23 +31,48 @@ struct OnDeviceEnhanceSheet: View {
     /// The file's frame rate, size and length, read once; `nil` until then.
     @State private var probed: MediaInfo?
     @State private var isUnreadable = false
+    @State private var agreesToDownload = false
 
-    private var action: OnDeviceAction { .smoothMotion(motion) }
+    private var action: OnDeviceAction {
+        switch target.kind {
+        case .smoothMotion: .smoothMotion(motion)
+        case .upscaleVideo: .upscaleVideo
+        }
+    }
+
+    private var needsConsent: Bool {
+        environment.onDevice.needsConsent(action.engine)
+    }
 
     private var offeredMotions: [SmoothMotion] {
         SmoothMotion.offered(sourceFrameRate: probed?.frameRate ?? 0)
     }
 
+    /// The file is too large for the run, as read from the file itself.
+    private var isTooLarge: Bool {
+        guard let probed, target.kind == .upscaleVideo else { return false }
+        return !OnDeviceUpscale.offersVideo(probed.pixelSize)
+    }
+
     private var expectedTime: TimeInterval? {
         probed.map {
-            OnDeviceEstimate.smoothMotion(duration: $0.duration, frameRate: $0.frameRate, pixelSize: $0.pixelSize)
+            switch target.kind {
+            case .smoothMotion:
+                OnDeviceEstimate.smoothMotion(duration: $0.duration, frameRate: $0.frameRate, pixelSize: $0.pixelSize)
+            case .upscaleVideo:
+                OnDeviceEstimate.upscaleVideo(duration: $0.duration, frameRate: $0.frameRate, pixelSize: $0.pixelSize)
+            }
         }
+    }
+
+    private var canStart: Bool {
+        probed != nil && !isTooLarge && (!needsConsent || agreesToDownload)
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.large) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Smooth Motion")
+                Text(target.kind == .smoothMotion ? String(localized: "Smooth Motion") : OnDeviceText.upscaleTitle)
                     .font(.system(size: 17, weight: .bold))
                     .foregroundStyle(Theme.text)
                 Text(target.title)
@@ -54,6 +81,7 @@ struct OnDeviceEnhanceSheet: View {
                     .lineLimit(1)
             }
             options
+            if needsConsent { consent }
             notes
             actions
         }
@@ -64,11 +92,36 @@ struct OnDeviceEnhanceSheet: View {
     }
 
     @ViewBuilder private var options: some View {
-        SectionLabel(title: "Motion")
-        SegmentedControl(selection: $motion, options: offeredMotions.map { ($0, $0.title) })
-        Text(motion.keepsAudio ? OnDeviceText.smoothMotionNote : OnDeviceText.slowMotionSound)
-            .font(.system(size: 12))
-            .foregroundStyle(Theme.muted)
+        switch target.kind {
+        case .smoothMotion:
+            SectionLabel(title: "Motion")
+            SegmentedControl(selection: $motion, options: offeredMotions.map { ($0, $0.title) })
+            Text(motion.keepsAudio ? OnDeviceText.smoothMotionNote : OnDeviceText.slowMotionSound)
+                .font(.system(size: 12))
+                .foregroundStyle(Theme.muted)
+        case .upscaleVideo:
+            SectionLabel(title: "Size")
+            if let probed {
+                Text(OnDeviceText.upscaleSizes(probed.pixelSize))
+                    .font(.system(size: 13, weight: .semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(Theme.text)
+            }
+            Text(isTooLarge ? OnDeviceText.tooLargeVideo : OnDeviceText.upscaleSound)
+                .font(.system(size: 12))
+                .foregroundStyle(isTooLarge ? Theme.warning : Theme.muted)
+        }
+    }
+
+    private var consent: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.small) {
+            Text(OnDeviceText.modelNotice)
+                .font(.system(size: 12))
+                .foregroundStyle(Theme.muted)
+                .fixedSize(horizontal: false, vertical: true)
+            Toggle(OnDeviceText.modelConsent, isOn: $agreesToDownload)
+                .toggleStyle(.checkbox)
+        }
     }
 
     private var notes: some View {
@@ -92,8 +145,7 @@ struct OnDeviceEnhanceSheet: View {
                 .buttonStyle(.secondaryAction)
                 .keyboardShortcut(.cancelAction)
             Button {
-                environment.startOnDevice(action, source: target.source, file: target.file)
-                dismiss()
+                start()
             } label: {
                 HStack(spacing: Theme.Spacing.small) {
                     Label(action.title, systemImage: "wand.and.rays")
@@ -102,8 +154,14 @@ struct OnDeviceEnhanceSheet: View {
             }
             .buttonStyle(.primaryAction)
             .keyboardShortcut(.defaultAction)
-            .disabled(probed == nil)
+            .disabled(!canStart)
         }
+    }
+
+    private func start() {
+        if needsConsent { environment.onDevice.agree(to: action.engine) }
+        environment.startOnDevice(action, source: target.source, file: target.file)
+        dismiss()
     }
 
     private func probe() async {
@@ -119,7 +177,7 @@ struct OnDeviceRunBadge: View {
 
     var body: some View {
         VStack(spacing: 6) {
-            if case .working(let fraction) = run.state {
+            if let fraction = run.state.fraction {
                 ProgressView(value: fraction).progressViewStyle(.linear).frame(width: 120)
             } else {
                 ProgressView().controlSize(.small)
@@ -145,7 +203,7 @@ struct OnDeviceRunRow: View {
     var body: some View {
         if let run = environment.onDevice.run(for: materialID) {
             HStack(spacing: Theme.Spacing.small) {
-                if case .working(let fraction) = run.state {
+                if let fraction = run.state.fraction {
                     ProgressView(value: fraction).progressViewStyle(.linear)
                 } else {
                     ProgressView().controlSize(.small)

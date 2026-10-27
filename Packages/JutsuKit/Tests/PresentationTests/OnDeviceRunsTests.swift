@@ -57,11 +57,21 @@ final class FakeOnDeviceEngine: OnDeviceEnhancing, @unchecked Sendable {
 
     let folder = FileManager.default.temporaryDirectory.appending(path: "OnDeviceRuns-\(UUID())")
     let engine = FakeOnDeviceEngine()
+    let consent: OnDeviceModelConsent
 
-    private func request(_ name: String = "rooftop.mp4") -> OnDeviceRuns.Request {
+    init() throws {
+        let name = "OnDeviceRunsTests-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: name))
+        defaults.removePersistentDomain(forName: name)
+        consent = OnDeviceModelConsent(defaults: defaults)
+    }
+
+    private func request(
+        _ name: String = "rooftop.mp4", action: OnDeviceAction = .smoothMotion(.fps60)
+    ) -> OnDeviceRuns.Request {
         OnDeviceRuns.Request(
             source: MaterialReference(materialID: UUID(), versionID: UUID()),
-            file: folder.appending(path: name), action: .smoothMotion(.fps60),
+            file: folder.appending(path: name), action: action,
             destination: folder.appending(path: "Videos"), scratch: folder.appending(path: "Videos"))
     }
 
@@ -73,7 +83,7 @@ final class FakeOnDeviceEngine: OnDeviceEnhancing, @unchecked Sendable {
     @Test func runsOneAtATimeAndAddsEachResultAsANewVersion() async throws {
         defer { try? FileManager.default.removeItem(at: folder) }
         var registered: [Registered] = []
-        let runs = OnDeviceRuns(engine: engine) { request, file, output in
+        let runs = OnDeviceRuns(engine: engine, consent: consent) { request, file, output in
             #expect(output.outputMedia == OutputMedia(duration: 2, pixelSize: PixelSize(width: 640, height: 360)))
             registered.append(Registered(source: request.source, file: file))
         }
@@ -97,7 +107,7 @@ final class FakeOnDeviceEngine: OnDeviceEnhancing, @unchecked Sendable {
 
     @Test func aSecondRunOnTheSameItemIsRefused() async throws {
         defer { try? FileManager.default.removeItem(at: folder) }
-        let runs = OnDeviceRuns(engine: engine) { _, _, _ in }
+        let runs = OnDeviceRuns(engine: engine, consent: consent) { _, _, _ in }
         let first = request()
         var second = request()
         second.source = first.source
@@ -126,7 +136,7 @@ final class FakeOnDeviceEngine: OnDeviceEnhancing, @unchecked Sendable {
     @Test func cancelingTheRunningRunLeavesNoFile() async throws {
         defer { try? FileManager.default.removeItem(at: folder) }
         var registered = 0
-        let runs = OnDeviceRuns(engine: engine) { _, _, _ in registered += 1 }
+        let runs = OnDeviceRuns(engine: engine, consent: consent) { _, _, _ in registered += 1 }
 
         runs.start(request())
         await eventually { engine.isRunning }
@@ -141,7 +151,7 @@ final class FakeOnDeviceEngine: OnDeviceEnhancing, @unchecked Sendable {
 
     @Test func cancelingAWaitingRunDropsIt() async throws {
         defer { try? FileManager.default.removeItem(at: folder) }
-        let runs = OnDeviceRuns(engine: engine) { _, _, _ in }
+        let runs = OnDeviceRuns(engine: engine, consent: consent) { _, _, _ in }
         let first = request("first.mp4")
 
         runs.start(first)
@@ -158,7 +168,9 @@ final class FakeOnDeviceEngine: OnDeviceEnhancing, @unchecked Sendable {
         defer { try? FileManager.default.removeItem(at: folder) }
         engine.failure = Refused()
         engine.release()
-        let runs = OnDeviceRuns(engine: engine) { _, _, _ in Issue.record("A failed run was registered") }
+        let runs = OnDeviceRuns(engine: engine, consent: consent) { _, _, _ in
+            Issue.record("A failed run was registered")
+        }
 
         runs.start(request())
         await runs.finish()
@@ -170,13 +182,33 @@ final class FakeOnDeviceEngine: OnDeviceEnhancing, @unchecked Sendable {
     @Test func aResultTheCatalogRefusesIsTakenBack() async throws {
         defer { try? FileManager.default.removeItem(at: folder) }
         engine.release()
-        let runs = OnDeviceRuns(engine: engine) { _, _, _ in throw Refused() }
+        let runs = OnDeviceRuns(engine: engine, consent: consent) { _, _, _ in throw Refused() }
 
         runs.start(request())
         await runs.finish()
 
         #expect(runs.failure != nil)
         #expect(files().isEmpty)
+    }
+
+    @Test func anUpscaleWaitsForConsentToTheModelDownload() async throws {
+        defer { try? FileManager.default.removeItem(at: folder) }
+        engine.release()
+        let runs = OnDeviceRuns(engine: engine, consent: consent) { _, _, _ in }
+
+        #expect(runs.needsConsent(.videoSuperResolution))
+        #expect(!runs.needsConsent(.frameRateConversion))
+        #expect(!runs.start(request(action: .upscaleVideo)))
+        #expect(runs.runs.isEmpty)
+        #expect(engine.started.isEmpty)
+
+        runs.agree(to: .videoSuperResolution)
+        #expect(runs.start(request(action: .upscaleVideo)))
+        await runs.finish()
+
+        #expect(files() == ["rooftop 4x.mp4"])
+        // Remembered for the next run, and the next launch.
+        #expect(!OnDeviceRuns(engine: engine, consent: consent) { _, _, _ in }.needsConsent(.videoSuperResolution))
     }
 
     @Test func onlyAResultWithItsFileHereIsOffered() {
@@ -186,6 +218,12 @@ final class FakeOnDeviceEngine: OnDeviceEnhancing, @unchecked Sendable {
 
         #expect(OnDeviceOffer.of(item, supports: { _ in true }).smoothMotion)
         #expect(OnDeviceOffer.of(item, supports: { _ in false }).isEmpty)
+        // The fixture's result is 720p.
+        #expect(OnDeviceOffer.of(item, supports: { _ in true }).upscaleVideo)
+        job.outputMedia = OutputMedia(duration: 5, pixelSize: PixelSize(width: 1920, height: 1080))
+        #expect(!OnDeviceOffer.of(LibraryItemModel(job: job), supports: { _ in true }).upscaleVideo)
+        job.outputMedia = OutputMedia(duration: 5, pixelSize: PixelSize(width: 720, height: 1280))
+        #expect(OnDeviceOffer.of(LibraryItemModel(job: job), supports: { _ in true }).upscaleVideo)
         job.outputFile = nil
         #expect(OnDeviceOffer.of(LibraryItemModel(job: job), supports: { _ in true }).isEmpty)
     }
