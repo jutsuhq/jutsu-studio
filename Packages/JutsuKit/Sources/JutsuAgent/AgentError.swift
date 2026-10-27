@@ -36,6 +36,10 @@ public struct AgentError: Error, Codable, Equatable, Sendable {
         public static let failed = Code(rawValue: "failed")
         /// Higgsfield prices the operation only after it has run, so no agent can stay within a max_cost for it.
         public static let pricedAfterRun = Code(rawValue: "priced_after_run")
+        /// This Mac can't run the engine: its macOS or its hardware lacks it.
+        public static let engineUnavailable = Code(rawValue: "engine_unavailable")
+        /// The item has a run going already; the message names it.
+        public static let busy = Code(rawValue: "busy")
         /// The command's work took longer than the app answers within (`AgentProtocol.answerDeadline`); it goes on.
         public static let stillWorking = Code(rawValue: "still_working")
     }

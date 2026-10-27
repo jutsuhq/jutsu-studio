@@ -52,13 +52,22 @@ says rather than guessing.
 5. **Review and show.** `library_search` finds results (newest first, `nextCursor` → `cursor`), `library_get` gives
    them in full (the whole prompt, the inputs in order, the settings), `frames` writes still frames of a result at the
    seconds you name, with `compare_source` or `compare_item` a contact sheet beside what it was made from, so look
-   at those instead of guessing. It is free; the source of a history result is read from its Higgsfield link. `library_mark` keeps, rejects or stars results, and `show` opens a job or a page in
-   the app for the person.
+   at those instead of guessing. It is free; the source of a history result is read from its Higgsfield link. `library_mark` keeps, rejects or stars results, and `show` opens a job, a page or an
+   item's sheet in the app for the person.
    - **Higgsfield history.** `library_search` with `include_higgsfield` also lists the account's history
      (`onHiggsfield`, no file yet; `refresh_higgsfield` reloads it), and `library_download` brings those results
      into the Library. Both are free.
-6. **Finish.** `enhance` upscales, reframes, removes a background, dubs or changes the voice of a video, with its own
-   `request_id` and `max_cost`. `export` writes takes for Premiere, DaVinci Resolve or Final Cut Pro, and
+6. **Finish.** `enhance` upscales, reframes, removes a background, dubs or changes the voice of a video on
+   Higgsfield, with its own `request_id` and `max_cost`. Two operations run on this Mac instead, free and without
+   `max_cost`: `smooth_motion` (`mode` `60fps`, `slow_2x` or `slow_4x`) on a video, and `upscale` with `engine: "mac"`
+   on a video up to 1280×720 or an image up to 1920×1080. Prefer them for drafts, small results and frame-rate
+   smoothing; `capabilities`' `onDevice` says which this Mac has. They still take a `request_id`, answer with a job
+   of kind `on_device` and its `estimatedSeconds`, and `jobs` and `job_action` cancel follow them; the result
+   becomes the item's current version, and `library_get` names the version it was made from (`madeFrom`). The
+   first Upscale on this Mac answers `needs_person` until the person agrees to macOS downloading its model: call
+   `show` with the `item` and `sheet: "upscale_on_mac"` as `next` says, tell the person, and send `enhance` again
+   once they agreed. `busy` means a run on that item is going: follow it with `jobs` first. `engine_unavailable`
+   means this Mac has no such engine: use Higgsfield instead. `export` writes takes for Premiere, DaVinci Resolve or Final Cut Pro, and
    `delivery_set` creates, lists and exports delivery sets. An export runs in the app and answers at once (or after
    `wait_seconds`, up to 50) with a `job`: follow it with `jobs` like any job, and read its `files` and `results`
    once it is `done`. If the app was relaunched meanwhile, `jobs` answers `unknown`: look in its `folder` or export

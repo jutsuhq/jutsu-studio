@@ -154,13 +154,19 @@ public final class AgentRequestGate<Answer: Sendable, Failure: Error> {
     }
 
     /// Records the request with the IDs of what it makes, before anything is queued or sent.
+    /// - Parameter kind: what the IDs are when the app keeps them only in memory (`AgentRequestLog.Record.kind`).
     public func record(
-        _ requestID: String, fingerprint: String, parameters: String? = nil, ids: [UUID], at date: Date
+        _ requestID: String, fingerprint: String, parameters: String? = nil, ids: [UUID], at date: Date,
+        kind: String? = nil
     ) throws(LogWriteError) {
         try log.add(
             AgentRequestLog.Record(
-                requestID: requestID, fingerprint: fingerprint, parameters: parameters, jobIDs: ids, createdAt: date))
+                requestID: requestID, fingerprint: fingerprint, parameters: parameters, jobIDs: ids, createdAt: date,
+                kind: kind))
     }
+
+    /// The `kind` the request that made `id` was recorded with.
+    public func kind(of id: UUID) -> String? { log.kind(of: id) }
 
     /// The request sent again with another `max_cost` lifted its job's hold: from now on that one is the request.
     public func update(_ requestID: String, fingerprint: String) throws(LogWriteError) {

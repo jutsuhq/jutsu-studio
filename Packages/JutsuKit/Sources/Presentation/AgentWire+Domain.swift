@@ -63,14 +63,37 @@ extension LibraryKind {
 }
 
 extension PostAction.Kind {
-    public init(_ operation: AgentEnhancement) {
+    /// `nil` for Smooth Motion, which runs on this Mac only.
+    public init?(_ operation: AgentEnhancement) {
+        switch operation {
+        case .upscale: self = .upscale
+        case .reframe: self = .reframe
+        case .removeBackground: self = .removeBackground
+        case .dub: self = .dub
+        case .changeVoice: self = .changeVoice
+        case .smoothMotion: return nil
+        }
+    }
+}
+
+extension SmoothMotion {
+    public init(_ mode: AgentSmoothMotion) {
         self =
-            switch operation {
-            case .upscale: .upscale
-            case .reframe: .reframe
-            case .removeBackground: .removeBackground
-            case .dub: .dub
-            case .changeVoice: .changeVoice
+            switch mode {
+            case .fps60: .fps60
+            case .slow2x: .slowMotion2x
+            case .slow4x: .slowMotion4x
+            }
+    }
+}
+
+extension AgentSmoothMotion {
+    public init(_ motion: SmoothMotion) {
+        self =
+            switch motion {
+            case .fps60: .fps60
+            case .slowMotion2x: .slow2x
+            case .slowMotion4x: .slow4x
             }
     }
 }
@@ -184,6 +207,11 @@ extension AgentLibraryDetails {
         self.init(
             item: AgentLibraryItem(detail.hit), inputs: detail.inputs.map(AgentLibraryInput.init),
             settings: AgentLibrarySettings(detail.settings),
+            madeFrom: detail.madeFrom.map {
+                AgentMadeFrom(
+                    item: $0.reference.materialID, versionID: $0.reference.versionID, version: $0.version,
+                    file: $0.file?.path(percentEncoded: false))
+            },
             next: detail.hit.isOnHiggsfield ? Self.downloadNext : nil)
     }
 }

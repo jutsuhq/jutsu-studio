@@ -102,6 +102,30 @@ public struct AgentLibrarySettings: Codable, Equatable, Sendable {
     }
 }
 
+/// The version of the same item that the current one was made from: an Enhance run on this Mac or an edit in another
+/// app made the current one from it, and it is still kept.
+public struct AgentMadeFrom: Codable, Equatable, Sendable {
+    public var item: UUID
+    public var versionID: UUID
+    /// Its place among the item's versions, 1 for the original.
+    public var version: Int
+    /// Its file on this Mac, when it is still there.
+    public var file: String?
+
+    public init(item: UUID, versionID: UUID, version: Int, file: String?) {
+        self.item = item
+        self.versionID = versionID
+        self.version = version
+        self.file = file
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case item
+        case versionID = "versionId"
+        case version, file
+    }
+}
+
 /// One Library item in full: its row with the whole prompt, its inputs and its settings.
 public struct AgentLibraryDetails: Codable, Equatable, Sendable {
     /// What brings a result only on Higgsfield to this Mac.
@@ -111,15 +135,19 @@ public struct AgentLibraryDetails: Codable, Equatable, Sendable {
     public var item: AgentLibraryItem
     public var inputs: [AgentLibraryInput]
     public var settings: AgentLibrarySettings
+    /// The earlier version of this item the current one was made from; left out for an item made in one go.
+    public var madeFrom: AgentMadeFrom?
     /// For a result with no file on this Mac yet: how to get it (`downloadNext`).
     public var next: String?
 
     public init(
-        item: AgentLibraryItem, inputs: [AgentLibraryInput], settings: AgentLibrarySettings, next: String? = nil
+        item: AgentLibraryItem, inputs: [AgentLibraryInput], settings: AgentLibrarySettings,
+        madeFrom: AgentMadeFrom? = nil, next: String? = nil
     ) {
         self.item = item
         self.inputs = inputs
         self.settings = settings
+        self.madeFrom = madeFrom
         self.next = next
     }
 }

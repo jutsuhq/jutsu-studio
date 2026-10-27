@@ -59,6 +59,24 @@ import Testing
         #expect(detail.settings.aspectRatio == "3:4")
     }
 
+    /// A version made from an earlier one of the same item names it, so an agent can compare or go back.
+    @Test func aNewVersionNamesTheOneItWasMadeFrom() throws {
+        var image = Material(kind: .image, version: MaterialVersion(fileURL: URL(fileURLWithPath: "/tmp/a.png")))
+        let original = image.reference
+        try image.addVersion(
+            MaterialVersion(
+                fileURL: URL(fileURLWithPath: "/tmp/a 4x.png"), inputs: [MaterialInput(source: original, role: .parent)]
+            ))
+
+        let detail = try #require(AgentLibraryDetail.of([image.id], in: [image]).details.first)
+
+        #expect(detail.madeFrom?.reference == original)
+        #expect(detail.madeFrom?.version == 1)
+        #expect(detail.madeFrom?.file?.lastPathComponent == "a.png")
+        #expect(detail.hit.version == 2)
+        #expect(AgentLibraryDetail.of([character.id], in: [character]).details.first?.madeFrom == nil)
+    }
+
     /// A video of the account's Higgsfield history: no file on this Mac, only its link and what the history says.
     var historyVideo: Material {
         let item = LibraryFixture.item(mode: .motionTransfer, isDraft: false, prompt: "a long history prompt")

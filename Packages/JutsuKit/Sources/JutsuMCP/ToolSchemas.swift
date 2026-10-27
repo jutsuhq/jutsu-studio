@@ -72,6 +72,23 @@ extension Tool {
                 "type": "array",
                 "items": ["type": "object", "properties": ["id": ["type": "string"], "name": ["type": "string"]]],
             ]
+            let engine: JSONValue = [
+                "type": "object",
+                "properties": [
+                    "available": ["type": "boolean"], "maxLongSide": ["type": "integer"],
+                    "maxShortSide": ["type": "integer"],
+                    "model": [
+                        "type": "string", "enum": ["none", "needs_consent", "downloading", "ready", "agreed"],
+                    ],
+                ],
+            ]
+            properties["onDevice"] = [
+                "type": "object",
+                "properties": [
+                    "smoothMotion": engine, "modes": ["type": "array", "items": ["type": "string"]],
+                    "upscaleVideo": engine, "upscaleImage": engine,
+                ],
+            ]
         case .quote:
             properties["price"] = Self.amountSchema
             properties["isExact"] = ["type": "boolean"]
@@ -130,6 +147,13 @@ extension Tool {
                     "properties": [
                         "item": Self.itemSchema, "inputs": ["type": "array", "items": Self.inputSchema],
                         "settings": Self.settingsSchema, "next": ["type": "string"],
+                        "madeFrom": [
+                            "type": "object",
+                            "properties": [
+                                "item": ["type": "string"], "versionId": ["type": "string"],
+                                "version": ["type": "integer"], "file": ["type": "string"],
+                            ],
+                        ],
                     ],
                 ],
             ]
@@ -192,6 +216,8 @@ extension Tool {
                 "type": "string", "enum": .array(AgentPage.allCases.map { .string($0.rawValue) }),
             ]
             properties["job"] = ["type": "string"]
+            properties["item"] = ["type": "string"]
+            properties["sheet"] = ["type": "string"]
         }
         return ["type": "object", "properties": .object(properties)]
     }
@@ -212,7 +238,8 @@ extension Tool {
             "requestId": ["type": "string"],
             "client": ["type": "string"], "mode": ["type": "string"], "model": ["type": "string"],
             "folder": ["type": "string"], "files": ["type": "array", "items": exportFileSchema],
-            "set": ["type": "string"], "next": ["type": "string"],
+            "set": ["type": "string"], "operation": ["type": "string"], "item": ["type": "string"],
+            "estimatedSeconds": ["type": "number"], "next": ["type": "string"],
             "createdAt": ["type": "string"], "finishedAt": ["type": "string"],
         ],
     ]

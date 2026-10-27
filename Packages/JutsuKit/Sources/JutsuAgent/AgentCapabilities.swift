@@ -215,6 +215,27 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
         }
     }
 
+    /// Enhance on this Mac (`enhance` smooth_motion, and upscale with engine mac): free, no account, no upload.
+    public struct OnDevice: Codable, Equatable, Sendable {
+        /// Smooth Motion, on videos: `modes`.
+        public var smoothMotion: AgentOnDeviceEngine
+        /// The modes `enhance` smooth_motion takes.
+        public var modes: [String]
+        /// Upscale with engine mac, on a video, 4×.
+        public var upscaleVideo: AgentOnDeviceEngine
+        /// Upscale with engine mac, on an image, 4×.
+        public var upscaleImage: AgentOnDeviceEngine
+
+        public init(
+            smoothMotion: AgentOnDeviceEngine, upscaleVideo: AgentOnDeviceEngine, upscaleImage: AgentOnDeviceEngine
+        ) {
+            self.smoothMotion = smoothMotion
+            modes = AgentSmoothMotion.allCases.map(\.rawValue)
+            self.upscaleVideo = upscaleVideo
+            self.upscaleImage = upscaleImage
+        }
+    }
+
     public var protocolVersion: Int
     public var appVersion: String
     /// Settings › Agents › Allow agents. Always true in an answer: while it is off, every command is refused with
@@ -232,6 +253,8 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
     public var styles: [Style]?
     /// Only when asked for (`CapabilitiesCommand.voices`); empty without an account.
     public var voices: [Voice]?
+    /// What runs on this Mac; set by the app on every answer.
+    public var onDevice: OnDevice?
     /// The `jutsu` helper's own version, added by the helper (`noteHelper`); the app leaves it out.
     public var helperVersion: String?
     /// Added by a helper older than the app: what the agent should do about it.
@@ -276,4 +299,24 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
 public enum AgentBudgetUnit: String, Codable, Sendable {
     case usdCents = "usd_cents"
     case credits
+}
+
+/// One engine of this Mac, as `capabilities` reports it (`AgentCapabilities.OnDevice`).
+public struct AgentOnDeviceEngine: Codable, Equatable, Sendable {
+    /// Whether this Mac's macOS and hardware have it.
+    public var available: Bool
+    /// The largest source it takes, either way round; `nil` for any size.
+    public var maxLongSide: Int?
+    public var maxShortSide: Int?
+    /// Its model: none (it needs none), needs_consent (only the person can agree to macOS downloading it:
+    /// `show` with sheet upscale_on_mac), downloading, ready (a run found it since the app started), or agreed (macOS
+    /// downloads it at the first run if it isn't here yet).
+    public var model: String
+
+    public init(available: Bool, maxLongSide: Int? = nil, maxShortSide: Int? = nil, model: String) {
+        self.available = available
+        self.maxLongSide = maxLongSide
+        self.maxShortSide = maxShortSide
+        self.model = model
+    }
 }

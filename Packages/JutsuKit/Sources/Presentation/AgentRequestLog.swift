@@ -15,15 +15,20 @@ public final class AgentRequestLog {
         public var parameters: String?
         public var jobIDs: [UUID]
         public var createdAt: Date
+        /// What the IDs are when the app keeps them only in memory: `on_device` for runs on this Mac, which `jobs`
+        /// then answers as forgotten after a relaunch; `nil` for jobs and image requests, which are stored.
+        public var kind: String?
 
         public init(
-            requestID: String, fingerprint: String, parameters: String? = nil, jobIDs: [UUID], createdAt: Date
+            requestID: String, fingerprint: String, parameters: String? = nil, jobIDs: [UUID], createdAt: Date,
+            kind: String? = nil
         ) {
             self.requestID = requestID
             self.fingerprint = fingerprint
             self.parameters = parameters
             self.jobIDs = jobIDs
             self.createdAt = createdAt
+            self.kind = kind
         }
     }
 
@@ -58,6 +63,11 @@ public final class AgentRequestLog {
         if record.fingerprint == fingerprint { return .known(record.jobIDs) }
         if let parameters, record.parameters == parameters { return .otherMaxCost(record.jobIDs) }
         return .conflict
+    }
+
+    /// The `kind` the request that made `id` was recorded with; `nil` for none, or when the log can't be read.
+    public func kind(of id: UUID) -> String? {
+        (try? load())?.first { $0.jobIDs.contains(id) }?.kind
     }
 
     /// The request now stands for `fingerprint`: its job goes on under the `max_cost` it was sent again with.

@@ -16,10 +16,13 @@ extension AgentService {
             let videos = environment.liveJobs.all.filter { $0.agent != nil }.map { ($0.createdAt, $0.id) }
             let images = ((try? environment.agentImages.records()) ?? []).map { ($0.createdAt, $0.id) }
             let exports = operations.all.map { ($0.createdAt, $0.id) }
-            (ids, next) = AgentJobPage.page(videos + images + exports, limit: fields.limit ?? 10, after: fields.cursor)
+            let runs = onDeviceAgent.started.map { ($0.createdAt, $0.id) }
+            (ids, next) = AgentJobPage.page(
+                videos + images + exports + runs, limit: fields.limit ?? 10, after: fields.cursor)
         }
         let live = environment.liveJobs
         let images = environment.agentImages
+        let onDevice = onDeviceAgent
         // Cut to what is left of the answer deadline, as create_video's wait is, so the answer keeps its margin
         // before the deadline whatever reading the page took.
         let seconds = AgentProtocol.waitSeconds(fields.waitSeconds, after: ContinuousClock.now - started)
@@ -29,24 +32,31 @@ extension AgentService {
                 ids.allSatisfy { id in
                     if let job = live.job(id) { return AgentJob.isSettled(job.state) }
                     if let operation = operations.operation(id) { return operation.state != .running }
+                    if onDevice.knows(id) { return onDevice.isSettled(id) }
                     guard let record = images.record(id) else { return true }
                     return (record.isOver && !images.files(of: id).isEmpty) || record.state == .held
                         || record.state == .failed || record.state == .canceled
                 }
             } : false
         var jobs: [AgentJob] = []
-        for id in ids {
-            if let job = await job(id) {
-                jobs.append(AgentJob(job))
-            } else if let image = await imageJob(id) {
-                jobs.append(image)
-            } else if let operation = operations.operation(id) {
-                jobs.append(operation.job)
-            } else {
-                jobs.append(.unknown(id))
-            }
-        }
+        for id in ids { jobs.append(await agentJob(id)) }
         return AgentJobs(jobs: jobs, timedOut: timedOut, nextCursor: next)
+    }
+
+    /// The video job, image request, export or run on this Mac with `id`, as `jobs` lists it.
+    private func agentJob(_ id: UUID) async -> AgentJob {
+        if let job = await job(id) { return AgentJob(job) }
+        if let image = await imageJob(id) { return image }
+        if let operation = operations.operation(id) { return operation.job }
+        if let run = onDeviceAgent.job(id) { return run }
+        // A run on this Mac a relaunch forgot, answered as enhance answers its request.
+        if requests.kind(of: id) == AgentOnDeviceRuns.kind { return AgentOnDeviceRuns.forgotten(id) }
+        return .unknown(id)
+    }
+
+    func job(_ id: UUID) async -> Job? {
+        if let job = environment.liveJobs.job(id) { return job }
+        return try? await environment.store.job(id: id)
     }
 
     // MARK: job_action
@@ -64,6 +74,7 @@ extension AgentService {
         }
         guard let job = await job(id) else {
             if environment.agentImages.record(id) != nil { return try await actOnImage(fields.action, id) }
+            if onDeviceAgent.knows(id) { return try await actOnDevice(fields.action, id) }
             throw AgentError(.notFound, message: "There's no job \(id.uuidString).", retryable: false)
         }
         let refusal: String? =

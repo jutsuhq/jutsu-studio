@@ -68,6 +68,13 @@ final class SystemIntegration {
         }
     }
 
+    /// Whether the main window shows a sheet, over which SwiftUI shows no other.
+    var mainWindowHasSheet: Bool {
+        NSApp.windows.contains { window in
+            (window.identifier?.rawValue.hasPrefix(Self.mainWindowID) ?? false) && window.attachedSheet != nil
+        }
+    }
+
     /// Opens the job in the app, as the menu bar panel's rows do: an active job's row in the Queue.
     func showJob(_ jobID: UUID) {
         navigation.showInQueue(jobID)

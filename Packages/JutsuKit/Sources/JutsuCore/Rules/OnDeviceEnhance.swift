@@ -62,9 +62,13 @@ public enum OnDeviceUpscale {
         public var output: PixelSize
     }
 
+    /// The largest video offered, either way round (`offersVideo`).
+    public static let videoLimit = PixelSize(width: 1280, height: 720)
+
     /// Video sources up to 720p either way round: at 1080p the 4× frames ran a 16 GB Mac out of memory (#13).
     public static func offersVideo(_ size: PixelSize) -> Bool {
-        size.isValid && max(size.width, size.height) <= 1280 && min(size.width, size.height) <= 720
+        size.isValid && max(size.width, size.height) <= videoLimit.width
+            && min(size.width, size.height) <= videoLimit.height
     }
 
     /// Images up to 1920×1080 either way round. The image kind takes 1920 a side in both orientations, so an image
