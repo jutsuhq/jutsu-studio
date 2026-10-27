@@ -2962,7 +2962,19 @@
     "Download the speech model" : {
 
     },
-    "%lld words" : {
+    "%lld cues" : {
+
+    },
+    "Can't save the subtitles" : {
+
+    },
+    "These subtitles were made again while you edited them" : {
+
+    },
+    "Replace the new subtitles with your edits, or keep the new ones and leave your edits." : {
+
+    },
+    "The version these subtitles belong to is no longer in the library." : {
 
     }
   },

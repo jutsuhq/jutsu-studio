@@ -53,10 +53,32 @@ public enum SubtitleText {
         }
     }
 
-    /// "English (United States) · 312 words".
+    public static let changedMeanwhileTitle = String(
+        localized: "These subtitles were made again while you edited them", bundle: .module)
+    public static let changedMeanwhileMessage = String(
+        localized: "Replace the new subtitles with your edits, or keep the new ones and leave your edits.",
+        bundle: .module)
+    public static let versionGoneMessage = String(
+        localized: "The version these subtitles belong to is no longer in the library.", bundle: .module)
+    public static let notSavedTitle = String(localized: "Can't save the subtitles", bundle: .module)
+
+    /// "0:01.2 – 0:03.4".
+    public static func timeRange(of cue: SubtitleCue) -> String {
+        "\(time(cue.start)) – \(time(cue.end))"
+    }
+
+    /// "1:02.3", or "1:01:02.3" past an hour.
+    static func time(_ seconds: TimeInterval) -> String {
+        let tenths = Int((max(seconds, 0) * 10).rounded())
+        let (minutes, secs, tenth) = (tenths / 600, tenths / 10 % 60, tenths % 10)
+        let rest = String(format: "%02d.%d", secs, tenth)
+        return minutes >= 60 ? "\(minutes / 60):\(String(format: "%02d", minutes % 60)):\(rest)" : "\(minutes):\(rest)"
+    }
+
+    /// "English (United States) · 24 cues".
     public static func summary(of subtitles: Subtitles) -> String {
-        let count = subtitles.transcript.words.count
-        return "\(languageName(subtitles.language)) · \(String(localized: "\(count) words", bundle: .module))"
+        let count = subtitles.cues.count
+        return "\(languageName(subtitles.language)) · \(String(localized: "\(count) cues", bundle: .module))"
     }
 }
 

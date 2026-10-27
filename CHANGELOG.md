@@ -7,6 +7,7 @@ Notable changes to Jutsu Studio. Versions follow [Semantic Versioning](https://s
 ### Added
 
 - Subtitles… on a video's menu and page hears its speech on-device, free and without an account, with macOS 26's own speech models: SpeechTranscriber for the languages it has, Dictation for the others. Only the sound track is read; a video without sound, or with only silence, ends at once with "No speech found", and a file the app can't open says so. A language's model is downloaded from Apple once, after you agree to it for that language in the sheet. One run at a time, in the background, with its progress on the card and Cancel on the result's page and the card's menu; the same file heard again in the same language comes from a cache. The subtitles belong to the version they were made from.
+- The heard words become subtitle cues by the usual rules: at most two lines of 42 characters, 1 to 7 seconds each, split at sentence ends and pauses, never overlapping. A word the model stretched over a pause is cut back, and a lone word after a long pause joins a neighbour where both fit. In languages written without spaces, such as Chinese and Japanese, the words join without them. Edit Subtitles on the result's page opens them beside the player: edit a cue's text, merge it with the next or split it, and the cue on screen follows playback. Done saves them on the version the editor opened on, and asks first when that version's subtitles were made again meanwhile. The language picker starts on the last language used, then the system's.
 
 ## [0.2.5] - 2026-10-27
 

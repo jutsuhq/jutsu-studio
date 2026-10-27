@@ -153,6 +153,8 @@ struct SubtitlesSection: View {
     let item: LibraryItemModel
     /// The current version's, `nil` when it has none.
     let subtitles: Subtitles?
+    /// Opens the editor beside the player.
+    let edit: (Subtitles) -> Void
 
     @Environment(AppEnvironment.self) private var environment
 
@@ -178,6 +180,12 @@ struct SubtitlesSection: View {
                     Text(SubtitleText.summary(of: subtitles))
                         .font(.system(size: 12))
                         .foregroundStyle(Theme.muted)
+                    Button {
+                        edit(subtitles)
+                    } label: {
+                        Label("Edit Subtitles", systemImage: "captions.bubble.fill").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.secondaryAction)
                 }
                 Button {
                     Task { await environment.openSubtitles(for: item) }
