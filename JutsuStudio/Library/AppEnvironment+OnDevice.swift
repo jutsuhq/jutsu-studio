@@ -21,11 +21,13 @@ extension AppEnvironment {
     }
 
     /// Starts `action` on `file`, the file of the exact version `source`. The result goes in the output folder's
-    /// Videos; it is written there first under a hidden name, which `onDeviceRuns` clears on the next launch after a
-    /// crash.
+    /// Videos, or Images for an image; it is written in Videos first under a hidden name, which `onDeviceRuns`
+    /// clears on the next launch after a crash.
     func startOnDevice(_ action: OnDeviceAction, source: MaterialReference, file: URL) {
         let videos = outputFolder.url(of: .videos)
+        let destination = action == .upscaleImage ? outputFolder.url(of: .images) : videos
         onDevice.start(
-            OnDeviceRuns.Request(source: source, file: file, action: action, destination: videos, scratch: videos))
+            OnDeviceRuns.Request(
+                source: source, file: file, action: action, destination: destination, scratch: videos))
     }
 }

@@ -27,7 +27,8 @@ extension LibraryView {
             case .localImage(let image):
                 SavedImageCard(
                     image: image, isSelected: isSelected,
-                    isAvailable: !environment.imageLibrary.unavailable.contains(image.id))
+                    isAvailable: !environment.imageLibrary.unavailable.contains(image.id),
+                    onDeviceRun: environment.onDevice.run(for: image.id))
             case .remoteImage(let image):
                 RemoteImageCard(image: image, isSelected: isSelected)
             }
@@ -80,7 +81,12 @@ extension LibraryView {
             remove: { pendingImageRemoval = $0 },
             report: { exportMessage = $0 },
             editInOtherApp: editInOtherApp, importEditedVersion: importEditedVersion,
-            newDeliverySet: newDeliverySet)
+            newDeliverySet: newDeliverySet,
+            upscaleOnDevice: { image in
+                guard let source = catalogReference(of: image.id) else { return }
+                onDeviceImage = OnDeviceTarget(
+                    kind: .upscaleImage, source: source, file: image.fileURL, title: image.title ?? image.prompt)
+            })
     }
 
     // MARK: Images

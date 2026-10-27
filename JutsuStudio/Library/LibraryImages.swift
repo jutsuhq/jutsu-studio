@@ -36,6 +36,8 @@ struct LibraryImageActions {
     var editInOtherApp: (UUID) -> Void
     var importEditedVersion: (UUID) -> Void
     var newDeliverySet: ([UUID]) -> Void
+    /// Opens Upscale › On this Mac for the image.
+    var upscaleOnDevice: (SavedImage) -> Void
 }
 
 /// One saved image in the shared grid, as a card like a video's. An image whose file can't be found (its drive may
@@ -45,6 +47,8 @@ struct SavedImageCard: View {
     let isSelected: Bool
     /// Whether the file can be opened; one on a drive that isn't connected can't.
     let isAvailable: Bool
+    /// An Enhance run on this Mac making the image's next version.
+    var onDeviceRun: OnDeviceRuns.Run?
     @State private var picture: CGImage?
 
     var body: some View {
@@ -52,7 +56,7 @@ struct SavedImageCard: View {
             title: image.title ?? image.prompt, detail: imageCardDetail(model: image.model, date: image.createdAt),
             aspectRatio: image.aspectRatio.map(PixelSize.aspectLabel(of:)), isStarred: image.isStarred,
             isOnAccountOnly: false,
-            isSelected: isSelected, picture: picture
+            isSelected: isSelected, picture: picture, onDeviceRun: onDeviceRun
         ) {
             if !isAvailable {
                 VStack(spacing: 6) {
@@ -128,6 +132,7 @@ private struct ImageCardFrame<Placeholder: View>: View {
     let isOnAccountOnly: Bool
     let isSelected: Bool
     let picture: CGImage?
+    var onDeviceRun: OnDeviceRuns.Run?
     @ViewBuilder let placeholder: () -> Placeholder
     @State private var isHovered = false
 
@@ -144,6 +149,9 @@ private struct ImageCardFrame<Placeholder: View>: View {
                     }
                 }
                 .clipped()
+                .overlay {
+                    if let onDeviceRun { OnDeviceRunBadge(run: onDeviceRun) }
+                }
                 .overlay(alignment: .topLeading) {
                     MediaTag(text: String(localized: "Image")).padding(8)
                 }
@@ -203,6 +211,8 @@ struct LibraryImageMenu: View {
     let unavailable: Set<UUID>
     let actions: LibraryImageActions
 
+    @Environment(AppEnvironment.self) private var environment
+
     /// The menu's images: the selection's when the card is one of several selected cards, else the card alone,
     /// split the way the old Images page split them: available images act on their files, missing ones don't.
     private var saved: [SavedImage] {
@@ -253,6 +263,7 @@ struct LibraryImageMenu: View {
         if images.count == 1 {
             OutsideEditButtons(
                 edit: { actions.editInOtherApp(row.id) }, importVersion: { actions.importEditedVersion(row.id) })
+            onDeviceButtons(for: images[0])
         }
         Button("Quick Look") { actions.quickLook(images[0].fileURL) }
         Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting(images.map(\.fileURL)) }
@@ -293,6 +304,19 @@ struct LibraryImageMenu: View {
             Button(isSelected ? "Deselect" : "Select", systemImage: "checkmark.circle") {
                 actions.toggleSelection(row.id)
             }
+        }
+    }
+
+    /// Upscale › On this Mac for an image up to 1920×1080, read from the file's header; Cancel while it runs.
+    @ViewBuilder private func onDeviceButtons(for image: SavedImage) -> some View {
+        if let run = environment.onDevice.run(for: image.id) {
+            Button(String(localized: "Cancel \(run.request.action.title)"), systemImage: "xmark.circle") {
+                environment.onDevice.cancel(run.id)
+            }
+        } else if OnDeviceOffer.upscalesImage(
+            ImageThumbnail.size(at: image.fileURL), supports: environment.onDevice.supports)
+        {
+            Button("Upscale on This Mac…", systemImage: "wand.and.rays") { actions.upscaleOnDevice(image) }
         }
     }
 

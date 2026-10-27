@@ -17,6 +17,18 @@ import Testing
         #expect(OnDeviceUpscale.offersVideo(size) == isOffered)
     }
 
+    @Test(arguments: [
+        (PixelSize(width: 1920, height: 1080), true),
+        (PixelSize(width: 1080, height: 1920), true),
+        (PixelSize(width: 1600, height: 1000), true),
+        (PixelSize(width: 1920, height: 1200), false),
+        (PixelSize(width: 2048, height: 1024), false),
+        (PixelSize(width: 0, height: 0), false),
+    ])
+    func imagesUpTo1080pAreOffered(size: PixelSize, isOffered: Bool) {
+        #expect(OnDeviceUpscale.offersImage(size) == isOffered)
+    }
+
     @Test func aFrameThatFitsGoesInAsItIs() throws {
         let plan = try #require(OnDeviceUpscale.plan(for: PixelSize(width: 480, height: 854)))
         #expect(!plan.rotates)
@@ -52,5 +64,7 @@ import Testing
         #expect(OnDeviceEngine.videoSuperResolution.downloadsModel)
         #expect(OnDeviceAction.upscaleVideo.engine == .videoSuperResolution)
         #expect(OnDeviceAction.upscaleVideo.fileSuffix == "4x")
+        #expect(OnDeviceEngine.imageSuperResolution.downloadsModel)
+        #expect(OnDeviceAction.upscaleImage.engine == .imageSuperResolution)
     }
 }
