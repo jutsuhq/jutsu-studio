@@ -23,6 +23,10 @@ public enum OnDeviceText {
     public static let modelConsent = String(localized: "Download the model", bundle: .module)
     public static let tooLargeVideo = String(
         localized: "Upscale on this Mac takes videos up to 720p.", bundle: .module)
+    public static let opaqueResult = String(
+        localized: "This image has transparency; the upscaled image comes out opaque.", bundle: .module)
+    public static let tooLargeImage = String(
+        localized: "Upscale on this Mac takes images up to 1920×1080.", bundle: .module)
 
     /// "4× · 854×480 → 3416×1920".
     public static func upscaleSizes(_ source: PixelSize) -> String {
@@ -45,8 +49,8 @@ public enum OnDeviceText {
         }
     }
 
-    /// Why Enhance's runs on this Mac are off for an item while one waits or runs on it: "Wait until Smooth Motion to
-    /// 60 fps finishes".
+    /// Why Enhance's runs on this Mac are off for an item while one waits or runs on it: "Wait until Upscale 4×
+    /// finishes".
     public static func busy(_ run: OnDeviceRuns.Run) -> String {
         String(localized: "Wait until \(run.request.action.title) finishes", bundle: .module)
     }
@@ -79,7 +83,7 @@ extension OnDeviceAction {
         switch self {
         case .smoothMotion(.fps60): String(localized: "Smooth Motion to 60 fps", bundle: .module)
         case .smoothMotion(let motion): motion.title
-        case .upscaleVideo: String(localized: "Upscale 4×", bundle: .module)
+        case .upscaleVideo, .upscaleImage: String(localized: "Upscale 4×", bundle: .module)
         }
     }
 }
@@ -103,6 +107,11 @@ public struct OnDeviceOffer: Sendable, Hashable {
         offer.upscaleVideo =
             supports(.videoSuperResolution) && item.job.outputPixelSize.map(OnDeviceUpscale.offersVideo) == true
         return offer
+    }
+
+    /// Whether a saved image of `size` (upright, `nil` when unread) is offered Upscale › On this Mac.
+    public static func upscalesImage(_ size: PixelSize?, supports: (OnDeviceEngine) -> Bool) -> Bool {
+        supports(.imageSuperResolution) && size.map(OnDeviceUpscale.offersImage) == true
     }
 }
 

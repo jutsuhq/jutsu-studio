@@ -5,12 +5,15 @@ public enum OnDeviceAction: Sendable, Hashable {
     case smoothMotion(SmoothMotion)
     /// 4× the frame size of a clip up to 720p (`OnDeviceUpscale`).
     case upscaleVideo
+    /// 4× the size of an image up to 1920×1080 (`OnDeviceUpscale.offersImage`).
+    case upscaleImage
 
     /// The engine the action runs on.
     public var engine: OnDeviceEngine {
         switch self {
         case .smoothMotion: .frameRateConversion
         case .upscaleVideo: .videoSuperResolution
+        case .upscaleImage: .imageSuperResolution
         }
     }
 
@@ -20,7 +23,7 @@ public enum OnDeviceAction: Sendable, Hashable {
         case .smoothMotion(.fps60): "60fps"
         case .smoothMotion(.slowMotion2x): "slow 2x"
         case .smoothMotion(.slowMotion4x): "slow 4x"
-        case .upscaleVideo: "4x"
+        case .upscaleVideo, .upscaleImage: "4x"
         }
     }
 }
@@ -31,13 +34,15 @@ public enum OnDeviceEngine: String, CaseIterable, Sendable, Hashable {
     case frameRateConversion
     /// Super resolution of the video kind, which uses the frames before to keep detail steady.
     case videoSuperResolution
+    /// Super resolution of the image kind, one picture at a time.
+    case imageSuperResolution
 
     /// Whether the engine needs a model macOS downloads once (about 62 MB a kind) before its first run. Merely
     /// setting the engine up for a size starts that download, so it is done only once the person has agreed.
     public var downloadsModel: Bool {
         switch self {
         case .frameRateConversion: false
-        case .videoSuperResolution: true
+        case .videoSuperResolution, .imageSuperResolution: true
         }
     }
 }
@@ -60,6 +65,13 @@ public enum OnDeviceUpscale {
     /// Video sources up to 720p either way round: at 1080p the 4× frames ran a 16 GB Mac out of memory (#13).
     public static func offersVideo(_ size: PixelSize) -> Bool {
         size.isValid && max(size.width, size.height) <= 1280 && min(size.width, size.height) <= 720
+    }
+
+    /// Images up to 1920×1080 either way round. The image kind takes 1920 a side in both orientations, so an image
+    /// is never turned; the 1080 side keeps a 4× picture's memory in bounds.
+    public static func offersImage(_ size: PixelSize) -> Bool {
+        size.isValid && max(size.width, size.height) <= scalerLimit.width
+            && min(size.width, size.height) <= scalerLimit.height
     }
 
     /// Frames of `size` as they are when they fit `limit`, else turned a quarter; `nil` when neither way fits.
@@ -106,6 +118,11 @@ public enum OnDeviceEstimate {
         let perFrame = 0.2389 + 1.8566e-6 * Double(pixelSize.width * pixelSize.height)
         return engineStart + max(duration, 0) * max(frameRate, 1) * perFrame
     }
+
+    /// One picture, at the video line's cost of a frame.
+    public static func upscaleImage(pixelSize: PixelSize) -> TimeInterval {
+        upscaleVideo(duration: 1, frameRate: 1, pixelSize: pixelSize)
+    }
 }
 
 /// How far an on-device run is.
@@ -122,7 +139,7 @@ public struct OnDeviceOutput: Sendable, Hashable {
     public var pixelSize: PixelSize
     /// In seconds.
     public var duration: TimeInterval
-    /// The file's type as its extension: "mp4".
+    /// The file's type as its extension: "mp4", "png".
     public var fileExtension: String
 
     public init(pixelSize: PixelSize, duration: TimeInterval, fileExtension: String) {

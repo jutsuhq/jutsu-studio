@@ -11,7 +11,7 @@ public struct OnDeviceEnhancer: OnDeviceEnhancing {
         case .frameRateConversion:
             guard #available(macOS 15.4, *) else { return false }
             return FrameRateConverter.isSupported
-        case .videoSuperResolution:
+        case .videoSuperResolution, .imageSuperResolution:
             guard #available(macOS 26, *) else { return false }
             return SuperResolutionScaler.isSupported
         }
@@ -32,6 +32,10 @@ public struct OnDeviceEnhancer: OnDeviceEnhancing {
                 guard #available(macOS 26, *) else { throw MediaError.engineUnavailable }
                 return try await SuperResolutionRenderer.renderVideo(
                     source: source, to: output, scaler: SuperResolutionScaler(inputType: .video), progress: progress)
+            case .upscaleImage:
+                guard #available(macOS 26, *) else { throw MediaError.engineUnavailable }
+                return try await SuperResolutionRenderer.renderImage(
+                    source: source, to: output, scaler: SuperResolutionScaler(inputType: .image), progress: progress)
             }
         } catch {
             try? FileManager.default.removeItem(at: output)

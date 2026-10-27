@@ -109,7 +109,7 @@ final class FakeOnDeviceEngine: OnDeviceEnhancing, @unchecked Sendable {
         defer { try? FileManager.default.removeItem(at: folder) }
         let runs = OnDeviceRuns(engine: engine, consent: consent) { _, _, _ in }
         let first = request()
-        var second = request()
+        var second = request(action: .smoothMotion(.slowMotion2x))
         second.source = first.source
 
         #expect(runs.start(first))
@@ -209,6 +209,20 @@ final class FakeOnDeviceEngine: OnDeviceEnhancing, @unchecked Sendable {
         #expect(files() == ["rooftop 4x.mp4"])
         // Remembered for the next run, and the next launch.
         #expect(!OnDeviceRuns(engine: engine, consent: consent) { _, _, _ in }.needsConsent(.videoSuperResolution))
+        // Each kind has a model of its own, asked about on its own.
+        #expect(runs.needsConsent(.imageSuperResolution))
+        #expect(!runs.start(request("portrait.png", action: .upscaleImage)))
+    }
+
+    @Test func onlyAnImageUpTo1080pIsOfferedAnUpscale() {
+        let all: (OnDeviceEngine) -> Bool = { _ in true }
+        #expect(OnDeviceOffer.upscalesImage(PixelSize(width: 1920, height: 1080), supports: all))
+        #expect(OnDeviceOffer.upscalesImage(PixelSize(width: 1080, height: 1920), supports: all))
+        #expect(!OnDeviceOffer.upscalesImage(PixelSize(width: 2048, height: 1080), supports: all))
+        #expect(!OnDeviceOffer.upscalesImage(nil, supports: all))
+        #expect(
+            !OnDeviceOffer.upscalesImage(
+                PixelSize(width: 1024, height: 1024), supports: { $0 != .imageSuperResolution }))
     }
 
     @Test func onlyAResultWithItsFileHereIsOffered() {

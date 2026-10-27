@@ -8,6 +8,7 @@ struct OnDeviceTarget: Identifiable {
     enum Kind {
         case smoothMotion
         case upscaleVideo
+        case upscaleImage
     }
 
     let id = UUID()
@@ -28,8 +29,12 @@ struct OnDeviceEnhanceSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var motion = SmoothMotion.fps60
-    /// The file's frame rate, size and length, read once; `nil` until then.
+    /// The video's frame rate, size and length, read once; `nil` until then.
     @State private var probed: MediaInfo?
+    /// The image's upright size, read from its header.
+    @State private var imageSize: PixelSize?
+    /// The image has an alpha channel, which the result won't keep.
+    @State private var hasAlpha = false
     @State private var isUnreadable = false
     @State private var agreesToDownload = false
 
@@ -37,7 +42,12 @@ struct OnDeviceEnhanceSheet: View {
         switch target.kind {
         case .smoothMotion: .smoothMotion(motion)
         case .upscaleVideo: .upscaleVideo
+        case .upscaleImage: .upscaleImage
         }
+    }
+
+    private var size: PixelSize? {
+        target.kind == .upscaleImage ? imageSize : probed?.pixelSize
     }
 
     private var needsConsent: Bool {
@@ -50,23 +60,31 @@ struct OnDeviceEnhanceSheet: View {
 
     /// The file is too large for the run, as read from the file itself.
     private var isTooLarge: Bool {
-        guard let probed, target.kind == .upscaleVideo else { return false }
-        return !OnDeviceUpscale.offersVideo(probed.pixelSize)
+        guard let size else { return false }
+        switch target.kind {
+        case .smoothMotion: return false
+        case .upscaleVideo: return !OnDeviceUpscale.offersVideo(size)
+        case .upscaleImage: return !OnDeviceUpscale.offersImage(size)
+        }
     }
 
     private var expectedTime: TimeInterval? {
-        probed.map {
-            switch target.kind {
-            case .smoothMotion:
+        switch target.kind {
+        case .smoothMotion:
+            probed.map {
                 OnDeviceEstimate.smoothMotion(duration: $0.duration, frameRate: $0.frameRate, pixelSize: $0.pixelSize)
-            case .upscaleVideo:
+            }
+        case .upscaleVideo:
+            probed.map {
                 OnDeviceEstimate.upscaleVideo(duration: $0.duration, frameRate: $0.frameRate, pixelSize: $0.pixelSize)
             }
+        case .upscaleImage:
+            imageSize.map(OnDeviceEstimate.upscaleImage)
         }
     }
 
     private var canStart: Bool {
-        probed != nil && !isTooLarge && (!needsConsent || agreesToDownload)
+        size != nil && !isTooLarge && (!needsConsent || agreesToDownload)
     }
 
     var body: some View {
@@ -99,17 +117,32 @@ struct OnDeviceEnhanceSheet: View {
             Text(motion.keepsAudio ? OnDeviceText.smoothMotionNote : OnDeviceText.slowMotionSound)
                 .font(.system(size: 12))
                 .foregroundStyle(Theme.muted)
-        case .upscaleVideo:
+        case .upscaleVideo, .upscaleImage:
             SectionLabel(title: "Size")
-            if let probed {
-                Text(OnDeviceText.upscaleSizes(probed.pixelSize))
+            if let size {
+                Text(OnDeviceText.upscaleSizes(size))
                     .font(.system(size: 13, weight: .semibold))
                     .monospacedDigit()
                     .foregroundStyle(Theme.text)
             }
-            Text(isTooLarge ? OnDeviceText.tooLargeVideo : OnDeviceText.upscaleSound)
-                .font(.system(size: 12))
-                .foregroundStyle(isTooLarge ? Theme.warning : Theme.muted)
+            if target.kind == .upscaleVideo || isTooLarge {
+                Text(sizeNote)
+                    .font(.system(size: 12))
+                    .foregroundStyle(isTooLarge ? Theme.warning : Theme.muted)
+            }
+            if hasAlpha, !isTooLarge {
+                Text(OnDeviceText.opaqueResult)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Theme.warning)
+            }
+        }
+    }
+
+    private var sizeNote: String {
+        switch (target.kind, isTooLarge) {
+        case (.upscaleImage, _): OnDeviceText.tooLargeImage
+        case (_, true): OnDeviceText.tooLargeVideo
+        default: OnDeviceText.upscaleSound
         }
     }
 
@@ -165,6 +198,12 @@ struct OnDeviceEnhanceSheet: View {
     }
 
     private func probe() async {
+        if target.kind == .upscaleImage {
+            imageSize = ImageThumbnail.size(at: target.file)
+            hasAlpha = ImageThumbnail.hasAlpha(at: target.file)
+            isUnreadable = imageSize == nil
+            return
+        }
         probed = try? await MediaProbe.probe(target.file)
         isUnreadable = probed == nil
         if !offeredMotions.contains(motion), let first = offeredMotions.first { motion = first }
