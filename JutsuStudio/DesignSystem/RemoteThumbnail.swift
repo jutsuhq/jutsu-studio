@@ -81,6 +81,11 @@ final class RemoteImageCache {
         }
     }
 
+    /// Drops every decoded picture: no window shows one (`WindowMemory`). Loads still running finish for their views.
+    func removeAll() {
+        images.removeAllObjects()
+    }
+
     private func removeWaiter(_ waiter: UUID, for key: String) {
         guard var load = loads[key], load.waiters.remove(waiter) != nil else { return }
         if load.waiters.isEmpty {

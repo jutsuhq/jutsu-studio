@@ -27,6 +27,8 @@ final class SystemIntegration {
     private var activity: (any NSObjectProtocol)?
     private var isStarted = false
     private var windowObserver: (any NSObjectProtocol)?
+    private var memoryRelease: Task<Void, Never>?
+    private static let memoryReleaseDelay: Duration = .seconds(2)
     /// A start with no window (`MenuBarMode.startsHidden`), while the launch goes on.
     private var hiddenStart = HiddenStart()
 
@@ -121,13 +123,26 @@ final class SystemIntegration {
     private func observeWindows() {
         windowObserver = NotificationCenter.default.addObserver(
             forName: NSWindow.willCloseNotification, object: nil, queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in self?.windowClosed() }
+        ) { [weak self] notification in
+            let window = notification.object as? NSWindow
+            Task { @MainActor in self?.windowClosed(window) }
         }
     }
 
-    private func windowClosed() {
+    private func windowClosed(_ window: NSWindow?) {
         updateDockPresence()
+        guard let window,
+            WindowLifecycle.releasesMemory(
+                closing: Self.lifecycle(window),
+                remaining: NSApp.windows.filter { $0 !== window }.map(Self.lifecycle))
+        else { return }
+        // Once SwiftUI has let go of the closed window's views, which happens after the close.
+        memoryRelease?.cancel()
+        memoryRelease = Task { [weak self] in
+            try? await Task.sleep(for: Self.memoryReleaseDelay)
+            guard !Task.isCancelled, let self, !self.hasAppWindow else { return }
+            WindowMemory.release()
+        }
     }
 
     func showSettings() {

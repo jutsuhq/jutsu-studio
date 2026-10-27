@@ -96,6 +96,11 @@ final class ThumbnailCache {
         return image
     }
 
+    /// Drops every frame: no window shows one (`WindowMemory`).
+    func removeAll() {
+        images.removeAllObjects()
+    }
+
     /// Drops the frame of a file that was moved away, so its tile shows the placeholder.
     func forget(_ url: URL) {
         images.removeObject(forKey: url as NSURL)
