@@ -9,11 +9,16 @@ Notable changes to Jutsu Studio. Versions follow [Semantic Versioning](https://s
 - Enhance › Smooth Motion… makes new frames between a result's own on this Mac, free and without an account: 60 fps keeps the clip's length and sound, 2× and 4× Slow Motion play it longer at its own frame rate without sound. Across a hard cut a frame is repeated instead of blending the two shots. The sheet says how long it takes; the result becomes a new version of the item, linked to the version it was made from, which stays as it is. Runs go one at a time at background priority, one per item until its new version is in, show their progress on the card and the result's page, and can be canceled, leaving no file behind. Needs macOS 15.4 or later.
 - Enhance › Upscale › On This Mac… makes a result up to 720p four times larger with macOS's own super resolution, free and keeping the sound; it isn't offered for larger results. A portrait frame the engine won't take is turned for it and back. An H.264 result stays H.264 up to 4096 pixels a side; anything larger, and every other codec, becomes HEVC. The sheet says how long it takes before it starts. The first upscale asks before macOS downloads its model from Apple once (about 62 MB); the card shows the download, then the frames. Needs macOS 26 or later.
 - Upscale on This Mac… on an image's menu makes an image up to 1920×1080 four times larger the same way, as a new version in the source's file type (PNG when macOS can't write it). Transparency isn't kept: the result is opaque, and the sheet says so for an image that has it. The image engine has a model of its own, asked about separately.
+- Compare with Original on a result's or an image's menu plays or shows a version made on this Mac, or edited in another app, beside the version it was made from.
 
 ### Changed
 
 - The agent tools' input schemas state the maximums the app already enforced: `variants`, `image_count`, `length`, `source` `start`/`end`, `library_search`'s `model` and `enhance`'s `voice`.
 - An agent's image request that waits for you, held by the agent spending limits or over today's spending cap, gives its reason in the same words as a held agent video job, followed by "review to send it", in the Queue and on its tile in Create.
+
+### Fixed
+
+- Delete from Library moves the files of an item's earlier versions in the output folder to the Trash too, not only the current one, and the confirmation says so; files of versions that live elsewhere or that a delivery set holds are left alone. A run on this Mac on the item stops first, so its result never brings the item back.
 
 ## [0.2.2] - 2026-10-24
 

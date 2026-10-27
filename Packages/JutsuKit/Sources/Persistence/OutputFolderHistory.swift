@@ -17,8 +17,7 @@ public struct OutputFolderHistory: Sendable, Hashable, Codable {
 
         /// Whether `url` is this folder or lies inside it.
         public func contains(_ url: URL) -> Bool {
-            let other = OutputFolderHistory.path(of: url)
-            return other == path || other.hasPrefix(path + "/")
+            OutputFolderHistory.folder(at: path, contains: url)
         }
     }
 
@@ -35,6 +34,12 @@ public struct OutputFolderHistory: Sendable, Hashable, Codable {
 
     public func encoded() -> Data? {
         try? JSONEncoder().encode(self)
+    }
+
+    /// Whether `url` is the folder at `folderPath` (as `path(of:)` gives it) or lies inside it.
+    public static func folder(at folderPath: String, contains url: URL) -> Bool {
+        let other = path(of: url)
+        return other == folderPath || other.hasPrefix(folderPath + "/")
     }
 
     /// How a folder is identified here: its standardized path without a trailing slash.

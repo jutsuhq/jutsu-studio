@@ -1,16 +1,25 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "Wait until %@ finishes" : {
+    "The video file and its earlier versions made in Jutsu Studio move to the Trash, and its history entry is removed." : {
 
     },
-    "Smooth Motion, free on this Mac" : {
+    "The video files and their earlier versions made in Jutsu Studio move to the Trash, and their history entries are removed." : {
+
+    },
+    "Wait until %@ finishes" : {
 
     },
     "Smooth Motion and Upscale, free on this Mac" : {
 
     },
+    "Smooth Motion, free on this Mac" : {
+
+    },
     "This image has transparency; the upscaled image comes out opaque." : {
+
+    },
+    "New version" : {
 
     },
     "Upscale on this Mac takes images up to 1920×1080." : {
@@ -2354,12 +2363,6 @@
 
     },
     "The site doesn't let the app download this file" : {
-
-    },
-    "The video file moves to the Trash and its history entry is removed." : {
-
-    },
-    "The video files move to the Trash and their history entries are removed." : {
 
     },
     "These %lld jobs add %@, bringing today to %@ against your %@ cap." : {

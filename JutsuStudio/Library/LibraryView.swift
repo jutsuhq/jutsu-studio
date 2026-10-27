@@ -164,7 +164,9 @@ struct LibraryView: View {
                 Button("Move to Trash", role: .destructive) { trashImages(ids) }
                 Button("Cancel", role: .cancel) {}
             } message: { _ in
-                Text("You can put them back from the Trash in Finder.")
+                Text(
+                    "Their earlier versions made in Jutsu Studio go too. You can put them back from the Trash in Finder."
+                )
             }
             .confirmationDialog(
                 String(localized: "Remove \(pendingImageRemoval?.count ?? 0) images from the library?"),

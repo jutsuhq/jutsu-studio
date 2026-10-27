@@ -86,7 +86,27 @@ extension LibraryView {
                 guard let source = catalogReference(of: image.id) else { return }
                 onDeviceImage = OnDeviceTarget(
                     kind: .upscaleImage, source: source, file: image.fileURL, title: image.title ?? image.prompt)
-            })
+            },
+            compareWithOriginal: originalImageCompare)
+    }
+
+    /// Compare with Original for an image with an earlier version it was made from.
+    func originalImageCompare(_ image: SavedImage) -> (() -> Void)? {
+        guard let material = catalogMaterial(image.id),
+            let pair = MaterialVersions.imagePair(material, current: image, exists: ResultTrash().fileExists)
+        else { return nil }
+        return {
+            imageSelected = []
+            comparingImages = pair
+        }
+    }
+
+    /// Compare with Original for a result with an earlier version it was made from.
+    func originalCompare(_ item: LibraryItemModel) -> (() -> Void)? {
+        guard let material = catalogMaterial(item.id),
+            let pair = MaterialVersions.videoPair(material, current: item, exists: ResultTrash().fileExists)
+        else { return nil }
+        return { comparing = pair }
     }
 
     // MARK: Images

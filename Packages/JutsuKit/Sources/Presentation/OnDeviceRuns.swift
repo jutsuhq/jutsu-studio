@@ -113,6 +113,15 @@ public final class OnDeviceRuns {
         }
     }
 
+    /// Cancels the runs waiting or running on `materialIDs` and returns once they are over, so none adds a version
+    /// afterwards: Delete from Library calls it before it trashes the items.
+    public func stop(_ materialIDs: Set<UUID>) async {
+        let ids = Set(runs.filter { materialIDs.contains($0.request.source.materialID) }.map(\.id))
+        for id in ids { cancel(id) }
+        // A waiting run is gone at once; the running one when its loop ends.
+        while let loop, let first = runs.first, ids.contains(first.id) { await loop.value }
+    }
+
     /// Waits until every run started so far is over.
     public func finish() async {
         while let loop { await loop.value }
