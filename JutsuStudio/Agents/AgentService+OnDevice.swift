@@ -39,13 +39,13 @@ extension AgentService {
         }
     }
 
-    private enum OnDeviceItem {
+    enum OnDeviceItem {
         case video(Material, LibraryItemModel, URL)
         case image(Material, SavedImage)
     }
 
     /// A video or image of the Library with its file on this Mac.
-    private func onDeviceItem(_ id: UUID) async throws(AgentError) -> OnDeviceItem {
+    func onDeviceItem(_ id: UUID) async throws(AgentError) -> OnDeviceItem {
         let material = try await materials().first { $0.id == id }
         switch material.flatMap(MaterialLibrary.row) {
         case .video(let item)? where !item.needsImport:
@@ -65,8 +65,9 @@ extension AgentService {
         guard action == .cancel else {
             throw AgentError(
                 .notApplicable, message: "A run on this Mac can only be canceled.", retryable: false,
-                next: "Send enhance again with a new request_id for another run.")
+                next: "Send the request again with a new request_id for another run.")
         }
+        if subtitleAgent.knows(id) { return AgentActed(action: action, job: try await subtitleAgent.cancel(id)) }
         return AgentActed(action: action, job: try await onDeviceAgent.cancel(id))
     }
 
@@ -74,6 +75,7 @@ extension AgentService {
     /// Refused on a Mac without the engine, and while the window shows another sheet, which SwiftUI wouldn't replace;
     /// one this opened before is replaced.
     func showSheet(_ sheet: AgentSheet, for id: UUID) async throws(AgentError) -> AgentShown {
+        if sheet == .subtitles { return try await showSubtitles(for: id) }
         let target: OnDeviceTarget
         let action: OnDeviceAction
         switch try await onDeviceItem(id) {

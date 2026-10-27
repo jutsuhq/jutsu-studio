@@ -316,7 +316,7 @@ extension MCPServer {
             response.library, response.details, response.downloads, response.elements, response.marked,
             response.delivery,
             response.exported,
-            response.frames,
+            response.frames, response.subtitles,
         ]
         guard let answer = answers.lazy.compactMap(\.self).first else {
             return ["error": encoded(AgentError.lostAnswer)]
@@ -374,7 +374,8 @@ extension MCPServer {
         rejects or stars them, delivery_set and export write files for delivery or editing, never over a file. \
         enhance also runs free on this Mac, with no max_cost or budget: smooth_motion, and upscale with engine mac \
         (videos up to 720p, images up to 1920×1080), each adding a new version of the item; prefer it to Higgsfield \
-        for drafts, small videos and frame-rate smoothing, and follow it with jobs (kind on_device). \
+        for drafts, small videos and frame-rate smoothing, and follow it with jobs (kind on_device). subtitles makes a \
+        video's subtitles from its speech on this Mac the same way, free, and reads or exports them as SRT or VTT. \
         job_action cancels, retries or runs a job next, or pauses or resumes the agents' jobs (never the person's \
         own, or their Pause all); it never resumes a job waiting for the person, and nothing here deletes anything. \
         show opens a page, a job or an item's sheet for the person to see. A failed call returns error with code, message, retryable \

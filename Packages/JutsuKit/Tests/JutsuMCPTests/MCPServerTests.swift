@@ -158,7 +158,7 @@ actor FakeApp {
                     "capabilities", "quote", "create_video", "jobs", "job_action", "create_image", "elements",
                     "library_search",
                     "library_get", "library_download", "library_mark", "enhance", "delivery_set", "export", "frames",
-                    "show",
+                    "subtitles", "show",
                 ])
         #expect(tools.compactMap { $0["name"]?.stringValue } == AgentCapabilities.ToolGroup.all.flatMap(\.tools))
         for tool in tools {

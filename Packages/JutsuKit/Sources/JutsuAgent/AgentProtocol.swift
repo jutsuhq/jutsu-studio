@@ -67,6 +67,8 @@ public enum AgentCommand: Equatable, Sendable {
     case export(ExportCommand)
     /// Writes still frames of a result or a file, and a contact sheet of a comparison.
     case frames(FramesCommand)
+    /// Makes, reads or exports a video's subtitles on this Mac; make is idempotent by its request ID.
+    case subtitles(SubtitlesCommand)
 
     public var name: String {
         switch self {
@@ -87,6 +89,7 @@ public enum AgentCommand: Equatable, Sendable {
         case .deliverySet: "delivery_set"
         case .export: "export"
         case .frames: "frames"
+        case .subtitles: "subtitles"
         }
     }
 }
@@ -137,6 +140,7 @@ public struct AgentRequest: Codable, Equatable, Sendable {
         case "delivery_set": command = .deliverySet(try .checked(from: decoder))
         case "export": command = .export(try .checked(from: decoder))
         case "frames": command = .frames(try .checked(from: decoder))
+        case "subtitles": command = .subtitles(try .checked(from: decoder))
         default: throw AgentError.unknownCommand(name)
         }
     }
@@ -165,6 +169,7 @@ public struct AgentRequest: Codable, Equatable, Sendable {
         case .deliverySet(let fields): try fields.encode(to: encoder)
         case .export(let fields): try fields.encode(to: encoder)
         case .frames(let fields): try fields.encode(to: encoder)
+        case .subtitles(let fields): try fields.encode(to: encoder)
         }
     }
 }
@@ -194,6 +199,8 @@ public struct AgentResponse: Codable, Equatable, Sendable {
     public var delivery: AgentDelivery?
     public var exported: AgentExported?
     public var frames: AgentFrames?
+    /// subtitles get and export; make answers with `created`.
+    public var subtitles: AgentSubtitles?
     public var error: AgentError?
 
     public init(
@@ -202,7 +209,7 @@ public struct AgentResponse: Codable, Equatable, Sendable {
         library: AgentLibraryPage? = nil, details: AgentLibraryDetailsPage? = nil, marked: AgentMarked? = nil,
         downloads: AgentDownloads? = nil, elements: AgentElementsPage? = nil, delivery: AgentDelivery? = nil,
         exported: AgentExported? = nil,
-        frames: AgentFrames? = nil, error: AgentError? = nil
+        frames: AgentFrames? = nil, subtitles: AgentSubtitles? = nil, error: AgentError? = nil
     ) {
         self.id = id
         self.capabilities = capabilities
@@ -220,6 +227,7 @@ public struct AgentResponse: Codable, Equatable, Sendable {
         self.delivery = delivery
         self.exported = exported
         self.frames = frames
+        self.subtitles = subtitles
         self.error = error
     }
 }

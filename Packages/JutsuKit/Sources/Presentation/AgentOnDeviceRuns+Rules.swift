@@ -150,8 +150,8 @@ extension AgentOnDeviceRuns {
     public static func forgotten(_ id: UUID) -> AgentJob {
         AgentJob(
             id: id, state: "unknown", error: "Jutsu Studio forgets a run on this Mac when it quits.", kind: kind,
-            next: "If it finished, its result is the item's current version: call library_get with the item's ID. "
-                + "Otherwise send enhance again with a new request_id.",
+            next: "If it finished, its result is on the item's current version: call library_get, or subtitles get, "
+                + "with the item's ID. Otherwise send the request again with a new request_id.",
             createdAt: nil)
     }
 }

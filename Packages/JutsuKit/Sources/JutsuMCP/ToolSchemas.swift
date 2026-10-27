@@ -82,11 +82,29 @@ extension Tool {
                     ],
                 ],
             ]
+            let speech: JSONValue = [
+                "type": "object",
+                "properties": [
+                    "engine": ["type": "string"], "available": ["type": "boolean"],
+                    "languages": ["type": "array", "items": ["type": "string"]],
+                    "needsConsent": ["type": "array", "items": ["type": "string"]],
+                    "model": [
+                        "type": "string",
+                        "enum": ["needs_consent", "agreed", "not_downloaded", "downloading", "ready"],
+                    ],
+                ],
+            ]
             properties["onDevice"] = [
                 "type": "object",
                 "properties": [
                     "smoothMotion": engine, "modes": ["type": "array", "items": ["type": "string"]],
                     "upscaleVideo": engine, "upscaleImage": engine,
+                    "subtitles": [
+                        "type": "object",
+                        "properties": [
+                            "defaultEngine": ["type": "string"], "engines": ["type": "array", "items": speech],
+                        ],
+                    ],
                 ],
             ]
         case .quote:
@@ -208,6 +226,26 @@ extension Tool {
                 ],
             ]
             properties["sheet"] = ["type": "string"]
+        case .subtitles:
+            // make answers as enhance does; get and export with the version's subtitles.
+            properties["requestId"] = ["type": "string"]
+            properties["known"] = ["type": "boolean"]
+            properties["jobs"] = ["type": "array", "items": Self.jobSchema]
+            properties["item"] = ["type": "string"]
+            properties["versionId"] = ["type": "string"]
+            properties["language"] = ["type": "string"]
+            properties["model"] = ["type": "string"]
+            properties["cues"] = [
+                "type": "array",
+                "items": [
+                    "type": "object",
+                    "properties": [
+                        "start": ["type": "number"], "end": ["type": "number"], "text": ["type": "string"],
+                    ],
+                ],
+            ]
+            properties["text"] = ["type": "string"]
+            properties["file"] = ["type": "string"]
         case .jobAction:
             properties["action"] = ["type": "string"]
             properties["job"] = Self.jobSchema

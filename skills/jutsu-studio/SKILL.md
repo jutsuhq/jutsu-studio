@@ -67,7 +67,16 @@ says rather than guessing.
    first Upscale on this Mac answers `needs_person` until the person agrees to macOS downloading its model: call
    `show` with the `item` and `sheet: "upscale_on_mac"` as `next` says, tell the person, and send `enhance` again
    once they agreed. `busy` means a run on that item is going: follow it with `jobs` first. `engine_unavailable`
-   means this Mac has no such engine: use Higgsfield instead. `export` writes takes for Premiere, DaVinci Resolve or Final Cut Pro, and
+   means this Mac has no such engine: use Higgsfield instead.
+   - **Subtitles.** `subtitles` with `action: "make"`, a `request_id`, and optionally `language` and `engine`
+     (`auto`, `built_in`, `parakeet`; `capabilities`' `onDevice.subtitles` lists each one's languages and model)
+     hears a video's speech on this Mac, free, and saves the cues on its current version. It answers with a job of
+     kind `on_device` and operation `subtitles`; follow it with `jobs`. `needs_person` means only the person can go
+     on (agreeing to macOS downloading a language's model, or downloading Parakeet Ultra in Settings › Subtitles):
+     call `show` with the `item` and `sheet: "subtitles"`, tell the person, and make again with a new `request_id`
+     later. `action: "get"` reads the cues (with `format` also the file's text); `action: "export"` with `format`
+     `srt` or `vtt` writes the file into the Exports folder.
+   `export` writes takes for Premiere, DaVinci Resolve or Final Cut Pro, and
    `delivery_set` creates, lists and exports delivery sets. An export runs in the app and answers at once (or after
    `wait_seconds`, up to 50) with a `job`: follow it with `jobs` like any job, and read its `files` and `results`
    once it is `done`. If the app was relaunched meanwhile, `jobs` answers `unknown`: look in its `folder` or export

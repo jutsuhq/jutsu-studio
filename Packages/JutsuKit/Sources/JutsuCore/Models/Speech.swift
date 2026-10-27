@@ -14,6 +14,8 @@ public enum SpeechModel: String, Codable, Sendable, CaseIterable {
 
 /// Which model makes a run's subtitles, as the person picks it.
 public enum SubtitleEngine: String, Codable, Sendable, CaseIterable {
+    /// The best model here for the language (`SpeechSelection.auto`).
+    case auto
     /// macOS's own models (`SpeechSelection.builtIn`).
     case builtIn = "built_in"
     case parakeet

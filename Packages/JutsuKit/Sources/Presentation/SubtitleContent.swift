@@ -39,6 +39,11 @@ public enum SubtitleText {
         localized:
             "Parakeet Ultra speech model: NVIDIA Parakeet TDT 0.6B v3, post-trained by moondream, Core ML build by FluidInference, CC BY 4.0. Run with FluidAudio, Apache License 2.0.",
         bundle: .module)
+    /// Under the default model in Settings.
+    public static let autoNote = String(
+        localized:
+            "Auto hears a language with macOS's SpeechTranscriber when it has the language, else with Parakeet Ultra once it is downloaded, else with Dictation. The Subtitles sheet can pick another for a run.",
+        bundle: .module)
     public static let modelsFolder = String(localized: "Speech models", bundle: .module)
     public static let downloadFailedTitle = String(localized: "Can't download Parakeet Ultra", bundle: .module)
     public static let removeFailedTitle = String(localized: "Can't remove Parakeet Ultra", bundle: .module)
@@ -125,6 +130,7 @@ public enum SubtitleText {
 extension SubtitleEngine {
     public var title: String {
         switch self {
+        case .auto: String(localized: "Auto", bundle: .module)
         case .builtIn: String(localized: "Built-in", bundle: .module)
         case .parakeet: SubtitleText.parakeetName
         }

@@ -115,7 +115,7 @@ import Testing
             Issue.record("an unknown sheet was taken")
             return
         }
-        #expect(error.message == "Malformed request: show: sheet is one of upscale_on_mac.")
+        #expect(error.message == "Malformed request: show: sheet is one of upscale_on_mac, subtitles.")
     }
 
     @Test func theSchemasStateTheOnDeviceOptions() {
@@ -126,7 +126,7 @@ import Testing
         #expect(properties?["mode"]?["enum"] == ["60fps", "slow_2x", "slow_4x"])
         #expect(properties?["operation"]?["enum"]?.arrayValue?.contains("smooth_motion") == true)
         let show = Tool.show.definition(structured: true)["inputSchema"]?["properties"]
-        #expect(show?["sheet"]?["enum"] == ["upscale_on_mac"])
+        #expect(show?["sheet"]?["enum"] == ["upscale_on_mac", "subtitles"])
         #expect(show?["item"]?["format"] == "uuid")
         let job = Tool.jobs.definition(structured: true)["outputSchema"]?["properties"]?["jobs"]?["items"]
         #expect(job?["properties"]?["estimatedSeconds"] != nil && job?["properties"]?["item"] != nil)

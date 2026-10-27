@@ -33,6 +33,19 @@ import Testing
         #expect(SpeechSelection.languages(in: both) == ["de-DE", "en-US", "lv", "ru-RU"])
     }
 
+    @Test func autoPrefersTheTranscriberThenADownloadedParakeetThenDictation() {
+        var all = availability
+        all.languages[.parakeetUltra] = ["en", "ru", "lv"]
+        #expect(SpeechSelection.model(.auto, for: "en-US", in: all) == .transcriber)
+        #expect(SpeechSelection.model(.auto, for: "ru-RU", in: all) == .dictation)
+        // Before the download Parakeet comes last, so a language only it takes still names it.
+        #expect(SpeechSelection.model(.auto, for: "lv", in: all) == .parakeetUltra)
+        #expect(SpeechSelection.model(.auto, for: "ja-JP", in: all) == nil)
+        all.installed[.parakeetUltra] = ["en", "ru", "lv"]
+        #expect(SpeechSelection.model(.auto, for: "ru-RU", in: all) == .parakeetUltra)
+        #expect(SpeechSelection.model(.auto, for: "en-US", in: all) == .transcriber)
+    }
+
     @Test func theLastLanguageComesFirstThenTheSystemsThenTheFirst() {
         let languages = ["de-DE", "en-US", "ru-RU"]
         #expect(SpeechSelection.preferred(languages, last: "ru-RU", system: ["en-US"]) == "ru-RU")

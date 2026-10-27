@@ -3015,6 +3015,9 @@
     },
     "Parakeet Ultra needs about %@ MB of free memory, and %@ MB are free now. Quit other apps and try again." : {
 
+    },
+    "Auto hears a language with macOS's SpeechTranscriber when it has the language, else with Parakeet Ultra once it is downloaded, else with Dictation. The Subtitles sheet can pick another for a run." : {
+
     }
   },
   "version" : "1.0"

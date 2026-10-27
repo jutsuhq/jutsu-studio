@@ -7,12 +7,23 @@ public enum SpeechSelection {
         [.transcriber, .dictation].first { availability.supports($0, language) }
     }
 
+    /// Auto: SpeechTranscriber for the locales it has, then Parakeet for its languages once it is downloaded, then
+    /// Dictation; Parakeet before it is downloaded last, so a language only it takes asks for the download.
+    public static func auto(for language: String, in availability: SpeechAvailability) -> SpeechModel? {
+        if availability.supports(.transcriber, language) { return .transcriber }
+        let parakeet = availability.supports(.parakeetUltra, language)
+        if parakeet, availability.isInstalled(.parakeetUltra, language) { return .parakeetUltra }
+        if availability.supports(.dictation, language) { return .dictation }
+        return parakeet ? .parakeetUltra : nil
+    }
+
     /// The model `engine` hears `language` with; `nil` when it doesn't take the language. Parakeet is named whether
     /// or not it is downloaded yet.
     public static func model(
         _ engine: SubtitleEngine, for language: String, in availability: SpeechAvailability
     ) -> SpeechModel? {
         switch engine {
+        case .auto: auto(for: language, in: availability)
         case .builtIn: builtIn(for: language, in: availability)
         case .parakeet: availability.supports(.parakeetUltra, language) ? .parakeetUltra : nil
         }

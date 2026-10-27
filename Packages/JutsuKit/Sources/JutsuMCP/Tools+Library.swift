@@ -125,6 +125,41 @@ extension Tool {
         return .enhance(command)
     }
 
+    static func subtitles(_ given: Arguments) throws(AgentError) -> AgentCommand {
+        try given.allow(["action", "item", "request_id", "language", "engine", "format"])
+        guard let name = try given.string("action"), let action = AgentSubtitlesAction(rawValue: name) else {
+            throw .badRequest("subtitles needs action: make, get or export")
+        }
+        guard let item = try given.string("item").flatMap(UUID.init(uuidString:)) else {
+            throw .badRequest("subtitles needs item, a video's Library ID from library_search")
+        }
+        let engine = try given.string("engine").map { text throws(AgentError) -> AgentSubtitleEngine in
+            guard let engine = AgentSubtitleEngine(rawValue: text) else {
+                throw .badRequest("subtitles: engine is one of \(AgentSubtitleEngine.names)")
+            }
+            return engine
+        }
+        let format = try given.string("format").map { text throws(AgentError) -> AgentSubtitleFormat in
+            guard let format = AgentSubtitleFormat(rawValue: text) else {
+                throw .badRequest("subtitles: format is srt or vtt")
+            }
+            return format
+        }
+        let requestID = action == .make ? try given.requestID() : try given.string("request_id")
+        var command = SubtitlesCommand(
+            action: action, item: item, requestID: requestID, language: try given.string("language"), engine: engine,
+            format: format)
+        if action == .make {
+            command.fingerprint = String(repeating: "0", count: 64)
+            if let problem = command.problem { throw .badRequest("subtitles: \(problem)") }
+            // Free: the fingerprint is the request's parameters alone.
+            command.fingerprint = nil
+            command.fingerprint = try Self.fingerprint("subtitles", command, files: [], nil)
+        }
+        if let problem = command.problem { throw .badRequest("subtitles: \(problem)") }
+        return .subtitles(command)
+    }
+
     static func deliverySet(_ given: Arguments) throws(AgentError) -> AgentCommand {
         try given.allow(["action", "name", "items", "set", "folder", "wait_seconds"])
         guard let name = try given.string("action"), let action = AgentDeliveryAction(rawValue: name) else {
