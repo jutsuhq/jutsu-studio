@@ -38,6 +38,8 @@ struct LibraryImageActions {
     var newDeliverySet: ([UUID]) -> Void
     /// Opens Upscale › On this Mac for the image.
     var upscaleOnDevice: (SavedImage) -> Void
+    /// Opens Compare with the version the image was made from; `nil` when it has none (`MaterialVersions`).
+    var compareWithOriginal: (SavedImage) -> (() -> Void)?
 }
 
 /// One saved image in the shared grid, as a card like a video's. An image whose file can't be found (its drive may
@@ -260,6 +262,9 @@ struct LibraryImageMenu: View {
             Button("Details…") { actions.showDetails(row) }
         }
         Button("Compare…") { actions.compare(row) }
+        if images.count == 1, let compare = actions.compareWithOriginal(images[0]) {
+            Button("Compare with Original", action: compare)
+        }
         if images.count == 1 {
             OutsideEditButtons(
                 edit: { actions.editInOtherApp(row.id) }, importVersion: { actions.importEditedVersion(row.id) })

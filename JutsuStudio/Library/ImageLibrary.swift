@@ -31,6 +31,8 @@ final class ImageLibrary {
     /// Account images being downloaded into the library, by generation ID: a second "Download to Library"
     /// of one generation joins the first instead of saving it twice.
     @ObservationIgnored private var imports: [String: Task<SavedImage?, Never>] = [:]
+    /// The runs on this Mac, which `trash` stops for its images first; set once at launch.
+    @ObservationIgnored weak var onDeviceRuns: OnDeviceRuns?
 
     init(layout: FileLayout, outputFolder: OutputFolder, catalog: SwiftDataStore) {
         self.layout = layout
@@ -211,11 +213,27 @@ final class ImageLibrary {
     /// An image whose file can't be moved stays listed; the others still go, and then the first failure is thrown.
     func trash(_ ids: Set<UUID>) async throws {
         try? await self.pending.removePending(ids)
+        // A run on this Mac would add a version to an image in the Trash: stopped first.
+        await onDeviceRuns?.stop(ids)
+        // The files of earlier versions in the output folders go too (`MaterialVersions.earlierFiles`), first; none
+        // while the delivery sets, which keep theirs, can't be read.
+        let materials = (try? await catalog.materials().filter { ids.contains($0.id) }) ?? []
+        let held = try? await MaterialVersions.held(by: catalog.deliverySets())
+        let owns = outputFolder.owns
+        let earlier = Dictionary(
+            materials.map { material in
+                (material.id, held.map { MaterialVersions.earlierFiles(of: material, held: $0, owns: owns) } ?? [])
+            },
+            uniquingKeysWith: { first, _ in first })
         var trashed: Set<UUID> = []
         var notTrashed: [any Error] = []
         for image in images where ids.contains(image.id) {
             guard FileManager.default.fileExists(atPath: image.fileURL.path(percentEncoded: false)) else { continue }
             do {
+                for file in earlier[image.id] ?? []
+                where FileManager.default.fileExists(atPath: file.path(percentEncoded: false)) {
+                    try FileManager.default.trashItem(at: file, resultingItemURL: nil)
+                }
                 try FileManager.default.trashItem(at: image.fileURL, resultingItemURL: nil)
                 trashed.insert(image.id)
             } catch {

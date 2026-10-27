@@ -189,7 +189,8 @@ import Testing
         #expect(LibraryDeleteConfirmation.message(count: 1) == LibraryDeleteConfirmation.message)
         #expect(
             LibraryDeleteConfirmation.message(count: 2)
-                == "The video files move to the Trash and their history entries are removed.")
+                == "The video files and their earlier versions made in Jutsu Studio move to the Trash, and their "
+                + "history entries are removed.")
     }
 
     @Test func batchDeletesOnlyTheUnstarred() throws {

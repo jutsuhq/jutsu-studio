@@ -271,7 +271,8 @@ final class AppEnvironment {
         }
     }
 
-    /// Forgets earlier output folders that no job's result, download or saved image is in any more. Skipped when the
+    /// Forgets earlier output folders that no job's result, download or catalog file is in any more: every version of
+    /// every item (`ImageLibrary.storedFiles`), so one holding only earlier versions is kept. Skipped when the
     /// store or the image index can't be read, so a folder is never forgotten while its results might still be in the
     /// library. An image on a drive that isn't connected stays in the index, so its folder is kept too.
     private func pruneOutputFolders() {

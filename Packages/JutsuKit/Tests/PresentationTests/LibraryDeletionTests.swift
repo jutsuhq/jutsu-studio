@@ -1,5 +1,6 @@
 import Foundation
 import JutsuCore
+import JutsuTestSupport
 import Testing
 
 @testable import Presentation
@@ -78,6 +79,63 @@ private final class FakeRecords: LibraryRecords {
         #expect(records.deleted == [items[2].id])
         #expect(message.title == "Can't move 2 files to the Trash")
         #expect(message.message.hasPrefix("They stay in the Library. "))
+    }
+
+    @Test func earlierVersionsGoToTheTrashWithTheCurrentFile() throws {
+        let items = [Self.item("upscaled"), Self.item("other")]
+        let earlier = URL(fileURLWithPath: "/home/me/Movies/Jutsu Studio/original.mp4")
+        let trash = FakeTrash()
+        let records = FakeRecords()
+
+        let message = LibraryDeletion.delete(
+            items, trash: trash, records: records, earlierFiles: { $0 == items[0].id ? [earlier] : [] })
+
+        #expect(message == nil)
+        #expect(trash.trashed == [earlier, items[0].outputFile, items[1].outputFile])
+        #expect(records.deleted == items.map(\.id))
+    }
+
+    @Test func anEarlierVersionThatCantBeTrashedKeepsTheItem() throws {
+        let item = Self.item("upscaled")
+        let earlier = URL(fileURLWithPath: "/home/me/Movies/Jutsu Studio/original.mp4")
+        let trash = FakeTrash()
+        trash.stuck = [earlier]
+        let records = FakeRecords()
+
+        _ = try #require(
+            LibraryDeletion.delete([item], trash: trash, records: records, earlierFiles: { _ in [earlier] }))
+
+        #expect(trash.trashed.isEmpty)
+        #expect(records.deleted.isEmpty)
+    }
+
+    @Test func aRunOnTheItemStopsBeforeItsFilesGo() async throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "LibraryDeletion-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let name = "LibraryDeletionTests-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: name))
+        defaults.removePersistentDomain(forName: name)
+        let engine = FakeOnDeviceEngine()
+        var registered = 0
+        let runs = OnDeviceRuns(engine: engine, consent: OnDeviceModelConsent(defaults: defaults)) { _, _, _ in
+            registered += 1
+        }
+        let item = Self.item("rooftop")
+        let videos = folder.appending(path: "Videos")
+        runs.start(
+            OnDeviceRuns.Request(
+                source: MaterialReference(materialID: item.id, versionID: item.id),
+                file: folder.appending(path: "a.mp4"),
+                action: .smoothMotion(.fps60), destination: videos, scratch: videos))
+        await eventually { engine.isRunning }
+        let trash = FakeTrash()
+        let records = FakeRecords()
+
+        let message = await LibraryDeletion.delete([item], stopping: runs, trash: trash, records: records)
+
+        #expect(message == nil && records.deleted == [item.id])
+        #expect(runs.runs.isEmpty && !engine.isRunning && registered == 0)
+        #expect(((try? FileManager.default.contentsOfDirectory(atPath: videos.path)) ?? []).isEmpty)
     }
 
     @Test func aFailedSaveIsReportedBeforeAnyTrashFailure() throws {

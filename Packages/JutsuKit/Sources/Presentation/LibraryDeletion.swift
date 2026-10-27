@@ -19,21 +19,36 @@ public protocol LibraryRecords {
 /// Delete from Library: each file goes to the Trash first, then its record is removed. A record whose file couldn't
 /// be moved is kept, so nothing is lost silently.
 public enum LibraryDeletion {
-    /// Deletes `items` and returns what to tell the user when something was left; `nil` when everything was deleted.
-    /// An item without a record only loses its file.
+    /// Stops the runs on this Mac started on `items` (`OnDeviceRuns.stop`) and waits for them, so no result lands on
+    /// an item already in the Trash, then deletes them as below.
     @MainActor
     public static func delete(
-        _ items: [LibraryItemModel], trash: any LibraryTrash, records: any LibraryRecords
+        _ items: [LibraryItemModel], stopping runs: OnDeviceRuns, trash: any LibraryTrash, records: any LibraryRecords,
+        earlierFiles: (UUID) -> [URL] = { _ in [] }
+    ) async -> UserMessage? {
+        await runs.stop(Set(items.map(\.id)))
+        return delete(items, trash: trash, records: records, earlierFiles: earlierFiles)
+    }
+
+    /// Deletes `items` and returns what to tell the user when something was left; `nil` when everything was deleted.
+    /// An item without a record only loses its file.
+    /// - Parameter earlierFiles: the files of an item's earlier versions the app keeps
+    ///   (`MaterialVersions.earlierFiles`), which go to the Trash before its current file.
+    @MainActor
+    public static func delete(
+        _ items: [LibraryItemModel], trash: any LibraryTrash, records: any LibraryRecords,
+        earlierFiles: (UUID) -> [URL] = { _ in [] }
     ) -> UserMessage? {
         var notTrashed: [any Error] = []
         for item in items {
-            if let url = item.outputFile, trash.fileExists(at: url) {
-                do {
+            do {
+                for url in earlierFiles(item.id) + [item.outputFile].compactMap(\.self) where trash.fileExists(at: url)
+                {
                     try trash.moveToTrash(url)
-                } catch {
-                    notTrashed.append(error)
-                    continue
                 }
+            } catch {
+                notTrashed.append(error)
+                continue
             }
             records.delete(item.id)
         }

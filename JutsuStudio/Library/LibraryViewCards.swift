@@ -100,7 +100,8 @@ extension LibraryView {
             },
             open: open, toggleSelection: { selected.toggle($0) }, clearSelection: { selected.clear() },
             delete: { pendingDelete = $0 }, report: { exportMessage = $0 }, renderFinals: { finalsBatch = $0 },
-            editInOtherApp: editInOtherApp, importEditedVersion: importEditedVersion)
+            editInOtherApp: editInOtherApp, importEditedVersion: importEditedVersion,
+            compareWithOriginal: originalCompare)
     }
 
     /// The Library menu over the grid acts on the selected results, as the selection bar does.
@@ -149,8 +150,9 @@ extension LibraryView {
     /// Deleted results leave the selection; one whose file couldn't be moved to the Trash stays in the library.
     func delete(_ items: [LibraryItemModel]) {
         let ids = Set(items.map(\.id))
-        exportMessage = environment.deleteFromLibrary(items, records: records.filter { ids.contains($0.id) })
+        let records = records.filter { ids.contains($0.id) }
         selected.clear()
+        Task { exportMessage = await environment.deleteFromLibrary(items, records: records) }
     }
 
     func setStarred(_ isStarred: Bool, _ items: [LibraryItemModel]) {

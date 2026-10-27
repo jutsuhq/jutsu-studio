@@ -30,16 +30,21 @@ extension SwiftDataStore {
     /// Adds `file`, an edit of `source` made in another app and already copied into the output folder, as the new
     /// current version of the same material, linked to that exact version as its parent. The source version and its
     /// file are untouched, and so is every delivery set that holds it.
-    /// - Parameter media: the file's length and size when known, as an on-device Enhance run reads them back; the
-    ///   version then carries them rather than the source's.
+    /// - Parameters:
+    ///   - media: the file's length and size when known, as an on-device Enhance run reads them back; the version
+    ///     then carries them rather than the source's.
+    ///   - relists: whether a material taken off the Library lists again, as an edit brought back from another app
+    ///     does; `false` refuses it with `MaterialError.notListed`, for a run on this Mac whose item was deleted.
     /// - Returns: the material with its new version.
     @discardableResult
     public func addEditedVersion(
-        of source: MaterialReference, file: URL, media: OutputMedia? = nil, at date: Date = Date()
+        of source: MaterialReference, file: URL, media: OutputMedia? = nil, relists: Bool = true,
+        at date: Date = Date()
     ) throws -> Material {
         do {
             guard let record = try materialRecord(id: source.materialID) else { throw MaterialError.missingMaterial }
             var material = try record.material()
+            guard relists || !material.isHidden else { throw MaterialError.notListed }
             guard let original = material.versions.first(where: { $0.id == source.versionID }) else {
                 throw MaterialError.missingMaterial
             }
