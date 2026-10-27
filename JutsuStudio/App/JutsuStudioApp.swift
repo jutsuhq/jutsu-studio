@@ -59,10 +59,12 @@ struct JutsuStudioApp: App {
                 .environment(environment)
                 .environment(environment.liveJobs)
                 .environment(environment.connection)
+                .environment(appDelegate.agents)
                 .preferredColorScheme(.dark)
                 .tint(Theme.accent)
         } label: {
             MenuBarLabel(system: appDelegate.system)
+                .environment(environment)
                 .environment(environment.liveJobs)
         }
         .menuBarExtraStyle(.window)

@@ -37,6 +37,8 @@ my %reviewed = map { $_ => 1 } (
     "JutsuStudio/Create/AppEnvironment+ModelConstraints.swift|difference",
     # REST routes on the API host, whose only variable part is a request ID.
     "Packages/HiggsfieldKit/Sources/HiggsfieldAPI/HiggsfieldAPIClient.swift|path",
+    # Where the status item sits on screen, in a Debug-only screenshot hook.
+    "JutsuStudio/System/DebugPanelPreview.swift|NSStringFromRect(window.frame)",
     # The wrapper itself; its callers are checked below.
     "Packages/JutsuKit/Sources/JobEngine/EngineLog.swift|message",
     "Packages/JutsuKit/Sources/Presentation/PresentationLog.swift|message",

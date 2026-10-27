@@ -23,6 +23,11 @@ final class AgentService {
     }
 
     private(set) var status = Status.idle
+    /// The clients that sent requests lately and the requests waiting for the person, for the menu bar panel.
+    var activity = AgentActivity()
+    /// Settings › Agents › Allow agents, the one value Settings and the menu bar panel show and change
+    /// (`setAllowed`); every command reads the saved preference.
+    private(set) var isAllowed: Bool
 
     @ObservationIgnored let environment: AppEnvironment
     @ObservationIgnored let system: SystemIntegration
@@ -41,6 +46,7 @@ final class AgentService {
         self.environment = environment
         self.system = system
         self.preferences = preferences
+        isAllowed = preferences.isAllowed
         requests = AgentRequestGate(log: environment.agentRequests)
         let priceUnit = { @MainActor in environment.connection.state.kind.map(AgentBudgetUnit.init(for:)) ?? .usdCents }
         onDeviceAgent = AgentOnDeviceRuns(runs: environment.onDevice, priceUnit: priceUnit)
@@ -69,6 +75,11 @@ final class AgentService {
         return "claude mcp add jutsu -- \"\(helper)\" mcp"
     }
 
+    func setAllowed(_ allowed: Bool) {
+        isAllowed = allowed
+        preferences.setAllowed(allowed)
+    }
+
     func start() {
         guard server == nil else { return }
         guard let socket = Self.socketURL else {
@@ -85,7 +96,15 @@ final class AgentService {
             freeSpace: URLSessionDownloader.freeSpace(for:),
             handle: { [weak self] request async throws(AgentError) -> AgentResponse in
                 guard let self else { throw AgentError.agentsOff }
-                return try await self.run(request.command, client: request.client)
+                self.noteRequest(from: request.client)
+                do throws(AgentError) {
+                    let response = try await self.run(request.command, client: request.client)
+                    self.noteAnswered(request.command)
+                    return response
+                } catch {
+                    await self.noteRefused(request.command, error)
+                    throw error
+                }
             })
         do {
             try server.start()
@@ -162,7 +181,6 @@ final class AgentService {
     private func capabilities(_ fields: CapabilitiesCommand) async throws(AgentError) -> AgentCapabilities {
         let state = environment.connection.state
         let connection: AgentCapabilities.Connection
-        var budget: AgentCapabilities.Budget?
         switch state {
         case .none:
             connection = AgentCapabilities.Connection(kind: .none)
@@ -171,19 +189,8 @@ final class AgentService {
         case .account(let account):
             connection = AgentCapabilities.Connection(kind: .account, plan: account.plan, credits: account.credits)
         }
-        if let kind = state.kind {
-            let taken = try await agentSpendToday(for: kind)
-            let cap = environment.spendCap(for: kind)
-            var capTaken: Int?
-            if let cap, let committed = try? await environment.committedToday(in: cap.unit) {
-                capTaken = AgentCap.money(committed, cap.unit)?.amount
-            }
-            budget = AgentCapabilities.Budget(
-                for: kind, dailyLimit: preferences.dailyBudget(for: kind), taken: taken,
-                allowsUnlimited: preferences.allowsUnlimited,
-                dailyCap: cap.flatMap { AgentCap.money($0.amount, $0.unit)?.amount }, capTakenToday: capTaken)
-        }
-        var answer = AgentCapabilities(appVersion: Self.appVersion, connection: connection, budget: budget)
+        var answer = AgentCapabilities(
+            appVersion: Self.appVersion, connection: connection, budget: try await budgetToday())
         answer.window = AgentCapabilities.Window(open: system.hasAppWindow, menuBarMode: system.runsInMenuBar)
         answer.onDevice = onDeviceAgent.capabilities()
         await environment.subtitles.loadAvailability()

@@ -1,6 +1,45 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Agents off" : {
+
+    },
+    "No agent connected" : {
+
+    },
+    "%@ connected" : {
+
+    },
+    "%lld agents connected" : {
+
+    },
+    "Your daily cap: %@ of %@" : {
+
+    },
+    "%@ spent" : {
+
+    },
+    "of %@" : {
+
+    },
+    "%@ reserved" : {
+
+    },
+    "%@ left" : {
+
+    },
+    "No agent budget set" : {
+
+    },
+    "An agent asks to download the upscale model" : {
+
+    },
+    "An agent asks to download a speech model" : {
+
+    },
+    "Cancel" : {
+
+    },
     "The video file and its earlier versions made in Jutsu Studio move to the Trash, and its history entry is removed." : {
 
     },
@@ -570,28 +609,6 @@
         }
       }
     },
-    "%lld jobs in the queue" : {
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld job in the queue"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld jobs in the queue"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "%lld jobs queued" : {
       "localizations" : {
         "en" : {
@@ -713,9 +730,6 @@
           }
         }
       }
-    },
-    "%lld paused" : {
-
     },
     "%lld ranges · %@" : {
       "localizations" : {
@@ -1258,9 +1272,6 @@
     "Credits" : {
 
     },
-    "Credits left: %@" : {
-
-    },
     "Cutout" : {
 
     },
@@ -1781,9 +1792,6 @@
 
     },
     "Newest first" : {
-
-    },
-    "No jobs in the queue" : {
 
     },
     "No videos on Higgsfield yet" : {

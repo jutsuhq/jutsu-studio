@@ -25,7 +25,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         var launch = Self.launch()
         #if DEBUG
             if DebugLaunchHooks.startsHidden { launch = .login }
-            DebugLaunchHooks.run(system: system, navigation: environment.navigation)
+            DebugLaunchHooks.run(system: system, environment: environment, agents: agents)
         #endif
         if MenuBarMode.startsHidden(launch, isOn: system.runsInMenuBar) {
             system.startHidden()

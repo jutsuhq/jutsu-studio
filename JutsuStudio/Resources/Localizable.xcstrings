@@ -1,6 +1,42 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@ · %@ %@" : {
+
+    },
+    "Library item" : {
+
+    },
+    "Quit Jutsu Studio" : {
+
+    },
+    "Open the item's sheet" : {
+
+    },
+    "Show in Library" : {
+
+    },
+    "Show %@ in Finder" : {
+
+    },
+    "Today" : {
+
+    },
+    "Running" : {
+
+    },
+    "Recent" : {
+
+    },
+    "Needs you" : {
+
+    },
+    "Pause the agents' jobs" : {
+
+    },
+    "Resume the agents' jobs" : {
+
+    },
     "Stays open with no window, without a Dock icon" : {
 
     },

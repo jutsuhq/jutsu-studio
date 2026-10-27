@@ -119,7 +119,7 @@ Images and videos share one persistent material catalog. It retains versions, th
 ## Runs in the background
 
 - Close the window and the jobs keep going.
-- Live status and credits in the menu bar (can be hidden, optionally with the active job count), with actions on results and jobs right from the menu.
+- Live status in the menu bar (can be hidden, optionally with the active job count), its icon filling as work runs: the connection and the agents with Pause agents, today's agent budget, what needs you, what runs with Cancel, and the last results, each opening where it belongs.
 - A Dock badge, and notifications when a job is done, failed, rejected or paused, each with its own switch and an optional sound.
 - Run in the menu bar: Jutsu Studio stays running with every window closed and leaves the Dock until a window opens, and Open at login starts it with no window. When an agent needs it, the `jutsu` helper starts it the same way, in the background.
 - Open at login, and a warning before quitting with jobs, image requests or character sheets in flight. Closing the last window keeps the app running for them, and quitting waits a few seconds for requests being sent and images being saved.

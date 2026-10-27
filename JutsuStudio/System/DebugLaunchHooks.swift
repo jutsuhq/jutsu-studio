@@ -3,8 +3,8 @@
     import JutsuCore
     import Presentation
 
-    /// Launch hooks for checking the window lifecycle without clicking through the UI, compiled into Debug builds
-    /// only and read from the environment, which a release build never looks at.
+    /// Launch hooks for checking the window lifecycle and the menu bar panel without clicking through the UI, compiled
+    /// into Debug builds only and read from the environment, which a release build never looks at.
     @MainActor
     enum DebugLaunchHooks {
         /// `1`: starts as a login launch in menu bar mode does, with no window.
@@ -20,10 +20,35 @@
         nonisolated static let offlineVariable = "JUTSU_DEBUG_OFFLINE"
         /// `create`, `queue`, `library` or `settings`: the page the window opens on.
         static let pageVariable = "JUTSU_DEBUG_PAGE"
+        /// `idle`, `running`, `needs`, `recent` or `all`: the menu bar panel shows made-up jobs, runs, agents and
+        /// budget in that state (`DebugPanelSeed`). The jobs live in `LiveJobs` only and never reach the engine.
+        static let panelVariable = "JUTSU_DEBUG_PANEL"
+        /// A video the made-up results show as their file: a path the sandbox lets the app read, or a URL its
+        /// thumbnails are read from as a remote result's are.
+        static let panelMediaVariable = "JUTSU_DEBUG_PANEL_MEDIA"
+        /// `1`: a window shows the menu bar panel's content and the status item's images (`DebugPanelPreview`): the
+        /// extra's own window opens only on a click in the menu bar, which nothing in the app can send.
+        static let previewVariable = "JUTSU_DEBUG_PANEL_PREVIEW"
+        /// `1`: the panel uses the materials and bordered controls of macOS before 26.
+        static let fallbackVariable = "JUTSU_DEBUG_PANEL_FALLBACK"
+        /// `1`: the panel draws as with Reduce Transparency on.
+        static let reduceTransparencyVariable = "JUTSU_DEBUG_REDUCE_TRANSPARENCY"
 
         private static var environment: [String: String] { ProcessInfo.processInfo.environment }
 
         static var startsHidden: Bool { environment[startHiddenVariable] == "1" }
+        static var forcesMaterialFallback: Bool { environment[fallbackVariable] == "1" }
+        static var reducesTransparency: Bool { environment[reduceTransparencyVariable] == "1" }
+        static var panelState: DebugPanelSeed.State? { environment[panelVariable].flatMap(DebugPanelSeed.State.init) }
+
+        /// The made-up runs on this Mac, in place of the real ones while a panel state is set.
+        static var panelRuns: [MenuBarPanel.Run]? { panelState.map(DebugPanelSeed.runs) }
+
+        /// The made-up agents and budget, while a panel state is set.
+        static func seedPanel(_ input: inout MenuBarPanel.AgentsInput) {
+            guard let panelState else { return }
+            input = DebugPanelSeed.agents(panelState)
+        }
 
         nonisolated static var isOffline: Bool { ProcessInfo.processInfo.environment[offlineVariable] == "1" }
 
@@ -48,8 +73,17 @@
             func clear() {}
         }
 
-        static func run(system: SystemIntegration, navigation: NavigationModel) {
-            if let page = environment[pageVariable].flatMap(Screen.init(rawValue:)) { navigation.selection = page }
+        static func run(system: SystemIntegration, environment app: AppEnvironment, agents: AgentService) {
+            if let page = environment[pageVariable].flatMap(Screen.init(rawValue:)) { app.navigation.selection = page }
+            if let panelState {
+                let media = environment[panelMediaVariable].flatMap {
+                    $0.hasPrefix("/") ? URL(filePath: $0) : URL(string: $0)
+                }
+                for job in DebugPanelSeed.jobs(panelState, media: media) { app.liveJobs.apply(job) }
+            }
+            if environment[previewVariable] == "1" {
+                DebugPanelPreview.show(system: system, environment: app, agents: agents)
+            }
             if let seconds = environment[closeWindowsVariable].flatMap(Double.init) {
                 Task {
                     try? await Task.sleep(for: .seconds(seconds))
