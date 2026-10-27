@@ -14,7 +14,7 @@ allowed() {
         HiggsfieldCore) echo "Foundation FoundationNetworking" ;;
         HiggsfieldAPI) echo "Foundation FoundationNetworking HiggsfieldCore os" ;;
         HiggsfieldMCP) echo "Foundation FoundationNetworking HiggsfieldCore CryptoKit Network os" ;;
-        MediaKit) echo "Foundation JutsuCore AVFoundation CoreMedia CoreVideo CoreImage CoreGraphics ImageIO UniformTypeIdentifiers CryptoKit VideoToolbox os" ;;
+        MediaKit) echo "Foundation JutsuCore AVFoundation CoreMedia CoreVideo CoreImage CoreGraphics ImageIO UniformTypeIdentifiers CryptoKit VideoToolbox Speech os" ;;
         Persistence) echo "Foundation JutsuCore SwiftData os" ;;
         JobEngine) echo "Foundation FoundationNetworking JutsuCore HiggsfieldCore os" ;;
         # JutsuAgent for the agents' wire types it builds from jobs and Library rows.

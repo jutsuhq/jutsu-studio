@@ -86,6 +86,8 @@ public struct MaterialVersion: Codable, Sendable, Hashable, Identifiable {
     public var video: Job?
     /// Each version is culled on its own: a new edit starts unreviewed.
     public var culling: Culling = .unreviewed
+    /// Made from this version's own file; a new version starts without any.
+    public var subtitles: Subtitles?
 
     public init(
         id: UUID = UUID(), createdAt: Date = Date(), fileURL: URL? = nil, remoteURL: URL? = nil,

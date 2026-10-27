@@ -15,6 +15,8 @@ struct LibraryCard: View {
     var isSelected = false
     /// An Enhance run on this Mac making the item's next version.
     var onDeviceRun: OnDeviceRuns.Run?
+    /// Subtitles being made for the item's current version.
+    var subtitleRun: SubtitleRuns.Run?
     @State private var isHovered = false
 
     var body: some View {
@@ -44,6 +46,8 @@ struct LibraryCard: View {
                         ProgressView().controlSize(.small).accessibilityLabel("Downloading")
                     } else if let onDeviceRun {
                         OnDeviceRunBadge(run: onDeviceRun)
+                    } else if let subtitleRun {
+                        OnDeviceRunBadge(run: subtitleRun)
                     }
                 }
                 .overlay(alignment: .bottomLeading) {

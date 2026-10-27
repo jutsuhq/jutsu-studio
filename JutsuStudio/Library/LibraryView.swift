@@ -229,6 +229,11 @@ struct LibraryView: View {
                 exportMessage = failure
                 environment.onDevice.failure = nil
             }
+            .onChange(of: environment.subtitles.failure, initial: true) { _, failure in
+                guard let failure else { return }
+                exportMessage = failure
+                environment.subtitles.failure = nil
+            }
     }
 }
 

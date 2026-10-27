@@ -188,6 +188,7 @@ struct LibraryDetail: View {
                 if item.spec.operation == nil { editButton }
                 EnhanceMenu(item: item, version: (try? record?.material())?.reference)
                 OnDeviceRunRow(materialID: item.id)
+                SubtitlesSection(item: item, subtitles: (try? record?.material())?.current.subtitles)
                 if JoinWithOriginal.isAvailable(for: item) {
                     joinButton
                 }

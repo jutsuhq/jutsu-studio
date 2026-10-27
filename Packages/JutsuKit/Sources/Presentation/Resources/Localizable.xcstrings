@@ -2928,6 +2928,42 @@
           }
         }
       }
+    },
+    "Subtitles" : {
+
+    },
+    "The subtitles belong to this version of the item. A later version starts without them." : {
+
+    },
+    "Only the sound is read; nothing leaves this Mac." : {
+
+    },
+    "Making subtitles" : {
+
+    },
+    "Can't make the subtitles" : {
+
+    },
+    "No speech found" : {
+
+    },
+    "Can't open the video's file. It was moved or deleted, or the app may no longer read it." : {
+
+    },
+    "No speech model on this Mac takes this language." : {
+
+    },
+    "The speech model for this language isn't on this Mac yet. Agree to its download in Subtitles…." : {
+
+    },
+    "Hearing this language needs a speech model macOS downloads from Apple once, about 200 MB. It stays for later runs." : {
+
+    },
+    "Download the speech model" : {
+
+    },
+    "%lld words" : {
+
     }
   },
   "version" : "1.0"

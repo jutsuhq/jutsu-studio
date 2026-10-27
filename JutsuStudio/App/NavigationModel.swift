@@ -27,6 +27,8 @@ final class NavigationModel {
     var pendingMakeVideo: MakeVideoRequest?
     /// An Enhance sheet on this Mac an agent asked the person to see (`show` with a sheet); `nil` once closed.
     var onDeviceSheet: OnDeviceTarget?
+    /// The Subtitles sheet of an item's version, from its menus or an agent's `show`; `nil` once closed.
+    var subtitlesSheet: SubtitleTarget?
     /// The Create form, kept here so it survives switching screens, and saved so it survives a relaunch.
     /// Replace it as a whole through `replaceDraft`, which offers the edits it loses back.
     var createDraft: CreateForm {

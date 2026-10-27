@@ -27,7 +27,8 @@ extension LibraryView {
                 item: item, now: now,
                 isImporting: item.historyItem.map { environment.importingHistory.contains($0.id) } ?? false,
                 isPicked: picker?.isPicked(item.id) ?? false, isSelected: isSelected,
-                onDeviceRun: environment.onDevice.run(for: item.id))
+                onDeviceRun: environment.onDevice.run(for: item.id),
+                subtitleRun: environment.subtitles.run(for: item.id))
         }
         .buttonStyle(.plain)
         .pointerCursor()
