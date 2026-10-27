@@ -4,6 +4,8 @@ Notable changes to Jutsu Studio. Versions follow [Semantic Versioning](https://s
 
 ## [Unreleased]
 
+## [0.2.5] - 2026-10-27
+
 ### Added
 
 - Enhance › Smooth Motion… makes new frames between a result's own on this Mac, free and without an account: 60 fps keeps the clip's length and sound, 2× and 4× Slow Motion play it longer at its own frame rate without sound. Across a hard cut a frame is repeated instead of blending the two shots. The sheet says how long it takes; the result becomes a new version of the item, linked to the version it was made from, which stays as it is. Runs go one at a time at background priority, one per item until its new version is in, show their progress on the card and the result's page, and can be canceled, leaving no file behind. Needs macOS 15.4 or later.
@@ -20,6 +22,7 @@ Notable changes to Jutsu Studio. Versions follow [Semantic Versioning](https://s
 ### Fixed
 
 - Delete from Library moves the files of an item's earlier versions in the output folder to the Trash too, not only the current one, and the confirmation says so; files of versions that live elsewhere or that a delivery set holds are left alone. A run on this Mac on the item stops first, so its result never brings the item back.
+- An export that fell back to re-encoding read and wrote its frames on Swift's shared threads, where blocked calls could stall other media work; it now runs on a thread of its own.
 
 ## [0.2.2] - 2026-10-24
 
@@ -86,7 +89,8 @@ The first public release.
 - The restyle preset gallery with search, favorites and recents.
 - Menu bar status, Dock badge, notifications and open at login.
 
-[Unreleased]: https://github.com/jutsuhq/jutsu-studio/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/jutsuhq/jutsu-studio/compare/v0.2.5...HEAD
+[0.2.5]: https://github.com/jutsuhq/jutsu-studio/compare/v0.2.2...v0.2.5
 [0.2.2]: https://github.com/jutsuhq/jutsu-studio/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/jutsuhq/jutsu-studio/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/jutsuhq/jutsu-studio/compare/v0.1.1...v0.2.0
