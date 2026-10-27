@@ -25,19 +25,24 @@ final class AgentService {
     private(set) var status = Status.idle
 
     @ObservationIgnored let environment: AppEnvironment
-    @ObservationIgnored private let system: SystemIntegration
+    @ObservationIgnored let system: SystemIntegration
     @ObservationIgnored let preferences: AgentPreferences
     @ObservationIgnored var server: AgentServer?
     /// The paid requests, `create_video`, `create_image` and `enhance`, each run once for its request ID.
     @ObservationIgnored let requests: AgentRequestGate<AgentCreated, AgentError>
     /// The exports agents started, followed with `jobs`; in memory, so a relaunch forgets them.
     @ObservationIgnored let operations = AgentOperations()
+    /// The Enhance runs on this Mac agents started, followed with `jobs`; in memory too.
+    @ObservationIgnored let onDeviceAgent: AgentOnDeviceRuns
 
     init(environment: AppEnvironment, system: SystemIntegration, preferences: AgentPreferences = AgentPreferences()) {
         self.environment = environment
         self.system = system
         self.preferences = preferences
         requests = AgentRequestGate(log: environment.agentRequests)
+        onDeviceAgent = AgentOnDeviceRuns(runs: environment.onDevice) {
+            environment.connection.state.kind.map(AgentBudgetUnit.init(for:)) ?? .usdCents
+        }
     }
 
     /// Where the socket goes: the app group's container, which the helper finds from the group in Info.plist.
@@ -174,6 +179,7 @@ final class AgentService {
                 dailyCap: cap.flatMap { AgentCap.money($0.amount, $0.unit)?.amount }, capTakenToday: capTaken)
         }
         var answer = AgentCapabilities(appVersion: Self.appVersion, connection: connection, budget: budget)
+        answer.onDevice = onDeviceAgent.capabilities()
         if fields.models {
             answer.models = try models(fields.model, connection: state.kind)
         }
@@ -241,7 +247,9 @@ final class AgentService {
     private func show(_ fields: ShowCommand) async throws(AgentError) -> AgentShown {
         let navigation = environment.navigation
         let shown: AgentShown
-        if let id = fields.job, await job(id) == nil, let image = environment.agentImages.record(id) {
+        if let item = fields.item, let sheet = fields.sheet {
+            shown = try await showSheet(sheet, for: item)
+        } else if let id = fields.job, await job(id) == nil, let image = environment.agentImages.record(id) {
             if image.isOver {
                 navigation.selection = .library
                 shown = AgentShown(page: .library, job: id)
@@ -275,11 +283,6 @@ final class AgentService {
         }
         system.showMainWindow()
         return shown
-    }
-
-    func job(_ id: UUID) async -> Job? {
-        if let job = environment.liveJobs.job(id) { return job }
-        return try? await environment.store.job(id: id)
     }
 
     private static var appVersion: String {

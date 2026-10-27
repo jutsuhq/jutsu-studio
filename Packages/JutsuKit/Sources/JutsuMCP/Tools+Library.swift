@@ -101,22 +101,24 @@ extension Tool {
 
     static func enhance(_ given: Arguments) throws(AgentError) -> AgentCommand {
         try given.allow([
-            "request_id", "item", "operation", "target", "frame_rate", "engine", "aspect_ratio", "language", "voice",
-            "max_cost",
+            "request_id", "item", "operation", "target", "frame_rate", "engine", "mode", "aspect_ratio", "language",
+            "voice", "max_cost",
         ])
         let requestID = try given.requestID()
-        let maxCost = try given.maxCost()
         guard let item = try given.string("item").flatMap(UUID.init(uuidString:)) else {
-            throw .badRequest("enhance needs item, a video's Library ID from library_search")
+            throw .badRequest("enhance needs item, a Library ID from library_search")
         }
         guard let name = try given.string("operation"), let operation = AgentEnhancement(rawValue: name) else {
             let names = AgentEnhancement.allCases.map(\.rawValue).joined(separator: ", ")
             throw .badRequest("enhance needs operation, one of \(names)")
         }
+        let engine = try given.string("engine")
+        // A run on this Mac is free: max_cost, sent or not, plays no part in it or in its fingerprint.
+        let maxCost = EnhanceCommand.isOnDevice(operation, engine: engine) ? nil : try given.maxCost()
         var command = EnhanceCommand(
             requestID: requestID, fingerprint: String(repeating: "0", count: 64), item: item, operation: operation,
-            target: try given.string("target"), frameRate: try given.int("frame_rate"),
-            engine: try given.string("engine"), aspectRatio: try given.string("aspect_ratio"),
+            target: try given.string("target"), frameRate: try given.int("frame_rate"), engine: engine,
+            mode: try given.string("mode"), aspectRatio: try given.string("aspect_ratio"),
             language: try given.string("language"), voice: try given.string("voice"), maxCost: maxCost)
         if let problem = command.problem { throw .badRequest("enhance: \(problem)") }
         command.fingerprint = try Self.fingerprint("enhance", command, files: [], maxCost)

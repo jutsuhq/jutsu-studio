@@ -1,9 +1,9 @@
 import Foundation
 
-// The commands of stage 3: create_image, library_search, library_mark and enhance (delivery_set and export are in
-// AgentDelivery.swift), and what they answer. Each command checks its own fields as it decodes
-// (`AgentFields.problem`), so the app refuses a malformed one with `bad_request` whatever sent it; the helper runs
-// the same checks before it reads any file.
+// The commands of stage 3: create_image, library_search and library_mark (enhance is in AgentEnhance.swift,
+// delivery_set and export in AgentDelivery.swift), and what they answer. Each command checks its own fields as it
+// decodes (`AgentFields.problem`), so the app refuses a malformed one with `bad_request` whatever sent it; the helper
+// runs the same checks before it reads any file.
 
 /// A command whose fields are checked as one, after they decode.
 protocol AgentFields: Decodable {
@@ -369,100 +369,5 @@ public struct AgentMarked: Codable, Equatable, Sendable {
     public init(items: [Item], changed: Int) {
         self.items = items
         self.changed = changed
-    }
-}
-
-// MARK: enhance
-
-/// The operations of the Library's Enhance menu.
-public enum AgentEnhancement: String, Codable, Sendable, CaseIterable {
-    case upscale, reframe
-    case removeBackground = "remove_background"
-    case dub
-    case changeVoice = "change_voice"
-}
-
-/// One Enhance operation on a video result, queued as the Enhance sheet queues it, idempotent by its request ID.
-public struct EnhanceCommand: Codable, Equatable, Sendable, AgentFields {
-    /// A voice ID's length, in UTF-8 bytes, which the schema's `maxLength` states for the ASCII IDs it takes.
-    public static let maxVoiceLength = 128
-
-    public var requestID: String
-    /// `AgentFingerprint` of the request's parameters and `max_cost`.
-    public var fingerprint: String
-    /// The Library item, a video result.
-    public var item: UUID
-    public var operation: AgentEnhancement
-    /// Upscale: "1080p", "2k" or "4k"; 1080p when left out.
-    public var target: String?
-    /// Upscale: 24, 30 or 60; 24 when left out.
-    public var frameRate: Int?
-    /// Upscale: "standard"; "topaz" is refused, as its price is known only after it runs.
-    public var engine: String?
-    /// Reframe: "9:16", "1:1" or "16:9".
-    public var aspectRatio: String?
-    /// Dub: an ISO 639-3 code such as "fra".
-    public var language: String?
-    /// Change Voice: a voice ID from `capabilities` (`voices`).
-    public var voice: String?
-    public var maxCost: AgentAmount
-
-    public init(
-        requestID: String, fingerprint: String, item: UUID, operation: AgentEnhancement, target: String? = nil,
-        frameRate: Int? = nil, engine: String? = nil, aspectRatio: String? = nil, language: String? = nil,
-        voice: String? = nil, maxCost: AgentAmount
-    ) {
-        self.requestID = requestID
-        self.fingerprint = fingerprint
-        self.item = item
-        self.operation = operation
-        self.target = target
-        self.frameRate = frameRate
-        self.engine = engine
-        self.aspectRatio = aspectRatio
-        self.language = language
-        self.voice = voice
-        self.maxCost = maxCost
-    }
-
-    private enum CodingKeys: String, CodingKey {
-        case requestID = "requestId"
-        case fingerprint, item, operation, target, frameRate, engine, aspectRatio, language, voice, maxCost
-    }
-
-    public var problem: String? {
-        guard AgentNames.isValidRequestID(requestID) else { return AgentNames.requestIDRule }
-        guard AgentNames.isValidFingerprint(fingerprint) else { return "fingerprint is 64 lowercase hex digits" }
-        let options: [(String, Bool)] = [
-            ("target", target != nil), ("frame_rate", frameRate != nil), ("engine", engine != nil),
-            ("aspect_ratio", aspectRatio != nil), ("language", language != nil), ("voice", voice != nil),
-        ]
-        let allowed: Set<String> =
-            switch operation {
-            case .upscale: ["target", "frame_rate", "engine"]
-            case .reframe: ["aspect_ratio"]
-            case .removeBackground: []
-            case .dub: ["language"]
-            case .changeVoice: ["voice"]
-            }
-        if let extra = options.first(where: { $0.1 && !allowed.contains($0.0) }) {
-            return "\(operation.rawValue) takes no \(extra.0)"
-        }
-        switch operation {
-        case .reframe where aspectRatio == nil: return "reframe needs aspect_ratio: 9:16, 1:1 or 16:9"
-        case .dub where language == nil: return "dub needs language, an ISO 639-3 code such as fra"
-        case .changeVoice where voice == nil: return "change_voice needs voice, a voice ID from capabilities"
-        default: break
-        }
-        for value in [target, engine, aspectRatio, language] {
-            if let value, value.utf8.count > 16 {
-                return "\(value.prefix(16)) is not an option of \(operation.rawValue)"
-            }
-        }
-        if let voice, !(1...Self.maxVoiceLength).contains(voice.utf8.count) {
-            return "voice is a voice ID from capabilities"
-        }
-        if let frameRate, ![24, 30, 60].contains(frameRate) { return "frame_rate is 24, 30 or 60" }
-        return nil
     }
 }

@@ -57,10 +57,11 @@ extension AgentService {
 
     /// Records the request with the IDs of what it makes, before anything is queued or sent.
     func recordRequest(
-        _ requestID: String, fingerprint: String, parameters: String? = nil, jobIDs: [UUID]
+        _ requestID: String, fingerprint: String, parameters: String? = nil, jobIDs: [UUID], kind: String? = nil
     ) throws(AgentError) {
         do {
-            try requests.record(requestID, fingerprint: fingerprint, parameters: parameters, ids: jobIDs, at: .now)
+            try requests.record(
+                requestID, fingerprint: fingerprint, parameters: parameters, ids: jobIDs, at: .now, kind: kind)
         } catch {
             throw AgentError(
                 .failed, message: "Jutsu Studio can't record the request, so nothing is queued or sent.",

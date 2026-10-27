@@ -19,7 +19,11 @@ extension Tool {
             maxVariants, the most variants takes there on this connection, with variantsUnavailable saying why it is \
             1). image_models: true adds the image models create_image takes (counts, aspect ratios, whether input \
             images are needed, maxInputs, the most inputs it takes, with maxInputsNote when that is a bound because \
-            the catalog states none), styles: true Restyle's style IDs, voices: true Change Voice's voices. Free, and \
+            the catalog states none), styles: true Restyle's style IDs, voices: true Change Voice's voices. onDevice \
+            says what enhance runs free on this Mac: smoothMotion (its modes), upscaleVideo and upscaleImage, each \
+            with available, the largest source either way round (maxLongSide, maxShortSide) and its model: none, \
+            needs_consent (only the person can agree to macOS downloading it), downloading, ready (a run found it \
+            since the app started) or agreed (macOS downloads it at the first run if it isn't here yet). Free, and \
             never shows a credential.
             """
         case .quote:
@@ -82,10 +86,13 @@ extension Tool {
             """
         case .jobs:
             """
-            One place to follow work: video jobs, image requests and exports, by ID (ids, up to 20), or the latest \
-            agents started (limit, up to 50, newest first; pass nextCursor back as cursor for the page after). Each \
-            has kind (video, image, export, delivery_export), state, pauseReason, hold, needsPerson, progress, price, \
-            error and result (the finished video's path, with next saying how to check it with frames); an image \
+            One place to follow work: video jobs, image requests, exports and runs on this Mac, by ID (ids, up to 20), \
+            or the latest agents started (limit, up to 50, newest first; pass nextCursor back as cursor for the page \
+            after). Each has kind (video, image, export, delivery_export, on_device), state, pauseReason, hold, \
+            needsPerson, progress, price, error and result (the finished video's path, with next saying how to check \
+            it with frames); a run on this Mac (on_device) has operation, mode, item, the Library item whose new \
+            version it makes, estimatedSeconds and price 0, and is queued, downloading (its model), processing, done, \
+            failed or canceled; an image \
             request's results are its images' paths, an export's results the files written, with folder and files \
             (each done, failed or skipped). An ID Jutsu Studio doesn't know is state unknown with next: an export's ID \
             is forgotten when the app quits. wait_seconds (0–50) waits until everything named has settled (done, \
@@ -98,7 +105,8 @@ extension Tool {
             job agents queued that isn't sent yet; the person's own jobs are never touched. retry is refused when \
             the job may already have been charged or its files are gone; resume_queue resumes only what pause_queue \
             paused, never the person's own Pause all or a job paused for its price or the agent limits, which only \
-            the person can lift. An image request can only be canceled. Nothing is deleted.
+            the person can lift. An image request and a run on this Mac an agent started can only be canceled, which \
+            for a run deletes what it wrote so far. Nothing else is deleted.
             """
         case .librarySearch:
             """
@@ -119,7 +127,9 @@ extension Tool {
             the job sent them (role source, start_frame, end_frame, reference or edited_from; position, the N of the \
             prompt's @ImageN; file, the path on this Mac when it is here; item, its own Library ID when the Library \
             lists it; onHiggsfield; start and end, the source's range); and settings (resolution, draft, audio, \
-            style, length, aspectRatio, paidWithUnlimited, operation for an Enhance result, count for images). A \
+            style, length, aspectRatio, paidWithUnlimited, operation for an Enhance result, count for images); and \
+            madeFrom, for an item whose current version was made from an earlier one of its own (a run on this Mac, \
+            an edit in another app): that version's item, versionId, version and file, to compare or go back. A \
             result only on Higgsfield (include_higgsfield) is there too, as far as the history says it, with no file \
             and next pointing at library_download. IDs no item has are listed in notFound; the rest are answered. \
             Read-only.
@@ -141,13 +151,22 @@ extension Tool {
             """
         case .enhance:
             """
-            Queues one Enhance operation on a video result, as the Library's Enhance menu does: upscale (target \
-            1080p, 2k or 4k; frame_rate 24, 30 or 60; engine standard), reframe (aspect_ratio 9:16, 1:1 or 16:9, \
-            results up to a minute), remove_background, dub (language, an ISO 639-3 code) or change_voice (voice, \
-            from capabilities with voices). Needs a Higgsfield account. request_id and max_cost work as in \
-            create_video, and the job is checked by the same spending guard; one whose price isn't known waits for \
+            One Enhance operation on a Library result, as the Library's Enhance menu does. On this Mac, free, with no \
+            account, max_cost or budget: smooth_motion on a video (mode 60fps, keeping length and sound, or slow_2x \
+            and slow_4x, without sound) and upscale with engine mac, 4× a video up to 1280×720 or an image up to \
+            1920×1080, either way round; the result becomes the item's new version (library_get's madeFrom names the \
+            one before). Prefer it for drafts, for videos up to 720p and for smoothing motion or frame rate. Runs go \
+            one at a time; an item with a run going is refused with busy, a Mac without the engine with \
+            engine_unavailable, and an upscale before the person agreed to macOS downloading its model with \
+            needs_person: then call show with the item and sheet upscale_on_mac and tell the person. On Higgsfield, \
+            paid, on a video: upscale (target 1080p, 2k or 4k; frame_rate 24, 30 or 60; engine standard), reframe \
+            (aspect_ratio 9:16, 1:1 or 16:9, results up to a minute), remove_background, dub (language, an ISO 639-3 \
+            code) or change_voice (voice, from capabilities with voices); needs a Higgsfield account and max_cost, \
+            and the job is checked by the same spending guard as create_video; one whose price isn't known waits for \
             the person. A Topaz upscale is refused (priced_after_run): its price is known only after it runs. \
-            Returns the job; follow it with jobs.
+            request_id works as in create_video for both: the same request_id and parameters return the same job or \
+            run. Returns it with its expected seconds for a run on this Mac; follow it with jobs, cancel it with \
+            job_action.
             """
         case .deliverySet:
             """
@@ -185,7 +204,10 @@ extension Tool {
             """
             Opens a page of Jutsu Studio for the person and brings its window to the front: page (create, queue, \
             library or settings), or job, a job ID, which opens a finished job's result in Library and any other \
-            job's row in the Queue. Give exactly one. Changes nothing but what the window shows.
+            job's row in the Queue, or item, a Library item ID, with sheet upscale_on_mac, which opens its Upscale on \
+            This Mac sheet, where the person agrees to macOS downloading the model: engine_unavailable on a Mac \
+            without the engine, needs_person while the person has another sheet open. Give exactly one of page, job \
+            or item. Changes nothing but what the window shows.
             """
         }
     }

@@ -6,14 +6,24 @@ import Testing
 @testable import Presentation
 
 /// Writes a stand-in result and waits until released; stops when canceled, deleting what it wrote as the engine does.
+/// Notes each question about a model, and whether it was asked on the main thread.
 final class FakeOnDeviceEngine: OnDeviceEnhancing, @unchecked Sendable {
     private let lock = NSLock()
     private var running = 0
     private var released = false
     private var _mostAtOnce = 0
     private var _started: [URL] = []
+    private var _modelChecks: [(engine: OnDeviceEngine, onMain: Bool)] = []
     var failure: (any Error)?
     var supported: Set<OnDeviceEngine> = Set(OnDeviceEngine.allCases)
+    var readyModels: Set<OnDeviceEngine> = []
+
+    var modelChecks: [(engine: OnDeviceEngine, onMain: Bool)] { lock.withLock { _modelChecks } }
+
+    func modelIsReady(_ engine: OnDeviceEngine) -> Bool {
+        lock.withLock { _modelChecks.append((engine, Thread.isMainThread)) }
+        return readyModels.contains(engine)
+    }
 
     var mostAtOnce: Int { lock.withLock { _mostAtOnce } }
     var started: [URL] { lock.withLock { _started } }

@@ -27,7 +27,7 @@ extension Tool {
         case .libraryGet: "Library items in full"
         case .libraryDownload: "Download from Higgsfield"
         case .libraryMark: "Keep, reject or star"
-        case .enhance: "Enhance a video"
+        case .enhance: "Enhance a result"
         case .deliverySet: "Delivery sets"
         case .export: "Export for editing"
         case .frames: "Still frames and contact sheet"
@@ -136,15 +136,28 @@ extension Tool {
             ]
             schema["required"] = ["ids"]
         case .enhance:
+            var maxCost = Self.maxCostSchema.objectValue ?? [:]
+            maxCost["description"] =
+                "On Higgsfield, the most you agree to pay; a run on this Mac is free and needs none."
             schema["properties"] = [
-                "request_id": Self.requestIDSchema, "max_cost": Self.maxCostSchema,
-                "item": ["type": "string", "format": "uuid", "description": "A video's Library ID."],
+                "request_id": Self.requestIDSchema, "max_cost": .object(maxCost),
+                "item": [
+                    "type": "string", "format": "uuid",
+                    "description": "A video's Library ID, or an image's for upscale with engine mac.",
+                ],
                 "operation": [
                     "type": "string", "enum": .array(AgentEnhancement.allCases.map { .string($0.rawValue) }),
                 ],
                 "target": ["type": "string", "enum": ["1080p", "2k", "4k"]],
                 "frame_rate": ["type": "integer", "enum": [24, 30, 60]],
-                "engine": ["type": "string", "enum": ["standard"]],
+                "engine": [
+                    "type": "string", "enum": ["standard", .string(EnhanceCommand.macEngine)],
+                    "description": "upscale: standard on Higgsfield (paid), mac on this Mac (free, 4×).",
+                ],
+                "mode": [
+                    "type": "string", "enum": .array(AgentSmoothMotion.allCases.map { .string($0.rawValue) }),
+                    "description": "smooth_motion: 60fps keeps length and sound; slow_2x and slow_4x drop the sound.",
+                ],
                 "aspect_ratio": ["type": "string", "enum": ["9:16", "1:1", "16:9"]],
                 "language": ["type": "string", "description": "An ISO 639-3 code, such as fra."],
                 "voice": [
@@ -152,7 +165,7 @@ extension Tool {
                     "description": "A voice ID from capabilities.",
                 ],
             ]
-            schema["required"] = ["request_id", "item", "operation", "max_cost"]
+            schema["required"] = ["request_id", "item", "operation"]
         case .deliverySet:
             schema["properties"] = [
                 "action": [
@@ -240,6 +253,11 @@ extension Tool {
                     "description": "A page of the sidebar.",
                 ],
                 "job": ["type": "string", "format": "uuid", "description": "A job ID."],
+                "item": ["type": "string", "format": "uuid", "description": "A Library item ID, with sheet."],
+                "sheet": [
+                    "type": "string", "enum": .array(AgentSheet.allCases.map { .string($0.rawValue) }),
+                    "description": "upscale_on_mac: the item's Upscale on This Mac sheet.",
+                ],
             ]
         }
         return schema

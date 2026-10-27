@@ -84,7 +84,8 @@ struct OnDeviceEnhanceSheet: View {
     }
 
     private var canStart: Bool {
-        size != nil && !isTooLarge && (!needsConsent || agreesToDownload)
+        environment.onDevice.supports(action.engine) && size != nil && !isTooLarge
+            && (!needsConsent || agreesToDownload)
     }
 
     var body: some View {
