@@ -37,6 +37,8 @@ final class AppEnvironment {
     let onDevice: OnDeviceRuns
     /// Subtitles made on this Mac, saved on the version they were made from.
     let subtitles: SubtitleRuns
+    /// The speech models the app downloads itself: Parakeet Ultra, from Settings › Subtitles.
+    let speechModels: SpeechModels
     /// Create Character: its form and runs, and every character sheet job the app started.
     let characterBuilder: CharacterBuilder
     /// Score Variants in batch comparison: its runs, which outlive the comparison, and why a score is missing.
@@ -104,7 +106,7 @@ final class AppEnvironment {
         onDevice = Self.onDeviceRuns(
             store: store, imageLibrary: imageLibrary, defaults: defaults,
             scratches: ([outputFolder.url] + outputFolder.previousFolders).map { OutputSubfolder.videos.url(in: $0) })
-        subtitles = Self.subtitleRuns(store: store, layout: layout, defaults: defaults)
+        (subtitles, speechModels) = Self.subtitleRuns(store: store, layout: layout, defaults: defaults)
         Self.saveGeneratedImages(of: referenceGenerator, into: imageLibrary)
         // The Image side of the Create draft, kept across launches; the models arrive later and settle the choice.
         referenceGenerator.restore(navigation.imageDraft)

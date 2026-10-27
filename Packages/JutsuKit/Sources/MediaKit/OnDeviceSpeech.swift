@@ -4,21 +4,30 @@ import JutsuCore
 
 /// The app's speech models behind one port (`SpeechTranscribing`): it reads only the file's sound, ends a file without
 /// any at once, and keeps each transcript by the file's content, language, model and model revision, so the same
-/// file heard again costs nothing.
+/// file heard again costs nothing. The built-in models are its own; Parakeet comes from the app.
 public final class OnDeviceSpeech: SpeechTranscribing {
     private let cache: TranscriptCache
     private let hashes: FileHashCache
+    private let parakeet: (any SpeechTranscribing)?
 
     /// - Parameters:
     ///   - cacheFolder: where transcripts are kept, a few kilobytes each.
     ///   - hashes: the content hashes of files already read.
-    public init(cacheFolder: URL, hashes: FileHashCache) {
+    ///   - parakeet: Parakeet Ultra's engine, which hears `SpeechModel.parakeetUltra`; `nil` without it.
+    public init(cacheFolder: URL, hashes: FileHashCache, parakeet: (any SpeechTranscribing)? = nil) {
         cache = TranscriptCache(folder: cacheFolder)
         self.hashes = hashes
+        self.parakeet = parakeet
     }
 
     public func availability() async -> SpeechAvailability {
-        await BuiltInSpeech.availability()
+        var availability = await BuiltInSpeech.availability()
+        if let parakeet {
+            let other = await parakeet.availability()
+            availability.languages[.parakeetUltra] = other.languages[.parakeetUltra]
+            availability.installed[.parakeetUltra] = other.installed[.parakeetUltra]
+        }
+        return availability
     }
 
     public func transcribe(
@@ -26,12 +35,21 @@ public final class OnDeviceSpeech: SpeechTranscribing {
         progress: @escaping @Sendable (OnDeviceProgress) -> Void
     ) async throws -> Transcript {
         guard try SoundCheck.hasSound(file) else { throw TranscriptionError.noSpeech }
-        let revision = BuiltInSpeech.revision
+        let revision = model.isBuiltIn ? BuiltInSpeech.revision : ParakeetUltra.revision
         let hash = try hashes.hash(ofFileAt: file, compute: ContentHasher.sha256Hex(ofFileAt:))
         let key = SpeechSelection.cacheKey(contentHash: hash, language: language, model: model, revision: revision)
         if let cached = cache.transcript(for: key) { return cached }
-        let words = try await BuiltInSpeech.transcribe(
-            file, language: language, model: model, mayDownload: mayDownload, progress: progress)
+        let words: [TimedWord]
+        if model.isBuiltIn {
+            words = try await BuiltInSpeech.transcribe(
+                file, language: language, model: model, mayDownload: mayDownload, progress: progress)
+        } else if let parakeet {
+            words = try await parakeet.transcribe(
+                file, language: language, model: model, mayDownload: false, progress: progress
+            ).words
+        } else {
+            throw TranscriptionError.modelNotDownloaded
+        }
         guard !words.isEmpty else { throw TranscriptionError.noSpeech }
         let transcript = Transcript(language: language, model: model, revision: revision, words: words)
         cache.store(transcript, for: key)

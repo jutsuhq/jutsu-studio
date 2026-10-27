@@ -11,6 +11,9 @@ packages:
     path: Packages/JutsuKit
   HiggsfieldKit:
     path: Packages/HiggsfieldKit
+  # Parakeet Ultra through FluidAudio (Apache-2.0), with every package trait off so nothing prebuilt is linked.
+  ParakeetKit:
+    path: Packages/ParakeetKit
   # Software Update: checks the appcast attached to the latest GitHub release, downloads, installs and relaunches.
   Sparkle:
     url: https://github.com/sparkle-project/Sparkle
@@ -39,6 +42,8 @@ targets:
         product: JutsuCore
       - package: JutsuKit
         product: Presentation
+      - package: ParakeetKit
+        product: ParakeetKit
       - package: JutsuKit
         product: Secrets
       - package: JutsuKit

@@ -163,6 +163,28 @@ final class FakeSpeech: SpeechTranscribing, @unchecked Sendable {
         #expect(runs.finished.map(\.outcome).count == 1 && runs.failure == nil)
     }
 
+    @Test func parakeetWaitsForItsDownloadNotForTheAgreement() async {
+        speech.available.languages[.parakeetUltra] = ["de", "en"]
+        let runs = SubtitleRuns(engine: speech, defaults: defaults) { _, _ in }
+        await runs.loadAvailability()
+        var german = request("de-DE")
+        german.engine = .parakeet
+
+        #expect(runs.model(for: "de-DE", engine: .parakeet) == .parakeetUltra)
+        #expect(runs.model(for: "de-DE") == nil)
+        #expect(!runs.needsConsent("de-DE", engine: .parakeet))
+        #expect(runs.needsDownload("de-DE", engine: .parakeet))
+        #expect(!runs.needsDownload("en-US", engine: .builtIn))
+        #expect(!runs.start(german))
+
+        speech.available.installed[.parakeetUltra] = ["de", "en"]
+        await runs.loadAvailability()
+        speech.release()
+        #expect(runs.start(german))
+        await runs.finish()
+        #expect(speech.heard.map(\.model) == [.parakeetUltra])
+    }
+
     @Test func aSecondRunOnTheSameItemIsRefused() async {
         let runs = SubtitleRuns(engine: speech, defaults: defaults) { _, _ in }
         await runs.loadAvailability()

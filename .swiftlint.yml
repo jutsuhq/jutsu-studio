@@ -6,9 +6,11 @@ included:
   - Packages/JutsuKit/Tests
   - Packages/HiggsfieldKit/Sources
   - Packages/HiggsfieldKit/Tests
+  - Packages/ParakeetKit/Sources
 excluded:
   - Packages/JutsuKit/.build
   - Packages/HiggsfieldKit/.build
+  - Packages/ParakeetKit/.build
 
 only_rules:
   - force_unwrapping

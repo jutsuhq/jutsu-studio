@@ -15,12 +15,17 @@ public final class SubtitleRuns {
         public var bookmark: Data?
         /// BCP 47, "en-US".
         public var language: String
+        public var engine: SubtitleEngine
 
-        public init(source: MaterialReference, file: URL, bookmark: Data? = nil, language: String) {
+        public init(
+            source: MaterialReference, file: URL, bookmark: Data? = nil, language: String,
+            engine: SubtitleEngine = .builtIn
+        ) {
             self.source = source
             self.file = file
             self.bookmark = bookmark
             self.language = language
+            self.engine = engine
         }
     }
 
@@ -108,17 +113,26 @@ public final class SubtitleRuns {
         availability.map(SpeechSelection.languages) ?? []
     }
 
-    /// The model that would hear `language`; `nil` when none takes it, or before `loadAvailability`.
-    public func model(for language: String) -> SpeechModel? {
-        availability.flatMap { SpeechSelection.builtIn(for: language, in: $0) }
+    /// The model `engine` would hear `language` with; `nil` when it doesn't take it, or before `loadAvailability`.
+    public func model(for language: String, engine: SubtitleEngine = .builtIn) -> SpeechModel? {
+        availability.flatMap { SpeechSelection.model(engine, for: language, in: $0) }
     }
 
-    /// Whether a run in `language` waits for the person to agree to downloading that language's model: only when it
-    /// isn't on this Mac, or a run found it missing, and they haven't agreed for the language before.
-    public func needsConsent(_ language: String) -> Bool {
+    /// Whether a run in `language` waits for the person to agree to macOS downloading that language's model: only
+    /// for a built-in model that isn't on this Mac, or that a run found missing, before they agreed for the language.
+    public func needsConsent(_ language: String, engine: SubtitleEngine = .builtIn) -> Bool {
         guard !consent.allowsSpeechModel(for: language) else { return false }
-        guard let availability, let model = model(for: language) else { return true }
+        guard let availability, let model = model(for: language, engine: engine) else { return true }
+        guard model.isBuiltIn else { return false }
         return !availability.isInstalled(model, language) || missingModels.contains(language)
+    }
+
+    /// Whether `engine` hears `language` with a model the app downloads, and it isn't downloaded yet.
+    public func needsDownload(_ language: String, engine: SubtitleEngine) -> Bool {
+        guard let availability, let model = model(for: language, engine: engine), !model.isBuiltIn else {
+            return false
+        }
+        return !availability.isInstalled(model, language)
     }
 
     /// Whether the person agreed to macOS downloading the speech model of `language`.
@@ -139,12 +153,13 @@ public final class SubtitleRuns {
         return finished.last { $0.run.id == id }.map { ($0.run, $0) }
     }
 
-    /// Refused, returning `false`, when no model takes the language, while its model download waits for the person's
-    /// agreement, and while a run on the same item waits or runs.
+    /// Refused, returning `false`, when the engine doesn't take the language, while its model download waits for the
+    /// person's agreement or Parakeet isn't downloaded, and while a run on the same item waits or runs.
     @discardableResult
     public func start(_ request: Request, id: UUID = UUID()) -> Bool {
-        guard let model = model(for: request.language), !needsConsent(request.language),
-            run(for: request.source.materialID) == nil
+        guard let model = model(for: request.language, engine: request.engine),
+            !needsConsent(request.language, engine: request.engine),
+            !needsDownload(request.language, engine: request.engine), run(for: request.source.materialID) == nil
         else { return false }
         defaults.set(request.language, forKey: Self.lastLanguageKey)
         runs.append(Run(id: id, request: request, model: model, state: .waiting))

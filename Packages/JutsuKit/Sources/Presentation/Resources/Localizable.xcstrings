@@ -2985,6 +2985,36 @@
     },
     "Include Subtitles (SRT)" : {
 
+    },
+    "Parakeet Ultra isn't downloaded yet. Download it in Settings › Subtitles." : {
+
+    },
+    "NVIDIA's Parakeet TDT 0.6B v3, post-trained by moondream, in a Core ML build by FluidInference. Hears 25 European languages on this Mac, often better than the built-in models." : {
+
+    },
+    "Parakeet Ultra speech model: NVIDIA Parakeet TDT 0.6B v3, post-trained by moondream, Core ML build by FluidInference, CC BY 4.0. Run with FluidAudio, Apache License 2.0." : {
+
+    },
+    "Speech models" : {
+
+    },
+    "Can't download Parakeet Ultra" : {
+
+    },
+    "Can't remove Parakeet Ultra" : {
+
+    },
+    "%@ download" : {
+
+    },
+    "about %@ of memory while it runs" : {
+
+    },
+    "%@ languages" : {
+
+    },
+    "Parakeet Ultra needs about %@ MB of free memory, and %@ MB are free now. Quit other apps and try again." : {
+
     }
   },
   "version" : "1.0"

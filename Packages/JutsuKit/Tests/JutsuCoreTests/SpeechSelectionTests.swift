@@ -19,6 +19,20 @@ import Testing
         #expect(SpeechSelection.languages(in: availability) == ["de-DE", "en-US", "ru-RU"])
     }
 
+    @Test func parakeetTakesALanguageByItsCodeAndAddsOnlyTheOnesTheBuiltInModelsLack() {
+        var both = availability
+        both.languages[.parakeetUltra] = ["de", "lv"]
+        both.installed[.parakeetUltra] = ["lv"]
+
+        #expect(SpeechSelection.model(.parakeet, for: "de-AT", in: both) == .parakeetUltra)
+        #expect(SpeechSelection.model(.parakeet, for: "ru-RU", in: both) == nil)
+        #expect(SpeechSelection.model(.parakeet, for: "de", in: availability) == nil)
+        #expect(SpeechSelection.model(.builtIn, for: "lv", in: both) == nil)
+        #expect(both.isInstalled(.parakeetUltra, "lv-LV"))
+        #expect(!both.isInstalled(.parakeetUltra, "de-DE"))
+        #expect(SpeechSelection.languages(in: both) == ["de-DE", "en-US", "lv", "ru-RU"])
+    }
+
     @Test func theLastLanguageComesFirstThenTheSystemsThenTheFirst() {
         let languages = ["de-DE", "en-US", "ru-RU"]
         #expect(SpeechSelection.preferred(languages, last: "ru-RU", system: ["en-US"]) == "ru-RU")

@@ -27,6 +27,40 @@ public enum SubtitleText {
         bundle: .module)
     public static let modelConsent = String(localized: "Download the speech model", bundle: .module)
 
+    public static let parakeetNotDownloaded = String(
+        localized: "Parakeet Ultra isn't downloaded yet. Download it in Settings › Subtitles.", bundle: .module)
+    public static let parakeetName = "Parakeet Ultra"
+    /// Under the model's name in Settings.
+    public static let parakeetSummary = String(
+        localized:
+            "NVIDIA's Parakeet TDT 0.6B v3, post-trained by moondream, in a Core ML build by FluidInference. Hears 25 European languages on this Mac, often better than the built-in models.",
+        bundle: .module)
+    public static let parakeetCredit = String(
+        localized:
+            "Parakeet Ultra speech model: NVIDIA Parakeet TDT 0.6B v3, post-trained by moondream, Core ML build by FluidInference, CC BY 4.0. Run with FluidAudio, Apache License 2.0.",
+        bundle: .module)
+    public static let modelsFolder = String(localized: "Speech models", bundle: .module)
+    public static let downloadFailedTitle = String(localized: "Can't download Parakeet Ultra", bundle: .module)
+    public static let removeFailedTitle = String(localized: "Can't remove Parakeet Ultra", bundle: .module)
+
+    /// "632 MB download · about 1.5 GB of memory while it runs · 25 languages · CC BY 4.0".
+    public static var parakeetFacts: String {
+        let download = ByteCountFormatter.string(fromByteCount: ParakeetUltra.manifest.size, countStyle: .file)
+        let memory = ByteCountFormatter.string(
+            fromByteCount: Int64(ParakeetUltra.memoryMB) << 20, countStyle: .memory)
+        return [
+            String(localized: "\(download) download", bundle: .module),
+            String(localized: "about \(memory) of memory while it runs", bundle: .module),
+            String(localized: "\(ParakeetUltra.languages.count) languages", bundle: .module),
+            ParakeetUltra.license,
+        ].joined(separator: " · ")
+    }
+
+    /// The languages Parakeet hears, by name, in the app's language.
+    public static var parakeetLanguages: String {
+        ParakeetUltra.languages.map(languageName).sorted().formatted(.list(type: .and))
+    }
+
     /// "English (United States)" for "en-US", in the app's language.
     public static func languageName(_ identifier: String) -> String {
         Locale.current.localizedString(forIdentifier: identifier) ?? identifier
@@ -49,6 +83,12 @@ public enum SubtitleText {
         case .noSpeech?: noSpeech
         case .unsupportedLanguage?: unsupportedLanguage
         case .modelNeeded?: modelNeeded
+        case .modelNotDownloaded?: parakeetNotDownloaded
+        case .notEnoughMemory(let needed, let free)?:
+            String(
+                localized:
+                    "Parakeet Ultra needs about \(needed) MB of free memory, and \(free) MB are free now. Quit other apps and try again.",
+                bundle: .module)
         case nil: error.localizedDescription
         }
     }
@@ -79,6 +119,15 @@ public enum SubtitleText {
     public static func summary(of subtitles: Subtitles) -> String {
         let count = subtitles.cues.count
         return "\(languageName(subtitles.language)) · \(String(localized: "\(count) cues", bundle: .module))"
+    }
+}
+
+extension SubtitleEngine {
+    public var title: String {
+        switch self {
+        case .builtIn: String(localized: "Built-in", bundle: .module)
+        case .parakeet: SubtitleText.parakeetName
+        }
     }
 }
 
