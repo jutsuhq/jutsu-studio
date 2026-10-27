@@ -126,8 +126,7 @@ final class AppEnvironment {
             settings: settings, presetName: { PresetCatalog.cachedName(of: $0, in: layout.presetCacheFolder) },
             spendStatus: { job in try await spending.status(excluding: job) },
             agentPolicy: Self.agentPolicy(ledger: agentSpend, defaults: defaults))
-        connection = ConnectionStore(
-            vault: Self.connectionVault(), metadata: metadata, services: HiggsfieldConnectionServices())
+        connection = Self.connectionStore(metadata: metadata)
         connection.onCredentialChange = { [weak self] credential in await self?.use(credential) }
         modelConstraints.onChange = { [weak self] table in self?.useModelConstraints(table) }
     }
@@ -145,6 +144,9 @@ final class AppEnvironment {
     /// in a smoke test: the window's own start would resume real jobs and send prepared submits.
     func start() async {
         guard !isStarted, !SmokeTest.isRequested else { return }
+        #if DEBUG
+            if DebugLaunchHooks.isOffline { return }
+        #endif
         isStarted = true
         // Consume before anything can make the engine emit; the stored copies never replace an event.
         let events = engine.events
@@ -368,6 +370,18 @@ extension AppEnvironment {
         while alert.runModal() == .alertSecondButtonReturn {
             NSWorkspace.shared.activateFileViewerSelecting([dataFolder])
         }
+    }
+
+    private static func connectionStore(metadata: some ConnectionMetadataStore) -> ConnectionStore {
+        #if DEBUG
+            // A checking launch reads no Keychain item, and leaves the saved connection as it is.
+            if DebugLaunchHooks.isOffline {
+                return ConnectionStore(
+                    vault: DebugLaunchHooks.OfflineVault(), metadata: DebugLaunchHooks.OfflineMetadata(),
+                    services: HiggsfieldConnectionServices())
+            }
+        #endif
+        return ConnectionStore(vault: connectionVault(), metadata: metadata, services: HiggsfieldConnectionServices())
     }
 
     /// The login keychain isn't per container like the defaults are, so a Debug build keeps its own item.

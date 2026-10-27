@@ -27,6 +27,7 @@ extension UserDefaultsBackedTests {
             #expect(AppSettings.draftResolution(in: defaults) == .p480)
             #expect(AppSettings.defaultMode(in: defaults) == .motionTransfer)
             #expect(AppSettings.outputNamePattern(in: defaults) == .standard)
+            #expect(!AppSettings.runsInMenuBar(in: defaults))
         }
 
         @Test func emptyDefaultsOpenTodaysCreateForm() throws {

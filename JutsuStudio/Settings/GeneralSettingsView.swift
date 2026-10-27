@@ -4,11 +4,12 @@ import Presentation
 import ServiceManagement
 import SwiftUI
 
-/// Default mode, the menu bar item, opening at login and Software Update.
+/// Default mode, the menu bar item and menu bar mode, opening at login and Software Update.
 struct GeneralSettingsView: View {
     @AppStorage(AppSettings.defaultModeKey) private var defaultMode = AppSettings.defaultMode
     @AppStorage(AppSettings.showInMenuBarKey) private var showInMenuBar = AppSettings.defaultShowInMenuBar
     @AppStorage(AppSettings.showActiveCountKey) private var showActiveCount = AppSettings.defaultShowActiveCount
+    @AppStorage(AppSettings.runInMenuBarKey) private var runInMenuBar = AppSettings.defaultRunInMenuBar
     @AppStorage(AppSettings.promptHistoryClearedAtKey) private var promptHistoryClearedAt = 0.0
     @Environment(SoftwareUpdater.self) private var updater
     @State private var isConfirmingClearHistory = false
@@ -36,9 +37,23 @@ struct GeneralSettingsView: View {
                         .buttonStyle(.secondaryAction)
                 }
             }
-            SettingsSection(title: "System", footer: loginItem.note) {
+            SettingsSection(title: "System", footer: systemFooter) {
                 SettingsRow(label: "Show in menu bar", isFirst: true) {
-                    Toggle("Show in menu bar", isOn: $showInMenuBar)
+                    Toggle(
+                        "Show in menu bar",
+                        isOn: Binding(
+                            get: { MenuBarMode.showsExtra(showInMenuBar: showInMenuBar, isOn: runInMenuBar) },
+                            set: { showInMenuBar = $0 })
+                    )
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+                }
+                .disabled(runInMenuBar)
+                SettingsRow(
+                    label: "Run in the menu bar",
+                    detail: String(localized: "Stays open with no window, without a Dock icon")
+                ) {
+                    Toggle("Run in the menu bar", isOn: $runInMenuBar)
                         .toggleStyle(.switch)
                         .labelsHidden()
                 }
@@ -49,8 +64,8 @@ struct GeneralSettingsView: View {
                         .toggleStyle(.switch)
                         .labelsHidden()
                 }
-                .disabled(!showInMenuBar)
-                .opacity(showInMenuBar ? 1 : 0.45)
+                .disabled(!MenuBarMode.showsExtra(showInMenuBar: showInMenuBar, isOn: runInMenuBar))
+                .opacity(MenuBarMode.showsExtra(showInMenuBar: showInMenuBar, isOn: runInMenuBar) ? 1 : 0.45)
                 SettingsRow(label: "Open at login") {
                     HStack(spacing: Theme.Spacing.small) {
                         if loginItem == .requiresApproval {
@@ -112,6 +127,15 @@ struct GeneralSettingsView: View {
             }
         }
         .disabled(!SoftwareUpdater.isEnabled)
+    }
+
+    /// What menu bar mode changes about opening at login, and the Login Items note when it needs approval.
+    private var systemFooter: String {
+        let mode =
+            runInMenuBar
+            ? String(localized: "In the menu bar, Jutsu Studio opens at login with no window.")
+            : String(localized: "Closing the window quits Jutsu Studio unless jobs are running.")
+        return [mode, loginItem.note].compactMap(\.self).joined(separator: " ")
     }
 
     private var lastCheckText: String {
