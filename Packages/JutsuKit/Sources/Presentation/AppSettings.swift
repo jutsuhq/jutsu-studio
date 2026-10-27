@@ -22,6 +22,8 @@ public enum AppSettings {
     public static let defaultModeKey = "settings.defaultMode"
     public static let showInMenuBarKey = "settings.showInMenuBar"
     public static let showActiveCountKey = "settings.showActiveCount"
+    /// Run in the menu bar (`MenuBarMode`).
+    public static let runInMenuBarKey = "settings.runInMenuBar"
     /// Security-scoped bookmark of a custom output folder; absent means the default folder.
     public static let outputFolderBookmarkKey = "settings.outputFolderBookmark"
     /// JSON `OutputFolderHistory`: custom folders picked before the current one that may still hold results.
@@ -61,6 +63,8 @@ public enum AppSettings {
     public static let defaultMode = Mode.motionTransfer
     public static let defaultShowInMenuBar = true
     public static let defaultShowActiveCount = false
+    /// Off: the person decides whether the app lives in the menu bar.
+    public static let defaultRunInMenuBar = false
 
     public static func clampConcurrency(_ value: Int) -> Int {
         min(max(value, maxConcurrencyRange.lowerBound), maxConcurrencyRange.upperBound)
@@ -119,6 +123,10 @@ public enum AppSettings {
         case nil:
             return nil
         }
+    }
+
+    public static func runsInMenuBar(in defaults: UserDefaults) -> Bool {
+        defaults.object(forKey: runInMenuBarKey) as? Bool ?? defaultRunInMenuBar
     }
 
     public static func usesUnlimited(in defaults: UserDefaults) -> Bool {

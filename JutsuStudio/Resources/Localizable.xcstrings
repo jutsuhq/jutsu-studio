@@ -1,6 +1,18 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Stays open with no window, without a Dock icon" : {
+
+    },
+    "Run in the menu bar" : {
+
+    },
+    "In the menu bar, Jutsu Studio opens at login with no window." : {
+
+    },
+    "Closing the window quits Jutsu Studio unless jobs are running." : {
+
+    },
     "Their earlier versions made in Jutsu Studio go too. You can put them back from the Trash in Finder." : {
 
     },

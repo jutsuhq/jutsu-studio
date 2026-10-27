@@ -21,6 +21,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             SmokeTest.finish()
             return
         }
+        // Read here: the open-application event that says how the app was started is being handled now.
+        var launch = Self.launch()
+        #if DEBUG
+            if DebugLaunchHooks.startsHidden { launch = .login }
+            DebugLaunchHooks.run(system: system, navigation: environment.navigation)
+        #endif
+        if MenuBarMode.startsHidden(launch, isOn: system.runsInMenuBar) {
+            system.startHidden()
+        } else {
+            // SwiftUI restores no window after a session that ended with none, as menu bar mode can. Asked once the
+            // launch is over, so a window SwiftUI is still opening isn't opened a second time.
+            Task { [system] in
+                try? await Task.sleep(for: WindowLifecycle.launchSettles)
+                if !system.hasMainWindow { system.showMainWindow() }
+            }
+        }
         system.start()
         agents.start()
         // Resumes the queue even when no window is restored; `start()` runs once.
@@ -37,7 +53,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
-        !BackgroundPolicy.keepsRunning(activeCount: environment.liveJobs.activeCount, images: environment.imageWork)
+        !MenuBarMode.keepsRunning(
+            isOn: system.runsInMenuBar, isStartingHidden: system.isStartingHidden,
+            activeCount: environment.liveJobs.activeCount, images: environment.imageWork)
+    }
+
+    /// The Dock icon or Finder's open of a running app: the window comes back, also from menu bar mode.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
+        guard !system.hasAppWindow else { return true }
+        system.showMainWindow()
+        return false
+    }
+
+    /// The same key actions as the menu bar panel, for when the system hides the extra or it is turned off.
+    func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
+        DockMenu.make(environment: environment, system: system)
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
@@ -92,6 +122,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard !answeredQuit else { return }
         answeredQuit = true
         NSApp.reply(toApplicationShouldTerminate: true)
+    }
+
+    /// How the app was started, from the open-application event being handled: Login Items mark theirs.
+    private static func launch() -> MenuBarMode.Launch {
+        guard let event = NSAppleEventManager.shared().currentAppleEvent,
+            event.eventID == AEEventID(truncatingIfNeeded: kAEOpenApplication),
+            let property = event.paramDescriptor(forKeyword: AEKeyword(truncatingIfNeeded: keyAEPropData))
+        else { return .person }
+        return property.enumCodeValue == OSType(truncatingIfNeeded: keyAELaunchedAsLogInItem) ? .login : .person
     }
 
     /// The reason attribute of the quit Apple event being handled. The SDK imports these four-char

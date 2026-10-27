@@ -5,6 +5,7 @@ import SwiftUI
 struct JutsuStudioApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @AppStorage(AppSettings.showInMenuBarKey) private var showInMenuBar = AppSettings.defaultShowInMenuBar
+    @AppStorage(AppSettings.runInMenuBarKey) private var runInMenuBar = AppSettings.defaultRunInMenuBar
 
     // note: dark only, because `Theme` has no light palette; follow the system once it gets one.
     var body: some Scene {
@@ -20,6 +21,7 @@ struct JutsuStudioApp: App {
                 .tint(Theme.accent)
                 .task { await environment.start() }
                 .capturesOpenWindow(for: appDelegate.system)
+                .reportsWindow(to: appDelegate.system)
         }
         .modelContainer(environment.modelContainer)
         .windowStyle(.hiddenTitleBar)
@@ -45,6 +47,7 @@ struct JutsuStudioApp: App {
             AboutView()
                 .preferredColorScheme(.dark)
                 .tint(Theme.accent)
+                .reportsWindow(to: appDelegate.system)
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
@@ -65,14 +68,16 @@ struct JutsuStudioApp: App {
         .menuBarExtraStyle(.window)
     }
 
-    /// Writes only a real change. The extra sets `isInserted` again on every scene update; written straight
-    /// to `@AppStorage`, each set posts a defaults change that updates the scenes again, a loop that kept the
-    /// main thread at 100% and starved every other main-actor task.
+    /// Writes only a real change (`MenuBarMode.showInMenuBar(afterInserting:)`). The extra sets `isInserted` again on
+    /// every scene update; written straight to `@AppStorage`, each set posts a defaults change that updates the
+    /// scenes again, a loop that kept the main thread at 100% and starved every other main-actor task.
     private var menuBarInserted: Binding<Bool> {
         Binding(
-            get: { showInMenuBar },
+            get: { MenuBarMode.showsExtra(showInMenuBar: showInMenuBar, isOn: runInMenuBar) },
             set: { isInserted in
-                if isInserted != showInMenuBar { showInMenuBar = isInserted }
+                let shown = MenuBarMode.showInMenuBar(
+                    afterInserting: isInserted, showInMenuBar: showInMenuBar, isOn: runInMenuBar)
+                if shown != showInMenuBar { showInMenuBar = shown }
             })
     }
 
