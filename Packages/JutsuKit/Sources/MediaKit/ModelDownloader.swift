@@ -110,7 +110,7 @@ public struct ModelDownloader: SpeechModelDownloading {
             hasher.update(data: Data("blob \(file.size)\u{0}".utf8))
             let handle = try FileHandle(forReadingFrom: url)
             defer { try? handle.close() }
-            while let chunk = try handle.read(upToCount: 1 << 20), !chunk.isEmpty { hasher.update(data: chunk) }
+            while try ContentHasher.readChunk(of: handle, into: { hasher.update(data: $0) }) {}
             return hasher.finalize().map { String(format: "%02x", $0) }.joined() == gitBlob
         }
         return false

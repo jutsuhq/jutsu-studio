@@ -13,6 +13,10 @@ Notable changes to Jutsu Studio. Versions follow [Semantic Versioning](https://s
 - Settings › Subtitles picks the default speech model: Auto (macOS's SpeechTranscriber when it has the language, else Parakeet Ultra once it is downloaded, else Dictation), Built-in or Parakeet Ultra; the Subtitles sheet can pick another for a run.
 - Agents can make subtitles with the new `subtitles` tool, free and idempotent by `request_id`: `make` answers with a run of kind `on_device` (operation `subtitles`) that `jobs` follows and `job_action` cancels, `get` reads the current version's cues, with the SRT or VTT text on request, and `export` writes an `.srt` or `.vtt` into the Exports folder. A run that needs the person, to agree to a model download or to download Parakeet Ultra, answers `needs_person`, and `show` with `sheet: "subtitles"` opens the Subtitles sheet. `capabilities`' `onDevice.subtitles` lists each speech model with its languages and model state, and the default engine.
 
+### Fixed
+
+- Hashing a large file, as the upload cache and the transcript cache do, reads it a chunk at a time without keeping the chunks read in memory until it is done; a large video took as much memory as its size.
+
 ## [0.2.5] - 2026-10-27
 
 ### Added
