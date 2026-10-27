@@ -175,4 +175,8 @@ public struct Material: Codable, Sendable, Hashable, Identifiable {
     }
 }
 
-public enum MaterialError: Error { case duplicateVersion, invalidRecord, missingMaterial }
+public enum MaterialError: Error {
+    case duplicateVersion, invalidRecord, missingMaterial
+    /// Taken off the Library, so it takes no new version (`SwiftDataStore.addEditedVersion`).
+    case notListed
+}

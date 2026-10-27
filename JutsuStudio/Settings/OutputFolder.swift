@@ -79,6 +79,14 @@ final class OutputFolder {
 
     var previousFolders: [URL] { history.urls }
 
+    /// Whether `file` is in the output folder or one used before: a file the app wrote and keeps, which Delete from
+    /// Library may trash with the item. Files elsewhere are the person's own.
+    func owns(_ file: URL) -> Bool {
+        ([url] + previousFolders).contains {
+            OutputFolderHistory.folder(at: OutputFolderHistory.path(of: $0), contains: file)
+        }
+    }
+
     /// The folder of one kind of result inside the current output folder.
     func url(of kind: OutputSubfolder) -> URL {
         kind.url(in: url)

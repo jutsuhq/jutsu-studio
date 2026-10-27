@@ -64,7 +64,8 @@ var targets: [Target] = [
         .target(name: "MediaKit", dependencies: ["JutsuCore"], resources: [.process("Resources")]),
         .target(name: "Persistence", dependencies: ["JutsuCore"]),
         .testTarget(name: "SecretsTests", dependencies: ["Secrets"]),
-        .testTarget(name: "PersistenceTests", dependencies: ["Persistence"]),
+        // Presentation for Compare with Original and Delete from Library on what the store keeps.
+        .testTarget(name: "PersistenceTests", dependencies: ["Persistence", "Presentation"]),
         .testTarget(name: "MediaKitTests", dependencies: ["MediaKit", "JutsuCore"]),
         // `jutsu mcp`: the MCP server agents run, over JutsuAgent. HiggsfieldMCP only for its JSONValue.
         .target(

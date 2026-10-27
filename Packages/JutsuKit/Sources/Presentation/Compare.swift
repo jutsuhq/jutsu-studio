@@ -80,6 +80,11 @@ public enum CompareTimeline {
 public struct ComparePair: Sendable, Hashable {
     public private(set) var left: LibraryItemModel
     public private(set) var right: LibraryItemModel
+    /// Chips put before a side's own, by item: "Original" and "New version" for two versions of one item.
+    public private(set) var labels: [UUID: [String]] = [:]
+
+    public static let originalLabel = String(localized: "Original", bundle: .module)
+    public static let editedLabel = String(localized: "New version", bundle: .module)
 
     /// `nil` for the same item twice or a result without a local file.
     public init?(_ left: LibraryItemModel, _ right: LibraryItemModel) {
@@ -88,13 +93,25 @@ public struct ComparePair: Sendable, Hashable {
         self.right = right
     }
 
+    /// Two versions of one item: the one it was made from on the left (`MaterialVersions.videoPair`).
+    public init?(original: LibraryItemModel, edited: LibraryItemModel) {
+        self.init(original, edited)
+        labels = [original.id: [Self.originalLabel], edited.id: [Self.editedLabel]]
+    }
+
     public mutating func swap() {
         (left, right) = (right, left)
     }
 
     /// Left first.
     public var tracks: [CompareTrack] {
-        [left, right].compactMap { CompareTrack.result($0) }
+        [left, right].compactMap { item in
+            CompareTrack.result(item).map { track in
+                var track = track
+                track.labels = (labels[item.id] ?? []) + track.labels
+                return track
+            }
+        }
     }
 
     /// What "Compare with…" offers for `item`: other results on disk, those made from the same source first,

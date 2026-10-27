@@ -23,6 +23,8 @@ struct LibraryCardActions {
     /// Opens a copy of the result in another app, and brings an edited file back as its new version.
     var editInOtherApp: (UUID) -> Void
     var importEditedVersion: (UUID) -> Void
+    /// Opens Compare with the version the result was made from; `nil` when it has none (`MaterialVersions`).
+    var compareWithOriginal: (LibraryItemModel) -> (() -> Void)?
 }
 
 /// A result card's right-click menu: the result page's actions that make sense without opening it.
@@ -47,6 +49,10 @@ struct LibraryCardMenu: View {
         }
         if item.outputFile != nil || item.needsImport {
             Button("Compare…", systemImage: "rectangle.split.2x1") { actions.compare(item) }
+        }
+        if let compare = actions.compareWithOriginal(item) {
+            Button("Compare with Original", systemImage: "rectangle.split.2x1", action: compare)
+                .help("Play this version beside the one it was made from")
         }
         Button("Show in Finder", systemImage: "folder") {
             actions.withImported(item) { job in

@@ -269,10 +269,13 @@ struct LibraryDetail: View {
     }
 
     private func delete() {
-        if let failure = environment.deleteFromLibrary([item], records: record.map { [$0] } ?? []) {
-            message = failure
-        } else {
-            close()
+        let records = record.map { [$0] } ?? []
+        Task {
+            if let failure = await environment.deleteFromLibrary([item], records: records) {
+                message = failure
+            } else {
+                close()
+            }
         }
     }
 }

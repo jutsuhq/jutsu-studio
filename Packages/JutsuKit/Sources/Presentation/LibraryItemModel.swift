@@ -245,11 +245,14 @@ extension ProviderKind {
 }
 
 /// The confirmation shown before results are deleted. Like a single delete, deleting several moves their files to
-/// the Trash and can't be undone in the app.
+/// the Trash, with the earlier versions made in the app (`MaterialVersions.earlierFiles`), and can't be undone in the
+/// app.
 public enum LibraryDeleteConfirmation {
     public static let title = String(localized: "Delete from library?", bundle: .module)
     public static let message = String(
-        localized: "The video file moves to the Trash and its history entry is removed.", bundle: .module)
+        localized:
+            "The video file and its earlier versions made in Jutsu Studio move to the Trash, and its history entry is removed.",
+        bundle: .module)
     public static let confirmTitle = String(localized: "Delete", bundle: .module)
 
     /// "Delete 3 results from library?"; the single wording for one.
@@ -261,7 +264,8 @@ public enum LibraryDeleteConfirmation {
         count == 1
             ? message
             : String(
-                localized: "The video files move to the Trash and their history entries are removed.",
+                localized:
+                    "The video files and their earlier versions made in Jutsu Studio move to the Trash, and their history entries are removed.",
                 bundle: .module)
     }
 }
