@@ -23,6 +23,10 @@ public enum AgentProtocol {
     /// How long the helper waits on the socket for each write and for the answer: the answer deadline and a margin
     /// for the line to arrive.
     public static let helperTimeout = answerDeadline + .seconds(5)
+    /// Passed to the app when the helper starts it because a call found it not running: the app then starts with no
+    /// window and doesn't take the focus (`MenuBarMode.Launch.helper`), and `show` opens the window when the person
+    /// is to see something.
+    public static let helperLaunchArgument = "--started-by-agent"
 
     /// How long a command that already took `elapsed` may still wait for `seconds` and answer in time: its wait,
     /// cut to what is left of the answer deadline less a margin for the answer itself.

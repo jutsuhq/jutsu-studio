@@ -132,5 +132,7 @@ import Testing
         #expect(job?["properties"]?["estimatedSeconds"] != nil && job?["properties"]?["item"] != nil)
         let capabilities = Tool.capabilities.definition(structured: true)["outputSchema"]?["properties"]
         #expect(capabilities?["onDevice"]?["properties"]?["upscaleImage"] != nil)
+        #expect(capabilities?["window"]?["properties"]?["open"] != nil)
+        #expect(capabilities?["window"]?["properties"]?["menuBarMode"] != nil)
     }
 }

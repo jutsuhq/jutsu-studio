@@ -27,8 +27,9 @@ extension Tool {
             onDevice.subtitles lists the speech models subtitles make takes (engines: built_in, parakeet) with the \
             languages each takes and its model (built_in: needsConsent, the languages whose model only the person \
             can agree to macOS downloading, per language; parakeet: not_downloaded, downloading or ready), and \
-            defaultEngine, the person's choice in Settings. Free, and never shows a \
-            credential.
+            defaultEngine, the person's choice in Settings. window says whether the app has a window open (open; \
+            an app the helper started has none until show opens one) and whether it runs in the menu bar \
+            (menuBarMode). Free, and never shows a credential.
             """
         case .quote:
             """
@@ -226,7 +227,8 @@ extension Tool {
             """
         case .show:
             """
-            Opens a page of Jutsu Studio for the person and brings its window to the front: page (create, queue, \
+            Opens a page of Jutsu Studio for the person and brings its window to the front, opening the window when \
+            none is: page (create, queue, \
             library or settings), or job, a job ID, which opens a finished job's result in Library and any other \
             job's row in the Queue, or item, a Library item ID, with sheet upscale_on_mac, which opens its Upscale on \
             This Mac sheet, where the person agrees to macOS downloading the model (engine_unavailable on a Mac \

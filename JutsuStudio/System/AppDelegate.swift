@@ -124,13 +124,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.reply(toApplicationShouldTerminate: true)
     }
 
-    /// How the app was started, from the open-application event being handled: Login Items mark theirs.
+    /// How the app was started: the helper's argument, else the open-application event being handled, which Login
+    /// Items mark.
     private static func launch() -> MenuBarMode.Launch {
+        MenuBarMode.launch(arguments: ProcessInfo.processInfo.arguments, isLoginItem: isLoginItemLaunch())
+    }
+
+    private static func isLoginItemLaunch() -> Bool {
         guard let event = NSAppleEventManager.shared().currentAppleEvent,
             event.eventID == AEEventID(truncatingIfNeeded: kAEOpenApplication),
             let property = event.paramDescriptor(forKeyword: AEKeyword(truncatingIfNeeded: keyAEPropData))
-        else { return .person }
-        return property.enumCodeValue == OSType(truncatingIfNeeded: keyAELaunchedAsLogInItem) ? .login : .person
+        else { return false }
+        return property.enumCodeValue == OSType(truncatingIfNeeded: keyAELaunchedAsLogInItem)
     }
 
     /// The reason attribute of the quit Apple event being handled. The SDK imports these four-char

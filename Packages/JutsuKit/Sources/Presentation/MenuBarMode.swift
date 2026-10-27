@@ -1,4 +1,5 @@
 import Foundation
+import JutsuAgent
 
 /// Settings › General › Run in the menu bar: the app stays in the menu bar with no window, and leaves the Dock while
 /// no window is open (ARCHITECTURE §6, Background). Off, the app keeps the rules it had before.
@@ -32,6 +33,13 @@ public enum MenuBarMode {
     /// In menu bar mode the app leaves the Dock while no window is open, and comes back as soon as one opens.
     public static func dockPresence(isOn: Bool, hasWindow: Bool) -> DockPresence {
         isOn && !hasWindow ? .accessory : .regular
+    }
+
+    /// The launch the app's arguments and its open-application event describe: the helper passes
+    /// `AgentProtocol.helperLaunchArgument`, and Login Items mark the event (`keyAELaunchedAsLogInItem`).
+    public static func launch(arguments: [String], isLoginItem: Bool) -> Launch {
+        if arguments.contains(AgentProtocol.helperLaunchArgument) { return .helper }
+        return isLoginItem ? .login : .person
     }
 
     /// Whether the app starts with no window. The helper always starts it so: the agent works through the socket, and

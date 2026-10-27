@@ -215,6 +215,19 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
         }
     }
 
+    /// The app's window, as the person sees it: an agent can tell whether a result it `show`s opens a window.
+    public struct Window: Codable, Equatable, Sendable {
+        /// Whether a window of the app is open; the helper starts the app with none, and `show` opens one.
+        public var open: Bool
+        /// Settings › General › Run in the menu bar: the app keeps running with every window closed.
+        public var menuBarMode: Bool
+
+        public init(open: Bool, menuBarMode: Bool) {
+            self.open = open
+            self.menuBarMode = menuBarMode
+        }
+    }
+
     /// Enhance on this Mac (`enhance` smooth_motion, and upscale with engine mac): free, no account, no upload.
     public struct OnDevice: Codable, Equatable, Sendable {
         /// Smooth Motion, on videos: `modes`.
@@ -257,6 +270,8 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
     public var voices: [Voice]?
     /// What runs on this Mac; set by the app on every answer.
     public var onDevice: OnDevice?
+    /// Set by the app on every answer; nil from a version before it.
+    public var window: Window?
     /// The `jutsu` helper's own version, added by the helper (`noteHelper`); the app leaves it out.
     public var helperVersion: String?
     /// Added by a helper older than the app: what the agent should do about it.

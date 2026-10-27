@@ -32,8 +32,10 @@ says rather than guessing.
 ## How to work
 
 1. **Capabilities first.** Call `capabilities`. It shows the connection, today's budget (`remaining`) and the tool
-   groups. Ask for `models`, `image_models`, `styles` or `voices` when you need them; they come from what the app last
-   read, never a network call.
+   groups. `window` says whether the app has a window open (`open`) and whether it runs in the menu bar
+   (`menuBarMode`): when the app isn't running, the first call starts it in the background with no window, and only
+   `show` opens one. Ask for `models`, `image_models`, `styles` or `voices` when you need them; they come from what
+   the app last read, never a network call.
 2. **Quote before you create.** `quote` a video with the same fields you mean to send, and tell the person the price.
    It also says `maxVariants` (and `variantsUnavailable`, why only one) and `minImages`/`maxImages`, the reference
    images the model takes in that mode; the same limits are in `capabilities` with `model`. There is no fixed image

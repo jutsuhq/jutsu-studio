@@ -13,6 +13,10 @@ extension Tool {
             properties["helperVersion"] = ["type": "string"]
             properties["helperNote"] = ["type": "string"]
             properties["agentsAllowed"] = ["type": "boolean"]
+            properties["window"] = [
+                "type": "object",
+                "properties": ["open": ["type": "boolean"], "menuBarMode": ["type": "boolean"]],
+            ]
             properties["connection"] = [
                 "type": "object",
                 "properties": [

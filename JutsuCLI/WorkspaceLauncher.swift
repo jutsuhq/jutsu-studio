@@ -4,7 +4,7 @@ import JutsuMCP
 /// Starts and activates the app through Launch Services, as `open -g` and `open -b` do.
 struct WorkspaceLauncher: AppLauncher {
     @MainActor
-    func start(_ app: URL, bundleID: String) async throws -> RunningApp {
+    func start(_ app: URL, bundleID: String, arguments: [String]) async throws -> RunningApp {
         if let running = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).first {
             return Self.following(running)
         }
@@ -12,6 +12,7 @@ struct WorkspaceLauncher: AppLauncher {
         // In the background: the agent's own app stays in front, and the window shows only when `show` asks.
         configuration.activates = false
         configuration.addsToRecentItems = false
+        configuration.arguments = arguments
         let running = try await NSWorkspace.shared.openApplication(at: app, configuration: configuration)
         return Self.following(running)
     }

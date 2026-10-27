@@ -184,6 +184,7 @@ final class AgentService {
                 dailyCap: cap.flatMap { AgentCap.money($0.amount, $0.unit)?.amount }, capTakenToday: capTaken)
         }
         var answer = AgentCapabilities(appVersion: Self.appVersion, connection: connection, budget: budget)
+        answer.window = AgentCapabilities.Window(open: system.hasAppWindow, menuBarMode: system.runsInMenuBar)
         answer.onDevice = onDeviceAgent.capabilities()
         await environment.subtitles.loadAvailability()
         answer.onDevice?.subtitles = subtitleAgent.capabilities()

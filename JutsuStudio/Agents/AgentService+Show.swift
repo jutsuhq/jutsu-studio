@@ -41,7 +41,11 @@ extension AgentService {
                 }
             shown = AgentShown(page: page)
         }
-        system.showMainWindow()
+        guard system.showMainWindow() else {
+            throw AgentError(
+                .failed, message: "Jutsu Studio couldn't open its window.", retryable: true,
+                next: "Ask the person to open Jutsu Studio from the Dock or the menu bar, then call show again.")
+        }
         return shown
     }
 }

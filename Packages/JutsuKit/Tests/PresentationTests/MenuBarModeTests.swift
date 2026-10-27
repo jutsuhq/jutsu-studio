@@ -1,4 +1,5 @@
 import Foundation
+import JutsuAgent
 import Testing
 
 @testable import Presentation
@@ -66,5 +67,15 @@ import Testing
         // The panel's Quit goes through the same `applicationShouldTerminate` as ⌘Q.
         #expect(BackgroundPolicy.quitPrompt(activeCount: 2) != nil)
         #expect(BackgroundPolicy.quitPrompt(activeCount: 0) == nil)
+    }
+}
+
+extension MenuBarModeTests {
+    @Test func theHelpersArgumentMakesAHelperLaunchWhateverTheEventSays() {
+        let helper = ["/Applications/Jutsu Studio.app/Contents/MacOS/Jutsu Studio", AgentProtocol.helperLaunchArgument]
+        #expect(MenuBarMode.launch(arguments: helper, isLoginItem: false) == .helper)
+        #expect(MenuBarMode.launch(arguments: helper, isLoginItem: true) == .helper)
+        #expect(MenuBarMode.launch(arguments: [helper[0]], isLoginItem: true) == .login)
+        #expect(MenuBarMode.launch(arguments: [helper[0]], isLoginItem: false) == .person)
     }
 }
