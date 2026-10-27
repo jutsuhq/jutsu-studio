@@ -144,7 +144,7 @@ struct LibraryDetail: View {
             }
             .disabled(item.outputFile == nil)
             .buttonStyle(.iconAction)
-            EditingExportButton(item: item)
+            EditingExportButton(item: item, subtitles: (try? record?.material())?.current.subtitles)
             moreMenu
         }
     }

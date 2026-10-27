@@ -2976,6 +2976,15 @@
     },
     "The version these subtitles belong to is no longer in the library." : {
 
+    },
+    "This version has no subtitles. Make them with Subtitles… on its page, or turn subtitles off for this output." : {
+
+    },
+    "Burn In" : {
+
+    },
+    "Include Subtitles (SRT)" : {
+
     }
   },
   "version" : "1.0"

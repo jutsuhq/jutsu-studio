@@ -59,22 +59,35 @@ public enum DeliveryPlan {
                 let base = ExportNaming.deliveryBaseName(
                     set: set.name, position: offset + 1, count: set.items.count, item: item.name,
                     output: labels[output.id] ?? output.summary)
-                // A file this set wrote for the same item and output is written again under its name.
+                // A file this set wrote for the same item and output is written again under its name, with subtitle
+                // files beside it only where it wrote them too, or where no other file has their names.
                 let ownFile = previous.flatMap { $0.status == .done ? $0.fileName : nil }.flatMap { name in
-                    name.hasSuffix(".\(output.fileExtension)") && !planned.contains(name.lowercased()) ? name : nil
+                    let sides = Self.names(name, output).dropFirst()
+                    let ownsSides =
+                        previous?.output.subtitleFormats == output.subtitleFormats
+                        || !sides.contains { isTaken($0) || planned.contains($0.lowercased()) }
+                    return name.hasSuffix(".\(output.fileExtension)") && !planned.contains(name.lowercased())
+                        && ownsSides ? name : nil
                 }
+                // Subtitle files go next to the video under its name, so their names have to be free too.
                 let name =
                     ownFile
                     ?? OutputNamePattern.available("\(base).\(output.fileExtension)") { candidate in
-                        planned.contains(candidate.lowercased()) || isTaken(candidate)
+                        Self.names(candidate, output).contains { planned.contains($0.lowercased()) || isTaken($0) }
                     }
-                planned.insert(name.lowercased())
+                for taken in Self.names(name, output) { planned.insert(taken.lowercased()) }
                 tasks.append(
                     DeliveryTask(
                         item: item, output: output, fileName: name, frame: frame, replacesExisting: ownFile != nil))
             }
         }
         return tasks
+    }
+
+    /// The video's file name and those of the subtitle files next to it.
+    public static func names(_ fileName: String, _ output: DeliveryOutput) -> [String] {
+        let stem = (fileName as NSString).deletingPathExtension
+        return [fileName] + output.subtitleFormats.map { "\(stem).\($0.fileExtension)" }
     }
 
     private static func includes(

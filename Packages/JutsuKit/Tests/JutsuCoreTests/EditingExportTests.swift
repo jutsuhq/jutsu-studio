@@ -109,6 +109,15 @@ import Testing
         #expect(names.video == "\(base)_v4.mp4")
         #expect(names.sidecar == "\(base)_v4.json")
     }
+
+    @Test func aTakenSubtitlesNameBumpsTheVersionForAllThree() {
+        let base = "rooftop_00m04.0s-00m10.0s_motion_hero"
+        let taken: Set = ["\(base)_v1.srt"]
+        let names = ExportNaming.names(for: spec(), presetName: nil, preset: .editingH264) { taken.contains($0) }
+        #expect(names.video == "\(base)_v2.mp4")
+        #expect(names.sidecar == "\(base)_v2.json")
+        #expect(names.subtitles == "\(base)_v2.srt")
+    }
 }
 
 @Suite struct ExportSidecarTests {

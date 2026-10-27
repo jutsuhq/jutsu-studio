@@ -33,6 +33,10 @@ public enum DeliveryRun {
                 report(task.id, .done)
             } catch is CancellationError {
                 break
+            } catch DeliverySetError.noSubtitles {
+                let message = DeliveryContent.noSubtitlesMessage
+                results.append(task.result(.failed, message: message))
+                report(task.id, .failed(message))
             } catch DeliverySetError.sourceUnavailable {
                 let message = DeliveryContent.unavailableMessage
                 results.append(task.result(.skipped, message: message))
@@ -70,6 +74,10 @@ public enum DeliveryContent {
     public static let newSetTitle = String(localized: "New Delivery Set", bundle: .module)
     public static let unavailableMessage = String(
         localized: "The file isn't on this Mac. Download it to the library or connect its drive.", bundle: .module)
+    public static let noSubtitlesMessage = String(
+        localized:
+            "This version has no subtitles. Make them with Subtitles… on its page, or turn subtitles off for this output.",
+        bundle: .module)
     public static let frozenMessage = String(
         localized: "This set has been exported, so its versions stay as they are. Start a new set from it instead.",
         bundle: .module)
@@ -119,7 +127,18 @@ public enum DeliveryContent {
             parts = [video.title]
         }
         if let aspect = output.aspect { parts.insert(aspect.title, at: 1) }
+        if output.kind == .video, let subtitles = output.subtitles { parts.append(subtitles.title) }
         return parts.joined(separator: " · ")
+    }
+}
+
+extension DeliverySubtitles {
+    /// "SRT + VTT", "Burn In".
+    public var title: String {
+        switch self {
+        case .files: "SRT + VTT"
+        case .burnIn: String(localized: "Burn In", bundle: .module)
+        }
     }
 }
 

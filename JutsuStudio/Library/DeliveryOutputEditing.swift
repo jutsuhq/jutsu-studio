@@ -71,6 +71,11 @@ struct DeliveryOutputRow: View {
             FilterMenu(
                 title: String(localized: "Preset"), selection: videoBinding,
                 options: ExportPreset.allCases.map { ($0, "\($0.title) (\($0.formatSummary))") })
+            FilterMenu(
+                title: String(localized: "Subtitles"), selection: $output.subtitles,
+                options: [(nil, String(localized: "None"))] + DeliverySubtitles.allCases.map { ($0, $0.title) }
+            )
+            .hoverHint("Each video's subtitles, from its version")
         }
     }
 

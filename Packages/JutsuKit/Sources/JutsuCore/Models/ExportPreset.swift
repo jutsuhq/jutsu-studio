@@ -160,6 +160,14 @@ public struct RGBColor: Codable, Sendable, Hashable {
     public static let black = RGBColor(red: 0, green: 0, blue: 0)
 }
 
+/// What a video output does with the subtitles of each video's version.
+public enum DeliverySubtitles: String, Codable, Sendable, CaseIterable {
+    /// An `.srt` and a `.vtt` next to the video, under its name, timed as the video is.
+    case files
+    /// Drawn into the video's frames.
+    case burnIn = "burn_in"
+}
+
 /// One output of a delivery set: an image or video preset, and the frame every item is cropped to. Image outputs
 /// apply to the set's images, video outputs to its videos.
 public struct DeliveryOutput: Codable, Sendable, Hashable, Identifiable {
@@ -174,12 +182,23 @@ public struct DeliveryOutput: Codable, Sendable, Hashable, Identifiable {
     public var preset: Preset
     /// `nil` keeps each item's own frame.
     public var aspect: CropAspect?
+    /// A video output's subtitles; `nil` for none, and for an image output.
+    public var subtitles: DeliverySubtitles?
 
-    public init(id: UUID = UUID(), name: String = "", preset: Preset, aspect: CropAspect? = nil) {
+    public init(
+        id: UUID = UUID(), name: String = "", preset: Preset, aspect: CropAspect? = nil,
+        subtitles: DeliverySubtitles? = nil
+    ) {
         self.id = id
         self.name = name
         self.preset = preset
         self.aspect = aspect
+        self.subtitles = subtitles
+    }
+
+    /// The subtitle files written next to a video of this output: none unless its subtitles are `files`.
+    public var subtitleFormats: [SubtitleFormat] {
+        kind == .video && subtitles == .files ? SubtitleFormat.allCases : []
     }
 
     public var kind: Material.Kind {
@@ -203,6 +222,7 @@ public struct DeliveryOutput: Codable, Sendable, Hashable, Identifiable {
             case .image(let image): [image.format.fileExtension] + [image.longEdge.map(String.init)].compactMap(\.self)
             case .video(let video): [video.rawValue]
             }
-        return (format + [aspect?.key].compactMap(\.self)).joined(separator: "-")
+        let burned = kind == .video && subtitles == .burnIn ? "subtitled" : nil
+        return (format + [aspect?.key, burned].compactMap(\.self)).joined(separator: "-")
     }
 }
