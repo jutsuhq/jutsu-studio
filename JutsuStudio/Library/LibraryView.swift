@@ -67,6 +67,8 @@ struct LibraryView: View {
     @State var comparingVariants: VariantCompare?
     /// The image version whose details sheet is open: its prompt, what it was made from and the videos made from it.
     @State var imageDetails: MaterialReference?
+    /// Upscale › On this Mac for an image, while its sheet is open.
+    @State var onDeviceImage: OnDeviceTarget?
     /// The delivery sets sheet, open on one set.
     @State var deliverySets: DeliverySetsRoute?
     /// The grid or the large viewer has the keyboard, so single-key culling never fires while typing.
@@ -173,6 +175,7 @@ struct LibraryView: View {
             }
             .sheet(item: $finalsBatch) { RenderFinalsSheet(batch: $0) }
             .sheet(item: $deliverySets) { DeliverySetsSheet(route: $0) }
+            .sheet(item: $onDeviceImage) { OnDeviceEnhanceSheet(target: $0) }
             .sheet(isPresented: Binding(isPresenting: $imageDetails)) {
                 if let imageDetails { imageDetailsSheet(imageDetails) }
             }

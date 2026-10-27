@@ -17,18 +17,7 @@ extension MediaPreparer {
     /// Read from the file's header; EXIF orientations 5–8 turn the image a quarter, so its sides swap.
     public func imageSize(of image: LocalImage) async -> PixelSize? {
         guard image.fileURL.isFileURL else { return nil }
-        return try? await image.withAccess { url -> PixelSize? in
-            guard let source = CGImageSourceCreateWithURL(url as CFURL, nil), CGImageSourceGetCount(source) > 0
-            else { return nil }
-            let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any] ?? [:]
-            let width = properties[kCGImagePropertyPixelWidth] as? Int ?? 0
-            let height = properties[kCGImagePropertyPixelHeight] as? Int ?? 0
-            let orientation = properties[kCGImagePropertyOrientation] as? Int ?? 1
-            let size =
-                (5...8).contains(orientation)
-                ? PixelSize(width: height, height: width) : PixelSize(width: width, height: height)
-            return size.isValid ? size : nil
-        }
+        return try? await image.withAccess { ImageThumbnail.size(at: $0) }
     }
 
     /// `url` is the image file with access already started.
@@ -98,6 +87,31 @@ public enum ImageThumbnail {
         let options = [kCGImageSourceShouldCache: false] as CFDictionary
         guard let source = CGImageSourceCreateWithData(data as CFData, options) else { return nil }
         return image(from: source, maxPixelSize: maxPixelSize)
+    }
+
+    /// The upright size of the image in the file at `url`, read from its header: EXIF orientations 5–8 turn the
+    /// image a quarter, so its sides swap. `nil` when it can't be read.
+    public static func size(at url: URL) -> PixelSize? {
+        guard url.isFileURL, let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+            CGImageSourceGetCount(source) > 0
+        else { return nil }
+        let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any] ?? [:]
+        let width = properties[kCGImagePropertyPixelWidth] as? Int ?? 0
+        let height = properties[kCGImagePropertyPixelHeight] as? Int ?? 0
+        let orientation = properties[kCGImagePropertyOrientation] as? Int ?? 1
+        let size =
+            (5...8).contains(orientation)
+            ? PixelSize(width: height, height: width) : PixelSize(width: width, height: height)
+        return size.isValid ? size : nil
+    }
+
+    /// Whether the image in the file at `url` has an alpha channel, read from its header; `false` when unread.
+    public static func hasAlpha(at url: URL) -> Bool {
+        guard url.isFileURL, let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+            CGImageSourceGetCount(source) > 0,
+            let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
+        else { return false }
+        return properties[kCGImagePropertyHasAlpha] as? Bool ?? false
     }
 
     static func image(from source: CGImageSource, maxPixelSize: Int) -> CGImage? {
