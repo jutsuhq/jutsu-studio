@@ -65,6 +65,7 @@ struct AboutView: View {
                 Text(AboutContent.license)
                 Text(AboutContent.fontCredit)
                 Text(AboutContent.updaterCredit)
+                Text(SubtitleText.parakeetCredit)
             }
             .font(.system(size: 11))
             .foregroundStyle(Theme.faint)

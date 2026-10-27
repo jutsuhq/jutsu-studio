@@ -88,6 +88,8 @@ Jutsu Studio is an **unofficial, community-built tool**. It is not affiliated wi
 
 - [Barlow Condensed](https://github.com/jpt/barlow) by The Barlow Project Authors, used unmodified under the [SIL Open Font License 1.1](JutsuStudio/Resources/Fonts/OFL.txt).
 - [Sparkle](https://sparkle-project.org) for Software Update, under the [MIT License](JutsuStudio/Resources/Licenses/Sparkle.txt).
+- [FluidAudio](https://github.com/FluidInference/FluidAudio) runs Parakeet Ultra, under the [Apache License 2.0](JutsuStudio/Resources/Licenses/FluidAudio.txt).
+- The [Parakeet Ultra](https://huggingface.co/FluidInference/parakeet-ultra-coreml) speech model, downloaded only when you ask in Settings: NVIDIA Parakeet TDT 0.6B v3, post-trained by moondream, Core ML build by FluidInference, under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
 ## License
 

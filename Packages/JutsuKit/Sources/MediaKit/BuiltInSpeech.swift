@@ -89,6 +89,8 @@ private struct Session {
                 attributeOptions: [.audioTimeRange])
             module = transcriber
             results = Self.finals(of: transcriber.results.map { ($0.isFinal, $0.text) })
+        case .parakeetUltra:
+            throw TranscriptionError.unsupportedLanguage
         }
     }
 

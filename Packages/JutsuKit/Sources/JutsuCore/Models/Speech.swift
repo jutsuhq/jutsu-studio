@@ -6,6 +6,17 @@ public enum SpeechModel: String, Codable, Sendable, CaseIterable {
     case transcriber = "speech_transcriber"
     /// macOS 26's DictationTranscriber, the built-in model for the locales SpeechTranscriber lacks.
     case dictation
+    /// Parakeet Ultra (`ParakeetUltra`), a model the app downloads once, for 25 European languages.
+    case parakeetUltra = "parakeet_ultra"
+
+    public var isBuiltIn: Bool { self != .parakeetUltra }
+}
+
+/// Which model makes a run's subtitles, as the person picks it.
+public enum SubtitleEngine: String, Codable, Sendable, CaseIterable {
+    /// macOS's own models (`SpeechSelection.builtIn`).
+    case builtIn = "built_in"
+    case parakeet
 }
 
 /// A word as it was spoken, in seconds from the start of the file.
@@ -105,12 +116,18 @@ public struct SpeechAvailability: Sendable, Hashable {
 
     public static let none = SpeechAvailability()
 
+    /// The built-in models take exactly the locales they list; Parakeet takes a language by its code alone, so
+    /// "de-AT" as well as "de".
     public func supports(_ model: SpeechModel, _ language: String) -> Bool {
-        languages[model]?.contains(language) == true
+        guard let listed = languages[model] else { return false }
+        return model.isBuiltIn
+            ? listed.contains(language) : listed.contains(SpeechSelection.languageCode(language))
     }
 
     public func isInstalled(_ model: SpeechModel, _ language: String) -> Bool {
-        installed[model]?.contains(language) == true
+        guard let installed = installed[model] else { return false }
+        return model.isBuiltIn
+            ? installed.contains(language) : installed.contains(SpeechSelection.languageCode(language))
     }
 }
 
@@ -123,4 +140,8 @@ public enum TranscriptionError: Error, Sendable, Equatable {
     case unsupportedLanguage
     /// The language's model isn't here, and the person hasn't agreed to downloading it.
     case modelNeeded
+    /// Parakeet Ultra isn't downloaded; Settings › Subtitles downloads it.
+    case modelNotDownloaded
+    /// Too little free memory to load the model now, in megabytes.
+    case notEnoughMemory(neededMB: Int, freeMB: Int)
 }

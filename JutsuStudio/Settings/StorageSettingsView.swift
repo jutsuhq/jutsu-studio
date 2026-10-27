@@ -30,6 +30,9 @@ struct StorageSettingsView: View {
                 SettingsRow(label: "Prepared sources", value: sizeText(usage?.sources))
                 SettingsRow(label: "Preset previews", value: sizeText(usage?.cache))
                 SettingsRow(label: "Motion Library and uploads", value: sizeText(usage?.media))
+                SettingsRow(
+                    label: SubtitleText.modelsFolder,
+                    value: sizeText(environment.speechModels.size))
             }
             SettingsSection(
                 title: "Cache",

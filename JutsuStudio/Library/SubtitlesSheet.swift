@@ -22,6 +22,7 @@ struct SubtitlesSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var language = ""
+    @State private var engine = SubtitleEngine.builtIn
     @State private var agreesToDownload = false
 
     private var runs: SubtitleRuns { environment.subtitles }
@@ -32,11 +33,20 @@ struct SubtitlesSheet: View {
             .sorted { $0.1.localizedStandardCompare($1.1) == .orderedAscending }
     }
 
-    private var needsConsent: Bool { !language.isEmpty && runs.needsConsent(language) }
+    private var needsConsent: Bool { !language.isEmpty && runs.needsConsent(language, engine: engine) }
+
+    private var needsDownload: Bool { !language.isEmpty && runs.needsDownload(language, engine: engine) }
 
     private var canStart: Bool {
-        !language.isEmpty && runs.model(for: language) != nil && runs.run(for: target.source.materialID) == nil
-            && (!needsConsent || agreesToDownload)
+        !language.isEmpty && runs.model(for: language, engine: engine) != nil
+            && runs.run(for: target.source.materialID) == nil && (!needsConsent || agreesToDownload) && !needsDownload
+    }
+
+    /// What keeps the picked engine from hearing the picked language, if anything.
+    private var engineNote: String? {
+        guard !language.isEmpty, runs.availability != nil else { return nil }
+        if runs.model(for: language, engine: engine) == nil { return SubtitleText.unsupportedLanguage }
+        return needsDownload ? SubtitleText.parakeetNotDownloaded : nil
     }
 
     var body: some View {
@@ -76,6 +86,15 @@ struct SubtitlesSheet: View {
             }
             .labelsHidden()
             .pickerStyle(.menu)
+            SectionLabel(title: "Model")
+            SegmentedControl(selection: $engine, options: SubtitleEngine.allCases.map { ($0, $0.title) })
+                .fixedSize()
+            if let engineNote {
+                Text(engineNote)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Theme.warning)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 
@@ -125,7 +144,8 @@ struct SubtitlesSheet: View {
         if needsConsent { runs.agreeToModel(for: language) }
         runs.start(
             SubtitleRuns.Request(
-                source: target.source, file: target.file, bookmark: target.bookmark, language: language))
+                source: target.source, file: target.file, bookmark: target.bookmark, language: language, engine: engine)
+        )
         dismiss()
     }
 }

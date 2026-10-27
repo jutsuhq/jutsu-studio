@@ -7,9 +7,24 @@ public enum SpeechSelection {
         [.transcriber, .dictation].first { availability.supports($0, language) }
     }
 
-    /// Every model's languages, once each, in identifier order.
+    /// The model `engine` hears `language` with; `nil` when it doesn't take the language. Parakeet is named whether
+    /// or not it is downloaded yet.
+    public static func model(
+        _ engine: SubtitleEngine, for language: String, in availability: SpeechAvailability
+    ) -> SpeechModel? {
+        switch engine {
+        case .builtIn: builtIn(for: language, in: availability)
+        case .parakeet: availability.supports(.parakeetUltra, language) ? .parakeetUltra : nil
+        }
+    }
+
+    /// Every model's languages, once each, in identifier order: the built-in models' locales, and Parakeet's
+    /// languages that no built-in locale has, by their code.
     public static func languages(in availability: SpeechAvailability) -> [String] {
-        Array(Set(availability.languages.values.joined())).sorted()
+        let locales = Set(SpeechModel.allCases.filter(\.isBuiltIn).flatMap { availability.languages[$0] ?? [] })
+        let covered = Set(locales.map(languageCode))
+        let others = (availability.languages[.parakeetUltra] ?? []).filter { !covered.contains($0) }
+        return (locales.union(others)).sorted()
     }
 
     /// The language the sheet starts on: the last one used when it is offered, else the system's first preferred

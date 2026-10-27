@@ -7,6 +7,7 @@ cd "$(repo_root)"
 PATHS=(
     JutsuStudio JutsuCLI Packages/JutsuKit/Package.swift Packages/JutsuKit/Sources Packages/JutsuKit/Tests
     Packages/HiggsfieldKit/Package.swift Packages/HiggsfieldKit/Sources Packages/HiggsfieldKit/Tests
+    Packages/ParakeetKit/Package.swift Packages/ParakeetKit/Sources
 )
 
 echo "› swift-format"

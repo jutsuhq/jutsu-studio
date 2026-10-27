@@ -3,7 +3,7 @@ import Presentation
 import SwiftUI
 
 enum SettingsTab: String, CaseIterable, Identifiable {
-    case connection, general, output, storage, spending, notifications, agents, shortcuts
+    case connection, general, output, subtitles, storage, spending, notifications, agents, shortcuts
 
     var id: Self { self }
 
@@ -12,6 +12,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         case .connection: String(localized: "Connection")
         case .general: String(localized: "General")
         case .output: String(localized: "Output")
+        case .subtitles: String(localized: "Subtitles")
         case .storage: String(localized: "Storage")
         case .spending: String(localized: "Spending")
         case .notifications: String(localized: "Notifications")
@@ -50,6 +51,7 @@ struct SettingsView: View {
                     case .connection: ConnectionSettingsView()
                     case .general: GeneralSettingsView()
                     case .output: OutputSettingsView()
+                    case .subtitles: SubtitleSettingsView()
                     case .storage: StorageSettingsView()
                     case .spending: SpendingSettingsView(unit: connection.state.kind == .account ? .credits : .usd)
                     case .notifications: NotificationSettingsView()

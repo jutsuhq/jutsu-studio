@@ -2562,6 +2562,18 @@
     },
     "Each video's subtitles, from its version" : {
 
+    },
+    "Hugging Face" : {
+
+    },
+    "Details" : {
+
+    },
+    "Languages" : {
+
+    },
+    "Downloads the model from Hugging Face into Jutsu Studio's own folder." : {
+
     }
   },
   "version" : "1.0"

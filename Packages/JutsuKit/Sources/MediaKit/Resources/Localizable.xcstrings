@@ -25,6 +25,12 @@
     },
     "This video's format can't be read. Convert it to MP4 or MOV first." : {
 
+    },
+    "%@ didn't match the model's checksum and was deleted. Try again." : {
+
+    },
+    "The server didn't send %@ as asked. Try again later." : {
+
     }
   },
   "version" : "1.0"
