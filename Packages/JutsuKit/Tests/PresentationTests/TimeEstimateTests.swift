@@ -116,10 +116,10 @@ enum TimingFixture {
 
     @Test func menuBarRowsCarryTheEstimate() {
         let times = GenerationTimes(TimingFixture.history(processing: 110))
-        let summary = MenuBarSummary(
-            jobs: [TimingFixture.job(.processing, submittedMinutesAgo: 1)], connection: .none, now: JobFixture.now,
-            times: times)
-        #expect(summary.rows.first?.timeEstimate?.label == "usually ~2 min")
+        let panel = MenuBarPanel(
+            jobs: [TimingFixture.job(.processing, submittedMinutesAgo: 1)], connection: .none,
+            agents: .init(isAllowed: false), now: JobFixture.now, times: times)
+        #expect(panel.running.first?.estimate?.label == "usually ~2 min")
     }
 }
 

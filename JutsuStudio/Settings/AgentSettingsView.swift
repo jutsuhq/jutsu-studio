@@ -6,9 +6,6 @@ import SwiftUI
 /// day, and the line that adds the helper to Claude Code.
 struct AgentSettingsView: View {
     @Environment(AgentService.self) private var agents
-    /// Read from the saved preferences, never through `@AppStorage`, which also reads launch arguments: the switch
-    /// shows what the app enforces.
-    @State private var isAllowed = AgentPreferences().isAllowed
     @State private var allowsUnlimited = AgentPreferences().allowsUnlimited
     @State private var centsText = ""
     @State private var creditsText = ""
@@ -28,7 +25,10 @@ struct AgentSettingsView: View {
                         """)
             ) {
                 SettingsRow(label: "Allow agents", detail: statusText, isFirst: true) {
-                    Toggle("Allow agents", isOn: $isAllowed)
+                    // `AgentService.isAllowed`, shared with the menu bar panel: read from the saved preferences,
+                    // never through `@AppStorage`, which also reads launch arguments, so the switch shows what the
+                    // app enforces.
+                    Toggle("Allow agents", isOn: Binding(get: { agents.isAllowed }, set: { agents.setAllowed($0) }))
                         .toggleStyle(.switch)
                         .labelsHidden()
                 }
@@ -73,9 +73,6 @@ struct AgentSettingsView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.bottom, Theme.Spacing.large)
             }
-        }
-        .onChange(of: isAllowed) { _, isAllowed in
-            preferences.setAllowed(isAllowed)
         }
         .onChange(of: allowsUnlimited) { _, allows in
             preferences.setAllowsUnlimited(allows)

@@ -326,6 +326,16 @@ extension JobEngine {
     /// (`AgentOrigin.pausedByAgent`), so the agent's `resumeAll(agentsOnly:)` lifts only its own pause. The person's
     /// Pause all takes over the jobs an agent paused, so no agent lifts it.
     public func pauseAll(agentsOnly: Bool = false) async {
+        await pause(agentsOnly: agentsOnly, byAgent: agentsOnly)
+    }
+
+    /// The person's Pause agents (the menu bar panel): pauses the jobs agents queued as Pause all pauses every job,
+    /// so no agent's `resumeAll(agentsOnly:)` lifts it and the person's own jobs run on. `resumeAgentJobs` lifts it.
+    public func pauseAgentJobs() async {
+        await pause(agentsOnly: true, byAgent: false)
+    }
+
+    private func pause(agentsOnly: Bool, byAgent: Bool) async {
         let pausable = { (job: Job) in
             job.state.isPausableByUser && job.submitAttempt == nil && (!agentsOnly || job.agent != nil)
         }
@@ -336,13 +346,14 @@ extension JobEngine {
                 continue
             }
             do {
-                try await apply(.paused(.byUser), to: job.id) { if agentsOnly { $0.agent?.pausedByAgent = true } }
+                try await apply(.paused(.byUser), to: job.id) { if byAgent { $0.agent?.pausedByAgent = true } }
             } catch {
                 log.error("Job \(job.id): can't pause", detail: String(describing: error))
                 startRunner(job.id)
             }
         }
-        guard !agentsOnly else { return }
+        guard !byAgent else { return }
+        // The person's pause takes over the jobs an agent paused, so no agent lifts it.
         for job in jobs.values where job.state == .paused(.byUser) && job.agent?.pausedByAgent == true {
             do {
                 try await save(job.id) { $0.agent?.pausedByAgent = nil }
@@ -356,10 +367,16 @@ extension JobEngine {
     /// still missing pauses for it again, and funds pauses wait for the user's own resume. `agentsOnly`, an agent's
     /// `resume_queue`, resumes only the jobs an agent's `pauseAll(agentsOnly:)` paused, never the person's own pause.
     public func resumeAll(agentsOnly: Bool = false) async {
-        let paused = jobs.values.filter {
-            $0.state == .paused(.byUser) && (!agentsOnly || $0.agent?.pausedByAgent == true)
-        }
-        for job in paused.sorted(by: { $0.createdAt < $1.createdAt }) {
+        await resume { $0.state == .paused(.byUser) && (!agentsOnly || $0.agent?.pausedByAgent == true) }
+    }
+
+    /// Lifts the person's Pause agents, and any other pause of an agent's job made with Pause all or an agent's own.
+    public func resumeAgentJobs() async {
+        await resume { $0.state == .paused(.byUser) && $0.agent != nil }
+    }
+
+    private func resume(where isResumed: (Job) -> Bool) async {
+        for job in jobs.values.filter(isResumed).sorted(by: { $0.createdAt < $1.createdAt }) {
             do {
                 try await resume(job.id)
             } catch {

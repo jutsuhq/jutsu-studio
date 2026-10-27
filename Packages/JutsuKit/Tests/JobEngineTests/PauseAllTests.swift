@@ -69,6 +69,32 @@ struct PauseAllTests {
         #expect(harness.log.count("submit") == 1)
     }
 
+    /// The person's Pause agents pauses only the agents' jobs, and no agent's resume_queue lifts it; Resume agents
+    /// does, and leaves the person's own Pause all alone.
+    @Test func thePersonsPauseOfAgentsHoldsAgainstAnAgentsResume() async throws {
+        let harness = Harness(maxConcurrency: 1)
+        await harness.provider.hold(.queued)
+        let engine = try await harness.makeEngine()
+        let running = try await engine.enqueue(makeSpec())
+        await harness.repository.wait(for: running.id, .queued)
+        let persons = try await engine.enqueue(makeSpec()).id
+        let origin = AgentOrigin(client: nil, requestID: "r-1", maxCost: AgentMoney(500, .usdCents))
+        let agents = try await engine.enqueue(makeSpec(), agent: origin).id
+        await harness.repository.wait { $0.count(in: .waitingForSlot) == 2 }
+        let state = { (id: UUID) in await harness.repository.job(id: id)?.state }
+
+        await engine.pauseAll(agentsOnly: true)
+        await engine.pauseAgentJobs()
+        await engine.resumeAll(agentsOnly: true)
+        await quiesce()
+        #expect(await state(persons) == .waitingForSlot)
+        #expect(await state(agents) == .paused(.byUser))
+
+        await engine.resumeAgentJobs()
+        await harness.repository.wait { $0.count(in: .waitingForSlot) == 2 }
+        #expect(harness.log.count("submit") == 1)
+    }
+
     @Test func pauseByUserSurvivesARestartAndAConnectionChange() async throws {
         let harness = Harness(online: false)
         let first = try await harness.makeEngine()
