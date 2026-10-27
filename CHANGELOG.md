@@ -7,6 +7,7 @@ Notable changes to Jutsu Studio. Versions follow [Semantic Versioning](https://s
 ### Added
 
 - Enhance › Smooth Motion… makes new frames between a result's own on this Mac, free and without an account: 60 fps keeps the clip's length and sound, 2× and 4× Slow Motion play it longer at its own frame rate without sound. Across a hard cut a frame is repeated instead of blending the two shots. The sheet says how long it takes; the result becomes a new version of the item, linked to the version it was made from, which stays as it is. Runs go one at a time at background priority, one per item until its new version is in, show their progress on the card and the result's page, and can be canceled, leaving no file behind. Needs macOS 15.4 or later.
+- Enhance › Upscale › On This Mac… makes a result up to 720p four times larger with macOS's own super resolution, free and keeping the sound; it isn't offered for larger results. A portrait frame the engine won't take is turned for it and back. An H.264 result stays H.264 up to 4096 pixels a side; anything larger, and every other codec, becomes HEVC. The sheet says how long it takes before it starts. The first upscale asks before macOS downloads its model from Apple once (about 62 MB); the card shows the download, then the frames. Needs macOS 26 or later.
 
 ### Changed
 
