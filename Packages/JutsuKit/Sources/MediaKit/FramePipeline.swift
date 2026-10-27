@@ -5,7 +5,7 @@ import Foundation
 import JutsuCore
 import VideoToolbox
 
-/// Where the on-device engines' frame loops run: on a thread of their own rather than on Swift's few cooperative
+/// Where the on-device engines' frame loops and the re-encode's pump run: on a thread of their own rather than on Swift's few cooperative
 /// threads. `copyNextSampleBuffer` and the writer's back-pressure block; with every cooperative thread blocked in such
 /// calls the AVFoundation work they wait for stalled too, and with it every media test running at once.
 enum FrameLoop {

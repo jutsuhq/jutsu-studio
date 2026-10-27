@@ -28,7 +28,8 @@ enum VideoReencoder {
         }
         writer.startSession(atSourceTime: request.timeRange.start)
         do {
-            try await pump(pipeline, timeRange: request.timeRange, progress: progress)
+            // The pump's reads and appends block, so it runs on the frame loop's own thread (`FrameLoop`).
+            try await FrameLoop.run { try await pump(pipeline, timeRange: request.timeRange, progress: progress) }
         } catch {
             reader.cancelReading()
             writer.cancelWriting()
