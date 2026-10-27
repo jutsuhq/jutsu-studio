@@ -75,11 +75,16 @@ public enum WordSpacing {
 
 /// The subtitles of one version of a video, made from its own file. A later version starts without any.
 public struct Subtitles: Codable, Sendable, Hashable {
+    /// What the model heard, as it heard it.
     public var transcript: Transcript
+    /// The cues as built from the transcript (`CueBuilder`) and then edited.
+    public var cues: [SubtitleCue]
     public var createdAt: Date
 
-    public init(transcript: Transcript, createdAt: Date = Date()) {
+    public init(transcript: Transcript, cues: [SubtitleCue]? = nil, createdAt: Date = Date()) {
         self.transcript = transcript
+        self.cues =
+            cues ?? CueBuilder.cues(from: transcript.words, separator: WordSpacing.separator(for: transcript.language))
         self.createdAt = createdAt
     }
 

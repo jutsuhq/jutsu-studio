@@ -48,10 +48,23 @@ struct LibraryDetail: View {
     @State private var templateName = ""
     @State private var duplicateRequest: JobSpec?
     @State private var isJoining = false
+    /// The version whose subtitles are open in the editor, in place of the page; `nil` while it is closed.
+    @State private var editedSubtitles: SubtitleEditorTarget?
 
     private var aspect: CGFloat { CGFloat(item.aspectRatio ?? 16 / 9) }
 
     var body: some View {
+        Group {
+            if let editedSubtitles {
+                SubtitleEditorPage(target: editedSubtitles, aspect: aspect, close: { self.editedSubtitles = nil })
+            } else {
+                page
+            }
+        }
+        .onChange(of: item.id) { editedSubtitles = nil }
+    }
+
+    private var page: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.large) {
             topBar
             GeometryReader { proxy in
@@ -188,7 +201,9 @@ struct LibraryDetail: View {
                 if item.spec.operation == nil { editButton }
                 EnhanceMenu(item: item, version: (try? record?.material())?.reference)
                 OnDeviceRunRow(materialID: item.id)
-                SubtitlesSection(item: item, subtitles: (try? record?.material())?.current.subtitles)
+                SubtitlesSection(
+                    item: item, subtitles: (try? record?.material())?.current.subtitles,
+                    edit: { editedSubtitles = editorTarget(for: $0) })
                 if JoinWithOriginal.isAvailable(for: item) {
                     joinButton
                 }
@@ -338,5 +353,17 @@ extension LibraryDetail {
 
     fileprivate func copy(_ text: String) {
         NSPasteboard.general.copyText(text)
+    }
+}
+
+extension LibraryDetail {
+    /// The version the editor opens on, as it is now: Done saves onto it even if the item gains a version meanwhile.
+    private func editorTarget(for subtitles: Subtitles) -> SubtitleEditorTarget? {
+        guard let material = try? record?.material(), let file = material.current.fileURL ?? item.outputFile else {
+            return nil
+        }
+        return SubtitleEditorTarget(
+            subtitles: material.current.subtitles ?? subtitles, reference: material.reference, file: file,
+            bookmark: material.current.bookmark)
     }
 }

@@ -2526,6 +2526,33 @@
     },
     "Make Subtitles Again…" : {
 
+    },
+    "Play from here" : {
+
+    },
+    "Split" : {
+
+    },
+    "Split this cue in two" : {
+
+    },
+    "Merge with Next" : {
+
+    },
+    "Replace with Mine" : {
+
+    },
+    "Keep the New Ones" : {
+
+    },
+    "Merge with the next cue" : {
+
+    },
+    "Text" : {
+
+    },
+    "Edit Subtitles" : {
+
     }
   },
   "version" : "1.0"
