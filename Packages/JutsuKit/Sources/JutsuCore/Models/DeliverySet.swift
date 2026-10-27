@@ -181,4 +181,6 @@ public enum DeliverySetError: Error, Equatable {
     case frozen
     /// The item's file isn't on this Mac: removed, on a drive that isn't connected, or only on the account.
     case sourceUnavailable
+    /// The output writes or burns in subtitles, and the item's version has none.
+    case noSubtitles
 }

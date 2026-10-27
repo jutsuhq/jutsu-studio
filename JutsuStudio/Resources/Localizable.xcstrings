@@ -2553,6 +2553,15 @@
     },
     "Edit Subtitles" : {
 
+    },
+    "Subtitles" : {
+
+    },
+    "The subtitles weren't written" : {
+
+    },
+    "Each video's subtitles, from its version" : {
+
     }
   },
   "version" : "1.0"

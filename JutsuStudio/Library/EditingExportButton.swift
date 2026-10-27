@@ -9,11 +9,15 @@ import os
 private let logger = Logger(subsystem: "com.jutsustudio", category: "Library")
 
 /// "Export for Editing…" in a result's top bar: a menu of editing presets, then a folder panel. While
-/// the take exports it shows progress and a cancel button; the finished file is shown in Finder.
+/// the take exports it shows progress and a cancel button; the finished file is shown in Finder. A version with
+/// subtitles can have them written as an `.srt` next to the take.
 struct EditingExportButton: View {
     let item: LibraryItemModel
+    /// The current version's, `nil` when it has none.
+    var subtitles: Subtitles?
 
     @AppStorage(EditingExportContent.writesSidecarKey) private var writesSidecar = true
+    @AppStorage(EditingExportContent.writesSubtitlesKey) private var writesSubtitles = true
     @State private var model = EditingExportModel()
 
     var body: some View {
@@ -48,6 +52,9 @@ struct EditingExportButton: View {
             }
             Divider()
             Toggle(EditingExportContent.sidecarToggleTitle, isOn: $writesSidecar)
+            if subtitles != nil {
+                Toggle(EditingExportContent.subtitlesToggleTitle, isOn: $writesSubtitles)
+            }
         } label: {
             Label(EditingExportContent.menuTitle, systemImage: "film.stack")
         }
@@ -61,7 +68,9 @@ struct EditingExportButton: View {
 
     private func export(_ preset: ExportPreset) {
         guard item.outputFile != nil, let folder = chooseFolder() else { return }
-        model.start(preset, item: item, to: folder, writesSidecar: writesSidecar)
+        model.start(
+            preset, item: item, to: folder, writesSidecar: writesSidecar,
+            subtitles: writesSubtitles ? subtitles?.cues : nil)
     }
 
     private func chooseFolder() -> URL? {
@@ -85,7 +94,11 @@ final class EditingExportModel {
     var message: UserMessage?
     @ObservationIgnored private var task: Task<Void, Never>?
 
-    func start(_ preset: ExportPreset, item: LibraryItemModel, to folder: URL, writesSidecar: Bool) {
+    /// - Parameter subtitles: cues written as an `.srt` next to the take; `nil` for none.
+    func start(
+        _ preset: ExportPreset, item: LibraryItemModel, to folder: URL, writesSidecar: Bool,
+        subtitles: [SubtitleCue]? = nil
+    ) {
         guard task == nil, let result = item.outputFile else { return }
         progress = 0
         task = Task {
@@ -95,7 +108,8 @@ final class EditingExportModel {
             }
             do {
                 let video = try await run(
-                    preset, item: item, result: result, folder: folder, writesSidecar: writesSidecar)
+                    preset, item: item, result: result, folder: folder, writesSidecar: writesSidecar,
+                    subtitles: subtitles)
                 NSWorkspace.shared.activateFileViewerSelecting([video])
             } catch is CancellationError {
                 return
@@ -116,7 +130,8 @@ final class EditingExportModel {
     }
 
     private func run(
-        _ preset: ExportPreset, item: LibraryItemModel, result: URL, folder: URL, writesSidecar: Bool
+        _ preset: ExportPreset, item: LibraryItemModel, result: URL, folder: URL, writesSidecar: Bool,
+        subtitles: [SubtitleCue]?
     ) async throws -> URL {
         let isAccessing = folder.startAccessingSecurityScopedResource()
         defer {
@@ -139,6 +154,18 @@ final class EditingExportModel {
         if let sidecarError {
             message = UserMessage(
                 title: String(localized: "The JSON sidecar wasn't written"), message: sidecarError.localizedDescription)
+        }
+        if let subtitles {
+            // Timed as the take is: the export keeps the result's timeline from its start.
+            // Its name was free with the video's when they were picked.
+            let srt = folder.appendingPathComponent(names.subtitles)
+            do {
+                try Data(SubtitleFormat.srt.text(of: subtitles).utf8).write(to: srt, options: .withoutOverwriting)
+            } catch {
+                logger.error("Can't write an export's subtitles: \(String(describing: error), privacy: .private)")
+                message = UserMessage(
+                    title: String(localized: "The subtitles weren't written"), message: error.localizedDescription)
+            }
         }
         return video
     }

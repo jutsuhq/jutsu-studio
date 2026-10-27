@@ -33,6 +33,10 @@ public enum EditingExportContent {
     public static let writesSidecarKey = "export.writesSidecar"
     public static let menuTitle = String(localized: "Export for Editing…", bundle: .module)
     public static let sidecarToggleTitle = String(localized: "Include JSON Sidecar", bundle: .module)
+    /// `UserDefaults` key of the "also write the subtitles" switch, offered for a version with subtitles; on by
+    /// default.
+    public static let writesSubtitlesKey = "export.writesSubtitles"
+    public static let subtitlesToggleTitle = String(localized: "Include Subtitles (SRT)", bundle: .module)
     public static let folderPrompt = String(localized: "Export Here", bundle: .module)
     public static let folderMessage = String(
         localized: "Choose a folder for the exported take. Existing files are never replaced.", bundle: .module)

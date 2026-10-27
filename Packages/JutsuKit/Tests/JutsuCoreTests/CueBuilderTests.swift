@@ -184,3 +184,33 @@ import Testing
         #expect(WordSpacing.separator(for: "de-DE") == " ")
     }
 }
+
+@Suite struct DeliverySubtitlesTests {
+    private func set(_ outputs: [DeliveryOutput]) -> DeliverySet {
+        let item = DeliverySet.Item(
+            reference: MaterialReference(materialID: UUID(), versionID: UUID()), kind: .video, name: "clip")
+        return DeliverySet(name: "Set", items: [item], outputs: outputs)
+    }
+
+    @Test func subtitleFilesNeedFreeNamesBesideTheVideo() {
+        let output = DeliveryOutput(preset: .video(.editingH264), subtitles: .files)
+        let free = DeliveryPlan.tasks(for: set([output]), scope: .all) { _ in false }
+        let base = (free[0].fileName as NSString).deletingPathExtension
+
+        let tasks = DeliveryPlan.tasks(for: set([output]), scope: .all) { $0 == "\(base).vtt" }
+        #expect(tasks.count == 1)
+        #expect(tasks[0].fileName != free[0].fileName)
+        #expect(DeliveryPlan.names(tasks[0].fileName, output).count == 3)
+        #expect(DeliveryPlan.names("a.mp4", DeliveryOutput(preset: .video(.editingH264))) == ["a.mp4"])
+    }
+
+    @Test func burningInNamesTheOutputAndOldOutputsStillDecode() throws {
+        let burned = DeliveryOutput(preset: .video(.editingH264), subtitles: .burnIn)
+        #expect(burned.summary == "editingH264-subtitled")
+        #expect(burned.subtitleFormats.isEmpty)
+        var json = try #require(try JSONSerialization.jsonObject(with: JSONEncoder().encode(burned)) as? [String: Any])
+        json.removeValue(forKey: "subtitles")
+        let old = try JSONDecoder().decode(DeliveryOutput.self, from: JSONSerialization.data(withJSONObject: json))
+        #expect(old.subtitles == nil)
+    }
+}

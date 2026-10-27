@@ -8,11 +8,13 @@ public enum EditingExporter {
     /// Writes `result` to `output`, which must not exist yet; an existing file is never replaced. The
     /// constant frame rate is the source clip's when its file can be read, otherwise the result's own.
     /// A canceled or failed export leaves nothing at `output`.
-    /// - Parameter crop: the frame of a delivery output that crops, as `CropFrame.rect` places it on the upright
-    ///   picture; `nil` keeps the whole frame.
+    /// - Parameters:
+    ///   - crop: the frame of a delivery output that crops, as `CropFrame.rect` places it on the upright picture;
+    ///     `nil` keeps the whole frame.
+    ///   - burnIn: cues drawn into the frames (`SubtitleBurnIn`), timed from the start of the result as the output is.
     public static func export(
         _ result: URL, source: SourceClip?, preset: ExportPreset, crop: (CropAspect, CropFrame)? = nil,
-        to output: URL, progress: @escaping @Sendable (Double) -> Void
+        burnIn: [SubtitleCue] = [], to output: URL, progress: @escaping @Sendable (Double) -> Void
     ) async throws {
         let asset = AVURLAsset(url: result)
         guard let track = try await asset.loadTracks(withMediaType: .video).first else {
@@ -28,6 +30,10 @@ public enum EditingExporter {
         composition.frameDuration = CMTime(value: frame.value, timescale: frame.timescale)
         if let (aspect, cropFrame) = crop {
             try await Self.crop(composition, to: aspect, frame: cropFrame, track: track, asset: asset)
+        }
+        if !burnIn.isEmpty {
+            let used = try await asset.load(.tracks).map(\.trackID)
+            SubtitleBurnIn.add(burnIn, to: composition, trackID: (used.max() ?? 0) + 1)
         }
 
         guard let session = AVAssetExportSession(asset: asset, presetName: sessionPreset(for: preset)) else {

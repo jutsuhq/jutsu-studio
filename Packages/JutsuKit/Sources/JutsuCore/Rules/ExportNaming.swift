@@ -6,6 +6,8 @@ public enum ExportNaming {
     public struct Names: Sendable, Hashable {
         public var video: String
         public var sidecar: String
+        /// The take's subtitles, when it has them.
+        public var subtitles: String
     }
 
     static let maxSourceBytes = 120
@@ -13,19 +15,22 @@ public enum ExportNaming {
     /// Characters other file systems an editor's media may live on (exFAT, SMB) reject.
     static let unsafe: Set<Character> = ["\\", "*", "?", "\"", "<", ">", "|"]
 
-    /// The first version whose video, under any preset's extension, and sidecar names are all free, so a
+    /// The first version whose video, under any preset's extension, sidecar and subtitles names are all free, so a
     /// new take never overwrites one and never shares a version number with an earlier take.
     public static func names(
         for spec: JobSpec, presetName: String?, preset: ExportPreset, isTaken: (String) -> Bool
     ) -> Names {
         let base = baseName(for: spec, presetName: presetName)
-        let extensions = Set(ExportPreset.allCases.map(\.fileExtension)).sorted() + ["json"]
+        let extensions =
+            Set(ExportPreset.allCases.map(\.fileExtension)).sorted() + ["json", SubtitleFormat.srt.fileExtension]
         var version = 1
         while extensions.contains(where: { isTaken("\(base)_v\(version).\($0)") }) {
             version += 1
         }
         let stem = "\(base)_v\(version)"
-        return Names(video: "\(stem).\(preset.fileExtension)", sidecar: "\(stem).json")
+        return Names(
+            video: "\(stem).\(preset.fileExtension)", sidecar: "\(stem).json",
+            subtitles: "\(stem).\(SubtitleFormat.srt.fileExtension)")
     }
 
     /// The name before `_v<N>`.

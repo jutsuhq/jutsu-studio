@@ -103,11 +103,12 @@ Images and videos share one persistent material catalog. It retains versions, th
 - One click to ProRes 422 for Premiere Pro, DaVinci Resolve or Final Cut Pro, or high-quality H.264.
 - Constant frame rate matching the source, and take names that sort in order (`rooftop_00m04.0s-00m10.0s_restyle_Film Noir_v2.mov`).
 - An optional JSON sidecar with the prompt, inputs and request ID.
+- For a version with subtitles, an optional `.srt` next to the take, timed as it is.
 
 ## Delivery sets
 
 - New Delivery Set on a selection of videos and images makes a named set of their exact versions. Library › Delivery Sets lists every set with its status: not exported, or exported with the date and folder, plus a note and a review link (text only; nothing is uploaded).
-- Export a set in several outputs at once: images as JPEG, PNG or HEIC at a chosen long edge, quality and color space (sRGB or Display P3), videos with the editing presets. PNG keeps transparency; JPEG and HEIC are flattened onto a background you pick. Each output can crop to an aspect ratio, and each item's frame can be moved before export.
+- Export a set in several outputs at once: images as JPEG, PNG or HEIC at a chosen long edge, quality and color space (sRGB or Display P3), videos with the editing presets. PNG keeps transparency; JPEG and HEIC are flattened onto a background you pick. Each output can crop to an aspect ratio, and each item's frame can be moved before export. A video output's Subtitles writes each video's subtitles as SRT and VTT next to it, or burns them into the frames; a video whose version has none fails with a message.
 - Files are named `<set>_<NN>_<item>_<output>.<ext>` with a JSON manifest of the exact versions next to them. Files made by others are never replaced.
 - Each file shows done, failed or skipped (an item whose file isn't on this Mac). Retry Failed writes only the failed ones; after fixing one item's crop, Export Pending writes only that item's files.
 - A set is frozen once exported: later edits of its items never change what it holds. New Set from This One starts the next round with the newest versions.

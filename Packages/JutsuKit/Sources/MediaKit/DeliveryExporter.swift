@@ -5,18 +5,27 @@ import JutsuCore
 
 /// Writes the files of a delivery set (`DeliveryPlan`): images with ImageIO, videos through `EditingExporter`.
 public enum DeliveryExporter {
-    /// Writes `task`'s file into `folder` from the item's file `source`, which is only read. The file is written
-    /// aside first and moved in when complete; it replaces an existing file only when the set wrote that file before
-    /// (`DeliveryTask.replacesExisting`), and a failed or canceled export leaves the folder as it was.
+    /// Writes `task`'s file into `folder` from the item's file `source`, which is only read. The file, and the SRT and
+    /// VTT of a video output with subtitle files, are written aside first and moved in together when all are complete;
+    /// they replace existing files only when the set wrote them before (`DeliveryTask.replacesExisting`), and a failed
+    /// or canceled export leaves the folder as it was. A video output with subtitles burns `subtitles` in, or writes
+    /// them as SRT and VTT next to the video, timed as it is.
+    /// - Parameter subtitles: the cues of the item's version; an output with subtitles throws
+    ///   `DeliverySetError.noSubtitles` without them.
     /// - Returns: the written file.
     @discardableResult
     public static func export(
-        _ task: DeliveryTask, source: URL, into folder: URL, progress: @escaping @Sendable (Double) -> Void
+        _ task: DeliveryTask, source: URL, subtitles: [SubtitleCue]? = nil, into folder: URL,
+        progress: @escaping @Sendable (Double) -> Void
     ) async throws -> URL {
+        let cues = subtitles ?? []
+        if task.output.kind == .video, task.output.subtitles != nil, cues.isEmpty {
+            throw DeliverySetError.noSubtitles
+        }
         let output = folder.appending(path: task.fileName, directoryHint: .notDirectory)
-        let staging = folder.appending(path: ".\(UUID().uuidString).partial", directoryHint: .notDirectory)
-            .appendingPathExtension(task.output.fileExtension)
-        defer { try? FileManager.default.removeItem(at: staging) }
+        let staging = stagingFile(in: folder, fileExtension: task.output.fileExtension)
+        var staged = [(staging: staging, target: output)]
+        defer { for file in staged { try? FileManager.default.removeItem(at: file.staging) } }
         switch task.output.preset {
         case .image(let preset):
             try writeImage(
@@ -25,15 +34,48 @@ public enum DeliveryExporter {
         case .video(let preset):
             try await EditingExporter.export(
                 source, source: nil, preset: preset, crop: task.output.aspect.map { ($0, task.frame ?? .centered) },
-                to: staging, progress: progress)
+                burnIn: task.output.subtitles == .burnIn ? cues : [], to: staging, progress: progress)
+        }
+        for (name, format) in zip(
+            DeliveryPlan.names(task.fileName, task.output).dropFirst(), task.output.subtitleFormats)
+        {
+            let file = stagingFile(in: folder, fileExtension: format.fileExtension)
+            staged.append((file, folder.appending(path: name, directoryHint: .notDirectory)))
+            try Data(format.text(of: cues).utf8).write(to: file)
         }
         try Task.checkCancellation()
-        if task.replacesExisting, FileManager.default.fileExists(atPath: output.path(percentEncoded: false)) {
-            _ = try FileManager.default.replaceItemAt(output, withItemAt: staging)
-        } else {
-            try FileManager.default.moveItem(at: staging, to: output)
-        }
+        try moveIn(staged, replacing: task.replacesExisting)
         return output
+    }
+
+    private static func stagingFile(in folder: URL, fileExtension: String) -> URL {
+        folder.appending(path: ".\(UUID().uuidString).partial", directoryHint: .notDirectory)
+            .appendingPathExtension(fileExtension)
+    }
+
+    /// Moves every staged file to its name, or none: a name taken by a file the set didn't write fails before
+    /// anything moves, and a move that fails takes back the files this export added.
+    static func moveIn(_ staged: [(staging: URL, target: URL)], replacing: Bool) throws {
+        let manager = FileManager.default
+        let exists = { (url: URL) in manager.fileExists(atPath: url.path(percentEncoded: false)) }
+        if !replacing, let taken = staged.first(where: { exists($0.target) }) {
+            throw CocoaError(
+                .fileWriteFileExists, userInfo: [NSFilePathErrorKey: taken.target.path(percentEncoded: false)])
+        }
+        var added: [URL] = []
+        do {
+            for file in staged {
+                if replacing, exists(file.target) {
+                    _ = try manager.replaceItemAt(file.target, withItemAt: file.staging)
+                } else {
+                    try manager.moveItem(at: file.staging, to: file.target)
+                    added.append(file.target)
+                }
+            }
+        } catch {
+            for url in added { try? manager.removeItem(at: url) }
+            throw error
+        }
     }
 
     /// Decodes the image upright at full size, crops it, scales it down to the preset's long edge and writes it in

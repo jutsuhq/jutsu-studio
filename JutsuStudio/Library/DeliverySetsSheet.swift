@@ -225,7 +225,9 @@ final class DeliveryExportModel {
             throw DeliverySetError.sourceUnavailable
         }
         _ = try await SecurityScopedAccess.withAccess(to: file, bookmark: version.bookmark) { url in
-            try await DeliveryExporter.export(task, source: url, into: directory) { _ in }
+            try await DeliveryExporter.export(
+                task, source: url, subtitles: version.subtitles?.cues, into: directory
+            ) { _ in }
         }
     }
 
