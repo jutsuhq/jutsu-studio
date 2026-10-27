@@ -65,6 +65,9 @@ public struct CapabilitiesCommand: Codable, Equatable, Sendable {
 public enum AgentSheet: String, Codable, Sendable, CaseIterable {
     /// Upscale on This Mac, where the person agrees to macOS downloading its model.
     case upscaleOnMac = "upscale_on_mac"
+    /// Subtitles, where the person agrees to macOS downloading a language's model and sees whether Parakeet Ultra
+    /// needs downloading.
+    case subtitles
 }
 
 /// Exactly one of `page`, `job` or `item`; `item` comes with `sheet`.

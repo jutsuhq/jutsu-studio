@@ -84,7 +84,7 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
                 name: "library",
                 tools: [
                     "library_search", "library_get", "library_download", "library_mark", "enhance", "delivery_set",
-                    "export", "frames",
+                    "export", "frames", "subtitles",
                 ]),
             ToolGroup(name: "window", tools: ["show"]),
         ]
@@ -225,6 +225,8 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
         public var upscaleVideo: AgentOnDeviceEngine
         /// Upscale with engine mac, on an image, 4×.
         public var upscaleImage: AgentOnDeviceEngine
+        /// `subtitles`: its speech models, their languages and models.
+        public var subtitles: AgentSubtitleCapabilities?
 
         public init(
             smoothMotion: AgentOnDeviceEngine, upscaleVideo: AgentOnDeviceEngine, upscaleImage: AgentOnDeviceEngine

@@ -92,9 +92,16 @@ public final class SubtitleRuns {
         self.defaults = defaults
         self.access = access
         self.register = register
+        defaultEngine = defaults.string(forKey: Self.engineKey).flatMap(SubtitleEngine.init(rawValue:)) ?? .auto
     }
 
     static let lastLanguageKey = "subtitles.lastLanguage"
+    static let engineKey = "subtitles.engine"
+
+    /// The model the Subtitles sheet and agents start on, from Settings › Subtitles; a run may pick another.
+    public var defaultEngine: SubtitleEngine {
+        didSet { defaults.set(defaultEngine.rawValue, forKey: Self.engineKey) }
+    }
 
     /// The language the sheet starts on: the last one a run was started in, then the system's.
     public var preferredLanguage: String? {
@@ -135,7 +142,7 @@ public final class SubtitleRuns {
         return !availability.isInstalled(model, language)
     }
 
-    /// Whether the person agreed to macOS downloading the speech model of `language`.
+    /// Whether the person agreed to macOS downloading the built-in speech model of `language`.
     public func agreedToModel(for language: String) -> Bool { consent.allowsSpeechModel(for: language) }
 
     public func agreeToModel(for language: String) {
@@ -155,13 +162,15 @@ public final class SubtitleRuns {
 
     /// Refused, returning `false`, when the engine doesn't take the language, while its model download waits for the
     /// person's agreement or Parakeet isn't downloaded, and while a run on the same item waits or runs.
+    /// - Parameter remembersLanguage: whether the sheet starts on this run's language next time: the person's runs
+    ///   only.
     @discardableResult
-    public func start(_ request: Request, id: UUID = UUID()) -> Bool {
+    public func start(_ request: Request, id: UUID = UUID(), remembersLanguage: Bool = true) -> Bool {
         guard let model = model(for: request.language, engine: request.engine),
             !needsConsent(request.language, engine: request.engine),
             !needsDownload(request.language, engine: request.engine), run(for: request.source.materialID) == nil
         else { return false }
-        defaults.set(request.language, forKey: Self.lastLanguageKey)
+        if remembersLanguage { defaults.set(request.language, forKey: Self.lastLanguageKey) }
         runs.append(Run(id: id, request: request, model: model, state: .waiting))
         next()
         return true

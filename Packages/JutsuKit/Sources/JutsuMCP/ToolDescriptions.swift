@@ -23,8 +23,12 @@ extension Tool {
             says what enhance runs free on this Mac: smoothMotion (its modes), upscaleVideo and upscaleImage, each \
             with available, the largest source either way round (maxLongSide, maxShortSide) and its model: none, \
             needs_consent (only the person can agree to macOS downloading it), downloading, ready (a run found it \
-            since the app started) or agreed (macOS downloads it at the first run if it isn't here yet). Free, and \
-            never shows a credential.
+            since the app started) or agreed (macOS downloads it at the first run if it isn't here yet). \
+            onDevice.subtitles lists the speech models subtitles make takes (engines: built_in, parakeet) with the \
+            languages each takes and its model (built_in: needsConsent, the languages whose model only the person \
+            can agree to macOS downloading, per language; parakeet: not_downloaded, downloading or ready), and \
+            defaultEngine, the person's choice in Settings. Free, and never shows a \
+            credential.
             """
         case .quote:
             """
@@ -92,7 +96,7 @@ extension Tool {
             needsPerson, progress, price, error and result (the finished video's path, with next saying how to check \
             it with frames); a run on this Mac (on_device) has operation, mode, item, the Library item whose new \
             version it makes, estimatedSeconds and price 0, and is queued, downloading (its model), processing, done, \
-            failed or canceled; an image \
+            failed or canceled (subtitles' runs have operation subtitles and no mode); an image \
             request's results are its images' paths, an export's results the files written, with folder and files \
             (each done, failed or skipped). An ID Jutsu Studio doesn't know is state unknown with next: an export's ID \
             is forgotten when the app quits. wait_seconds (0–50) waits until everything named has settled (done, \
@@ -200,13 +204,35 @@ extension Tool {
             frame whatever the time; a time past a video's end is refused. Free; never replaces a file. The source \
             of a result only on Higgsfield is read from its Higgsfield link.
             """
+        case .subtitles:
+            """
+            Subtitles of a video in the Library, heard from its speech on this Mac, free, with no account, max_cost or \
+            budget, as the Subtitles sheet and editor make them: cues of at most two 42-character lines, 1 to 7 \
+            seconds each, saved on the item's current version (a later version starts without them). make: \
+            request_id as in enhance (the same request_id and parameters return the same run, never a second one), \
+            language (en-US, de… from capabilities' onDevice.subtitles; the person's last or system language when \
+            left out) and engine (auto: macOS's SpeechTranscriber, else Parakeet Ultra once downloaded, else \
+            Dictation; built_in; parakeet; the person's default when left out). It returns the run (kind on_device, \
+            operation subtitles); follow it with jobs and cancel it with job_action. Runs go one at a time; an item \
+            with a run going is refused with busy; a language the engine doesn't take with invalid_request; and with \
+            needs_person when only the person can go on: agreeing to macOS downloading that language's model (the \
+            person agrees per language), or \
+            downloading Parakeet Ultra in Settings › Subtitles; then call show with the item and sheet subtitles and \
+            tell the person. A video without speech fails with "No speech found". get: the current version's \
+            language, model and cues (start, end, text, the lines joined by a newline), as the person may have \
+            edited them; with format (srt or vtt) also text, the file as it would be written. export: writes them as \
+            format into the output folder's Exports folder, never over a file, and answers with file. get and \
+            export of a version without subtitles are refused with not_found.
+            """
         case .show:
             """
             Opens a page of Jutsu Studio for the person and brings its window to the front: page (create, queue, \
             library or settings), or job, a job ID, which opens a finished job's result in Library and any other \
             job's row in the Queue, or item, a Library item ID, with sheet upscale_on_mac, which opens its Upscale on \
-            This Mac sheet, where the person agrees to macOS downloading the model: engine_unavailable on a Mac \
-            without the engine, needs_person while the person has another sheet open. Give exactly one of page, job \
+            This Mac sheet, where the person agrees to macOS downloading the model (engine_unavailable on a Mac \
+            without the engine), or sheet subtitles, a video's Subtitles sheet, where the person agrees to the \
+            download of a language's model or sees that Parakeet Ultra needs downloading; needs_person while the \
+            person has another sheet open. Give exactly one of page, job \
             or item. Changes nothing but what the window shows.
             """
         }

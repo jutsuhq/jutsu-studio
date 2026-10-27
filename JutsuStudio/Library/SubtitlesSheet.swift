@@ -70,7 +70,10 @@ struct SubtitlesSheet: View {
         .background(Theme.background)
         .task {
             await runs.loadAvailability()
-            if language.isEmpty { language = runs.preferredLanguage ?? "" }
+            if language.isEmpty {
+                language = runs.preferredLanguage ?? ""
+                engine = runs.defaultEngine
+            }
         }
         // The person agrees per language: macOS downloads a model per locale.
         .onChange(of: language) { agreesToDownload = false }

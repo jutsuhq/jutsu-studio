@@ -11,6 +11,17 @@ struct SubtitleSettingsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.xLarge) {
+            SettingsSection(title: "Subtitles") {
+                SettingsRow(label: "Model", detail: SubtitleText.autoNote, isFirst: true) {
+                    SegmentedControl(
+                        selection: Binding(
+                            get: { environment.subtitles.defaultEngine },
+                            set: { environment.subtitles.defaultEngine = $0 }),
+                        options: SubtitleEngine.allCases.map { ($0, $0.title) }
+                    )
+                    .fixedSize()
+                }
+            }
             SettingsSection(title: SubtitleText.modelsFolder, footer: SubtitleText.parakeetCredit) {
                 SettingsRow(label: SubtitleText.parakeetName, detail: SubtitleText.parakeetSummary, isFirst: true) {
                     control

@@ -31,6 +31,7 @@ extension Tool {
         case .deliverySet: "Delivery sets"
         case .export: "Export for editing"
         case .frames: "Still frames and contact sheet"
+        case .subtitles: "Subtitles on this Mac"
         case .show: "Show in Jutsu Studio"
         }
     }
@@ -234,6 +235,28 @@ extension Tool {
                 "compare_source": ["type": "boolean", "description": "The item's own source clip."],
             ]
             schema["required"] = ["times"]
+        case .subtitles:
+            schema["properties"] = [
+                "action": [
+                    "type": "string", "enum": .array(AgentSubtitlesAction.allCases.map { .string($0.rawValue) }),
+                ],
+                "item": ["type": "string", "format": "uuid", "description": "A video's Library ID."],
+                "request_id": Self.requestIDSchema,
+                "language": [
+                    "type": "string", "maxLength": .number(Double(SubtitlesCommand.maxLanguageLength)),
+                    "description":
+                        "make: en-US, de… from capabilities' onDevice.subtitles; the person's when left out.",
+                ],
+                "engine": [
+                    "type": "string", "enum": .array(AgentSubtitleEngine.allCases.map { .string($0.rawValue) }),
+                    "description": "make: the speech model; the person's default from Settings when left out.",
+                ],
+                "format": [
+                    "type": "string", "enum": .array(AgentSubtitleFormat.allCases.map { .string($0.rawValue) }),
+                    "description": "export: the file's format; get: adds the file's text.",
+                ],
+            ]
+            schema["required"] = ["action", "item"]
         case .elements:
             schema["properties"] = [
                 "query": [
@@ -256,7 +279,8 @@ extension Tool {
                 "item": ["type": "string", "format": "uuid", "description": "A Library item ID, with sheet."],
                 "sheet": [
                     "type": "string", "enum": .array(AgentSheet.allCases.map { .string($0.rawValue) }),
-                    "description": "upscale_on_mac: the item's Upscale on This Mac sheet.",
+                    "description":
+                        "upscale_on_mac: the item's Upscale on This Mac sheet; subtitles: its Subtitles sheet.",
                 ],
             ]
         }
@@ -369,6 +393,9 @@ extension Tool {
             ["readOnlyHint": false, "destructiveHint": false, "idempotentHint": true, "openWorldHint": true]
         // Writes new files on this Mac, never over one; each call writes new ones.
         case .deliverySet, .export:
+            ["readOnlyHint": false, "destructiveHint": false, "idempotentHint": false, "openWorldHint": false]
+        // make saves cues on the item and export writes a new file, both on this Mac; free.
+        case .subtitles:
             ["readOnlyHint": false, "destructiveHint": false, "idempotentHint": false, "openWorldHint": false]
         // Writes new files on this Mac likewise; compare_source may read a history item's source from Higgsfield.
         case .frames:

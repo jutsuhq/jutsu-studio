@@ -34,15 +34,18 @@ final class AgentService {
     @ObservationIgnored let operations = AgentOperations()
     /// The Enhance runs on this Mac agents started, followed with `jobs`; in memory too.
     @ObservationIgnored let onDeviceAgent: AgentOnDeviceRuns
+    /// The subtitles runs agents started, followed with `jobs` as on-device runs; in memory too.
+    @ObservationIgnored let subtitleAgent: AgentSubtitleRuns
 
     init(environment: AppEnvironment, system: SystemIntegration, preferences: AgentPreferences = AgentPreferences()) {
         self.environment = environment
         self.system = system
         self.preferences = preferences
         requests = AgentRequestGate(log: environment.agentRequests)
-        onDeviceAgent = AgentOnDeviceRuns(runs: environment.onDevice) {
-            environment.connection.state.kind.map(AgentBudgetUnit.init(for:)) ?? .usdCents
-        }
+        let priceUnit = { @MainActor in environment.connection.state.kind.map(AgentBudgetUnit.init(for:)) ?? .usdCents }
+        onDeviceAgent = AgentOnDeviceRuns(runs: environment.onDevice, priceUnit: priceUnit)
+        subtitleAgent = AgentSubtitleRuns(
+            runs: environment.subtitles, models: environment.speechModels, priceUnit: priceUnit)
     }
 
     /// Where the socket goes: the app group's container, which the helper finds from the group in Info.plist.
@@ -149,6 +152,8 @@ final class AgentService {
             return AgentResponse(exported: try await exportForEditing(fields))
         case .frames(let fields):
             return AgentResponse(frames: try await frames(fields))
+        case .subtitles(let fields):
+            return try await subtitles(fields, client: client)
         }
     }
 
@@ -180,6 +185,8 @@ final class AgentService {
         }
         var answer = AgentCapabilities(appVersion: Self.appVersion, connection: connection, budget: budget)
         answer.onDevice = onDeviceAgent.capabilities()
+        await environment.subtitles.loadAvailability()
+        answer.onDevice?.subtitles = subtitleAgent.capabilities()
         if fields.models {
             answer.models = try models(fields.model, connection: state.kind)
         }
@@ -242,47 +249,6 @@ final class AgentService {
         return AgentCapabilities.ModelDetails(
             modes: modes, hasDraft: model.offersDraft, makesClipsWithoutSource: model.makesClipsWithoutSource,
             needsPrompt: model.descriptor.requiresPrompt)
-    }
-
-    private func show(_ fields: ShowCommand) async throws(AgentError) -> AgentShown {
-        let navigation = environment.navigation
-        let shown: AgentShown
-        if let item = fields.item, let sheet = fields.sheet {
-            shown = try await showSheet(sheet, for: item)
-        } else if let id = fields.job, await job(id) == nil, let image = environment.agentImages.record(id) {
-            if image.isOver {
-                navigation.selection = .library
-                shown = AgentShown(page: .library, job: id)
-            } else {
-                navigation.selection = .queue
-                shown = AgentShown(page: .queue, job: id)
-            }
-        } else if let id = fields.job {
-            guard let job = await job(id) else {
-                throw AgentError(
-                    .notFound, message: "There's no job \(id.uuidString).", retryable: false,
-                    next: "Show the queue or the library instead.")
-            }
-            if job.state == .done {
-                navigation.showInLibrary(id)
-                shown = AgentShown(page: .library, job: id)
-            } else {
-                navigation.showInQueue(id)
-                shown = AgentShown(page: .queue, job: id)
-            }
-        } else {
-            let page = fields.page ?? .create
-            navigation.selection =
-                switch page {
-                case .create: .create
-                case .queue: .queue
-                case .library: .library
-                case .settings: .settings
-                }
-            shown = AgentShown(page: page)
-        }
-        system.showMainWindow()
-        return shown
     }
 
     private static var appVersion: String {
