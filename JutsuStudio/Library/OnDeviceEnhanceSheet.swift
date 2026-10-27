@@ -211,18 +211,29 @@ struct OnDeviceEnhanceSheet: View {
     }
 }
 
-/// How far an Enhance run on this Mac is, over a library card.
+/// How far a run on this Mac is, an Enhance run or subtitles, over a library card.
 struct OnDeviceRunBadge: View {
-    let run: OnDeviceRuns.Run
+    let fraction: Double?
+    let text: String
+
+    init(run: OnDeviceRuns.Run) {
+        fraction = run.state.fraction
+        text = OnDeviceText.progress(of: run)
+    }
+
+    init(run: SubtitleRuns.Run) {
+        fraction = run.state.fraction
+        text = SubtitleText.progress(of: run)
+    }
 
     var body: some View {
         VStack(spacing: 6) {
-            if let fraction = run.state.fraction {
+            if let fraction {
                 ProgressView(value: fraction).progressViewStyle(.linear).frame(width: 120)
             } else {
                 ProgressView().controlSize(.small)
             }
-            Text(OnDeviceText.progress(of: run))
+            Text(text)
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(Theme.text)
                 .lineLimit(1)

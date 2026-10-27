@@ -22,6 +22,8 @@ extension AppEnvironment {
         let outputFolder = outputFolder
         // None of the earlier files while the delivery sets, which keep their versions, can't be read.
         let held = try? await MaterialVersions.held(by: store.deliverySets())
+        // No run saves subtitles on an item once it is going.
+        await subtitles.stop(Set(items.map(\.id)))
         return await LibraryDeletion.delete(
             items, stopping: onDevice, trash: ResultTrash(),
             records: LibraryRecordStore(records: records, context: modelContainer.mainContext),

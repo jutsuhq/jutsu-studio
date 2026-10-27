@@ -76,6 +76,7 @@ struct LibraryCardMenu: View {
                 environment.onDevice.cancel(run.id)
             }
         }
+        SubtitlesMenuButton(item: item)
         if item.outputFile != nil, !item.needsImport {
             OutsideEditButtons(
                 edit: { actions.editInOtherApp(item.id) }, importVersion: { actions.importEditedVersion(item.id) })

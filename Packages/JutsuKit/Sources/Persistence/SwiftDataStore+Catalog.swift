@@ -84,6 +84,25 @@ extension SwiftDataStore {
         }
     }
 
+    /// Sets or removes the subtitles of one exact version.
+    /// - Throws: `MaterialError.missingMaterial` when the material or the version is gone.
+    public func setSubtitles(_ subtitles: Subtitles?, for reference: MaterialReference) throws {
+        do {
+            guard let record = try materialRecord(id: reference.materialID) else { throw MaterialError.missingMaterial }
+            var material = try record.material()
+            guard var version = material.versions.first(where: { $0.id == reference.versionID }) else {
+                throw MaterialError.missingMaterial
+            }
+            version.subtitles = subtitles
+            try material.updateVersion(version)
+            try record.update(material, updateStar: false)
+            try modelContext.save()
+        } catch {
+            modelContext.rollback()
+            throw error
+        }
+    }
+
     /// Makes the material the face of its variant group; every other member stops being it.
     public func makeVariantPrimary(_ id: UUID) throws {
         do {
@@ -137,6 +156,7 @@ extension SwiftDataStore {
             value.current.id = original.id
             // Culling is the user's verdict; a refreshed listing knows nothing of it.
             value.current.culling = original.culling
+            value.current.subtitles = original.subtitles
             if value.current.generation?.parameters == nil, let generation = original.generation {
                 value.current.generation = generation
             }

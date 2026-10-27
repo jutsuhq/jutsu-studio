@@ -22,7 +22,7 @@ final class AppEnvironment {
     let engine: JobEngine
     let connection: ConnectionStore
     /// Every job as of the engine's last event; the Queue, sidebar badge and menu bar read it.
-    let liveJobs: LiveJobs
+    let liveJobs = LiveJobs()
     let navigation: NavigationModel
     let outputFolder: OutputFolder
     /// The active account's model constraints, which Create's limits and the account's requests read.
@@ -35,6 +35,8 @@ final class AppEnvironment {
     let imageLibrary: ImageLibrary
     /// Enhance's free runs on this Mac: Smooth Motion and Upscale › On this Mac.
     let onDevice: OnDeviceRuns
+    /// Subtitles made on this Mac, saved on the version they were made from.
+    let subtitles: SubtitleRuns
     /// Create Character: its form and runs, and every character sheet job the app started.
     let characterBuilder: CharacterBuilder
     /// Score Variants in batch comparison: its runs, which outlive the comparison, and why a score is missing.
@@ -88,7 +90,6 @@ final class AppEnvironment {
         self.outputFolder = outputFolder
         self.store = store
         self.defaults = defaults
-        liveJobs = LiveJobs()
         navigation = NavigationModel(draftStore: CreateDraftStore(fileURL: layout.createDraftURL), defaults: defaults)
         modelContainer = container
         modelConstraints = ModelConstraintStore(cache: ModelConstraintCache(folder: layout.cacheFolder))
@@ -103,6 +104,7 @@ final class AppEnvironment {
         onDevice = Self.onDeviceRuns(
             store: store, imageLibrary: imageLibrary, defaults: defaults,
             scratches: ([outputFolder.url] + outputFolder.previousFolders).map { OutputSubfolder.videos.url(in: $0) })
+        subtitles = Self.subtitleRuns(store: store, layout: layout, defaults: defaults)
         Self.saveGeneratedImages(of: referenceGenerator, into: imageLibrary)
         // The Image side of the Create draft, kept across launches; the models arrive later and settle the choice.
         referenceGenerator.restore(navigation.imageDraft)

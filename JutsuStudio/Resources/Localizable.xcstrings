@@ -2511,6 +2511,21 @@
     },
     "Open report on Higgsfield" : {
 
+    },
+    "Make Subtitles" : {
+
+    },
+    "Cancel Subtitles" : {
+
+    },
+    "Subtitles…" : {
+
+    },
+    "Make subtitles from the speech in this video, free on this Mac" : {
+
+    },
+    "Make Subtitles Again…" : {
+
     }
   },
   "version" : "1.0"
