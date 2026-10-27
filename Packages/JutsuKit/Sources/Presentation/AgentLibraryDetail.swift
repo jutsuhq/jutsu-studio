@@ -41,10 +41,19 @@ public struct AgentLibraryDetail: Sendable, Hashable {
         public var count: Int?
     }
 
+    /// The version of the same item the current one was made from, and its place among the versions (1 for the
+    /// original).
+    public struct MadeFrom: Sendable, Hashable {
+        public var reference: MaterialReference
+        public var version: Int
+        public var file: URL?
+    }
+
     /// As `library_search` lists it, with the whole prompt.
     public var hit: AgentLibraryHit
     public var inputs: [Input]
     public var settings: Settings
+    public var madeFrom: MadeFrom?
 
     /// The details of `ids`, in the order asked, and the IDs no Library item has.
     public static func of(_ ids: [UUID], in materials: [Material]) -> (details: [AgentLibraryDetail], missing: [UUID]) {
@@ -67,15 +76,23 @@ public struct AgentLibraryDetail: Sendable, Hashable {
                 details.append(
                     AgentLibraryDetail(
                         hit: hit, inputs: inputs(of: item, version: material.current, listed: listed),
-                        settings: settings(of: item.job)))
+                        settings: settings(of: item.job), madeFrom: madeFrom(material)))
             case .localImage, .remoteImage:
                 details.append(
                     AgentLibraryDetail(
                         hit: hit, inputs: imageInputs(of: material.current, relations: relations, listed: listed),
-                        settings: imageSettings(of: material.current)))
+                        settings: imageSettings(of: material.current), madeFrom: madeFrom(material)))
             }
         }
         return (details, missing)
+    }
+
+    /// The earlier version of the same material its current version names as its parent (`MaterialVersions.parent`).
+    static func madeFrom(_ material: Material) -> MadeFrom? {
+        guard let (version, index) = MaterialVersions.parent(of: material) else { return nil }
+        return MadeFrom(
+            reference: MaterialReference(materialID: material.id, versionID: version.id), version: index + 1,
+            file: version.fileURL.flatMap(local))
     }
 
     /// The source, or the result an operation worked on, then the images in the job's order.

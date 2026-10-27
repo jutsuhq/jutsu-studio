@@ -71,7 +71,8 @@ extension AgentService {
     // MARK: enhance
 
     func enhance(_ fields: EnhanceCommand, client: String?) async throws(AgentError) -> AgentCreated {
-        try await requests.run(
+        if fields.isOnDevice { return try await enhanceOnDevice(fields, client: client) }
+        return try await requests.run(
             fields.requestID, fingerprint: fields.fingerprint,
             refusals: Self.refusals("enhance", made: "its job was never queued"), discard: {},
             known: { ids throws(AgentError) in
@@ -89,7 +90,9 @@ extension AgentService {
     /// origin: the engine's spending guard checks it before its submit, and holds one whose price isn't known.
     private func queueEnhancement(_ fields: EnhanceCommand, client: String?) async throws(AgentError) -> AgentCreated {
         guard let kind = environment.connection.state.kind else { throw Self.notConnected }
-        try Self.checkUnit(of: fields.maxCost, on: kind)
+        // The command's own check has refused one without it already.
+        guard let maxCost = fields.maxCost else { throw .badRequest("enhance on Higgsfield needs max_cost") }
+        try Self.checkUnit(of: maxCost, on: kind)
         let materials = try await materials()
         guard let material = materials.first(where: { $0.id == fields.item }),
             case .video(let item)? = MaterialLibrary.row(material), item.historyItem == nil, item.outputFile != nil
@@ -101,9 +104,7 @@ extension AgentService {
         let spec = try await enhancementSpec(fields, on: item, connection: kind)
         let jobID = UUID()
         try recordRequest(fields.requestID, fingerprint: fields.fingerprint, jobIDs: [jobID])
-        let origin = AgentOrigin(
-            client: client, requestID: fields.requestID,
-            maxCost: AgentMoney(fields.maxCost))
+        let origin = AgentOrigin(client: client, requestID: fields.requestID, maxCost: AgentMoney(maxCost))
         do {
             let job = try await environment.engine.enqueue(spec, parentID: item.id, id: jobID, agent: origin)
             logger.info(
@@ -118,8 +119,11 @@ extension AgentService {
     private func enhancementSpec(
         _ fields: EnhanceCommand, on item: LibraryItemModel, connection kind: ProviderKind
     ) async throws(AgentError) -> JobSpec {
+        guard let postKind = PostAction.Kind(fields.operation) else {
+            throw .badRequest("enhance: \(fields.operation.rawValue) runs on this Mac only")
+        }
         let order = AgentEnhanceOrder(
-            kind: PostAction.Kind(fields.operation), target: fields.target, frameRate: fields.frameRate,
+            kind: postKind, target: fields.target, frameRate: fields.frameRate,
             engine: fields.engine, aspectRatio: fields.aspectRatio, language: fields.language, voice: fields.voice)
         let voices = fields.operation == .changeVoice ? await environment.voices()?.map(\.choice) : nil
         let action: PostAction

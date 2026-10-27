@@ -17,6 +17,15 @@ public struct OnDeviceEnhancer: OnDeviceEnhancing {
         }
     }
 
+    public func modelIsReady(_ engine: OnDeviceEngine) -> Bool {
+        switch engine {
+        case .frameRateConversion: return true
+        case .videoSuperResolution, .imageSuperResolution:
+            guard #available(macOS 26, *), supports(engine) else { return false }
+            return SuperResolutionScaler.modelIsReady(inputType: engine == .imageSuperResolution ? .image : .video)
+        }
+    }
+
     public func run(
         _ action: OnDeviceAction, on source: URL, to output: URL,
         progress: @escaping @Sendable (OnDeviceProgress) -> Void

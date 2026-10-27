@@ -133,12 +133,25 @@ enum Tool: String, CaseIterable {
     }
 
     private static func show(_ given: Arguments) throws(AgentError) -> AgentCommand {
-        try given.allow(["page", "job"])
+        try given.allow(["page", "job", "item", "sheet"])
         let (page, job) = (try given.string("page"), try given.string("job"))
-        if let problem = ShowCommand.problem(hasPage: page != nil, hasJob: job != nil) { throw .badRequest(problem) }
+        let (item, sheet) = (try given.string("item"), try given.string("sheet"))
+        if let problem = ShowCommand.problem(
+            hasPage: page != nil, hasJob: job != nil, hasItem: item != nil, hasSheet: sheet != nil)
+        {
+            throw .badRequest(problem)
+        }
         if let page {
             guard let page = AgentPage(rawValue: page) else { throw .badRequest("show: page is one of \(pageNames)") }
             return .show(.page(page))
+        }
+        if let item, let sheet {
+            guard let id = UUID(uuidString: item) else { throw .badRequest("show: item is a Library item ID") }
+            guard let sheet = AgentSheet(rawValue: sheet) else {
+                let names = AgentSheet.allCases.map(\.rawValue).joined(separator: ", ")
+                throw .badRequest("show: sheet is one of \(names)")
+            }
+            return .show(.sheet(sheet, item: id))
         }
         guard let id = job.flatMap(UUID.init(uuidString:)) else { throw .badRequest("show: job is a job ID (a UUID)") }
         return .show(.job(id))
@@ -191,8 +204,9 @@ enum Tool: String, CaseIterable {
 
     /// The fingerprint of another paid tool's request: the tool, its parameters, its files by size and `max_cost`.
     /// The tool is part of it, so one request ID never means two tools' requests.
+    /// `maxCost` is `nil` for a free run, and is then left out.
     static func fingerprint(
-        _ tool: String, _ fields: some Encodable, files: [String], _ maxCost: AgentAmount
+        _ tool: String, _ fields: some Encodable, files: [String], _ maxCost: AgentAmount?
     ) throws(AgentError) -> String {
         let sizes = Self.sizes(files)
         do {
@@ -208,7 +222,7 @@ private struct ToolFingerprint<Fields: Encodable>: Encodable {
     var tool: String
     var fields: Fields
     var sizes: [Int?]
-    var maxCost: AgentAmount
+    var maxCost: AgentAmount?
 }
 
 /// A tool's arguments, read strictly: a key the tool doesn't take or a value of the wrong type is an error that

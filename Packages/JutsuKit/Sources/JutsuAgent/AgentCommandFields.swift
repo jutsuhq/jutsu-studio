@@ -61,36 +61,60 @@ public struct CapabilitiesCommand: Codable, Equatable, Sendable {
     }
 }
 
-/// Exactly one of `page` or `job`.
+/// The sheets `show` can open for a Library item.
+public enum AgentSheet: String, Codable, Sendable, CaseIterable {
+    /// Upscale on This Mac, where the person agrees to macOS downloading its model.
+    case upscaleOnMac = "upscale_on_mac"
+}
+
+/// Exactly one of `page`, `job` or `item`; `item` comes with `sheet`.
 public struct ShowCommand: Codable, Equatable, Sendable {
     public var page: AgentPage?
     /// A job's ID: a finished one opens its result in Library, any other its row in the Queue.
     public var job: UUID?
+    /// A Library item, which `sheet` is opened for.
+    public var item: UUID?
+    public var sheet: AgentSheet?
 
-    public static func page(_ page: AgentPage) -> ShowCommand { ShowCommand(page: page, job: nil) }
-    public static func job(_ id: UUID) -> ShowCommand { ShowCommand(page: nil, job: id) }
+    public static func page(_ page: AgentPage) -> ShowCommand { ShowCommand(page: page) }
+    public static func job(_ id: UUID) -> ShowCommand { ShowCommand(job: id) }
+    public static func sheet(_ sheet: AgentSheet, item: UUID) -> ShowCommand { ShowCommand(item: item, sheet: sheet) }
 
-    private init(page: AgentPage?, job: UUID?) {
+    private init(page: AgentPage? = nil, job: UUID? = nil, item: UUID? = nil, sheet: AgentSheet? = nil) {
         self.page = page
         self.job = job
+        self.item = item
+        self.sheet = sheet
     }
 
     private enum CodingKeys: String, CodingKey {
-        case page, job
+        case page, job, item, sheet
     }
 
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         page = try container.decodeIfPresent(AgentPage.self, forKey: .page)
         job = try container.decodeIfPresent(UUID.self, forKey: .job)
-        if let problem = Self.problem(hasPage: page != nil, hasJob: job != nil) { throw AgentError.badRequest(problem) }
+        item = try container.decodeIfPresent(UUID.self, forKey: .item)
+        sheet = try container.decodeIfPresent(AgentSheet.self, forKey: .sheet)
+        if let problem = Self.problem(
+            hasPage: page != nil, hasJob: job != nil, hasItem: item != nil, hasSheet: sheet != nil)
+        {
+            throw AgentError.badRequest(problem)
+        }
     }
 
     /// Why `show` can't open these; nil when it can. It names the tool itself, so the helper sends it as it is.
-    public static func problem(hasPage: Bool, hasJob: Bool) -> String? {
-        guard hasPage == hasJob else { return nil }
-        let pages = AgentPage.allCases.map(\.rawValue).joined(separator: ", ")
-        return "show takes exactly one of page (\(pages)) or job (a job ID)"
+    public static func problem(hasPage: Bool, hasJob: Bool, hasItem: Bool = false, hasSheet: Bool = false) -> String? {
+        if [hasPage, hasJob, hasItem].filter(\.self).count != 1 {
+            let pages = AgentPage.allCases.map(\.rawValue).joined(separator: ", ")
+            return "show takes exactly one of page (\(pages)), job (a job ID) or item (a Library item ID, with sheet)"
+        }
+        guard hasItem == hasSheet else {
+            let sheets = AgentSheet.allCases.map(\.rawValue).joined(separator: ", ")
+            return "show opens a sheet for an item: send item with sheet (\(sheets))"
+        }
+        return nil
     }
 }
 
@@ -98,10 +122,14 @@ public struct ShowCommand: Codable, Equatable, Sendable {
 public struct AgentShown: Codable, Equatable, Sendable {
     public var page: AgentPage
     public var job: UUID?
+    public var item: UUID?
+    public var sheet: AgentSheet?
 
-    public init(page: AgentPage, job: UUID? = nil) {
+    public init(page: AgentPage, job: UUID? = nil, item: UUID? = nil, sheet: AgentSheet? = nil) {
         self.page = page
         self.job = job
+        self.item = item
+        self.sheet = sheet
     }
 }
 

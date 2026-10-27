@@ -25,6 +25,8 @@ final class NavigationModel {
     var pendingOpens = PendingOpens()
     /// Library images to make a video from; Create's video side asks for their role and takes them.
     var pendingMakeVideo: MakeVideoRequest?
+    /// An Enhance sheet on this Mac an agent asked the person to see (`show` with a sheet); `nil` once closed.
+    var onDeviceSheet: OnDeviceTarget?
     /// The Create form, kept here so it survives switching screens, and saved so it survives a relaunch.
     /// Replace it as a whole through `replaceDraft`, which offers the edits it loses back.
     var createDraft: CreateForm {

@@ -30,6 +30,8 @@ struct MainWindow: View {
             SignInSheet()
                 .preferredColorScheme(.dark)
         }
+        // Runs on this Mac need no connection, so the sheet an agent opens shows over onboarding too.
+        .sheet(item: Bindable(navigation).onDeviceSheet) { OnDeviceEnhanceSheet(target: $0) }
         .alert(
             connection.alert?.title ?? "", isPresented: Binding(isPresenting: alertBinding),
             presenting: connection.alert

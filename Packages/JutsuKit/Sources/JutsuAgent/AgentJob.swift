@@ -2,7 +2,8 @@ import Foundation
 
 // What the video, image, jobs and job_action commands answer.
 
-/// One piece of work, as an agent follows it with `jobs`: a video job, an image request, or an export (`kind`).
+/// One piece of work, as an agent follows it with `jobs`: a video job, an image request, an export, or an Enhance run on
+/// this Mac (`kind`).
 public struct AgentJob: Codable, Equatable, Sendable {
     public var id: UUID
     /// preparing, uploading, waiting_for_slot, queued, processing, downloading, paused, done, failed, rejected,
@@ -27,7 +28,8 @@ public struct AgentJob: Codable, Equatable, Sendable {
     public var result: String?
     /// Every file the job made: an image request's images, an export's files written.
     public var results: [String]?
-    /// "video", "image" for a create_image request, "export" or "delivery_export" for an export, "unknown".
+    /// "video", "image" for a create_image request, "export" or "delivery_export" for an export, "on_device" for an
+    /// Enhance run on this Mac, "unknown".
     public var kind: String
     public var requestID: String?
     public var client: String?
@@ -40,6 +42,12 @@ public struct AgentJob: Codable, Equatable, Sendable {
     public var files: [AgentExportFile]?
     /// A delivery export's set.
     public var set: UUID?
+    /// An on-device run's operation, as `enhance` takes it: smooth_motion (its `mode` beside it) or upscale.
+    public var operation: String?
+    /// An on-device run's Library item, which gains the result as its new current version.
+    public var item: UUID?
+    /// An on-device run's expected length in seconds, as its sheet says it.
+    public var estimatedSeconds: Double?
     /// What to do about it: for state unknown; for a finished video, how to check it with `frames`; for a request
     /// sent again with a higher max_cost, why its job is still held.
     public var next: String?
@@ -52,9 +60,13 @@ public struct AgentJob: Codable, Equatable, Sendable {
         progress: Double? = nil, price: AgentAmount? = nil, isPriceExact: Bool = false, charged: Bool = false,
         error: String? = nil, result: String? = nil, results: [String]? = nil, kind: String = "video",
         requestID: String? = nil, client: String? = nil, mode: String? = nil, model: String? = nil,
-        folder: String? = nil, files: [AgentExportFile]? = nil, set: UUID? = nil, next: String? = nil,
-        createdAt: Date?, finishedAt: Date? = nil
+        folder: String? = nil, files: [AgentExportFile]? = nil, set: UUID? = nil, operation: String? = nil,
+        item: UUID? = nil, estimatedSeconds: Double? = nil, next: String? = nil, createdAt: Date?,
+        finishedAt: Date? = nil
     ) {
+        self.operation = operation
+        self.item = item
+        self.estimatedSeconds = estimatedSeconds
         self.folder = folder
         self.files = files
         self.set = set
@@ -84,7 +96,7 @@ public struct AgentJob: Codable, Equatable, Sendable {
         case id, state, pauseReason, hold, needsPerson, progress, price, isPriceExact, charged, error, result
         case results, kind
         case requestID = "requestId"
-        case client, mode, model, folder, files, set, next, createdAt, finishedAt
+        case client, mode, model, folder, files, set, operation, item, estimatedSeconds, next, createdAt, finishedAt
     }
 }
 

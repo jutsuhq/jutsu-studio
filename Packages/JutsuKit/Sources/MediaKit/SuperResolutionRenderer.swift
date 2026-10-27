@@ -168,6 +168,16 @@ final class SuperResolutionScaler: FrameScaling {
         self.inputType = inputType
     }
 
+    /// Whether the model is here. Reading it may start macOS's download, so only once the person agreed.
+    static func modelIsReady(inputType: VTSuperResolutionScalerConfiguration.InputType) -> Bool {
+        let size = OnDeviceUpscale.scalerLimit
+        return VTSuperResolutionScalerConfiguration(
+            frameWidth: size.width, frameHeight: size.height, scaleFactor: OnDeviceUpscale.scale, inputType: inputType,
+            usePrecomputedFlow: false, qualityPrioritization: .normal,
+            revision: VTSuperResolutionScalerConfiguration.defaultRevision
+        )?.configurationModelStatus == .ready
+    }
+
     func start(size: PixelSize, modelProgress: @escaping @Sendable (Double) -> Void) async throws -> FrameFormat {
         guard
             let configuration = VTSuperResolutionScalerConfiguration(
