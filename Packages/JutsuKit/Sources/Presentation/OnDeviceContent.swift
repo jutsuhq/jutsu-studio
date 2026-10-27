@@ -12,6 +12,24 @@ public enum OnDeviceText {
         bundle: .module)
     public static let slowMotionSound = String(localized: "Slow motion plays without sound.", bundle: .module)
     public static let waiting = String(localized: "Waiting for the run before it", bundle: .module)
+    public static let downloadingModel = String(localized: "Downloading the model", bundle: .module)
+    public static let upscaleTitle = String(localized: "Upscale on This Mac", bundle: .module)
+    public static let upscaleSound = String(localized: "The sound is kept as it is.", bundle: .module)
+    /// Before the first run of an engine with a model (`OnDeviceModelConsent`).
+    public static let modelNotice = String(
+        localized:
+            "Upscaling on this Mac needs a model macOS downloads from Apple once, about 62 MB. It is downloaded when the first upscale starts, and stays for later ones.",
+        bundle: .module)
+    public static let modelConsent = String(localized: "Download the model", bundle: .module)
+    public static let tooLargeVideo = String(
+        localized: "Upscale on this Mac takes videos up to 720p.", bundle: .module)
+
+    /// "4× · 854×480 → 3416×1920".
+    public static func upscaleSizes(_ source: PixelSize) -> String {
+        let scale = OnDeviceUpscale.scale
+        let output = PixelSize(width: source.width * scale, height: source.height * scale)
+        return "\(scale)× · \(source.width)×\(source.height) → \(output.width)×\(output.height)"
+    }
 
     /// "Takes ~2 min on this Mac".
     public static func expectedTime(_ seconds: TimeInterval) -> String {
@@ -22,6 +40,7 @@ public enum OnDeviceText {
     public static func progress(of run: OnDeviceRuns.Run) -> String {
         switch run.state {
         case .waiting: "\(run.request.action.title) · \(waiting)"
+        case .downloadingModel(let fraction): "\(downloadingModel) · \(CostText.percent(fraction: fraction))"
         case .working(let fraction): "\(run.request.action.title) · \(CostText.percent(fraction: fraction))"
         }
     }
@@ -34,7 +53,9 @@ public enum OnDeviceText {
 
     /// The Enhance menu's hint when only this Mac's runs are on offer.
     public static func menuHint(_ offer: OnDeviceOffer) -> String {
-        String(localized: "Smooth Motion, free on this Mac", bundle: .module)
+        offer.upscaleVideo
+            ? String(localized: "Smooth Motion and Upscale, free on this Mac", bundle: .module)
+            : String(localized: "Smooth Motion, free on this Mac", bundle: .module)
     }
 
     public static func failureTitle(_ action: OnDeviceAction) -> String {
@@ -58,6 +79,7 @@ extension OnDeviceAction {
         switch self {
         case .smoothMotion(.fps60): String(localized: "Smooth Motion to 60 fps", bundle: .module)
         case .smoothMotion(let motion): motion.title
+        case .upscaleVideo: String(localized: "Upscale 4×", bundle: .module)
         }
     }
 }
@@ -66,6 +88,8 @@ extension OnDeviceAction {
 /// this Mac's engines can run.
 public struct OnDeviceOffer: Sendable, Hashable {
     public var smoothMotion = false
+    /// Only for a result up to 720p (`OnDeviceUpscale.offersVideo`).
+    public var upscaleVideo = false
 
     public static let none = OnDeviceOffer()
 
@@ -76,6 +100,31 @@ public struct OnDeviceOffer: Sendable, Hashable {
         guard item.outputFile != nil, !item.needsImport else { return .none }
         var offer = OnDeviceOffer()
         offer.smoothMotion = supports(.frameRateConversion)
+        offer.upscaleVideo =
+            supports(.videoSuperResolution) && item.job.outputPixelSize.map(OnDeviceUpscale.offersVideo) == true
         return offer
+    }
+}
+
+/// The person's agreement to macOS downloading an engine's model (`OnDeviceEngine.downloadsModel`), asked once per
+/// engine before its first run and remembered.
+public struct OnDeviceModelConsent {
+    let defaults: UserDefaults
+
+    public init(defaults: UserDefaults) {
+        self.defaults = defaults
+    }
+
+    /// Whether a run on `engine` may start: one without a model always may.
+    public func allows(_ engine: OnDeviceEngine) -> Bool {
+        !engine.downloadsModel || defaults.bool(forKey: Self.key(engine))
+    }
+
+    public func agree(to engine: OnDeviceEngine) {
+        defaults.set(true, forKey: Self.key(engine))
+    }
+
+    static func key(_ engine: OnDeviceEngine) -> String {
+        "onDevice.modelConsent.\(engine.rawValue)"
     }
 }

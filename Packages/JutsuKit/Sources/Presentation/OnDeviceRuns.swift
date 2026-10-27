@@ -36,8 +36,18 @@ public final class OnDeviceRuns {
 
     public enum State: Sendable, Hashable {
         case waiting
+        /// 0…1 of the engine's model, which macOS downloads before the engine's first run.
+        case downloadingModel(Double)
         /// 0…1.
         case working(Double)
+
+        /// How far the model or the frames are; `nil` while waiting.
+        public var fraction: Double? {
+            switch self {
+            case .waiting: nil
+            case .downloadingModel(let fraction), .working(let fraction): fraction
+            }
+        }
     }
 
     /// Adds the finished file as the new version of `request.source`'s material.
@@ -51,12 +61,14 @@ public final class OnDeviceRuns {
     public var failure: UserMessage?
 
     @ObservationIgnored private let engine: any OnDeviceEnhancing
+    @ObservationIgnored private let consent: OnDeviceModelConsent
     @ObservationIgnored private let register: Register
     @ObservationIgnored private var loop: Task<Void, Never>?
     @ObservationIgnored private let log = PresentationLog(category: "OnDevice")
 
-    public init(engine: any OnDeviceEnhancing, register: @escaping Register) {
+    public init(engine: any OnDeviceEnhancing, consent: OnDeviceModelConsent, register: @escaping Register) {
         self.engine = engine
+        self.consent = consent
         self.register = register
     }
 
@@ -65,16 +77,27 @@ public final class OnDeviceRuns {
         self.engine.supports(engine)
     }
 
+    /// Whether a run on `engine` waits for the person to agree to macOS downloading its model.
+    public func needsConsent(_ engine: OnDeviceEngine) -> Bool {
+        !consent.allows(engine)
+    }
+
+    public func agree(to engine: OnDeviceEngine) {
+        consent.agree(to: engine)
+    }
+
     /// The first run, waiting or running, started on `materialID`.
     public func run(for materialID: UUID) -> Run? {
         runs.first { $0.request.source.materialID == materialID }
     }
 
-    /// Refused, returning `false`, while a run on the same item waits or runs: each is made from the version it was
-    /// started on, so runs aren't chained.
+    /// Refused, returning `false`, while the engine's model download waits for the person's agreement
+    /// (`OnDeviceModelConsent`): until then nothing may ask macOS about the model, which would start the download.
+    /// Refused too while a run on the same item waits or runs: each is made from the version it was started on, so
+    /// runs aren't chained.
     @discardableResult
     public func start(_ request: Request) -> Bool {
-        guard run(for: request.source.materialID) == nil else { return false }
+        guard consent.allows(request.action.engine), run(for: request.source.materialID) == nil else { return false }
         runs.append(Run(id: UUID(), request: request, state: .waiting))
         next()
         return true
@@ -109,10 +132,18 @@ public final class OnDeviceRuns {
         let request = run.request
         let partial = request.scratch.appending(path: Self.partialName(run.id), directoryHint: .notDirectory)
         let engine = engine
-        let throttle = ProgressThrottle()
+        let throttles = (model: ProgressThrottle(), frames: ProgressThrottle())
         let progress: @Sendable (OnDeviceProgress) -> Void = { [weak self] progress in
-            guard case .working(let fraction) = progress, throttle.admits(fraction) else { return }
-            Task { @MainActor in self?.update(run.id, to: .working(fraction)) }
+            let state: State
+            switch progress {
+            case .downloadingModel(let fraction):
+                guard throttles.model.admits(fraction) else { return }
+                state = .downloadingModel(fraction)
+            case .working(let fraction):
+                guard throttles.frames.admits(fraction) else { return }
+                state = .working(fraction)
+            }
+            Task { @MainActor in self?.update(run.id, to: state) }
         }
         update(run.id, to: .working(0))
         try? FileManager.default.createDirectory(at: request.scratch, withIntermediateDirectories: true)

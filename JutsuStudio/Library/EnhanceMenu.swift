@@ -5,8 +5,8 @@ import SwiftUI
 
 /// Enhance on a result's page: Upscale…, Reframe…, Remove Background…, Dub… and Change Voice…, operations of the
 /// account's tools that make a new library item linked to this one, hidden or off with the reason as
-/// `EnhanceAvailability` says; and Smooth Motion…, which runs on this Mac (`OnDeviceOffer`), is free and adds the
-/// result as a new version of this item.
+/// `EnhanceAvailability` says; and Smooth Motion… and Upscale › On This Mac…, which run on this Mac
+/// (`OnDeviceOffer`), are free and add the result as a new version of this item.
 struct EnhanceMenu: View {
     let item: LibraryItemModel
     /// The version on the page, which a run on this Mac is made from; `nil` when the catalog can't say.
@@ -28,16 +28,18 @@ struct EnhanceMenu: View {
                 if case .disabled(let reason) = availability { reason } else { nil }
             Menu {
                 if let running {
-                    Section(OnDeviceText.busy(running)) { localItems(local).disabled(true) }
+                    Section(OnDeviceText.busy(running)) {
+                        localItems(local, remoteUpscale: availability).disabled(true)
+                    }
                 } else {
-                    localItems(local)
+                    localItems(local, remoteUpscale: availability)
                 }
                 if availability != .hidden {
                     if !local.isEmpty { Divider() }
                     if let reason {
-                        Section(reason) { remoteItems.disabled(true) }
+                        Section(reason) { remoteItems(localUpscale: false).disabled(true) }
                     } else {
-                        remoteItems
+                        remoteItems(localUpscale: local.upscaleVideo && running == nil)
                     }
                 }
             } label: {
@@ -58,15 +60,28 @@ struct EnhanceMenu: View {
         return local.isEmpty ? reason ?? "" : OnDeviceText.menuHint(local)
     }
 
-    @ViewBuilder private func localItems(_ local: OnDeviceOffer) -> some View {
+    /// Smooth Motion…, and Upscale on This Mac… unless the account's Upscale is on offer: then both sit under one
+    /// Upscale item (`remoteItems`).
+    @ViewBuilder private func localItems(_ local: OnDeviceOffer, remoteUpscale: EnhanceAvailability) -> some View {
         if local.smoothMotion {
             Button("Smooth Motion…", systemImage: "film.stack") { open(.smoothMotion) }
         }
+        if local.upscaleVideo, remoteUpscale != .available {
+            Button("Upscale on This Mac…", systemImage: "arrow.up.left.and.arrow.down.right") { open(.upscaleVideo) }
+        }
     }
 
-    @ViewBuilder private var remoteItems: some View {
-        Button("Upscale…", systemImage: "arrow.up.left.and.arrow.down.right") {
-            request = EnhanceRequest(action: .upscale(UpscaleOptions()))
+    /// - Parameter localUpscale: whether Upscale also offers On This Mac, as a submenu beside Higgsfield's.
+    @ViewBuilder private func remoteItems(localUpscale: Bool) -> some View {
+        if localUpscale {
+            Menu("Upscale", systemImage: "arrow.up.left.and.arrow.down.right") {
+                Button("With Higgsfield…") { request = EnhanceRequest(action: .upscale(UpscaleOptions())) }
+                Button("On This Mac…") { open(.upscaleVideo) }
+            }
+        } else {
+            Button("Upscale…", systemImage: "arrow.up.left.and.arrow.down.right") {
+                request = EnhanceRequest(action: .upscale(UpscaleOptions()))
+            }
         }
         Button("Reframe…", systemImage: "aspectratio") {
             request = EnhanceRequest(action: .reframe(.portrait))
