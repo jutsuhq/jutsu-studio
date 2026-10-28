@@ -2,7 +2,7 @@
 
 How Jutsu Studio talks to Higgsfield: the REST API used with an API key, and the MCP server used with a Higgsfield account. Each section covers the contract the app relies on, what the public documentation says, and what the app doesn't use yet.
 
-- **Last reviewed:** 2026-10-15
+- **Last reviewed:** 2026-10-28
 - **Code:** `Packages/HiggsfieldKit` (`HiggsfieldAPI`, `HiggsfieldMCP`, `HiggsfieldCore`) and `Packages/JutsuKit/Sources/HiggsfieldProviders`
 - **Audience:** contributors changing the providers, adding models, or debugging a failed request
 
@@ -50,7 +50,7 @@ Public sources:
 |---|---|---|
 | API docs index | `https://docs.higgsfield.ai/docs/llms.txt` | Every page has a Markdown twin: append `.md` to its path. |
 | Model catalog | `https://docs.higgsfield.ai/docs/models.md` | 84 endpoints (17 image, 67 video) with JSON Schemas per page. |
-| OpenAPI | `https://docs.higgsfield.ai/docs/openapi.json` | v2.0.0. Covers status, cancel and a few legacy models only (8 paths). |
+| OpenAPI | `https://docs.higgsfield.ai/docs/openapi.json` | v2.0.0. Covers status, cancel, delete (`DELETE /requests/{request_id}`, added 2026-10-24) and a few legacy models only (9 paths). |
 | Price catalog | `https://dash.higgsfield.ai/api/v2/catalog-models/?output_type=video` (or `image`) | Public JSON, list prices. |
 | Pricing page | `https://open.higgsfield.ai/pricing`, from `https://dash.higgsfield.ai/api/v2/pricing/models/?page_size=50` | Public JSON: per endpoint, `original_amount` (list) and `amount` (discounted) per second for each `configuration` (resolution, length), with a "from" or "exact" `qualifier`. |
 | Website index | `https://higgsfield.ai/llms.txt` | Product surface, not the API. |
@@ -75,7 +75,9 @@ Accept: application/json
 ```
 
 - Credentials come from <https://console.higgsfield.ai>. The legacy `hf-api-key` / `hf-secret` headers still work; Jutsu sends only `Authorization`.
+- `api.higgsfield.ai` is the only API host. The older `platform.higgsfield.ai` is retired by 2026-10-31 (notice on `status.higgsfield.ai`, 2026-10-28); Jutsu doesn't use it.
 - A bad or missing key returns `401 {"detail": "Invalid credentials"}`.
+- A key can be given an expiry date or disabled in the Console (`docs/enterprise/access-control`). Such a key returns `403` with a code next to `detail`: `{"code": "api_key_expired", "detail": "This API key has expired.", "expires_at": "2026-09-21T12:00:00Z"}`, or `"code": "api_key_disabled"`. Jutsu maps both codes, next to `detail` or inside a `detail` object, to `.unauthorized`, like a 401: the connection needs attention and `validateKey` reports the key as refused. Any other 403 is the balance (3.10).
 - A model the account can't use returns `404`, `423` or `503`, depending on the model's state.
 - Jutsu sends the key only to the API host. Status and cancel URLs returned by the server are used only when they are HTTPS on the same host and port; otherwise the documented path is used (`HiggsfieldAPIClient.trustedURL`).
 - Onboarding validates a key with the free `GET /models/higgsfield/genjutsu/restyle/v1.0/presets` (`validateKey`).
@@ -209,37 +211,75 @@ Both amounts are decimal strings, and `credits` may be absent. Jutsu reads `usd`
 
 Not used by Jutsu; documented here for completeness.
 
-- Pass `?hf_webhook=` on submit. Higgsfield `POST`s `{request_id, status, error, payload}` after `completed`, `failed` or `nsfw`.
-- The endpoint must answer `2xx` within 10 s. 5xx and network failures are retried for up to 2 hours; 4xx responses are permanent.
-- Deliveries can repeat: deduplicate by `request_id` + `status`.
+- Pass `?hf_webhook=` on submit. Higgsfield `POST`s `{request_id, status, error, payload}` after `completed`, `failed` or `nsfw`; once a request finishes the payload also has `expires_at` (3.12).
+- The endpoint must answer `2xx` within 10 s. 5xx and network failures are retried for up to 2 hours; 4xx responses are permanent. The URL must be HTTPS, resolve only to public addresses and carry no credentials.
+- Deliveries can repeat: deduplicate by `webhook-id`, or by `request_id` + `status`.
+- **Signing (since 2026-10-24).** Deliveries are signed with the [Standard Webhooks](https://www.standardwebhooks.com/) scheme: `webhook-id` (stable across redeliveries), `webhook-timestamp` (Unix seconds; reject outside five minutes) and `webhook-signature` (one or more space-separated `v1,<base64>` signatures of the raw body). The secret belongs to the account, starts with `whsec_`, and is revealed or rotated in the Console's **Settings**; deliveries are signed from the moment it is first revealed. After a rotation the previous secret works for 24 hours and each delivery carries one signature per secret. The older `X-Webhook-Secret-Key` header is still sent for integrations that passed a secret, and will be retired.
+- No delivery is made for a request whose data was deleted (3.12).
 
 ### 3.10 Errors
 
-Most errors use the FastAPI envelope: `{"detail": "text"}` or `{"detail": [{"loc": [...], "msg": "..."}]}`.
+Most errors use the FastAPI envelope: `{"detail": "text"}` or `{"detail": [{"loc": [...], "msg": "..."}]}`. Some carry a machine-readable `code`: inside a `detail` object (`{"detail": {"code", "message", "retryable", …}}`, a full queue or a queue admission outage) or next to `detail` (an expired or disabled key). Jutsu reads the code from either place and takes a `detail` object's `message` as the text. The docs ask not to parse the human-readable messages for decisions, so Jutsu decides by status and code only.
 
 | Status | Meaning | Retry | Jutsu `HiggsfieldError` |
 |---|---|---|---|
-| 400 | Invalid parameters or rejected input; also the concurrency limit | After fixing, or after a running job ends | `.validation(field:message:)`, or `.concurrencyLimit(max:)` |
+| 400 | Invalid parameters or rejected input | After fixing | `.validation(field:message:)` |
 | 401 | Missing or invalid key | No | `.unauthorized` |
 | 403 | Not enough credits | After topping up | `.insufficientFunds` |
+| 403 with `code` `api_key_expired` or `api_key_disabled` | The key expired or was disabled (3.1) | With another key | `.unauthorized` |
 | 404 | Request or model not found for this account | No | `.validation` |
-| 422 | Validation failed, or idempotency key reused with a different body | No | `.validation` (field from `loc`, without `body`/`query`/…) |
+| 409 | The request is still running, as for a delete of a `queued` or `in_progress` request (3.12; not called) | After it finishes | `.server(status:)` |
+| 422 | Validation failed, idempotency key reused with a different body, or `Hf-Expires-After` out of range | No | `.validation` (field from `loc`, without `body`/`query`/…) |
 | 423 | Model temporarily blocked | Later | `.modelUnavailable` |
+| 429 | The account's generation queue is full (`account_queue_full`), or an endpoint's own limit (3.11) | After `Retry-After` | `.concurrencyLimit(retryAfter:)` |
 | 500 | Server error | Yes, with backoff | `.server(status:)` |
+| 503 with `code` `admission_control_unavailable` | Queue admission is briefly unavailable (`retryable: true`) | Yes, with backoff | `.server(status:)` |
 | 503 | Model disabled or not ready | Later | `.modelUnavailable` |
 
 Mapping: `Packages/HiggsfieldKit/Sources/HiggsfieldAPI/HiggsfieldAPIErrors.swift`. Failed and `nsfw` requests aren't charged; reserved credits are refunded.
 
 ### 3.11 Rate limits
 
-- The main limit is concurrency: how many requests can be queued or running at once, per account and sometimes per model. The values are in the Console.
-- At the limit, the API answers `400 {"detail": "Maximum number of concurrent requests (4) has been reached"}`. There's no `Retry-After` and no rate-limit headers, so the message text is the only signal. Jutsu parses the number into `.concurrencyLimit(max: 4)`, and the engine waits for a running job to finish.
+Status: **Documented** (`docs/concepts/rate-limits`, 2026-10-24); a full queue hasn't been seen live.
+
+- The main limit is concurrency: how many requests may be processing at once, per account and sometimes per model. The values are in the Console. Successful answers carry no rate-limit headers.
+- **Above the concurrency limit a generation request is queued, not refused** (since 2026-10-23): the answer is the usual `request_id` with status `queued`, and the request starts when one of the account's running requests ends.
+- **The queue has a limit too:** a multiple of the concurrency limit, with each output of a batch request counted apart. A generation request to a full queue is refused, and nothing is created or charged:
+
+  ```http
+  HTTP/1.1 429 Too Many Requests
+  Retry-After: 30
+  ```
+
+  ```json
+  {"detail": {"code": "account_queue_full", "message": "Too many queued generations for this account",
+    "retryable": true, "limit": 40, "retry_after_seconds": 30}}
+  ```
+
+  `limit` is the account's queue limit. The docs ask to wait `Retry-After` seconds and submit again with the same `Idempotency-Key`.
+- **Queue admission outage:** `503` with `"code": "admission_control_unavailable"` and `"retryable": true`; retry with backoff.
+- **Endpoint limits:** some endpoints that aren't generations refuse above their limit instead of queuing, with `429` and `Retry-After`. The only one listed is `POST /v1/custom-references` (Soul ID references training at once), whose `detail` is still the text `"Maximum number of concurrent requests (2) has been reached"`; it answered `400` with that text before 2026-10-23. Jutsu doesn't call it.
+
+What Jutsu does (`HiggsfieldAPIErrors`, `JobEngine+Recover`):
+- Any `429` maps to `.concurrencyLimit(retryAfter:)`. The wait is `Retry-After` in seconds; when the header is missing or isn't a number (the HTTP-date form isn't read), the body's `retry_after_seconds`; else none, and the engine's own retry backoff applies.
+- The engine releases the job's slot, puts it back to `waitingForSlot` and sends the same submit, with the same `Idempotency-Key`, after the server's wait, kept within 1 s and 10 min (`EngineSettings.serverRetryDelay`); jitter only lengthens it, within that range. A full queue never counts toward the "kept failing" pause: the job waits as long as it takes.
+- The app's own concurrency setting (`SlotLimiter`) is what keeps the queue short; nothing reported by the server changes it. A `400` with the old concurrency text is now a plain validation error.
+- `503` `admission_control_unavailable` maps to `.server(status: 503)` and is retried with backoff; any other `503` is `.modelUnavailable`.
 
 ### 3.12 Billing and retention
 
 - Credits expire one year after they're added.
 - Only successful requests are charged.
-- Outputs are kept for **at least 7 days**. Jutsu downloads every result as soon as it completes.
+- Jutsu downloads every result as soon as it completes.
+
+Data retention (`docs/enterprise/data-retention`, added 2026-10-24). Status: **Documented**; Jutsu doesn't use any of it yet.
+
+- A request's input files, outputs, prompt and parameters are kept **7 days by default**, counted from when it finishes (`completed`, `failed`, `nsfw` or `canceled`). Higgsfield can set an account retention of 1 hour to 7 days on request; it applies to new requests only.
+- `Hf-Expires-After: <seconds>` on a generation submit shortens it for that request: at least 3600 and at most the account retention, else `422`. The header is part of the idempotency fingerprint, so a retry must send the same value.
+- The submit answer adds `expires_after` (the period that applies). Once the request finishes, the status answer and the webhook add `expires_at`; after it the output URLs stop working, while the status call still returns the request.
+- `DELETE /requests/{request_id}` deletes a finished request's files, prompt and parameters at once: `200 {"request_id", "status": "deleted"}`, the same on a repeat; `404` for a request that doesn't exist or belongs to another account; `409` while it is `queued` or `in_progress`; `503` when deletion is briefly unavailable. The request ID, model, status, timestamps and billing records stay.
+- Files uploaded with `/files/generate-upload-url` are stored apart from a request and deleted within 7 days.
+- Jutsu sends no `Hf-Expires-After`, doesn't read `expires_after` or `expires_at`, and never deletes a request. A download's `403` is retried as an expired signed URL for 7 days after the result (`ARCHITECTURE.md`, Downloads), which assumes the default retention (open question 14 in 6).
 
 ### 3.13 Endpoints Jutsu uses
 
@@ -335,11 +375,11 @@ Reference images (issue #42). Status: **Documented** (docs.higgsfield.ai model p
 
 | Model | Endpoint | Body (`SoulImageRequest`, `GrokImageRequest`, `QwenEditRequest`) | List price (open.higgsfield.ai, 2026-10-15) |
 |---|---|---|---|
-| Soul 2 | `POST /higgsfield-ai/soul/v2/standard` | `prompt`*, `aspect_ratio`, `batch_size` 1–4 | $0.0032 an image at 720p (the default; $0.0057 at 1080p) |
+| Soul 2 | `POST /higgsfield-ai/soul/v2/standard` | `prompt`*, `aspect_ratio`, `batch_size` 1 or 4 (the schema's enum; the model page: "1 or 4 only") | $0.0032 an image at 720p (the default; $0.0057 at 1080p) |
 | Grok Image 2 (generate and edit) | `POST /xai/grok-imagine-image-2.0` | `prompt`*, `aspect_ratio`, `image_urls` (omitted when empty; an image to edit) | $0.04 at 1k low, $0.08 at 2k medium; the default's price isn't published, so Jutsu shows $0.08 |
 | Qwen Image 3 Edit | `POST /alibaba/qwen-image-3/edit` | `prompt`*, `image_urls`* (one image), `aspect_ratio` | $0.04 at 1k, $0.075 at 2k |
 
-- One image per request except Soul 2's `batch_size`; Grok and Qwen offer one variant.
+- One image per request except Soul 2's `batch_size`, which takes 1 or 4 (re-checked 2026-10-28; Create offers those two, `APIImageModel` `variantCounts`); Grok and Qwen offer one variant.
 - The list price is shown as an estimate until `/estimate` answers, and when it can't (network or server error).
 - `quality`, `resolution`, `seed`, `negative_prompt` and the Soul style and character fields aren't sent: the server's defaults apply.
 
@@ -351,7 +391,13 @@ Status: **Documented**. Jutsu doesn't use these yet.
 - **Soul ID (character training):**
   - `POST /v1/custom-references` with `{"name": "…" (≤100), "model_version": …, "input_images": [{"type": "image_url", "image_url": "https://…"}]}` (1–100 images);
   - then poll `GET /v1/custom-references/{id}`: `not_ready`, `queued`, `in_progress`, `completed` or `failed`;
-  - Soul image models take the result as `custom_reference_id`.
+  - Soul image models take the result as `custom_reference_id`;
+  - with the account's maximum of references already training, the create answers `429` with `Retry-After` (since 2026-10-23; `400` before), see 3.11.
+- **Kling 4.0** (open.higgsfield.ai model pages, released 2026-10-23; not in docs.higgsfield.ai's model catalog on 2026-10-28). Four endpoints, each 3–30 s, `resolution` `720p` or `1080p` (default), `aspect_ratio` `21:9`, `16:9`, `9:16`, `1:1` or `adaptive` (default):
+  - `kling-video/v4.0/text-to-video` and `kling-video/v4.0/image-to-video`: $0.157–$0.235 a second (720p–1080p);
+  - `kling-video/v4.0/reference-to-video`: `prompt`*, `image_urls` (≤10) and `video_urls` (≤5, references, not a source to edit; longer than 30 s is trimmed), at least one non-empty; `duration` 3–30 (default 10); references are named `@image_1`, `@video_1`… in the prompt; $0.094–$0.235 a second;
+  - `kling-video/v4.0/video-edit`: `prompt`*, `video_url`* (the clip to edit), up to 10 images or videos as references, `duration`, `resolution`, `aspect_ratio`; $0.094 (720p) or $0.141 (1080p) a second, billed on the output's length plus the longer of the input videos' total and the output.
+  - Prices are list prices before the page's 30% discount. Not used by Jutsu yet: the bodies are only on the model pages, and none has been run.
 
 Models in the catalog that are closest to what Jutsu does (issues #39, #48):
 
@@ -391,7 +437,7 @@ Client behaviour (`Packages/HiggsfieldKit/Sources/HiggsfieldMCP/MCPClient.swift`
 
 ### 4.2 Authorization
 
-Status: **Verified**, from public metadata on 2026-10-14.
+Status: **Verified**, from public metadata on 2026-10-14; re-read on 2026-10-28.
 
 An unauthenticated request gets `401` with:
 
@@ -404,14 +450,13 @@ Protected resource metadata (RFC 9728):
 ```json
 {
   "resource": "https://mcp.higgsfield.ai/mcp",
-  "authorization_servers": ["https://clerk.higgsfield.ai", "https://fnf-device-auth.higgsfield.ai"],
+  "authorization_servers": ["https://clerk.higgsfield.ai"],
   "scopes_supported": ["openid", "email", "offline_access"],
   "bearer_methods_supported": ["header"],
   "higgsfield_auth_hints": {
     "selection": "client_capability_based",
     "options": [
-      { "flow": "authorization_code_pkce", "authorization_server": "https://clerk.higgsfield.ai", "…": "…" },
-      { "flow": "device_code", "authorization_server": "https://fnf-device-auth.higgsfield.ai", "…": "…" }
+      { "flow": "authorization_code_pkce", "authorization_server": "https://clerk.higgsfield.ai", "…": "…" }
     ]
   }
 }
@@ -443,7 +488,7 @@ How Jutsu signs in (`OAuthDiscovery`, `ClientRegistration`, `PKCEAuthorizer`, `O
 3. **Authorization.** Authorization code with PKCE S256 and `state`. Scope `openid email offline_access`, with `resource=https://mcp.higgsfield.ai/mcp` (RFC 8707) on both the authorize and token requests. The browser returns the code to a listener on the first free loopback port.
 4. **Tokens.** Stored in the Keychain and refreshed with `refresh_token`. The ID token gives the account's email for display.
 
-The device-code flow (`fnf-device-auth.higgsfield.ai`) is for clients that can't receive redirects. Jutsu doesn't use it.
+Until 2026-10 the metadata also listed `https://fnf-device-auth.higgsfield.ai` with a `device_code` option; on 2026-10-28 it lists only `clerk.higgsfield.ai`, whose own metadata has a `device_authorization_endpoint` (`https://clerk.higgsfield.ai/oauth/device_authorization`) as before. Jutsu reads the first authorization server, so sign-in is unchanged, and it doesn't use the device-code flow.
 
 ### 4.3 Tool calls and results
 
@@ -610,9 +655,9 @@ Not seen live, and shown or handled as unknown: the price of a Topaz upscale bef
 - `kling_video_edit` (Kling O3 Edit, Edit mode): the source as `video_references`, images as `image_references`, `mode` `std` or `pro`. No `duration` or `resolution`.
 - `wan3_0` and `wan3_0_prime` (Wan 3.0 and 3.0 Prime, Motion mode): `video_references` and `image_references`, `duration` 2–30 (the schema's `min` is −1, "let the model choose", which isn't sent), `resolution` 480p/720p/1080p, `generate_audio`. No `mode`; `enable_thinking` and `aspect_ratio` aren't sent.
 - `cinematic_studio_video_4_0` (Cinema Studio 4.0, Motion mode): Seedance's parameters, sent as for a Seedance job with a source: `mode` `omni_reference`, `duration` 4–30, `resolution` 480p or 720p (the REST list; the account also has 1080p), `generate_audio`. The creative controls aren't sent (`ModelParameter.cinemaControls` is REST only): the account names them `era_id`, `camera_model_id`, `camera_lens_id`, `camera_aperture_id`, `pacing_id`, `genre_id`, `light` + `light_id` and `color_palette`, "creative-control id"s that the snapshot doesn't list and that may not be the REST values; it has no camera movement. Create disables the Direction row on the account and says why.
-- `minimax_h3` (MiniMax H3) and `minimax_h3_max` (MiniMax H3 Max), Motion mode: the source as `video_references`, images as `image_references`, `resolution` (`2K` for H3; `480p` or `768p` for Max, default `768p`) and `duration` (H3 4–15, Max 5–15; `models.json` keeps REST's 5–15 until the account's limits are cached). No `mode`, `generate_audio` or `aspect_ratio` (the default `auto`), as for Wan (shape `wanReference`). Max has no REST endpoint, so it is offered on the account only. Neither has a fallback rate: no `get_cost` quote was taken, so until Higgsfield quotes the job (before upload, as it is sent a length) the price is unknown.
+- `minimax_h3` (MiniMax H3) and `minimax_h3_max` (MiniMax H3 Max), Motion mode: the source as `video_references`, images as `image_references`, `resolution` (`2K` for H3; `480p` or `768p` for Max, default `768p`) and `duration` (H3 4–15, Max 5–15; `models.json` keeps REST's 5–15 until the account's limits are cached). No `mode`, `generate_audio` or `aspect_ratio` (the default `auto`), as for Wan (shape `wanReference`). Max has no REST endpoint, so it is offered on the account only. Fallback rates from free `get_cost` quotes of 2026-10-28: H3 2 credits a second at 2K, H3 Max 2.5 at 768p; H3 Max at 480p has none, so until Higgsfield quotes such a job (before upload, as it is sent a length) its price is unknown.
 - Not on the account: Wan 2.7 (`wan2_7`'s roles are `start_image`, `end_image` and `audio_references`, no reference video), Kling 2.6 Motion Control (`kling2_6` is image-to-video from a `start_image`).
-- Priced by `get_cost` like every account model (4.5, Price before upload). Wan 3.0, Wan 3.0 Prime, Cinema Studio 4.0 and MiniMax H3 and H3 Max are sent a length and quoted before upload; Kling O3 Edit follows its source and is quoted after upload. The fallback rates in `models.json` are the free quotes of 2026-10-15.
+- Priced by `get_cost` like every account model (4.5, Price before upload). Wan 3.0, Wan 3.0 Prime, Cinema Studio 4.0 and MiniMax H3 and H3 Max are sent a length and quoted before upload; Kling O3 Edit follows its source and is quoted after upload. The fallback rates in `models.json` are the free quotes of 2026-10-15, and MiniMax's of 2026-10-28.
 
 **Linked files on the account (issue #90): `media_import_url`.** A file downloaded from a pasted link, used whole and as downloaded, is imported by its link instead of uploaded: `{"url": <HTTPS link>, "type": "video" | "image"}` answers `{media_id, type, content_type, source_url, warning, error}`, and the job sends the `media_id` (`HiggsfieldMCPProvider.linkedAsset`, `HiggsfieldAccount.importMedia`). Only HTTPS links of at most 50 MB (the tool's limit) are imported; a larger file, a refusal (`error` or no `media_id`) or a missing tool uploads the file as before. Confirmed live on 2026-10-15 (issue #114): a public 1 MB MP4 answered `{media_id, type: "video", content_type: "video/mp4", source_url}` (`media_import_url.json`).
 
@@ -671,7 +716,7 @@ Rules Jutsu depends on:
   - **Sent a length** (Seedance from a prompt, frames or Extend; Kling 3.0 Motion Control, whose quote requires `duration`, #112; Wan 3.0 and 3.0 Prime; Cinema Studio 4.0): `get_cost` with the job's request minus `medias`, `prompt` and `count` (`AccountModel.quoteRequest`), before anything is uploaded. Live on 2026-10-15 these are priced by `duration` and `resolution` or Kling's `mode` alone; a Seedance job with a source is quoted as `t2v` at the same length. The quote is kept per model, `mode`, resolution, `duration` and `generate_audio` for the connection, and a second estimate while one is out waits for it (`HiggsfieldMCPProvider.quote`); a failed quote isn't kept. Create shows it as "Price from Higgsfield".
   - **Billed by the source** (Genjutsu Motion Transfer and Object Swap, Seedance Edit, Kling O3 Edit): a quote without the source in `medias` gets 422, so before upload Create shows the fallback estimate ("Estimate, Higgsfield quotes it after upload"), and the engine quotes the uploaded files right before submit (`serverEstimate`), asking again under a daily cap when that quote is higher.
   - **Genjutsu Style:** `get_presets` with `preset_id` and `initial_inputs {video, resolution}` answers `cost_credits` only in the TOON text (`PresetQuote.credits`); it needs the uploaded video, so before upload the fallback `styleCredits` (1.5 + 3, 7 or 11 a second; 12 s: 37.5, 85.5, 133.5, matching the live quotes).
-  - **Fallback rates** (`models.json` `credits`, with a `modes` override for a mode priced apart; `AccountModel.estimatedCredits`), from the free quotes of 2026-10-15, per second at 480p / 720p / 1080p: Genjutsu Motion 3 / 7 / 20, Object Swap 3.25 / 7.58 / 21.66 (12 s: 39 / 91 / 260); Seedance 3 / 7 / 16, Edit 3.58 / 7.58 / 20.08 (12 s: 43 / 91 / 241); Kling 3.0 2.5 + 1.5 a second Standard, 2.5 + 2.5 Pro (the quotes round 20.5 and 47.5 down, the estimate up); Kling O3 Edit 1.5 Standard, 2 Pro; Wan 3.0 1 / 1.75 / 3.5; Wan 3.0 Prime 1.5 / 3 / 6; Cinema Studio 4.0 3 / 7. Used when a model can't be quoted yet or the quote fails; without a rate the price is "Price unknown". `models_explore` states no rates.
+  - **Fallback rates** (`models.json` `credits`, with a `modes` override for a mode priced apart; `AccountModel.estimatedCredits`), from the free quotes of 2026-10-15, per second at 480p / 720p / 1080p: Genjutsu Motion 3 / 7 / 20, Object Swap 3.25 / 7.58 / 21.66 (12 s: 39 / 91 / 260); Seedance 3 / 7 / 16, Edit 3.58 / 7.58 / 20.08 (12 s: 43 / 91 / 241); Kling 3.0 2.5 + 1.5 a second Standard, 2.5 + 2.5 Pro (the quotes round 20.5 and 47.5 down, the estimate up); Kling O3 Edit 1.5 Standard, 2 Pro; Wan 3.0 1 / 1.75 / 3.5; Wan 3.0 Prime 1.5 / 3 / 6; Cinema Studio 4.0 3 / 7; from the quotes of 2026-10-28, MiniMax H3 2 at 2K and H3 Max 2.5 at 768p (none at 480p). Used when a model can't be quoted yet or the quote fails; without a rate the price is "Price unknown". `models_explore` states no rates.
   - A quote is kept exact (an image can cost 0.5 credits), is multiplied by the variants, and is what the job is queued with (`Job.cost`, not an estimate), so the daily cap and Spending count it.
 - **Not used:** `width`/`height`, `folder_id`, `preset_id`, `use_free_gens`, `context`. Seedance 2.5's `draft` and `draft_job_id` are used for its native draft (below, issue #115).
 
@@ -767,7 +812,7 @@ The owner ran issue #114's checklist on the account (plan `ultra`) from a 4.02 s
 | Seedance Extend | The output's length is `duration`; the docs don't say whether it holds the source, so it is taken as the new part | The new part only (seen live); only the added seconds are billed |
 | Unlimited plans | N/A | `use_unlim`, opt-in where `models_explore` reports `supports_unlim` and an `unlim` allowance; MCP help says unlimited doesn't apply (issue #22) |
 | Account data | None | Balance, history, likes, transactions, uploads, galleries |
-| Retention | ≥7 days | Results stay in the account's history |
+| Retention | 7 days after the request finishes by default, shorter with an account retention or `Hf-Expires-After` (3.12) | Results stay in the account's history |
 
 ## 6. Open questions
 
@@ -784,11 +829,14 @@ The owner ran issue #114's checklist on the account (plan `ultra`) from a 4.02 s
 11. The Grok Image 2 default's price (1k medium isn't published), (issue #42, 3.13). Soul 2 bills per image on the account: 0.12 credits each (issue #114).
 12. Character sheets (issue #109, 4.4): `ai_influencer_generate`'s answer, seen only as an `outputSchema`; the fields of an `assets_picker_list` `source: "influencer"` item and whether its `id` is the sheet's job ID (the live answer had no items); what an option's `slot` limits; whether a failed sheet is charged; and the tiers' display names, which `ai_influencer_get_options` gives as IDs only.
 13. Whether the account will run Kling O3's video reference: the full catalog of 2026-10-15 has no model for it (4.4). Also the REST rates no page states per setting: Cinema Studio 4.0 per resolution, Kling O3 per `mode`, and Kling O3 Edit Pro (3.13). Only `/estimate` gives them.
+14. Retention shorter than 7 days (3.12). Jutsu sends no `Hf-Expires-After`, but an account with a shorter account retention makes a download's `403` after `expires_at` a lost result, not an expired signed URL, while the download retries it for 7 days. Reading `expires_at` from the status would tell them apart.
+15. A full queue's `429` hasn't been seen live (3.11): whether `Retry-After` and `retry_after_seconds` always agree, and whether a `503` `admission_control_unavailable` puts its `code` inside `detail`, as the `429` does, or next to it (Jutsu reads both).
 
 ## 7. Changelog
 
 | Date | Change |
 |---|---|
+| 2026-10-28 | Reviewed against the docs changelog of 2026-10-23 and 2026-10-24. Queueing (3.11): submits above the concurrency limit are queued; only a full queue refuses one, with `429` `account_queue_full` and `Retry-After`, now `.concurrencyLimit(retryAfter:)`, waited out and sent again with the same key; `503` `admission_control_unavailable` is retried as a server fault; the `400` concurrency text parse is removed. Keys (3.1, 3.10): `403` `api_key_expired` and `api_key_disabled` map to `.unauthorized`. Documented, not used yet: data retention and `DELETE /requests/{id}` (3.12; the OpenAPI file has 9 paths), Standard Webhooks signing (3.9), Kling 4.0 (3.14). `platform.higgsfield.ai` is retired by 2026-10-31; Jutsu uses `api.higgsfield.ai` (3.1). Soul 2's `batch_size` is 1 or 4 (3.13). MCP protected-resource metadata lists only `clerk.higgsfield.ai` (4.2). The account's MiniMax H3 (2K) and H3 Max (768p) get fallback rates from free quotes: 2 and 2.5 credits a second. |
 | 2026-10-21 | Issue #15: Genjutsu Lite (Wan 3.0) on the account as `hf_mult_motion_control_flash` and `hf_mult_replace_object_flash`, with Genjutsu's inputs, up to 15 s, priced by `get_cost` after upload (no fallback rate yet). Its REST endpoints `higgsfield/genjutsu-light/motion-transfer/v1.0` and `.../object-swap/v1.0` are priced in `pricing.json` ($0.05, $0.10 and $0.20 a second at 480p, 720p and 1080p) but have no published request schema (not in `llms.txt` or `openapi.json` on 2026-10-21), so an API key isn't offered Lite. |
 | 2026-10-15 | Issue #115: Seedance's native draft on the account (4.5). Draft of a Seedance 2.5 generation at 480p sends `draft: true` (paid run: quoted and charged 45 for 15 s, as without it); Finalize in 1080p sends only `{model, draft_job_id, resolution: "1080p", use_unlim: false}` within seven days of the draft's completion, quoted live (80 credits for 15 s against 240 fresh, 2026-10-15), else estimated at a third of the 1080p rate. The finalize submit wasn't run live; the owner accepted it on that quote. A native draft imported from history (`draft: true` in its params) can be finalized too, its window counted from its `createdAt`; an imported finalize keeps its `draft_job_id`. |
 | 2026-10-15 | Issue #134: `show_generations`' `width`, `height` and `duration` are a hint until the result is downloaded; then the file's own length and size (`Job.outputMedia`, read for app jobs too) are what Library, Compare, Enhance, Edit and Extend of the result use. "Join with Original…" leaves out the Extend result's first frame, the source's last, and the same length of its sound. |

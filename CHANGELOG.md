@@ -18,6 +18,8 @@ Notable changes to Jutsu Studio. Versions follow [Semantic Versioning](https://s
 
 ### Fixed
 
+- With an API key, a submit refused because the account's Higgsfield queue is full now waits as long as Higgsfield asks (`Retry-After`) and is sent again with the same idempotency key, so it can't be charged twice; it no longer pauses the job as kept failing. A brief queue admission outage is retried like any server error instead of reading as an unavailable model.
+- An API key that expired or was disabled in the Higgsfield console is reported as a refused key that needs attention in Settings, not as an empty balance; the message says the key is wrong, expired or disabled.
 - Hashing a large file, as the upload cache and the transcript cache do, reads it a chunk at a time without keeping the chunks read in memory until it is done; a large video took as much memory as its size.
 
 ## [0.2.5] - 2026-10-27
