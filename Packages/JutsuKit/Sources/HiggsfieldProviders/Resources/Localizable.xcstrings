@@ -13,6 +13,12 @@
     "%@ needs an image to edit." : {
 
     },
+    "%@ needs the clip to edit." : {
+
+    },
+    "%@ needs the start frame." : {
+
+    },
     "An element needs at least one image." : {
 
     },

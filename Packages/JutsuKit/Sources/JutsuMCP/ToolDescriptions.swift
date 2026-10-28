@@ -62,7 +62,7 @@ extension Tool {
             images) are paths on this Mac, copied into the app. elements names the account's characters and other \
             reference elements (from the elements tool, account only): their images are added first, in the element's \
             order, then images; the answer's references lists every image sent with its @ImageN tag, the N the prompt \
-            names it by. title names the job in the Queue, the Library and export file names instead of the source's \
+            names it by, and a source is @Video1 (Kling 4.0 reads them as @image_N and @video_1). title names the job in the Queue, the Library and export file names instead of the source's \
             file name. Returns the job; follow it with jobs. With wait_seconds (0–50) the answer comes once the job's \
             price is known (isPriceExact) or it is held or finished, else when the wait runs out, with timedOut; \
             waiting stops nothing.

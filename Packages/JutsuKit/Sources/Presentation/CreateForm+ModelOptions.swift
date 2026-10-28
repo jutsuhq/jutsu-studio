@@ -126,7 +126,8 @@ extension CreateForm {
     public var referencesDisabledReason: String? {
         guard usesFrames else { return nil }
         return String(
-            localized: "Seedance starts from the frames, so references aren't used. Clear both frames to use them.",
+            localized:
+                "\(selectedModel.title) starts from the frames, so references aren't used. Clear both frames to use them.",
             bundle: .module)
     }
 

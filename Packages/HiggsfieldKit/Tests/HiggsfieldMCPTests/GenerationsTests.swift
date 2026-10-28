@@ -40,6 +40,7 @@ extension Network {
             #expect(item.resolution == "720p")
             #expect(item.media.map(\.role) == [.video, .image, .image, .image])
             #expect(item.media.allSatisfy { $0.id == "<media id>" })
+            #expect(item.mode == nil)
             #expect(
                 Self.calls(stub).first?["arguments"] == ["size": 24, "only_completed": true, "type": "video"])
         }
@@ -104,11 +105,19 @@ extension Network {
     }
 }
 
+/// `params.mode` is kept, so a model with several modes on one server model comes back in its own.
+@Test func theModeSentIsKept() {
+    #expect(PastGeneration(["id": "job", "params": ["mode": "video-edit"]])?.mode == "video-edit")
+    #expect(PastGeneration(["id": "job", "params": ["prompt": "x"]])?.mode == nil)
+}
+
 @Test func historyRolesMapToRequestRoles() {
     #expect(MediaRole(historyRole: "video") == .video)
     #expect(MediaRole(historyRole: "image") == .image)
     #expect(MediaRole(historyRole: "video_references") == .video)
     #expect(MediaRole(historyRole: "image_references") == .image)
+    #expect(MediaRole(historyRole: "start_image") == .startFrame)
+    #expect(MediaRole(historyRole: "end_image") == .endFrame)
     #expect(MediaRole(historyRole: "audio") == nil)
 }
 

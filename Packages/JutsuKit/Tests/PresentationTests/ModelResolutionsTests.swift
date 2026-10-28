@@ -52,7 +52,7 @@ import Testing
 
     /// The models that render at 480p, 720p and 1080p keep the form's exactly as before.
     @Test func theOtherModelsKeepEveryResolution() {
-        let own = ["wan27Reference", "cinemaStudio4", "minimaxH3Reference", "minimaxH3MaxReference"]
+        let own = ["kling40", "wan27Reference", "cinemaStudio4", "minimaxH3Reference", "minimaxH3MaxReference"]
         for model in VideoModel.allCases where !own.contains(model.rawValue) {
             #expect(model.resolutions == Resolution.standard, "\(model.rawValue)")
             for resolution in Resolution.standard { #expect(model.fitted(resolution) == resolution) }

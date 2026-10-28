@@ -53,6 +53,11 @@ public enum ModelEndpoint: String, Sendable, CaseIterable {
     case wan27ReferenceToVideo = "wan/v2.7/reference-to-video"
     case cinemaStudio4 = "higgsfield/cinema-studio/4.0"
     case minimaxH3ReferenceToVideo = "minimax/h3/reference-to-video"
+    /// Kling 4.0's four endpoints, one body (`Kling4Request`).
+    case kling4TextToVideo = "kling-video/v4.0/text-to-video"
+    case kling4ImageToVideo = "kling-video/v4.0/image-to-video"
+    case kling4ReferenceToVideo = "kling-video/v4.0/reference-to-video"
+    case kling4VideoEdit = "kling-video/v4.0/video-edit"
     case soulV2 = "higgsfield-ai/soul/v2/standard"
     /// Generates without `image_urls`, edits with them.
     case grokImage2 = "xai/grok-imagine-image-2.0"

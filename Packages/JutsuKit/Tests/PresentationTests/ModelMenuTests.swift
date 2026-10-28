@@ -22,8 +22,8 @@ import Testing
             let menu = CreateFixture.ready().modelMenu(in: Self.apiKey)
             #expect(
                 menu.map(\.title) == [
-                    "Genjutsu", "Seedance 2.5", "Kling 3.0", "Kling O3", "Kling O3 Edit", "Kling 2.6", "Wan 3.0",
-                    "Wan 3.0 Prime",
+                    "Genjutsu", "Seedance 2.5", "Kling 3.0", "Kling O3", "Kling O3 Edit", "Kling 2.6", "Kling 4.0",
+                    "Wan 3.0", "Wan 3.0 Prime",
                     "Wan 2.7", "Cinema Studio 4.0", "MiniMax H3",
                 ])
             // At the form's 720p, or the nearest a model has (MiniMax H3's 2K). Kling O3, Kling O3 Edit and Cinema
@@ -33,6 +33,7 @@ import Testing
                 menu.map(\.detail) == [
                     "$0.681 / s · up to 30 s", "$0.555 / s · up to 30 s", "$0.126 / s · up to 30 s",
                     "up to $0.168 / s · up to 10 s", "up to $0.126 / s · up to 15 s", "$0.070 / s · up to 30 s",
+                    "$0.188 / s · up to 30 s",
                     "$0.100 / s · up to 30 s", "$0.140 / s · up to 30 s", "$0.100 / s · up to 10 s",
                     "up to $0.463 / s · up to 30 s", "$0.130 / s · up to 15 s",
                 ])

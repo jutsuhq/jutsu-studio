@@ -57,6 +57,8 @@ public struct HistoryItem: Sendable, Hashable, Identifiable {
     /// The draft this generation finalized (`draft_job_id` in its params), kept on the imported job's spec
     /// (`JobSpec.draftJobID`); `nil` for any other.
     public var draftJobID: String?
+    /// The images are a start and an end frame (`JobSpec.referencesAreFrames`), as a clip made from frames sent them.
+    public var referencesAreFrames = false
 
     public init(
         id: String, jobID: UUID = UUID(), mode: Mode, model: VideoModel, createdAt: Date, isLiked: Bool = false,
@@ -89,7 +91,8 @@ public struct HistoryItem: Sendable, Hashable, Identifiable {
         return JobSpec(
             mode: mode, model: model, source: clip, references: inputs.images.map { LocalImage(fileURL: $0.url) },
             prompt: prompt, resolution: resolution ?? .p720, isDraft: isNativeDraft, remoteInputs: inputs,
-            length: clip == nil ? length : nil, aspectRatio: clip == nil ? .auto : nil, draftJobID: draftJobID)
+            length: clip == nil ? length : nil, aspectRatio: clip == nil ? .auto : nil,
+            referencesAreFrames: referencesAreFrames && clip == nil, draftJobID: draftJobID)
     }
 }
 

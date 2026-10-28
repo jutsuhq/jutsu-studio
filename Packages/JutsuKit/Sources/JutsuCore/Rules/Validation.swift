@@ -37,13 +37,16 @@ public enum Validation {
     }
 
     /// A selection outside the video; without a video, a model that needs one, or nothing to go on; Edit, Extend
-    /// and a model that needs a prompt (`requiresPrompt`) without one.
+    /// and a model that needs a prompt (`requiresPrompt`) without one, also without a video unless the clip starts
+    /// from frames (Kling 4.0's `image-to-video` is the one of its endpoints that takes no prompt).
     private static func sourceIssues(_ spec: JobSpec) -> [ValidationIssue] {
         let tolerance = Pricing.durationTolerance
         let hasPrompt = !spec.prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         guard let source = spec.source else {
             if !spec.model.makesClipsWithoutSource || spec.mode != .motionTransfer { return [.sourceRequired] }
-            return hasPrompt || !spec.references.isEmpty ? [] : [.promptRequired]
+            if hasPrompt { return [] }
+            if spec.model.descriptor.requiresPrompt { return spec.usesFrames ? [] : [.promptRequired] }
+            return spec.references.isEmpty ? [.promptRequired] : []
         }
         let range = source.range
         let isInside =

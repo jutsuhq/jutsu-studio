@@ -30,6 +30,7 @@ struct APIModel {
         case .klingVideoReference: body = try Self.klingVideoReference(spec, inputs: inputs)
         case .klingVideoEdit: body = try Self.klingVideoEdit(spec, inputs: inputs)
         case .wanReference, .cinemaStudio: body = try Self.referenceToVideo(spec, inputs: inputs)
+        case .kling4: body = try Self.kling4(spec, inputs: inputs)
         }
     }
 
@@ -147,6 +148,81 @@ struct APIModel {
             aspectRatio: frames.isEmpty ? nil : aspectRatio(of: spec, among: frames)?.rawValue,
             generateAudio: spec.model.declares(.generatedAudio) ? AccountModel.generatesAudio(spec) : nil,
             controls: spec.model.declares(.cinemaControls) ? spec.cinemaControls.fields : [:])
+    }
+
+    /// Kling 4.0 on the endpoint the job picks (`JobSpec.endpointID`): Edit sends the source as the clip to edit
+    /// (`video_url`) with the images as references; frames the start and end frame; a clip with a source or images
+    /// sends them as references (the source is `video_urls`' one item); a prompt alone neither. References and Edit
+    /// get the prompt's tags in the schemas' form (`kling4Prompt`). The length is the selection's, or the one asked
+    /// for, inside 3–30 s, also for Edit, whose `duration` is the output's (`durationSeconds`). The frame follows `AccountModel.kling4Frame`, with REST's `adaptive` for Auto where the
+    /// endpoint has it; `image-to-video` takes none.
+    static func kling4(_ spec: JobSpec, inputs: RemoteInputs) throws -> Kling4Request {
+        let duration = AccountModel.durationSeconds(of: spec)
+        let resolution = spec.resolution.rawValue
+        let images = inputs.images.map(\.url)
+        let videos = inputs.video == nil ? 0 : 1
+        let tagged = kling4Prompt(spec.prompt, images: images.count, videos: videos)
+        if spec.mode == .edit {
+            guard let video = inputs.video else {
+                throw ProviderError.validation(
+                    field: "video_url",
+                    message: String(localized: "\(spec.model.title) needs the clip to edit.", bundle: .module))
+            }
+            return Kling4Request(
+                prompt: tagged, videoURL: video.url, imageURLs: images, duration: duration,
+                resolution: resolution, aspectRatio: AccountModel.kling4Frame(of: spec, auto: Kling4Request.adaptive))
+        }
+        if spec.usesFrames {
+            guard let start = images.first else {
+                throw ProviderError.validation(
+                    field: "image_url",
+                    message: String(localized: "\(spec.model.title) needs the start frame.", bundle: .module))
+            }
+            return Kling4Request(
+                prompt: spec.prompt, imageURL: start, endImageURL: images.dropFirst().first, duration: duration,
+                resolution: resolution)
+        }
+        guard spec.source != nil || !spec.references.isEmpty else {
+            return Kling4Request(
+                prompt: spec.prompt, duration: duration, resolution: resolution,
+                aspectRatio: AccountModel.kling4Frame(of: spec, auto: nil))
+        }
+        return Kling4Request(
+            prompt: tagged, imageURLs: images, videoURLs: inputs.video.map { [$0.url] } ?? [],
+            duration: duration, resolution: resolution,
+            aspectRatio: AccountModel.kling4Frame(of: spec, auto: Kling4Request.adaptive))
+    }
+
+    /// The prompt with the app's tags (`@Image1`, `@Video1`, any case) as Kling 4.0's reference and edit schemas
+    /// name the media: `@image_N` for the N-th image sent (the job's references, in order) and `@video_N` for the
+    /// N-th video, the source (`@video_1`, also the clip an edit changes). A tag past what is sent, or already in the
+    /// schema's form, is left as written; the whole number is read, so `@Image10` never becomes `@image_1` + "0".
+    static func kling4Prompt(_ prompt: String, images: Int, videos: Int) -> String {
+        var result = ""
+        var rest = Substring(prompt)
+        while let at = rest.firstIndex(of: "@") {
+            result += rest[..<at]
+            rest = rest[at...]
+            if let (tag, length) = kling4Tag(at: rest, images: images, videos: videos) {
+                result += tag
+                rest = rest.dropFirst(length)
+            } else {
+                result.append("@")
+                rest = rest.dropFirst()
+            }
+        }
+        return result + rest
+    }
+
+    /// The schema's tag for the app's tag `text` starts with, and how many characters that tag has.
+    private static func kling4Tag(at text: Substring, images: Int, videos: Int) -> (String, Int)? {
+        for (word, kind, count) in [("@image", "image", images), ("@video", "video", videos)] {
+            guard text.prefix(word.count).lowercased() == word else { continue }
+            let digits = text.dropFirst(word.count).prefix { $0.isASCII && $0.isNumber }
+            guard let number = Int(digits), number >= 1, number <= count else { return nil }
+            return ("@\(kind)_\(number)", word.count + digits.count)
+        }
+        return nil
     }
 
     /// Kling takes exactly one character image and the source as the motion.

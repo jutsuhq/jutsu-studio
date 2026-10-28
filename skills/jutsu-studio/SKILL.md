@@ -46,9 +46,14 @@ says rather than guessing.
    version once the person likes the draft. `create_image` takes several `inputs` to edit, up to the model's
    `maxInputs`; with `maxInputsNote` that is only a bound, and Higgsfield's quote refuses (for free) what the model
    doesn't take.
+   - **Clips without a source.** A model with `makesClipsWithoutSource` in `capabilities` with `model` (Seedance
+     2.5, Kling 4.0) makes a clip from the prompt and `images` alone: leave out `source` and set `length` and
+     `aspect_ratio`. With `needsPrompt` the prompt is required. Kling 4.0 also edits a video as the prompt says
+     (`mode: "edit"`), with up to ten images.
    - **Characters by name.** `elements` lists the account's characters, environments and props. Pass their names in
      `elements` to `create_video`, `quote` or `create_image`: their images go first, in order, then your own files.
-     The answer's `references` gives each image's `@ImageN` tag; name them that way in the prompt.
+     The answer's `references` gives each image's `@ImageN` tag; name them that way in the prompt, and the
+     source video as `@Video1`.
 4. **Follow with `jobs`.** Pass the job IDs and `wait_seconds` (up to 50), and call again while they run. A finished
    video's `result` and an image request's `results` are file paths.
 5. **Review and show.** `library_search` finds results (newest first, `nextCursor` → `cursor`), `library_get` gives

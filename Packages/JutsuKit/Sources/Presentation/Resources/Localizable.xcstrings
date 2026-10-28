@@ -293,6 +293,9 @@
         }
       }
     },
+    "%@ starts from the frames, so references aren't used. Clear both frames to use them." : {
+
+    },
     "%@ takes up to %@." : {
       "localizations" : {
         "en" : {
@@ -2205,9 +2208,6 @@
 
     },
     "Secret" : {
-
-    },
-    "Seedance starts from the frames, so references aren't used. Clear both frames to use them." : {
 
     },
     "Seedance's bitrate is set with an API key; the account doesn't offer it yet" : {
