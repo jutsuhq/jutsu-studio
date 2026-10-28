@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-21",
+  "updated": "2026-10-28",
   "notes": [
     "One entry per video model, in the order the model picker lists them; the first model serving a mode is that mode's default.",
     "id: stored in jobs, templates and settings; never change an existing one. title, family and detail are the English fallbacks of the keys <id>.title, <id>.family and <id>.detail in Models.xcstrings.",
@@ -10,7 +10,7 @@
     "request.shape: the code that encodes the body (genjutsu, seedance, klingMotionControl, klingVideoReference, klingVideoEdit, wanReference, cinemaStudio). request.endpoints: the REST endpoint by the first key that applies: the mode, frames, standard/pro, reference (with media) or text, then default. Every endpoint needs rates in pricing.json. Empty for a model the public REST docs don't list: it runs on the account only, and an API key isn't offered it.",
     "request.account: the account's generate_video model ID by mode, once its models_explore get schema confirms every field the shape sends (the snapshot tests check it); a model without one runs with an API key only.",
     "requiresPrompt: a job needs a prompt even with a source.",
-    "credits: the account's fallback estimate, base + perSecond[resolution] x billed seconds, rounded up; modes overrides it for a mode priced apart. The price Create shows is Higgsfield's get_cost quote: before upload for a model sent a length, after upload for one billed by its source (Genjutsu, Edit). The estimate stands in only until then, or when the quote fails. Rates from free get_cost quotes of 2026-10-15 (issue #113). Left out (or a resolution missing), a job the server can't quote shows 'Price unknown'. Genjutsu Lite's 720p rate is what an agent's Lite jobs were quoted after upload (2 credits a second, issue #22); its 480p and 1080p rates follow the 1:2:4 of its REST prices and aren't confirmed by a quote yet."
+    "credits: the account's fallback estimate, base + perSecond[resolution] x billed seconds, rounded up; modes overrides it for a mode priced apart. The price Create shows is Higgsfield's get_cost quote: before upload for a model sent a length, after upload for one billed by its source (Genjutsu, Edit). The estimate stands in only until then, or when the quote fails. Rates from free get_cost quotes of 2026-10-15 (issue #113). Left out (or a resolution missing), a job the server can't quote shows 'Price unknown'. Genjutsu Lite's 720p rate is what an agent's Lite jobs were quoted after upload (2 credits a second, issue #22); its 480p and 1080p rates follow the 1:2:4 of its REST prices and aren't confirmed by a quote yet. MiniMax H3's 2K and H3 Max's 768p rates are from free get_cost quotes of 2026-10-28; H3 Max at 480p isn't quoted yet."
   ],
   "models": [
     {
@@ -228,7 +228,8 @@
         "shape": "wanReference",
         "endpoints": { "default": "minimax/h3/reference-to-video" },
         "account": { "motionTransfer": "minimax_h3" }
-      }
+      },
+      "credits": { "perSecond": { "2K": 2 } }
     },
     {
       "id": "minimaxH3MaxReference",
@@ -243,7 +244,8 @@
         "shape": "wanReference",
         "endpoints": {},
         "account": { "motionTransfer": "minimax_h3_max" }
-      }
+      },
+      "credits": { "perSecond": { "768p": 2.5 } }
     }
   ]
 }
