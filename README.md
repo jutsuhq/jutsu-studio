@@ -2,7 +2,7 @@
 
 ![Jutsu Studio](docs/assets/hero-banner.png)
 
-**The unofficial open-source Mac app for Higgsfield.**
+**The open-source Higgsfield desktop app for Mac. Unofficial.**
 Make video and images with Genjutsu, Seedance, Kling and Higgsfield's other models in a native studio, and keep every file on your disk.
 
 [Download for macOS](https://github.com/jutsuhq/jutsu-studio/releases/latest) · [Quick start](#quick-start) · [Features](docs/features.md) · [Website](https://jutsustudio.com/) · [Higgsfield prices](https://jutsustudio.com/higgsfield-pricing/)
