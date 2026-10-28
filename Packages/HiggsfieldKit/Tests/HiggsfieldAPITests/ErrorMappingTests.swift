@@ -12,6 +12,10 @@ private let validationDetail = """
     ]}
     """
 
+private let expiredKey = """
+    {"code": "api_key_expired", "detail": "This API key has expired.", "expires_at": "2026-09-21T12:00:00Z"}
+    """
+
 private let queueFull = """
     {"detail": {"code": "account_queue_full", "message": "Too many queued generations for this account",
       "retryable": true, "limit": 40, "retry_after_seconds": 30}}
@@ -24,6 +28,11 @@ private let admissionUnavailable = """
 @Test(arguments: [
     (401, #"{"detail": "Invalid credentials"}"#, HiggsfieldError.unauthorized),
     (403, #"{"detail": "Not enough credits"}"#, .insufficientFunds),
+    (403, "", .insufficientFunds),
+    (403, #"{"code": "insufficient_balance", "detail": "Not enough credits"}"#, .insufficientFunds),
+    (403, expiredKey, .unauthorized),
+    (403, #"{"code": "api_key_disabled", "detail": "This API key is disabled."}"#, .unauthorized),
+    (403, #"{"detail": {"code": "api_key_expired", "message": "This API key has expired."}}"#, .unauthorized),
     (
         400, #"{"detail": "Maximum number of concurrent requests (2) has been reached"}"#,
         .validation(field: nil, message: "Maximum number of concurrent requests (2) has been reached")
@@ -158,6 +167,12 @@ func aFullQueueWaitsAsTheServerAsks(header: String?, wait: TimeInterval) {
 @Test func validateKeyRejectsRefusedKey() async throws {
     let server = StubServer()
     server.on("GET", "/models/higgsfield/genjutsu/restyle/v1.0/presets", StubResponse(status: 401))
+    #expect(try await server.makeClient().validateKey() == false)
+}
+
+@Test func validateKeyRejectsExpiredKey() async throws {
+    let server = StubServer()
+    server.on("GET", "/models/higgsfield/genjutsu/restyle/v1.0/presets", .json(expiredKey, status: 403))
     #expect(try await server.makeClient().validateKey() == false)
 }
 

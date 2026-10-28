@@ -1551,7 +1551,7 @@
     "Higgsfield quotes it once the files are uploaded" : {
 
     },
-    "Higgsfield refused the key. Check it in Settings." : {
+    "Higgsfield refused the key: it is wrong, expired or disabled. Check it in Settings." : {
 
     },
     "Higgsfield refused the request" : {

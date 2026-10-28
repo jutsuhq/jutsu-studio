@@ -8,6 +8,8 @@ enum HiggsfieldAPIErrors {
         switch status {
         case 200..<300: return nil
         case 401: return .unauthorized
+        // An expired or disabled key is refused with a code of its own; any other 403 is the balance.
+        case 403 where code(of: body).map(revokedKeyCodes.contains) == true: return .unauthorized
         case 403: return .insufficientFunds
         // The account's generation queue is full, or an endpoint's own limit was reached: nothing was created or
         // charged, and the same request may be sent again once the wait is over.
@@ -25,6 +27,9 @@ enum HiggsfieldAPIErrors {
         default: return .server(status: status)
         }
     }
+
+    /// `403 {code, detail, expires_at}` of a key that expired or was disabled in the Console.
+    static let revokedKeyCodes: Set = ["api_key_expired", "api_key_disabled"]
 
     /// A `Retry-After` in seconds. The API sends a number; the HTTP-date form isn't read.
     static func seconds(_ header: String?) -> TimeInterval? {
