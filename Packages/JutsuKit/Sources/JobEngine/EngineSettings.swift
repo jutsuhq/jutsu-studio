@@ -6,7 +6,7 @@ public struct EngineSettings: Sendable, Hashable {
     public var outputDirectory: URL
     /// Names each result when it is placed in `outputDirectory`.
     public var outputNamePattern: OutputNamePattern
-    /// Local slot limit until the API reports its own.
+    /// How many jobs may be submitted or running at once.
     public var maxConcurrency: Int
     /// Wait before the first poll and after every status change, in seconds. Higgsfield's polling guide:
     /// start at 2 s, grow by 1.5× up to 10 s.
@@ -20,6 +20,9 @@ public struct EngineSettings: Sendable, Hashable {
     public var retryInitialDelay: TimeInterval
     /// The retry wait doubles up to this, in seconds; longer than polling, so an outage isn't hammered.
     public var retryMaxDelay: TimeInterval
+    /// The wait a provider asks for before a refused step is sent again (`Retry-After` of a full queue) is kept in
+    /// this range, in seconds, so a server asking for 0 isn't hammered and one asking for a day doesn't stall the job.
+    public var serverRetryDelay: ClosedRange<TimeInterval>
     /// A job not yet submitted whose step has failed this long, in seconds, and at least `retryPauseFailures`
     /// times in a row, pauses (`keptFailing`) instead of retrying on. Both, so a Mac that slept through one
     /// wait doesn't pause a job on its next failure.
@@ -38,7 +41,8 @@ public struct EngineSettings: Sendable, Hashable {
         outputDirectory: URL, outputNamePattern: OutputNamePattern = .standard, maxConcurrency: Int = 2,
         pollInitialDelay: TimeInterval = 2, pollMaxDelay: TimeInterval = 10,
         serverPollDelay: ClosedRange<TimeInterval> = 1...30, retryInitialDelay: TimeInterval = 5,
-        retryMaxDelay: TimeInterval = 60, retryPauseAfter: TimeInterval = 15 * 60, retryPauseFailures: Int = 5,
+        retryMaxDelay: TimeInterval = 60, serverRetryDelay: ClosedRange<TimeInterval> = 1...600,
+        retryPauseAfter: TimeInterval = 15 * 60, retryPauseFailures: Int = 5,
         jitter: Double = 0.2, uploadMaxAge: TimeInterval = 3600,
         generationDeadline: TimeInterval = 2 * 3600, maxDownloadBytes: Int64 = 4 << 30
     ) {
@@ -50,6 +54,7 @@ public struct EngineSettings: Sendable, Hashable {
         self.serverPollDelay = serverPollDelay
         self.retryInitialDelay = retryInitialDelay
         self.retryMaxDelay = retryMaxDelay
+        self.serverRetryDelay = serverRetryDelay
         self.retryPauseAfter = retryPauseAfter
         self.retryPauseFailures = retryPauseFailures
         self.jitter = jitter

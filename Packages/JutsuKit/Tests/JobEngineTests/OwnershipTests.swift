@@ -148,7 +148,7 @@ struct SubmitAttemptTests {
     @Test func refusedSubmitWithoutIdempotencyIsTriedAgain() async throws {
         let harness = Harness()
         await harness.provider.setIdempotent(false)
-        await harness.provider.script(submit: [.fail(.concurrencyLimit(max: nil))])
+        await harness.provider.script(submit: [.fail(.concurrencyLimit(retryAfter: nil))])
         let engine = try await harness.makeEngine()
 
         let job = try await engine.enqueue(makeSpec())

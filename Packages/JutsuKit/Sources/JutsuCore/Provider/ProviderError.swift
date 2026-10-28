@@ -4,8 +4,9 @@ import Foundation
 public enum ProviderError: Error, Sendable, Hashable {
     case unauthorized
     case insufficientFunds
-    /// All slots busy. `max` is the limit the API reported, when it did.
-    case concurrencyLimit(max: Int?)
+    /// The account is at its limit: nothing started, and the same request can be sent again. `retryAfter` is the
+    /// wait the server asked for, in seconds, when it said.
+    case concurrencyLimit(retryAfter: TimeInterval?)
     case validation(field: String?, message: String)
     case modelUnavailable
     case server(status: Int)

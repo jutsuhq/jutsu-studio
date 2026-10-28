@@ -1,7 +1,7 @@
 import Foundation
 
 /// Async semaphore for the account's generation slots. Waiters are served in `SlotOrder`, and the limit
-/// can change at any time, e.g. when the API reports its own.
+/// can change at any time, as when the user changes the setting.
 public actor SlotLimiter {
     public private(set) var limit: Int
     public private(set) var inUse = 0

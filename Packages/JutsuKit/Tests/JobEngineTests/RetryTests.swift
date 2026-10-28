@@ -71,9 +71,11 @@ struct RetryTests {
         #expect(done.retrying == nil)
     }
 
-    @Test func aBusyAccountIsWaitedForPastThePauseBound() async throws {
+    @Test(arguments: [nil, 90] as [TimeInterval?])
+    func aBusyAccountIsWaitedForPastThePauseBound(retryAfter: TimeInterval?) async throws {
         let harness = Harness()
-        await harness.provider.script(submit: Array(repeating: .fail(.concurrencyLimit(max: nil)), count: 25))
+        await harness.provider.script(
+            submit: Array(repeating: .fail(.concurrencyLimit(retryAfter: retryAfter)), count: 25))
         let engine = try await harness.makeEngine()
         let start = harness.clock.now
 
@@ -82,6 +84,22 @@ struct RetryTests {
 
         #expect(harness.clock.now.timeIntervalSince(start) > 15 * 60)
         #expect(await !harness.repository.states(of: job.id).contains(.paused(.keptFailing)))
+        #expect(await harness.provider.submitKeys == Array(repeating: job.idempotencyKey, count: 26))
+    }
+
+    /// A full queue's `Retry-After` is the wait, in place of the backoff's, kept within `serverRetryDelay`.
+    @Test(arguments: [(30, 30), (0, 1), (86_400, 600)] as [(TimeInterval, TimeInterval)])
+    func aFullQueueWaitsAsLongAsTheServerAsks(retryAfter: TimeInterval, wait: TimeInterval) async throws {
+        let harness = Harness()
+        await harness.provider.script(submit: [.fail(.concurrencyLimit(retryAfter: retryAfter))])
+        let engine = try await harness.makeEngine()
+
+        let job = try await engine.enqueue(makeSpec())
+        let retries = await retries(of: job.id, in: engine, until: .done)
+
+        #expect(retries.map(\.cause) == [.concurrencyLimit])
+        let retry = try #require(retries.first)
+        #expect(retry.nextAttemptAt.timeIntervalSince(retry.since) == wait)
     }
 
     @Test func aSubmittedJobWhosePollsKeepFailingIsNeverPausedAndFailsAtTheDeadline() async throws {
