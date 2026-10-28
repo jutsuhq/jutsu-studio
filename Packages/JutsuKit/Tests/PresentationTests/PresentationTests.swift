@@ -22,6 +22,7 @@ import Testing
     @Test func unauthorizedDependsOnTheConnection() {
         #expect(UserMessage(ProviderError.unauthorized, kind: .apiKey)?.title == "API key is invalid")
         #expect(UserMessage(ProviderError.unauthorized)?.title == "API key is invalid")
+        #expect(UserMessage(ProviderError.unauthorized)?.message.contains("expired or disabled") == true)
         #expect(UserMessage(ProviderError.unauthorized, kind: .account)?.title == "Sign in again")
         #expect(UserMessage(ProviderError.unauthorized)?.action == .openSettings)
     }

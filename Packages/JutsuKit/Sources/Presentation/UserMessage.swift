@@ -60,15 +60,7 @@ public struct UserMessage: Sendable, Hashable, Identifiable {
     private static func provider(_ error: ProviderError, kind: ProviderKind?) -> UserMessage? {
         switch error {
         case .unauthorized:
-            return kind == .account
-                ? UserMessage(
-                    title: String(localized: "Sign in again", bundle: .module),
-                    message: String(localized: "Your Higgsfield sign-in has expired.", bundle: .module),
-                    action: .openSettings)
-                : UserMessage(
-                    title: String(localized: "API key is invalid", bundle: .module),
-                    message: String(localized: "Higgsfield refused the key. Check it in Settings.", bundle: .module),
-                    action: .openSettings)
+            return refusedCredential(kind: kind)
         case .insufficientFunds:
             return kind == .account
                 ? UserMessage(
@@ -108,6 +100,21 @@ public struct UserMessage: Sendable, Hashable, Identifiable {
                     localized: "Check your generations on Higgsfield before trying again, or it may be charged twice.",
                     bundle: .module))
         }
+    }
+
+    /// A refused key (wrong, expired or disabled) or a sign-in that can't be refreshed.
+    private static func refusedCredential(kind: ProviderKind?) -> UserMessage {
+        kind == .account
+            ? UserMessage(
+                title: String(localized: "Sign in again", bundle: .module),
+                message: String(localized: "Your Higgsfield sign-in has expired.", bundle: .module),
+                action: .openSettings)
+            : UserMessage(
+                title: String(localized: "API key is invalid", bundle: .module),
+                message: String(
+                    localized: "Higgsfield refused the key: it is wrong, expired or disabled. Check it in Settings.",
+                    bundle: .module),
+                action: .openSettings)
     }
 
     private static func signIn(_ error: SignInError) -> UserMessage {
