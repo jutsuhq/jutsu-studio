@@ -4,6 +4,8 @@ Notable changes to Jutsu Studio. Versions follow [Semantic Versioning](https://s
 
 ## [Unreleased]
 
+## [0.2.6] - 2026-10-28
+
 ### Added
 
 - Subtitles… on a video's menu and page hears its speech on-device, free and without an account, with macOS 26's own speech models: SpeechTranscriber for the languages it has, Dictation for the others. Only the sound track is read; a video without sound, or with only silence, ends at once with "No speech found", and a file the app can't open says so. A language's model is downloaded from Apple once, after you agree to it for that language in the sheet. One run at a time, in the background, with its progress on the card and Cancel on the result's page and the card's menu; the same file heard again in the same language comes from a cache. The subtitles belong to the version they were made from.
@@ -110,7 +112,8 @@ The first public release.
 - The restyle preset gallery with search, favorites and recents.
 - Menu bar status, Dock badge, notifications and open at login.
 
-[Unreleased]: https://github.com/jutsuhq/jutsu-studio/compare/v0.2.5...HEAD
+[Unreleased]: https://github.com/jutsuhq/jutsu-studio/compare/v0.2.6...HEAD
+[0.2.6]: https://github.com/jutsuhq/jutsu-studio/compare/v0.2.5...v0.2.6
 [0.2.5]: https://github.com/jutsuhq/jutsu-studio/compare/v0.2.2...v0.2.5
 [0.2.2]: https://github.com/jutsuhq/jutsu-studio/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/jutsuhq/jutsu-studio/compare/v0.2.0...v0.2.1
