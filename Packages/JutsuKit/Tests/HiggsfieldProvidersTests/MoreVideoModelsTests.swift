@@ -276,15 +276,23 @@ extension Network {
             #expect(sentResolution == sent)
         }
 
-        /// The fallback estimates of the new models, from the free quotes of 2026-10-15 (issue #113), for when
-        /// Higgsfield can't quote: 10 s.
+        /// The fallback estimates of the new models, from the free quotes of 2026-10-15 (issue #113) and, for
+        /// MiniMax, of 2026-10-28, for when Higgsfield can't quote: 10 s.
         @Test(arguments: [
             ("wan30Reference", Resolution.p480, 10), ("wan30Reference", .p1080, 35),
             ("wan30PrimeReference", .p720, 30), ("wan30PrimeReference", .p1080, 60),
             ("cinemaStudio4", .p480, 30), ("cinemaStudio4", .p720, 70),
+            ("minimaxH3Reference", .k2, 20), ("minimaxH3MaxReference", .p768, 25),
         ])
         func theNewModelsHaveAFallbackEstimate(id: String, resolution: Resolution, credits: Int) throws {
             #expect(AccountModel.estimatedCredits(for: try Self.spec(id, resolution: resolution)) == credits)
+        }
+
+        /// MiniMax H3 Max at 480p hasn't been quoted, so it has no estimate: its price is unknown until Higgsfield
+        /// quotes it.
+        @Test func miniMaxH3MaxAt480pHasNoEstimate() throws {
+            #expect(
+                AccountModel.estimatedCredits(for: try Self.spec("minimaxH3MaxReference", resolution: .p480)) == nil)
         }
 
         /// Kling O3 Edit follows its source, so before upload it has only the estimate (12 s: std 18, pro 24).
