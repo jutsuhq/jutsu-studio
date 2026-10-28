@@ -5,7 +5,11 @@
 **The open-source Higgsfield desktop app for Mac. Unofficial.**
 Make video and images with Genjutsu, Seedance, Kling and Higgsfield's other models in a native studio, and keep every file on your disk.
 
-[Download for macOS](https://github.com/jutsuhq/jutsu-studio/releases/latest) · [Quick start](#quick-start) · [Features](docs/features.md) · [Website](https://jutsustudio.com/) · [Higgsfield prices](https://jutsustudio.com/higgsfield-pricing/)
+[![Download for macOS](https://img.shields.io/badge/Download-macOS-8b5cf6?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/jutsuhq/jutsu-studio/releases/latest)
+
+`brew install jutsuhq/tap/jutsu-studio`
+
+[Quick start](#quick-start) · [Features](docs/features.md) · [Website](https://jutsustudio.com/) · [Higgsfield prices](https://jutsustudio.com/higgsfield-pricing/)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-8b5cf6.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-macOS-000000?logo=apple&logoColor=white)](#quick-start)
@@ -75,6 +79,15 @@ or grab `Jutsu-Studio-<version>.dmg` from the [latest release](https://github.co
 - [Higgsfield API vs MCP vs CLI](https://jutsustudio.com/blog/higgsfield-api-mcp-cli/): which one to use and how each is billed
 - [Higgsfield price table and calculator](https://jutsustudio.com/higgsfield-pricing/): per-second rates for every video model
 - [All guides](https://jutsustudio.com/blog/)
+
+## Related
+
+- [Swapjutsu](https://github.com/jutsuhq/swapjutsu-seedance-character-swap): free character swap for Mac, no watermark
+- [Content Factory](https://github.com/jutsuhq/content-factory): open-source faceless video generator for Shorts, TikTok and Reels
+- [EdgeTAM Core ML](https://github.com/jutsuhq/edgetam-coreml): EdgeTAM video segmentation in Core ML, on the Apple Neural Engine
+- [Higgsfield Gateway](https://github.com/jutsuhq/higgsfield-gateway): a budget-capped Higgsfield API gateway on Cloudflare Workers
+- [AI video API prices](https://github.com/jutsuhq/video-api-prices): what one second of AI video costs at 30+ providers, updated daily
+- [awesome-higgsfield](https://github.com/jutsuhq/awesome-higgsfield): tools, SDKs, agent skills and apps for Higgsfield
 
 ## Contributing
 
