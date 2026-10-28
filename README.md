@@ -83,6 +83,7 @@ or grab `Jutsu-Studio-<version>.dmg` from the [latest release](https://github.co
 ## Related
 
 - [Swapjutsu](https://github.com/jutsuhq/swapjutsu-seedance-character-swap): free character swap for Mac, no watermark
+- [Kawarimi](https://github.com/jutsuhq/kawarimi-local-character-swap): free local AI character swap for Windows and Linux, no cloud
 - [Content Factory](https://github.com/jutsuhq/content-factory): open-source faceless video generator for Shorts, TikTok and Reels
 - [EdgeTAM Core ML](https://github.com/jutsuhq/edgetam-coreml): EdgeTAM video segmentation in Core ML, on the Apple Neural Engine
 - [Higgsfield Gateway](https://github.com/jutsuhq/higgsfield-gateway): a budget-capped Higgsfield API gateway on Cloudflare Workers
