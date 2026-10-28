@@ -177,8 +177,10 @@ public enum CatalogSnapshot {
     /// `image_references` and `video_references` roles and `resolution` 480p, 720p or 1080p. Kling 4.0 is its answer
     /// in the catalog snapshot of 2026-10-28.
     static let laterModels: [String: String] = [
-        "hf_mult_motion_control_flash": genjutsuLite(id: "hf_mult_motion_control_flash"),
-        "hf_mult_replace_object_flash": genjutsuLite(id: "hf_mult_replace_object_flash"),
+        "hf_mult_motion_control_flash": genjutsuLite(
+            id: "hf_mult_motion_control_flash", resolutions: #"["480p", "720p", "1080p"]"#),
+        "hf_mult_replace_object_flash": genjutsuLite(
+            id: "hf_mult_replace_object_flash", resolutions: #"["720p", "1080p"]"#),
         "kling4_0": kling4,
     ]
 
@@ -205,7 +207,8 @@ public enum CatalogSnapshot {
         }
         """#
 
-    private static func genjutsuLite(id: String) -> String {
+    /// Genjutsu Lite's two models as the snapshot of 2026-10-28 lists them: Object Swap renders at 720p and 1080p.
+    private static func genjutsuLite(id: String, resolutions: String) -> String {
         #"""
         {
           "aspect_ratios": [],
@@ -216,7 +219,7 @@ public enum CatalogSnapshot {
           "name": "Genjutsu Lite",
           "output_type": "video",
           "parameters": [
-            {"default": "720p", "name": "resolution", "options": ["480p", "720p", "1080p"], "required": "optional", "type": "string"}
+            {"default": "720p", "name": "resolution", "options": \#(resolutions), "required": "optional", "type": "string"}
           ]
         }
         """#

@@ -13,7 +13,8 @@ public struct JobSpec: Codable, Sendable, Hashable {
     public var presetID: UUID?
     /// Empty when unused: the API rejects `null`.
     public var prompt: String
-    /// One the model renders at (`VideoModel.resolutions`): the initializer moves another to the nearest one.
+    /// One the model renders at in the mode (`VideoModel.resolutions(for:)`): the initializer moves another to the
+    /// nearest one.
     public var resolution: Resolution
     public var isDraft: Bool
     /// Applied locally after download; the API never sees it.
@@ -80,7 +81,7 @@ public struct JobSpec: Codable, Sendable, Hashable {
         self.references = references
         self.presetID = presetID
         self.prompt = prompt
-        self.resolution = model.fitted(resolution)
+        self.resolution = model.fitted(resolution, for: mode)
         self.isDraft = isDraft
         self.audio = audio
         self.remoteInputs = remoteInputs
@@ -110,7 +111,7 @@ public struct JobSpec: Codable, Sendable, Hashable {
         references = try container.decode([LocalImage].self, forKey: .references)
         presetID = try container.decodeIfPresent(UUID.self, forKey: .presetID)
         prompt = try container.decode(String.self, forKey: .prompt)
-        resolution = try container.decode(Resolution.self, forKey: .resolution)
+        let resolution = try container.decode(Resolution.self, forKey: .resolution)
         isDraft = try container.decode(Bool.self, forKey: .isDraft)
         audio = try container.decodeIfPresent(AudioOption.self, forKey: .audio) ?? .original
         remoteInputs = try container.decodeIfPresent(RemoteInputs.self, forKey: .remoteInputs)
@@ -126,6 +127,10 @@ public struct JobSpec: Codable, Sendable, Hashable {
         variants = try container.decodeIfPresent(Int.self, forKey: .variants) ?? 1
         draftJobID = try container.decodeIfPresent(String.self, forKey: .draftJobID)
         title = try container.decodeIfPresent(String.self, forKey: .title)
+        // A generation stored at a resolution its mode doesn't render at, such as a Genjutsu Lite Object Swap at
+        // 480p from before modes had their own, is the job it is sent as, so the Queue, the Library, the estimate
+        // and the cap read the same. An operation keeps the result's resolution.
+        self.resolution = operation == nil ? model.fitted(resolution, for: mode) : resolution
     }
 
     /// The model makes the clip from a start frame and an optional end frame (Seedance's `image-to-video`): the first

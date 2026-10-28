@@ -257,8 +257,10 @@ public struct CreateForm: Sendable, Hashable, Codable {
 
     // MARK: Draft
 
-    /// "Draft 480p".
-    public var draftTitle: String { String(localized: "Draft \(draftResolution.rawValue)", bundle: .module) }
+    /// "Draft 480p": the draft resolution, or the nearest the mode renders at (Genjutsu Lite's Object Swap, 720p).
+    public var draftTitle: String {
+        String(localized: "Draft \(selectedModel.fitted(draftResolution, for: mode).rawValue)", bundle: .module)
+    }
 
     /// Draft is offered on the selected model (`VideoModel.offersDraft`).
     public var offersDraft: Bool { selectedModel.offersDraft }
@@ -422,24 +424,24 @@ extension CreateForm {
     }
 
     /// The resolution the jobs of Draft (`isDraft`) or Generate are made at; Kling's is its quality's, and another
-    /// model's the nearest it renders at (`VideoModel.fitted`).
+    /// model's the nearest it renders at in the mode (`VideoModel.fitted(_:for:)`).
     func jobResolution(isDraft: Bool) -> Resolution {
         if showsKlingQuality { return klingQuality.resolution }
-        return selectedModel.fitted(isDraft ? draftResolution : resolution)
+        return selectedModel.fitted(isDraft ? draftResolution : resolution, for: mode)
     }
 }
 
 // MARK: Resolutions
 
 extension CreateForm {
-    /// The resolution picker's entries: the ones the selected model renders at (`VideoModel.resolutions`), such as
-    /// Wan 2.7's 720p and 1080p.
-    public var resolutionOptions: [Resolution] { selectedModel.resolutions }
+    /// The resolution picker's entries: the ones the selected model renders at in the mode
+    /// (`VideoModel.resolutions(for:)`), such as Wan 2.7's 720p and 1080p, or Genjutsu Lite's in Object Swap.
+    public var resolutionOptions: [Resolution] { selectedModel.resolutions(for: mode) }
 
     /// The picker's selection: the resolution the jobs are made at. Set, it becomes the form's `resolution`, so a
     /// model with fewer resolutions doesn't change what the others get back when they are picked again.
     public var pickedResolution: Resolution {
-        get { selectedModel.fitted(resolution) }
+        get { selectedModel.fitted(resolution, for: mode) }
         set { resolution = newValue }
     }
 }

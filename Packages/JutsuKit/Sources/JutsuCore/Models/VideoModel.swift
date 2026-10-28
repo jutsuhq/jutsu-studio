@@ -48,6 +48,21 @@ public struct VideoModel: RawRepresentable, Codable, Sendable, Hashable, CaseIte
     /// (`Resolution.pixelHeight`), the higher on a tie: a form or a template kept at 480p asks Wan 2.7, which starts
     /// at 720p, for 720p; MiniMax H3 Max's 768p asks the others for 720p, and MiniMax H3's 2K for 1080p.
     public func fitted(_ resolution: Resolution) -> Resolution {
+        Self.nearest(to: resolution, among: resolutions)
+    }
+
+    /// The resolutions it renders at in `mode`, lowest first: fewer than `resolutions` where the mode's schema
+    /// says so (Genjutsu Lite's Object Swap, 720p and 1080p).
+    public func resolutions(for mode: Mode) -> [Resolution] {
+        descriptor.modeResolutions[mode] ?? resolutions
+    }
+
+    /// `fitted(_:)` among the mode's own resolutions: Genjutsu Lite's Object Swap asked for 480p gets 720p.
+    public func fitted(_ resolution: Resolution, for mode: Mode) -> Resolution {
+        Self.nearest(to: resolution, among: resolutions(for: mode))
+    }
+
+    private static func nearest(to resolution: Resolution, among resolutions: [Resolution]) -> Resolution {
         guard !resolutions.contains(resolution) else { return resolution }
         let distance = { (candidate: Resolution) in abs(candidate.pixelHeight - resolution.pixelHeight) }
         return resolutions.reversed().min { distance($0) < distance($1) } ?? resolution
