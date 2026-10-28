@@ -1,5 +1,6 @@
 #if DEBUG
     import AppKit
+    import HiggsfieldProviders
     import JutsuCore
     import Presentation
 
@@ -33,6 +34,9 @@
         static let fallbackVariable = "JUTSU_DEBUG_PANEL_FALLBACK"
         /// `1`: the panel draws as with Reduce Transparency on.
         static let reduceTransparencyVariable = "JUTSU_DEBUG_REDUCE_TRANSPARENCY"
+        /// `1`: once an account is connected, writes Debug › Export MCP Tool Catalog…'s JSON to standard output and
+        /// quits, so a snapshot can be taken from a shell without the save panel (`docs/mcp-snapshots`).
+        static let exportCatalogVariable = "JUTSU_DEBUG_EXPORT_CATALOG"
 
         private static var environment: [String: String] { ProcessInfo.processInfo.environment }
 
@@ -90,12 +94,49 @@
                     for window in NSApp.windows where SystemIntegration.isAppWindow(window) { window.performClose(nil) }
                 }
             }
+            if environment[exportCatalogVariable] == "1" { exportCatalog(app) }
             if let seconds = environment[showWindowVariable].flatMap(Double.init) {
                 Task {
                     try? await Task.sleep(for: .seconds(seconds))
                     system.showMainWindow()
                 }
             }
+        }
+
+        /// Waits up to a minute for the account's provider and its signed-in account, then prints the catalog and
+        /// quits; exits 1 on failure. The account's email and name are what the export redacts, so it never runs
+        /// without them.
+        private static func exportCatalog(_ app: AppEnvironment) {
+            Task { @MainActor in
+                var waits = 0
+                while waits < 120, accountToRedact(app) == nil {
+                    try? await Task.sleep(for: .milliseconds(500))
+                    waits += 1
+                }
+                guard let provider = app.provider as? HiggsfieldMCPProvider, let identifying = accountToRedact(app)
+                else {
+                    FileHandle.standardError.write(Data("No account connected.\n".utf8))
+                    exit(1)
+                }
+                do {
+                    let data = try await provider.exportCatalog(redacting: identifying)
+                    FileHandle.standardOutput.write(data)
+                    exit(0)
+                } catch {
+                    FileHandle.standardError.write(Data("\(error)\n".utf8))
+                    exit(1)
+                }
+            }
+        }
+
+        /// The signed-in account's email and name once the account's provider is active; `nil` until then, and while
+        /// the connection names neither.
+        private static func accountToRedact(_ app: AppEnvironment) -> [String]? {
+            guard app.provider is HiggsfieldMCPProvider, case .account(let info) = app.connection.state else {
+                return nil
+            }
+            let identifying = [info.email, info.name].compactMap(\.self).filter { !$0.isEmpty }
+            return identifying.isEmpty ? nil : identifying
         }
     }
 #endif
