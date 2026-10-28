@@ -41,11 +41,10 @@ extension JobEngine {
             try await retry(job.id, after: .server(status: status), delay: &delay)
         case .modelUnavailable:
             try await retry(job.id, after: .modelUnavailable, delay: &delay)
-        case .concurrencyLimit(let max):
-            if let max { await limiter.setLimit(max) }
+        case .concurrencyLimit(let retryAfter):
             await releaseSlot(job.id)
             if job.state == .waitingForSlot { try await apply(.hitConcurrencyLimit, to: job.id) }
-            try await retry(job.id, after: .concurrencyLimit, delay: &delay)
+            try await retry(job.id, after: .concurrencyLimit, delay: &delay, serverWait: retryAfter)
         case .unauthorized:
             // Submitted jobs keep their state and wait in `networkProvider` for the connection.
             if !connectionNeedsAttention { await connectionAttentionHandler?() }
@@ -72,7 +71,11 @@ extension JobEngine {
     /// patience pauses as `keptFailing`, nothing charged, until the user resumes it; a busy account (concurrency
     /// limit) is waited for. A submitted job is never paused or resubmitted for it: it may still finish and be
     /// charged, so it retries until its generation deadline, as polling does, and a download until it succeeds.
-    private func retry(_ id: UUID, after cause: RetryStatus.Cause, delay: inout Backoff) async throws {
+    /// `serverWait` is the wait the server asked for (`Retry-After`), kept in `serverRetryDelay`; jitter only
+    /// lengthens it, within that range. Without it the wait is `delay`'s.
+    private func retry(
+        _ id: UUID, after cause: RetryStatus.Cause, delay: inout Backoff, serverWait: TimeInterval? = nil
+    ) async throws {
         guard let job = jobs[id] else { throw JobEngineError.unknownJob(id) }
         log.error("Job \(id): retrying", detail: String(describing: cause))
         let now = clock.now
@@ -92,7 +95,12 @@ extension JobEngine {
             }
             return
         }
-        let wait = delay.next()
+        let wait =
+            serverWait.map {
+                let range = settings.serverRetryDelay
+                let asked = min(max($0, range.lowerBound), range.upperBound)
+                return min(asked * (1 + .random(in: 0...settings.jitter)), range.upperBound)
+            } ?? delay.next()
         try await save(id) {
             $0.retrying = RetryStatus(
                 failures: failures, since: since, nextAttemptAt: now.addingTimeInterval(wait), cause: cause)

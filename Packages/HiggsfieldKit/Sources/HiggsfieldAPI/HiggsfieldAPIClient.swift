@@ -164,7 +164,8 @@ public struct HiggsfieldAPIClient: Sendable {
     /// Sends an API request and throws the mapped error for any non-2xx answer.
     private func call(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
         let (data, http) = try await send(request)
-        if let error = HiggsfieldAPIErrors.error(status: http.statusCode, body: data) {
+        let retryAfter = http.value(forHTTPHeaderField: "Retry-After")
+        if let error = HiggsfieldAPIErrors.error(status: http.statusCode, body: data, retryAfter: retryAfter) {
             logFailure(request.httpMethod ?? "GET", request.url?.path ?? "", http)
             throw error
         }

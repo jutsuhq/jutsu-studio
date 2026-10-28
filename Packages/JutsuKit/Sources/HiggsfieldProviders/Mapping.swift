@@ -19,7 +19,7 @@ extension ProviderError {
             switch error {
             case .unauthorized: .unauthorized
             case .insufficientFunds: .insufficientFunds
-            case .concurrencyLimit(let max): .concurrencyLimit(max: max)
+            case .concurrencyLimit(let retryAfter): .concurrencyLimit(retryAfter: retryAfter)
             case .validation(let field, let message): .validation(field: field, message: message)
             case .modelUnavailable: .modelUnavailable
             case .toolUnavailable: HiggsfieldMCPProvider.notAvailable

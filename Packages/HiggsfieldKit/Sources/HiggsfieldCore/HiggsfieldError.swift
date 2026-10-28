@@ -5,8 +5,9 @@ public enum HiggsfieldError: Error, Sendable, Hashable {
     /// The credential was refused: a wrong or revoked API key, or a sign-in that can't be refreshed.
     case unauthorized
     case insufficientFunds
-    /// All slots busy. `max` is the limit the API reported, when it did.
-    case concurrencyLimit(max: Int?)
+    /// The account is at its limit (a full generation queue, `429`): nothing was created or charged, and the same
+    /// request can be sent again. `retryAfter` is the wait the server asked for, in seconds, when it said.
+    case concurrencyLimit(retryAfter: TimeInterval?)
     /// The request was refused as it is; `field` names the offending parameter when the server did.
     case validation(field: String?, message: String)
     case modelUnavailable

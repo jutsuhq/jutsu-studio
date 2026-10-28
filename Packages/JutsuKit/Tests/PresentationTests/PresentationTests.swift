@@ -16,7 +16,7 @@ import Testing
 @Suite struct UserMessageTests {
     @Test func cancellationAndConcurrencyAreSilent() {
         #expect(UserMessage(CancellationError()) == nil)
-        #expect(UserMessage(ProviderError.concurrencyLimit(max: 2)) == nil)
+        #expect(UserMessage(ProviderError.concurrencyLimit(retryAfter: 30)) == nil)
     }
 
     @Test func unauthorizedDependsOnTheConnection() {

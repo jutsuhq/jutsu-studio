@@ -57,11 +57,11 @@ func submitGoesToTheModeWorkflowAndKeepsTheReturnedURLs(mode: Mode, path: String
     let server = StubServer()
     server.on(
         "POST", "/higgsfield/genjutsu/motion-transfer/v1.0",
-        StubResponse(status: 400, body: #"{"detail": "Maximum number of concurrent requests (2)"}"#))
+        StubResponse(status: 429, headers: ["Retry-After": "30"], body: #"{"detail": {"code": "account_queue_full"}}"#))
     server.on("GET", "/requests/req-1/status", fail: URLError(.notConnectedToInternet))
     let provider = server.makeAPIProvider()
 
-    await #expect(throws: ProviderError.concurrencyLimit(max: 2)) {
+    await #expect(throws: ProviderError.concurrencyLimit(retryAfter: 30)) {
         try await provider.submit(spec(), inputs: inputs, idempotencyKey: UUID())
     }
     await #expect(throws: ProviderError.network) { try await provider.status(RemoteJob(requestID: "req-1")) }

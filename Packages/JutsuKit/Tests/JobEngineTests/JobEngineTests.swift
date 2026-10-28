@@ -141,10 +141,11 @@ struct JobEngineTests {
         #expect(await harness.provider.acceptedCount == 3)
     }
 
-    @Test func concurrencyErrorRequeuesAndAdoptsTheReportedLimit() async throws {
+    @Test func aFullQueueRequeuesWithTheSameKeyAfterTheServersWait() async throws {
         let harness = Harness(maxConcurrency: 4)
-        await harness.provider.script(submit: [.fail(.concurrencyLimit(max: 1))])
+        await harness.provider.script(submit: [.fail(.concurrencyLimit(retryAfter: 42))])
         let engine = try await harness.makeEngine()
+        let start = harness.clock.now
 
         let job = try await engine.enqueue(makeSpec())
         await harness.repository.wait(for: job.id, .done)
@@ -152,8 +153,9 @@ struct JobEngineTests {
         let states = await harness.repository.states(of: job.id)
         // Per submit: the transition in, the attempt marker, and clearing it after the refusal; then the retry.
         #expect(states.filter { $0 == .waitingForSlot }.count == 6)
-        #expect(await engine.limiter.limit == 1)
+        #expect(await engine.limiter.limit == 4)
         #expect(await harness.provider.submitKeys == [job.idempotencyKey, job.idempotencyKey])
+        #expect(harness.clock.now.timeIntervalSince(start) >= 42)
     }
 
     @Test func resumeAfterCrashPollsWithoutResubmitting() async throws {
