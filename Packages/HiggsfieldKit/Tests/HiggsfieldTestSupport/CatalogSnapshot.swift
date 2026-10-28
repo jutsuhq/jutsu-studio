@@ -1,7 +1,7 @@
 import Foundation
 import HiggsfieldMCP
 
-/// `structuredContent` of `models_explore` answers from the catalog snapshot `docs/mcp-snapshots/2026-10-15.json`,
+/// `structuredContent` of `models_explore` answers from the catalog snapshot `docs/mcp-snapshots/2026-10-28.json`,
 /// copied as they are (public model catalog data; the account's `unlim` block said it had no allowance).
 public enum CatalogSnapshot {
     /// `models_explore {action: "get", model_id: "seedance_2_5"}`.
@@ -115,7 +115,7 @@ public enum CatalogSnapshot {
     static let snapshot: JSONValue? = {
         var url = URL(fileURLWithPath: #filePath)
         for _ in 0..<5 { url.deleteLastPathComponent() }
-        let file = url.appendingPathComponent("docs/mcp-snapshots/2026-10-15.json")
+        let file = url.appendingPathComponent("docs/mcp-snapshots/2026-10-28.json")
         guard let data = try? Data(contentsOf: file) else { return nil }
         return try? JSONDecoder().decode(JSONValue.self, from: data)
     }()
@@ -163,66 +163,12 @@ public enum CatalogSnapshot {
     }
 
     /// The snapshot's `models_explore {action: "get", model_id: id}` answer (its `structuredContent`), for every
-    /// listed video and image model, and for the models released after it (`laterModels`).
+    /// listed video and image model.
     public static func model(_ id: String) throws -> JSONValue {
-        if let text = laterModels[id] { return try value(text) }
         guard let model = snapshot?["models"]?["get"]?[id]?["structuredContent"], model.objectValue != nil else {
             throw MissingModel(id: id)
         }
         return model
-    }
-
-    /// `models_explore get` of the models the snapshot of 2026-10-15 predates, by ID: the fields a request is checked
-    /// against, as the live catalog of 2026-10-21 lists them. Genjutsu Lite (issue #15) takes Genjutsu's inputs: the
-    /// `image_references` and `video_references` roles and `resolution` 480p, 720p or 1080p. Kling 4.0 is its answer
-    /// in the catalog snapshot of 2026-10-28.
-    static let laterModels: [String: String] = [
-        "hf_mult_motion_control_flash": genjutsuLite(
-            id: "hf_mult_motion_control_flash", resolutions: #"["480p", "720p", "1080p"]"#),
-        "hf_mult_replace_object_flash": genjutsuLite(
-            id: "hf_mult_replace_object_flash", resolutions: #"["720p", "1080p"]"#),
-        "kling4_0": kling4,
-    ]
-
-    /// `models_explore {action: "get", model_id: "kling4_0"}` in the catalog snapshot of 2026-10-28.
-    static let kling4 = #"""
-        {
-          "aspect_ratios": ["21:9", "16:9", "9:16", "1:1", "auto"],
-          "description": "Generate video from text, ordered keyframes, references, or edit an input video",
-          "id": "kling4_0",
-          "medias": [
-            {"name": "medias", "roles": ["start_image", "end_image", "image_references", "video_references"], "type": "image"}
-          ],
-          "name": "Kling 4.0",
-          "output_type": "video",
-          "parameters": [
-            {"default": "text-to-video", "description": "Generation mode.", "name": "mode", "options": ["text-to-video", "image-to-video", "reference-to-video", "video-edit"], "required": "optional", "type": "string"},
-            {"default": "1080p", "description": "Output resolution.", "name": "resolution", "options": ["720p", "1080p"], "required": "optional", "type": "string"},
-            {"default": 10, "description": "Duration in whole seconds (3-30). Whole number.", "max": 30, "min": 3, "name": "duration", "required": "optional", "type": "number"},
-            {"description": "Accessible, ready Kling element IDs or reference UUIDs (up to seven).", "name": "kling_element_ids", "required": "optional", "type": "string_array"}
-          ],
-          "provider_name": "Kling",
-          "tags": ["text-to-video", "image-to-video", "reference-to-video", "video-edit", "keyframes"],
-          "unlim": {"available": false, "expires_at": null, "remaining": null}
-        }
-        """#
-
-    /// Genjutsu Lite's two models as the snapshot of 2026-10-28 lists them: Object Swap renders at 720p and 1080p.
-    private static func genjutsuLite(id: String, resolutions: String) -> String {
-        #"""
-        {
-          "aspect_ratios": [],
-          "id": "\#(id)",
-          "medias": [
-            {"name": "medias", "roles": ["image_references", "video_references"], "type": "image"}
-          ],
-          "name": "Genjutsu Lite",
-          "output_type": "video",
-          "parameters": [
-            {"default": "720p", "name": "resolution", "options": \#(resolutions), "required": "optional", "type": "string"}
-          ]
-        }
-        """#
     }
 
     /// `generate_video`'s own `params`, which no model schema lists.

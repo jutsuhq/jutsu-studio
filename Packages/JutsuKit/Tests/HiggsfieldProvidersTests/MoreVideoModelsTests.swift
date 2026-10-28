@@ -9,7 +9,7 @@ import Testing
 
 extension Network {
     /// The reference-video models of issue #101: their REST bodies from the documented schemas, and their
-    /// `generate_video` arguments against the account's own schemas in the catalog snapshot of 2026-10-15.
+    /// `generate_video` arguments against the account's own schemas in the catalog snapshot of 2026-10-28.
     @Suite struct MoreVideoModels {
         static func model(_ id: String) throws -> VideoModel { try #require(VideoModel(rawValue: id)) }
 
