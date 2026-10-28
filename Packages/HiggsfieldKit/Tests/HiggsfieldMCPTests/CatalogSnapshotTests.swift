@@ -4,7 +4,7 @@ import Testing
 
 @testable import HiggsfieldMCP
 
-/// The catalog snapshot of 2026-10-15 as the client reads it: every role finds its tool by name and arguments, and
+/// The catalog snapshot of 2026-10-28 as the client reads it: every role finds its tool by name and arguments, and
 /// the schema check the other tests rely on catches what the server would refuse.
 @Suite struct CatalogSnapshotTools {
     @Test func everyRoleFindsItsToolInTheSnapshot() throws {
