@@ -252,7 +252,8 @@ final class AgentService {
                 mode: AgentVideoOrder.name(of: mode), minSeconds: limits.duration.lowerBound,
                 maxSeconds: limits.duration.upperBound, minImages: limits.referenceImages.lowerBound,
                 maxImages: limits.referenceImages.upperBound, needsStyle: limits.requiresPreset,
-                needsSource: hasSource, maxVariants: variants.maximum, variantsUnavailable: variants.reason)
+                needsSource: hasSource, resolutions: model.resolutions(for: mode).map(\.rawValue),
+                maxVariants: variants.maximum, variantsUnavailable: variants.reason)
         }
         return AgentCapabilities.ModelDetails(
             modes: modes, hasDraft: model.offersDraft, makesClipsWithoutSource: model.makesClipsWithoutSource,

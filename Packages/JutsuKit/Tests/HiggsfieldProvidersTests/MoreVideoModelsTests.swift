@@ -159,7 +159,7 @@ extension Network {
             for model in VideoModel.allCases where AccountModel.runs(model) {
                 for mode in model.modes where model.accountModelID(for: mode) != nil {
                     let limits = model.limits(for: mode)
-                    for resolution in model.resolutions {
+                    for resolution in model.resolutions(for: mode) {
                         for seconds in [limits.duration.lowerBound, limits.duration.upperBound] {
                             for audio in [AudioOption.original, .generated] {
                                 var spec = try Self.spec(

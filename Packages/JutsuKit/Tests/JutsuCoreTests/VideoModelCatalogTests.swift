@@ -88,7 +88,8 @@ import Testing
         #expect(VideoModel.allCases.filter { !$0.runsWithAPIKey } == [lite, max])
     }
 
-    /// Genjutsu Lite: Genjutsu's request and draft for Motion and Swap (no Restyle) on models of its own, up to 15 s.
+    /// Genjutsu Lite: Genjutsu's request and draft for Motion and Swap (no Restyle) on models of its own, up to 15 s
+    /// with up to 10 images.
     @Test func genjutsuLiteIsGenjutsusSecondModel() throws {
         let lite = try #require(VideoModel(rawValue: "genjutsuLite"))
         #expect(VideoModel.allCases.prefix(2) == [.genjutsu, lite])
@@ -101,10 +102,37 @@ import Testing
         #expect(lite.accountModelID(for: .objectSwap) == "hf_mult_replace_object_flash")
         for mode in lite.modes {
             #expect(lite.limits(for: mode).duration == 4...15)
-            #expect(lite.limits(for: mode).referenceImages == VideoModel.genjutsu.limits(for: mode).referenceImages)
+            #expect(lite.limits(for: mode).referenceImages == 1...10)
         }
         // Genjutsu stays each of its modes' default.
         #expect(Mode.motionTransfer.defaultModel == .genjutsu && Mode.objectSwap.defaultModel == .genjutsu)
+    }
+
+    /// Each mode renders at what its `models_explore get` lists (snapshot of 2026-10-28): Lite's Object Swap at
+    /// 720p and 1080p only, so a job asking it for 480p gets 720p; its Motion Transfer and every Genjutsu mode at
+    /// 480p, 720p and 1080p.
+    @Test func genjutsuLiteObjectSwapStartsAt720p() throws {
+        let lite = try #require(VideoModel(rawValue: "genjutsuLite"))
+        #expect(lite.resolutions(for: .motionTransfer) == Resolution.standard)
+        #expect(lite.resolutions(for: .objectSwap) == [.p720, .p1080])
+        #expect(lite.fitted(.p480, for: .objectSwap) == .p720)
+        #expect(lite.fitted(.p480, for: .motionTransfer) == .p480)
+        #expect(lite.fitted(.p1080, for: .objectSwap) == .p1080)
+        for mode in VideoModel.genjutsu.modes {
+            #expect(VideoModel.genjutsu.resolutions(for: mode) == Resolution.standard)
+        }
+        let swap = JobSpec(
+            mode: .objectSwap, model: lite,
+            source: SourceClip(
+                fileURL: URL(fileURLWithPath: "/tmp/in.mov"), duration: 30,
+                pixelSize: PixelSize(width: 1280, height: 720),
+                range: 0...10),
+            resolution: .p480)
+        #expect(swap.resolution == .p720)
+        // Every other model renders at the same resolutions in each of its modes.
+        for model in VideoModel.allCases where model != lite {
+            for mode in model.modes { #expect(model.resolutions(for: mode) == model.resolutions, "\(model.rawValue)") }
+        }
     }
 
     @Test func eachModeDefaultsToTheFirstModelServingIt() {
@@ -176,8 +204,8 @@ import Testing
 
     // MARK: Reading the file
 
-    /// An entry this version can't run (an unknown shape, mode or control, a reversed range) is left out and the
-    /// others load; a repeated ID keeps the first.
+    /// An entry this version can't run (an unknown shape, mode or control, a reversed range, a mode's resolutions
+    /// outside the model's or none) is left out and the others load; a repeated ID keeps the first.
     @Test func entriesThisVersionCantRunAreLeftOut() throws {
         func entry(_ id: String, _ extra: String = "") -> String {
             """
@@ -192,10 +220,14 @@ import Testing
             entry("control", #","controls":["camera"]"#),
             entry("range", #","limits":{"duration":[10,2]}"#),
             entry("ok", #","controls":["frames"]"#),
+            entry("modeResolution", #","resolutions":["720p"],"modeResolutions":{"motionTransfer":["480p"]}"#),
+            entry("noModeResolution", #","modeResolutions":{"motionTransfer":[]}"#),
+            entry("byMode", #","modeResolutions":{"motionTransfer":["1080p","720p"]}"#),
         ]
         let catalog = try VideoModelCatalog(data: Data(#"{"models":[\#(models.joined(separator: ","))]}"#.utf8))
-        #expect(catalog.entryCount == 6)
-        #expect(catalog.descriptors.map(\.id) == ["ok"])
+        #expect(catalog.entryCount == 9)
+        #expect(catalog.descriptors.map(\.id) == ["ok", "byMode"])
+        #expect(catalog["byMode"]?.modeResolutions == [.motionTransfer: [.p720, .p1080]])
         let model = try #require(catalog["ok"])
         #expect(model.duration == 2...10)
         #expect(model.referenceImages == 0...3)

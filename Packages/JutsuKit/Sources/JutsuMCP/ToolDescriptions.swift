@@ -15,9 +15,9 @@ extension Tool {
             person's own daily cap and what it counts today, every job theirs and agents' together, apart from the \
             budget: a job over it is refused with over_cap) and the tool groups this version offers. models: true adds \
             the video models (id, title, modes, resolutions, whether the connection runs it); model: an ID returns \
-            only that one, with its limits per mode (seconds, images, whether it needs a style or a source, and \
-            maxVariants, the most variants takes there on this connection, with variantsUnavailable saying why it is \
-            1). image_models: true adds the image models create_image takes (counts, aspect ratios, whether input \
+            only that one, with its limits per mode (seconds, images, whether it needs a style or a source, the \
+            resolutions it takes there, and maxVariants, the most variants takes there on this connection, with \
+            variantsUnavailable saying why it is 1). image_models: true adds the image models create_image takes (counts, aspect ratios, whether input \
             images are needed, maxInputs, the most inputs it takes, with maxInputsNote when that is a bound because \
             the catalog states none), styles: true Restyle's style IDs, voices: true Change Voice's voices. onDevice \
             says what enhance runs free on this Mac: smoothMotion (its modes), upscaleVideo and upscaleImage, each \

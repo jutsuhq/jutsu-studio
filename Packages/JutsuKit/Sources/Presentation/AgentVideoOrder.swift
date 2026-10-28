@@ -139,7 +139,7 @@ public struct AgentVideoOrder: Sendable, Hashable {
             throw Refusal("\(model.title) can't run \(self.mode).")
         }
         if isDraft, !model.offersDraft { throw Refusal("\(model.title) has no drafts; leave draft out.") }
-        if let resolution = try pickResolution(for: model) {
+        if let resolution = try pickResolution(for: model, in: mode) {
             if isDraft { form.draftResolution = resolution } else { form.resolution = resolution }
         }
         try place(source, in: &form)
@@ -190,11 +190,14 @@ public struct AgentVideoOrder: Sendable, Hashable {
         return model
     }
 
-    private func pickResolution(for model: VideoModel) throws(Refusal) -> Resolution? {
+    /// The resolution asked for, if the model renders at it in `mode` (`VideoModel.resolutions(for:)`).
+    private func pickResolution(for model: VideoModel, in mode: Mode) throws(Refusal) -> Resolution? {
         guard let name = resolution else { return nil }
-        guard let resolution = Resolution(rawValue: name), model.resolutions.contains(resolution) else {
-            let offered = model.resolutions.map(\.rawValue).joined(separator: ", ")
-            throw Refusal("\(model.title) renders at \(offered), not \(name).")
+        let offered = model.resolutions(for: mode)
+        guard let resolution = Resolution(rawValue: name), offered.contains(resolution) else {
+            let names = offered.map(\.rawValue).joined(separator: ", ")
+            let place = offered == model.resolutions ? "" : " in \(self.mode)"
+            throw Refusal("\(model.title) renders at \(names)\(place), not \(name).")
         }
         return resolution
     }

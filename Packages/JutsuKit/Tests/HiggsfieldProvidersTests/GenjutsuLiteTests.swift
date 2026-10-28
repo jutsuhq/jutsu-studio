@@ -49,6 +49,45 @@ extension Network {
             #expect(try CatalogSnapshot.violations(ofParams: params).isEmpty)
         }
 
+        /// Object Swap renders at 720p and 1080p only (`hf_mult_replace_object_flash`, snapshot of 2026-10-28), so it
+        /// never sends 480p: a job asking for it is made at 720p, and so is one stored at 480p before, which the
+        /// Queue, the Library and the estimate then show at 720p too. Motion Transfer keeps 480p.
+        @Test func objectSwapNeverSends480p() async throws {
+            let (provider, stub) = Provider.provider(tools: Provider.fullSet) { _, _ in
+                ["results": [["id": "job-1"]]]
+            }
+            // A job stored at 480p: the JSON a store kept before Object Swap had its own resolutions.
+            var data = try JSONEncoder().encode(Self.spec(.objectSwap))
+            var object = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+            object["resolution"] = "480p"
+            data = try JSONSerialization.data(withJSONObject: object)
+            let stored = try JSONDecoder().decode(JobSpec.self, from: data)
+            #expect(stored.resolution == .p720)
+            #expect(try await provider.estimate(stored) == .credits(24, isEstimate: true))
+
+            let specs = [
+                Self.spec(.objectSwap, resolution: .p480), stored, Self.spec(.motionTransfer, resolution: .p480),
+            ]
+            #expect(specs[0].resolution == .p720)
+            for spec in specs { _ = try await provider.submit(spec, inputs: Provider.inputs, idempotencyKey: UUID()) }
+
+            let params = Provider.calls(stub).compactMap { $0["arguments"]?["params"] }
+            #expect(params.map { $0["resolution"] } == ["720p", "720p", "480p"])
+            for sent in params { #expect(try CatalogSnapshot.violations(ofParams: sent).isEmpty, "\(sent)") }
+        }
+
+        /// Up to 10 reference images in either mode, at least one.
+        @Test(arguments: [Mode.motionTransfer, .objectSwap])
+        func itTakesUpTo10Images(mode: Mode) {
+            var spec = Self.spec(mode)
+            spec.references = Array(repeating: LocalImage(fileURL: URL(fileURLWithPath: "/tmp/a.jpg")), count: 10)
+            #expect(Validation.check(spec).isEmpty)
+            spec.references.append(LocalImage(fileURL: URL(fileURLWithPath: "/tmp/b.jpg")))
+            #expect(Validation.check(spec) == [.tooManyReferences(maximum: 10)])
+            spec.references = []
+            #expect(Validation.check(spec) == [.tooFewReferences(minimum: 1)])
+        }
+
         /// Billed by its source, like Genjutsu: `get_cost` quotes it once the source is uploaded, with the source in
         /// `medias`. Before that it is the catalog's estimate, 2 credits a second at 720p, and nothing is asked.
         @Test(arguments: [Mode.motionTransfer, .objectSwap])
@@ -57,7 +96,9 @@ extension Network {
                 ["cost": ["credits": 12, "credits_exact": .number(12.5)]]
             }
             #expect(try await provider.estimate(Self.spec(mode)) == .credits(24, isEstimate: true))
-            #expect(try await provider.estimate(Self.spec(mode, resolution: .p480)) == .credits(12, isEstimate: true))
+            // Object Swap asked for 480p is made, and estimated, at 720p.
+            let low: Decimal = mode == .objectSwap ? 24 : 12
+            #expect(try await provider.estimate(Self.spec(mode, resolution: .p480)) == .credits(low, isEstimate: true))
             #expect(Provider.calls(stub).isEmpty)
 
             let quoted = try await provider.serverEstimate(Self.spec(mode), inputs: Provider.inputs)

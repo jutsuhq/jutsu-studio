@@ -124,6 +124,8 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
         public var maxImages: Int
         public var needsStyle: Bool
         public var needsSource: Bool
+        /// The resolutions a job takes in this mode; fewer than the model's where the mode renders at fewer.
+        public var resolutions: [String]
         /// The most `variants` takes here on this connection; 1 with `variantsUnavailable` saying why.
         public var maxVariants: Int
         /// Why one job makes one video here whatever `variants` asks, in English; nil when more are offered.
@@ -131,7 +133,7 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
 
         public init(
             mode: String, minSeconds: Double, maxSeconds: Double, minImages: Int, maxImages: Int, needsStyle: Bool,
-            needsSource: Bool, maxVariants: Int = 1, variantsUnavailable: String? = nil
+            needsSource: Bool, resolutions: [String] = [], maxVariants: Int = 1, variantsUnavailable: String? = nil
         ) {
             self.mode = mode
             self.minSeconds = minSeconds
@@ -140,6 +142,7 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
             self.maxImages = maxImages
             self.needsStyle = needsStyle
             self.needsSource = needsSource
+            self.resolutions = resolutions
             self.maxVariants = maxVariants
             self.variantsUnavailable = variantsUnavailable
         }

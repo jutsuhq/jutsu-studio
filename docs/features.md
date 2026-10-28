@@ -9,7 +9,7 @@ Some features depend on how you connect. **Account** means a Higgsfield account 
 | Model | What it makes | Connection |
 |---|---|---|
 | Genjutsu | Motion transfer, object swap and restyle of a source video | Both |
-| Genjutsu Lite | Cheaper motion transfer and object swap on Wan 3.0, up to 15 s, picked next to Genjutsu; no restyle. Its REST schema isn't published yet, so an API key isn't offered it, and a template or reopened job saved with it runs on Genjutsu there, saying so | Account |
+| Genjutsu Lite | Cheaper motion transfer and object swap, up to 15 s with up to ten images, picked next to Genjutsu; no restyle. Motion transfer renders at 480p, 720p or 1080p, object swap at 720p or 1080p. Its REST schema isn't published yet, so an API key isn't offered it, and a template or reopened job saved with it runs on Genjutsu there, saying so | Account |
 | Seedance 2.5 | Motion transfer; a clip from a prompt and images with no source video; a clip between a start and an end frame; Edit and Extend of an existing video; standard or high bitrate | Both |
 | Kling 3.0 Motion Control | Motion transfer, Standard or Pro quality, with the option to keep the video's background. Keeping the original sound and the character orientation need an API key | Both |
 | Kling 4.0 | A 3–30 s clip from a prompt, from a start and an optional end frame, or from up to ten images and the source video as references; Edit of an existing video as the prompt says, with up to ten images; 720p or 1080p | Both |

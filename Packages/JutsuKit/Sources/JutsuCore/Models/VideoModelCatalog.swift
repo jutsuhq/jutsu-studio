@@ -94,6 +94,8 @@ public struct VideoModelDescriptor: Sendable, Hashable {
     /// The resolutions it renders at, in `Resolution`'s order: 480p, 720p and 1080p (`Resolution.standard`) unless
     /// `models.json` lists its own. The picker offers these, and `Pricing` needs a rate for each.
     public var resolutions: [Resolution]
+    /// A mode's own resolutions, where it renders at fewer of `resolutions`; a mode left out has them all.
+    public var modeResolutions: [Mode: [Resolution]]
     /// The frames a REST body may name, for a model whose schema takes `aspect_ratio` but not the source's own
     /// frame: the body names the one nearest the source. Empty to leave the field out.
     public var aspectRatios: [AspectRatio]
@@ -118,7 +120,9 @@ public struct VideoModelDescriptor: Sendable, Hashable {
     /// A model `models.json` doesn't describe: serves nothing, so nothing runs on it.
     static func unknown(_ id: String) -> VideoModelDescriptor {
         VideoModelDescriptor(
-            id: id, family: id, title: id, detail: "", modes: [], resolutions: Resolution.standard, aspectRatios: [],
+            id: id, family: id, title: id, detail: "", modes: [], resolutions: Resolution.standard,
+            modeResolutions: [:],
+            aspectRatios: [],
             duration: nil, referenceImages: nil, controls: [],
             requiresPrompt: false, billsSourceVideo: false, listPriceIsExact: false, shape: .genjutsu, endpoints: [:],
             accountModels: [:],
@@ -128,7 +132,8 @@ public struct VideoModelDescriptor: Sendable, Hashable {
 
 extension VideoModelDescriptor: Decodable {
     private enum CodingKeys: String, CodingKey {
-        case id, family, title, detail, modes, resolutions, aspectRatios, limits, controls, requiresPrompt
+        case id, family, title, detail, modes, resolutions, modeResolutions, aspectRatios, limits, controls
+        case requiresPrompt
         case billsSourceVideo, listPriceIsExact, request, credits
     }
 
@@ -151,7 +156,7 @@ extension VideoModelDescriptor: Decodable {
     }
 
     /// Fails on anything this version can't run exactly as described: an unknown mode, control, request shape,
-    /// resolution or frame, an empty list of resolutions, or a limit that isn't a range.
+    /// resolution or frame, an empty list of resolutions or a mode's list outside them, or a limit that isn't a range.
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(String.self, forKey: .id)
@@ -168,6 +173,18 @@ extension VideoModelDescriptor: Decodable {
             self.resolutions = Resolution.allCases.filter(resolutions.contains)
         } else {
             resolutions = Resolution.standard
+        }
+        let byMode = try container.decodeIfPresent([String: [String]].self, forKey: .modeResolutions) ?? [:]
+        let resolutions = self.resolutions
+        modeResolutions = try byMode.reduce(into: [:]) { result, entry in
+            let mode: Mode = try Self.value(entry.key, key: .modeResolutions, in: container)
+            let listed: [Resolution] = try entry.value.map { try Self.value($0, key: .modeResolutions, in: container) }
+            guard !listed.isEmpty, listed.allSatisfy(resolutions.contains) else {
+                throw DecodingError.dataCorruptedError(
+                    forKey: .modeResolutions, in: container,
+                    debugDescription: "\(entry.key) needs some of the model's resolutions")
+            }
+            result[mode] = Resolution.allCases.filter(listed.contains)
         }
         let frames = try container.decodeIfPresent([String].self, forKey: .aspectRatios) ?? []
         aspectRatios = try frames.map { try Self.value($0, key: .aspectRatios, in: container) }

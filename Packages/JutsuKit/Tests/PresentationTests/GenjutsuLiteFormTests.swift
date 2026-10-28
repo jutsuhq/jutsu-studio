@@ -89,6 +89,54 @@ import Testing
         #expect(capabilities.unlimitedText == "Genjutsu Lite Motion transfer")
     }
 
+    /// The picker and Draft offer each mode what it renders at: Motion Transfer 480p, 720p and 1080p, from the
+    /// form's 480p; Object Swap 720p and 1080p, so the form's 480p and the 480p draft are made at 720p there.
+    @Test func eachModeOffersItsOwnResolutions() {
+        var form = CreateFixture.ready(.p480)
+        form.model = Self.lite
+        #expect(form.resolutionOptions == Resolution.standard)
+        #expect(form.pickedResolution == .p480 && form.draftTitle == "Draft 480p")
+        #expect(form.makeSpecs(isDraft: false, in: Self.account).map(\.resolution) == [.p480])
+        #expect(form.makeSpecs(isDraft: true, in: Self.account).map(\.resolution) == [.p480])
+
+        form.mode = .objectSwap
+        form.model = Self.lite
+        #expect(form.selectedModel == Self.lite)
+        #expect(form.resolutionOptions == [.p720, .p1080])
+        #expect(form.pickedResolution == .p720 && form.draftTitle == "Draft 720p")
+        #expect(form.makeSpecs(isDraft: false, in: Self.account).map(\.resolution) == [.p720])
+        #expect(form.makeSpecs(isDraft: true, in: Self.account).map(\.resolution) == [.p720])
+        form.pickedResolution = .p1080
+        #expect(form.makeSpecs(isDraft: false, in: Self.account).map(\.resolution) == [.p1080])
+        // Back on Motion Transfer the 1080p picked stays.
+        form.mode = .motionTransfer
+        form.model = Self.lite
+        #expect(form.pickedResolution == .p1080)
+    }
+
+    /// An agent gets the same per-mode resolutions: 480p is refused for Object Swap, and left out it is 720p there.
+    @Test func anAgentGetsEachModesResolutions() throws {
+        let source = AgentVideoOrder.Source(video: CreateFixture.video(duration: 20), start: 0, end: 12)
+        let images = [LocalImage(fileURL: CreateFixture.image(0))]
+        let base = CreateForm(mode: .motionTransfer, resolution: .p480)
+        var swap = AgentVideoOrder(
+            mode: "object_swap", model: "genjutsuLite", prompt: "", source: source, images: images, resolution: "480p")
+        guard case .failure(let refusal) = swap.spec(from: base, in: Self.account) else {
+            Issue.record("expected a refusal")
+            return
+        }
+        #expect(refusal.message == "Genjutsu Lite renders at 720p, 1080p in object_swap, not 480p.")
+        swap.resolution = nil
+        #expect(try swap.spec(from: base, in: Self.account).get().resolution == .p720)
+        swap.isDraft = true
+        #expect(try swap.spec(from: base, in: Self.account).get().resolution == .p720)
+
+        let motion = AgentVideoOrder(
+            mode: "motion_transfer", model: "genjutsuLite", prompt: "", source: source, images: images,
+            resolution: "480p")
+        #expect(try motion.spec(from: base, in: Self.account).get().resolution == .p480)
+    }
+
     @Test func anAgentCanPickIt() throws {
         let order = AgentVideoOrder(
             mode: "object_swap", model: "genjutsuLite", prompt: "",
