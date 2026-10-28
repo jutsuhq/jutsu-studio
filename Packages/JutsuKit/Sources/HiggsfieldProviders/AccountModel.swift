@@ -146,9 +146,7 @@ enum AccountModel {
                     // job is queued (`JobEngine.insert`).
                     request.mode = VideoRequest.omniReference
                     request.aspectRatio = spec.aspectRatio?.rawValue
-                    request.media = zip(media, [MediaRole.startFrame, .endFrame]).map { item, role in
-                        VideoRequest.Media(role: role, id: item.id)
-                    }
+                    request.media = asFrames(media)
                 } else {
                     request.mode = media.isEmpty ? VideoRequest.textToVideo : VideoRequest.omniReference
                     request.aspectRatio = seedanceFrame(of: spec)
@@ -177,8 +175,45 @@ enum AccountModel {
             request.resolution = spec.resolution.rawValue
             request.duration = Double(durationSeconds(of: spec, constraints: constraints))
             request.generateAudio = generatesAudio(spec)
+        case .kling4:
+            kling4(&request, spec: spec, constraints: constraints)
         }
         return request
+    }
+
+    /// The first two media as a start and an end frame.
+    static func asFrames(_ media: [VideoRequest.Media]) -> [VideoRequest.Media] {
+        zip(media, [MediaRole.startFrame, .endFrame]).map { item, role in VideoRequest.Media(role: role, id: item.id) }
+    }
+
+    /// Kling 4.0's `kling4_0` settings: the resolution, the length, the frame and the `mode`, with frames as
+    /// `start_image` and `end_image`.
+    static func kling4(_ request: inout VideoRequest, spec: JobSpec, constraints: ModelConstraintTable) {
+        request.resolution = spec.resolution.rawValue
+        request.duration = Double(durationSeconds(of: spec, constraints: constraints))
+        request.aspectRatio = kling4Frame(of: spec, auto: AspectRatio.auto.rawValue)
+        request.mode = kling4Mode(of: spec)
+        if spec.usesFrames { request.media = asFrames(request.media) }
+    }
+
+    /// Kling 4.0's `mode` (`kling4_0`, catalog snapshot of 2026-10-28), as REST's endpoint is picked
+    /// (`VideoModel.endpointID`): Edit, frames, references (a source or images), else the prompt alone.
+    static func kling4Mode(of spec: JobSpec) -> String {
+        if spec.mode == .edit { return VideoRequest.kling4VideoEdit }
+        if spec.usesFrames { return VideoRequest.kling4ImageToVideo }
+        return spec.source == nil && spec.references.isEmpty
+            ? VideoRequest.kling4TextToVideo : VideoRequest.kling4ReferenceToVideo
+    }
+
+    /// Kling 4.0's `aspect_ratio` on either connection: `auto` (REST's `adaptive`, the account's `auto`), which
+    /// follows the references, for a job with a source and for Auto; otherwise the model's fixed frame
+    /// (`models.json` `aspectRatios`) nearest the one asked for, as no Kling 4.0 schema has 4:3 or 3:4. A clip from
+    /// frames is asked for its start frame's shape, set when the job is queued (`JobEngine.insert`). `nil` for `auto`
+    /// leaves the field out (REST's text-to-video, which has no `adaptive` and defaults to 16:9).
+    static func kling4Frame(of spec: JobSpec, auto: String?) -> String? {
+        guard spec.source == nil, let shape = spec.aspectRatio?.widthOverHeight else { return auto }
+        let size = PixelSize(width: Int((shape * 10_000).rounded()), height: 10_000)
+        return AspectRatio.nearest(to: size, among: spec.model.descriptor.aspectRatios)?.rawValue ?? auto
     }
 
     /// Whether Draft asks for Seedance 2.5's native draft (`draft: true`): a 480p draft of a generation, which the
@@ -230,14 +265,22 @@ enum AccountModel {
         [.genjutsu, .klingVideoEdit].contains(spec.model.descriptor.shape) || spec.mode == .edit
     }
 
+    /// Whether `get_cost` can price the job only with its media: one billed by its source (`billsSource`), and a
+    /// Kling 4.0 job with a source, frames or images. A quote without media can't name its `mode` truthfully, and
+    /// Higgsfield's announcement of Kling 4.0 says references may change the price, so it is quoted once uploaded.
+    static func quotesAfterUpload(_ spec: JobSpec) -> Bool {
+        billsSource(spec)
+            || (spec.model.descriptor.shape == .kling4 && (spec.source != nil || !spec.references.isEmpty))
+    }
+
     /// The `get_cost` question for a job before anything is uploaded: its request with no media, prompt or variants,
     /// paid in credits. Per the free quotes of 2026-10-15 (issue #113) a model sent a length is priced by that
     /// length, the resolution or Kling's `mode`, and nothing it reads from the media; Seedance's audio, bitrate and
-    /// `count` don't change the quote either. `nil` for a job billed by its source (`billsSource`).
+    /// `count` don't change the quote either. `nil` for a job quoted only with its media (`quotesAfterUpload`).
     static func quoteRequest(
         for spec: JobSpec, model: VideoRequest.Model, constraints: ModelConstraintTable = .builtIn
     ) -> VideoRequest? {
-        guard !billsSource(spec) else { return nil }
+        guard !quotesAfterUpload(spec) else { return nil }
         var request = request(for: spec, model: model, media: [], constraints: constraints)
         request.prompt = ""
         request.count = 1
@@ -253,7 +296,7 @@ enum AccountModel {
     /// they are sent (`durationSeconds`). `nil` for a model without credits at the job's resolution.
     /// The finalize of a draft (`JobSpec.draftJobID`) is `finalizeShare` of the 1080p price of its length.
     static func estimatedCredits(for spec: JobSpec, constraints: ModelConstraintTable = .builtIn) -> Int? {
-        let credits = spec.model.descriptor.credits.at(spec.mode)
+        let credits = spec.model.descriptor.credits.at(spec.mode, hasSource: spec.source != nil)
         guard let rate = credits.perSecond[spec.draftJobID == nil ? spec.resolution : .p1080] else { return nil }
         let seconds =
             billsSource(spec)

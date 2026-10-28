@@ -19,29 +19,52 @@ enum HistoryMapping {
     }
 
     /// `nil` for anything the app can't show or run again: other media types and models, unfinished
-    /// generations, and inputs without a source video, except Seedance's, which makes clips without one, and a
-    /// Style run's, whose input roles are unconfirmed. Only https URLs count: the app downloads them and runs
+    /// generations, and inputs without a source video, except for a model that makes clips without one (not in
+    /// Edit) and a Style run's, whose input roles are unconfirmed. Kling 4.0 comes back in the mode its
+    /// `params.mode` names (`jobMode`), and a clip from frames with them as frames (`frames(of:)`). Only https URLs count: the app downloads them and runs
     /// them again. A Style job is `type: "image"` until it completes and `"video"` once it has, so only a
     /// completed one, a video, is kept, like every other job.
     static func item(_ generation: PastGeneration) -> HistoryItem? {
         let video = generation.media.lazy.compactMap(asset(.video)).first
         guard generation.type == GenerationType.video.rawValue, generation.status == "completed",
             let output = generation.outputURL, output.isHTTPS,
-            case (let mode, let videoModel)? = kind(ofModel: generation.model),
-            video != nil || mode == .restyle || videoModel.makesClipsWithoutSource
+            case (let catalogMode, let videoModel)? = kind(ofModel: generation.model)
         else { return nil }
+        let mode = jobMode(of: generation, model: videoModel) ?? catalogMode
+        guard video != nil || (mode != .edit && (mode == .restyle || videoModel.makesClipsWithoutSource)) else {
+            return nil
+        }
+        let frames = video == nil && videoModel.declares(.frames) ? self.frames(of: generation) : nil
         let size = generation.width.flatMap { width in generation.height.map { PixelSize(width: width, height: $0) } }
         var history = HistoryItem(
             id: generation.id, mode: mode, model: videoModel, createdAt: generation.createdAt,
             isLiked: generation.isLiked, outputURL: output, duration: generation.duration, pixelSize: size,
             resolution: generation.resolution.flatMap(Resolution.init(rawValue:)), prompt: generation.prompt,
-            inputs: RemoteInputs(video: video, images: generation.media.compactMap(asset(.image))))
+            inputs: RemoteInputs(video: video, images: frames ?? generation.media.compactMap(asset(.image))))
+        history.referencesAreFrames = frames != nil
         // Only Seedance 2.5 has a native draft and its finalize (`models_explore get`, 2026-10-15).
         if VideoRequest.Model(rawValue: generation.model) == .seedance25 {
             history.isNativeDraft = generation.isDraft
             history.draftJobID = generation.draftJobID
         }
         return history
+    }
+
+    /// The job mode a generation's `params.mode` names, for a model whose one server model runs several of the
+    /// app's (Kling 4.0's `video-edit` is Edit, its other modes Motion Transfer); `nil` to keep the catalog's.
+    static func jobMode(of generation: PastGeneration, model: VideoModel) -> Mode? {
+        guard model.descriptor.shape == .kling4, let mode = generation.mode else { return nil }
+        return mode == VideoRequest.kling4VideoEdit ? .edit : .motionTransfer
+    }
+
+    /// The start and, when there is one, end frame of a clip made from frames, in that order: the inputs with those
+    /// roles, or for Kling 4.0's `image-to-video` its first two images; `nil` for a clip made otherwise.
+    static func frames(of generation: PastGeneration) -> [RemoteAsset]? {
+        let start = generation.media.compactMap(asset(.startFrame))
+        if let first = start.first { return [first] + generation.media.compactMap(asset(.endFrame)).prefix(1) }
+        guard generation.mode == VideoRequest.kling4ImageToVideo else { return nil }
+        let images = generation.media.compactMap(asset(.image))
+        return images.isEmpty ? nil : Array(images.prefix(2))
     }
 
     /// A server model ID in the app's terms, by the catalog (`AccountModel.constrainedJobs`); `nil` for a model the

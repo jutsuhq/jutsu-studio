@@ -462,9 +462,10 @@ extension CreateForm {
     }
 
     /// A clip made without a source needs the prompt unless an image shows what to make; Edit, Extend and a model
-    /// that needs a prompt (`requiresPrompt`, Kling O3) always do.
+    /// that needs a prompt (`requiresPrompt`, Kling O3) always do, except Kling 4.0 from frames (`Validation`).
     public var promptTitle: String {
-        (isWithoutSource && references.isEmpty) || mode.isVideoOperation || selectedModel.descriptor.requiresPrompt
+        (isWithoutSource && references.isEmpty && !usesFrames) || mode.isVideoOperation
+            || (selectedModel.descriptor.requiresPrompt && !usesFrames)
             ? String(localized: "Prompt", bundle: .module) : String(localized: "Prompt · optional", bundle: .module)
     }
 

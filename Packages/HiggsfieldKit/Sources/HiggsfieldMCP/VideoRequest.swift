@@ -48,6 +48,13 @@ public struct VideoRequest: Sendable, Hashable {
     public static let extendForward = "forward"
     public static let klingStandard = "std"
     public static let klingPro = "pro"
+    /// Kling 4.0's `mode`s (`kling4_0`, catalog snapshot of 2026-10-28), REST's four endpoints: a prompt alone, a
+    /// start and an optional end frame (`start_image`, `end_image`), references (`image_references`,
+    /// `video_references`), and a clip edited as the prompt says (the clip as `video_references`).
+    public static let kling4TextToVideo = "text-to-video"
+    public static let kling4ImageToVideo = "image-to-video"
+    public static let kling4ReferenceToVideo = "reference-to-video"
+    public static let kling4VideoEdit = "video-edit"
     /// Kling's `background_source`: the output keeps the reference video's background, not the image's.
     public static let backgroundFromVideo = "input_video"
 

@@ -63,4 +63,45 @@ import Testing
         #expect(HistoryMapping.splitCursor(HistoryMapping.cursor(.array([.string("a"), .string("b")]))).image == nil)
         #expect(HistoryMapping.splitCursor(nil).video == nil && HistoryMapping.splitCursor(nil).image == nil)
     }
+
+    private func kling4(mode: String?, media: [PastMedia]) -> PastGeneration {
+        var generation = PastGeneration(
+            id: "k4-1", type: "video", status: "completed", model: "kling4_0",
+            createdAt: Date(timeIntervalSince1970: 0),
+            outputURL: URL(string: "https://cdn.example/out.mp4"), duration: 6, prompt: "dance", resolution: "720p",
+            media: media)
+        generation.mode = mode
+        return generation
+    }
+
+    /// Kling 4.0 runs four of the app's jobs on one server model: its `params.mode` names which, and a clip from
+    /// frames comes back with them as frames. Without a `mode` the media decide, as before: a source or images are
+    /// references.
+    @Test func kling4ComesBackInItsMode() throws {
+        let video = PastMedia(role: .video, id: "video-1", url: URL(string: "https://cdn.example/in.mp4"))
+        let image = PastMedia(role: .image, id: "image-1", url: URL(string: "https://cdn.example/a.png"))
+        let second = PastMedia(role: .image, id: "image-2", url: URL(string: "https://cdn.example/b.png"))
+        let start = PastMedia(role: .startFrame, id: "start", url: URL(string: "https://cdn.example/s.png"))
+        let end = PastMedia(role: .endFrame, id: "end", url: URL(string: "https://cdn.example/e.png"))
+
+        let edit = try #require(HistoryMapping.item(kling4(mode: "video-edit", media: [video, image])))
+        #expect(edit.mode == .edit && edit.spec().mode == .edit && edit.inputs.video?.id == "video-1")
+        #expect(HistoryMapping.item(kling4(mode: "video-edit", media: [image])) == nil)
+
+        let reference = try #require(HistoryMapping.item(kling4(mode: "reference-to-video", media: [video, image])))
+        #expect(reference.mode == .motionTransfer && !reference.referencesAreFrames)
+
+        let text = try #require(HistoryMapping.item(kling4(mode: "text-to-video", media: [])))
+        #expect(text.mode == .motionTransfer && text.spec().source == nil && text.spec().references.isEmpty)
+
+        let framed = try #require(HistoryMapping.item(kling4(mode: "image-to-video", media: [end, start])))
+        #expect(framed.inputs.images.map(\.id) == ["start", "end"])
+        #expect(framed.referencesAreFrames && framed.spec().usesFrames)
+        // History may name the frames `image`, as it does references: `image-to-video` still reads them as frames.
+        let renamed = try #require(HistoryMapping.item(kling4(mode: "image-to-video", media: [image, second])))
+        #expect(renamed.inputs.images.map(\.id) == ["image-1", "image-2"] && renamed.spec().usesFrames)
+
+        let unnamed = try #require(HistoryMapping.item(kling4(mode: nil, media: [video, image])))
+        #expect(unnamed.mode == .motionTransfer && !unnamed.referencesAreFrames)
+    }
 }

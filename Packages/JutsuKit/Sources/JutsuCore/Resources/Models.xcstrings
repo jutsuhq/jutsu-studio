@@ -1475,6 +1475,39 @@
         }
       }
     },
+    "kling40.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kling 4.0 · 3–30 s from a prompt, frames or references"
+          }
+        }
+      }
+    },
+    "kling40.family" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kling"
+          }
+        }
+      }
+    },
+    "kling40.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kling 4.0"
+          }
+        }
+      }
+    },
     "klingMotionControl.detail" : {
       "extractionState" : "manual",
       "localizations" : {

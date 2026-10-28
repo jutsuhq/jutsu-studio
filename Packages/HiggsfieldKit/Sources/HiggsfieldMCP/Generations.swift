@@ -46,6 +46,8 @@ public struct PastGeneration: Sendable, Hashable {
     public var isDraft = false
     /// `params.draft_job_id`: the draft this generation finalized; `nil` for any other.
     public var draftJobID: String?
+    /// `params.mode` as the generation was sent, such as Kling 4.0's `video-edit`; `nil` when it had none.
+    public var mode: String?
 
     public init(
         id: String, type: String, status: String, model: String, createdAt: Date, isLiked: Bool = false,
@@ -84,11 +86,14 @@ public struct PastMedia: Sendable, Hashable {
 }
 
 extension MediaRole {
-    /// History names the inputs `video` and `image`; `generate_video` takes the `_references` names.
+    /// History names the inputs `video` and `image`; `generate_video` takes the `_references` names. A start or end
+    /// frame keeps its role.
     public init?(historyRole: String) {
         switch historyRole {
         case "video", MediaRole.video.rawValue: self = .video
         case "image", MediaRole.image.rawValue: self = .image
+        case MediaRole.startFrame.rawValue: self = .startFrame
+        case MediaRole.endFrame.rawValue: self = .endFrame
         default: return nil
         }
     }
@@ -123,6 +128,7 @@ extension PastGeneration {
             media: (params?[ToolKey.medias]?.arrayValue ?? []).compactMap(PastMedia.init))
         isDraft = params?[ToolKey.draft] == true
         draftJobID = params?[ToolKey.draftJobID]?.stringValue
+        mode = params?[ToolKey.mode]?.stringValue
     }
 }
 

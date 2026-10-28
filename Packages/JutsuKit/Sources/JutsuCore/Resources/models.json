@@ -4,13 +4,13 @@
     "One entry per video model, in the order the model picker lists them; the first model serving a mode is that mode's default.",
     "id: stored in jobs, templates and settings; never change an existing one. title, family and detail are the English fallbacks of the keys <id>.title, <id>.family and <id>.detail in Models.xcstrings.",
     "resolutions: the ones the model renders at, when not all of 480p, 720p and 1080p (also 768p and 2K, which only MiniMax has); the picker offers these and a job asking for another gets the nearest. pricing.json needs each.",
-    "aspectRatios: the frames a REST body may name, for a schema whose aspect_ratio has no 'follow the source' value; the body names the one nearest the source's frame. Left out, so is the field.",
+    "aspectRatios: the frames a REST body may name, for a schema whose aspect_ratio has no 'follow the source' value; the body names the one nearest the source's frame. Left out, so is the field. Kling 4.0 lists the fixed frames of its text-to-video schema: a clip without a source is sent the one nearest the frame asked for, and a source or references Auto (REST adaptive, the account's auto).",
     "limits: [min, max] over the mode's own (Mode.limits); the server's models_explore answer still overrides them bound by bound.",
     "controls: draft, clipWithoutSource (length and frame without a source video), generatedAudio, bitrate, frames, quality (Standard/Pro instead of a resolution), characterOrientation, videoBackground, cinemaControls (Cinema Studio's camera, lens, genre, era and the rest; their titles are cinemaStudio4.<field> and cinemaStudio4.<field>.<value> in Models.xcstrings).",
-    "request.shape: the code that encodes the body (genjutsu, seedance, klingMotionControl, klingVideoReference, klingVideoEdit, wanReference, cinemaStudio). request.endpoints: the REST endpoint by the first key that applies: the mode, frames, standard/pro, reference (with media) or text, then default. Every endpoint needs rates in pricing.json. Empty for a model the public REST docs don't list: it runs on the account only, and an API key isn't offered it.",
+    "request.shape: the code that encodes the body (genjutsu, seedance, klingMotionControl, klingVideoReference, klingVideoEdit, wanReference, cinemaStudio, kling4). request.endpoints: the REST endpoint by the first key that applies: the mode, frames, standard/pro, reference (with media) or text, then default. Every endpoint needs rates in pricing.json. Empty for a model the public REST docs don't list: it runs on the account only, and an API key isn't offered it.",
     "request.account: the account's generate_video model ID by mode, once its models_explore get schema confirms every field the shape sends (the snapshot tests check it); a model without one runs with an API key only.",
-    "requiresPrompt: a job needs a prompt even with a source.",
-    "credits: the account's fallback estimate, base + perSecond[resolution] x billed seconds, rounded up; modes overrides it for a mode priced apart. The price Create shows is Higgsfield's get_cost quote: before upload for a model sent a length, after upload for one billed by its source (Genjutsu, Edit). The estimate stands in only until then, or when the quote fails. Rates from free get_cost quotes of 2026-10-15 (issue #113). Left out (or a resolution missing), a job the server can't quote shows 'Price unknown'. Genjutsu Lite's 720p rate is what an agent's Lite jobs were quoted after upload (2 credits a second, issue #22); its 480p and 1080p rates follow the 1:2:4 of its REST prices and aren't confirmed by a quote yet. MiniMax H3's 2K and H3 Max's 768p rates are from free get_cost quotes of 2026-10-28; H3 Max at 480p isn't quoted yet."
+    "requiresPrompt: a job needs a prompt even with a source; a model that also makes clips without one (Kling 4.0) needs it there too, except from frames.",
+    "credits: the account's fallback estimate, base + perSecond[resolution] x billed seconds, rounded up; modes overrides it for a mode priced apart. The price Create shows is Higgsfield's get_cost quote: before upload for a model sent a length, after upload for one billed by its source (Genjutsu, Edit). The estimate stands in only until then, or when the quote fails. Rates from free get_cost quotes of 2026-10-15 (issue #113). Left out (or a resolution missing), a job the server can't quote shows 'Price unknown'. Genjutsu Lite's 720p rate is what an agent's Lite jobs were quoted after upload (2 credits a second, issue #22); its 480p and 1080p rates follow the 1:2:4 of its REST prices and aren't confirmed by a quote yet. MiniMax H3's 2K and H3 Max's 768p rates are from free get_cost quotes of 2026-10-28; H3 Max at 480p isn't quoted yet. Kling 4.0's 5 (720p) and 7.5 (1080p) credits a second are from Higgsfield's announcement of 2026-10-20 (it adds that references may change the cost), not confirmed by a quote. credits.withSource: perSecond for a job with a source video (Kling 4.0's references and Edit); Kling 4.0's 6 and 9 are its 5 and 7.5 times 1.2, the ratio of its REST prices with and without an input video ($0.282 to $0.235 at 1080p; $0.188 to $0.157 at 720p is 1.197), derived from REST, not from a quote."
   ],
   "models": [
     {
@@ -149,6 +149,33 @@
           "pro": "kling-video/motion-control/pro"
         }
       }
+    },
+    {
+      "id": "kling40",
+      "family": "Kling",
+      "title": "Kling 4.0",
+      "detail": "Kling 4.0 · 3–30 s from a prompt, frames or references",
+      "modes": ["motionTransfer", "edit"],
+      "resolutions": ["720p", "1080p"],
+      "aspectRatios": ["21:9", "16:9", "9:16", "1:1"],
+      "limits": { "duration": [3, 30], "referenceImages": [0, 10] },
+      "controls": ["clipWithoutSource", "frames"],
+      "requiresPrompt": true,
+      "billsSourceVideo": true,
+      "request": {
+        "shape": "kling4",
+        "endpoints": {
+          "edit": "kling-video/v4.0/video-edit",
+          "frames": "kling-video/v4.0/image-to-video",
+          "reference": "kling-video/v4.0/reference-to-video",
+          "text": "kling-video/v4.0/text-to-video"
+        },
+        "account": {
+          "motionTransfer": "kling4_0",
+          "edit": "kling4_0"
+        }
+      },
+      "credits": { "perSecond": { "720p": 5, "1080p": 7.5 }, "withSource": { "720p": 6, "1080p": 9 } }
     },
     {
       "id": "wan30Reference",

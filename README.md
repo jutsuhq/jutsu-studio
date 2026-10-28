@@ -43,6 +43,7 @@ Higgsfield's web app is made for one generation at a time in a browser tab. Juts
 
 - **Genjutsu:** motion transfer, object swap and restyle of any video.
 - **Seedance 2.5:** motion transfer, a clip from a prompt and images alone, start and end frames, and Edit or Extend of an existing video.
+- **Kling 4.0:** a clip from a prompt, start and end frames or references, and Edit of an existing video.
 - **Kling 3.0 Motion Control** and, with an API key, **Kling O3** video reference.
 - **Kling O3 Edit**, **Wan 3.0** and **Wan 3.0 Prime**, and **Cinema Studio 4.0**; with an API key also **Kling 2.6 Motion Control** and **Wan 2.7**.
 - **On a Higgsfield account:** Upscale, Reframe, Remove Background, Dub and Change Voice for a result; the Motion Library; your reference elements; your plan's unlimited generations.

@@ -43,25 +43,43 @@ public struct VideoModelDescriptor: Sendable, Hashable {
         /// the resolution and the soundtrack, and the creative controls the job sets (`CinemaControls`); the director
         /// picks the rest.
         case cinemaStudio
+        /// Kling 4.0: from the prompt alone, from a start and an optional end frame, from references (the source and
+        /// the images), or the source edited as the prompt says, each with the length and the resolution.
+        case kling4
     }
 
     /// The account's estimate of a job's credits, for when Higgsfield can't quote it yet (a model billed by its
     /// source before the source is uploaded) or the quote failed: `base` plus `perSecond` at the job's resolution
-    /// for each billed second, rounded up. A mode priced apart from the model's others has its own in `modes`.
+    /// for each billed second, rounded up. A mode priced apart from the model's others has its own in `modes`, and
+    /// a job with a source video the rates of `withSource` where they are set.
     public struct Credits: Sendable, Hashable {
         public var base: Double
         public var perSecond: [Resolution: Double]
         public var modes: [Mode: Credits]
+        /// `perSecond` for a job with a source video, for a model that bills the source's seconds too; empty to
+        /// keep `perSecond`.
+        public var withSource: [Resolution: Double]
 
-        public init(base: Double, perSecond: [Resolution: Double], modes: [Mode: Credits] = [:]) {
+        public init(
+            base: Double, perSecond: [Resolution: Double], modes: [Mode: Credits] = [:],
+            withSource: [Resolution: Double] = [:]
+        ) {
             self.base = base
             self.perSecond = perSecond
             self.modes = modes
+            self.withSource = withSource
         }
 
         /// The rates of `mode`: its own when it has them, else the model's.
         public func at(_ mode: Mode) -> Credits {
             modes[mode] ?? self
+        }
+
+        /// The rates of `mode` for a job with (`hasSource`) or without a source video.
+        public func at(_ mode: Mode, hasSource: Bool) -> Credits {
+            var credits = at(mode)
+            if hasSource, !credits.withSource.isEmpty { credits.perSecond = credits.withSource }
+            return credits
         }
     }
 
@@ -129,6 +147,7 @@ extension VideoModelDescriptor: Decodable {
         var base: Double?
         var perSecond: [String: Double]
         var modes: [String: CreditsFile]?
+        var withSource: [String: Double]?
     }
 
     /// Fails on anything this version can't run exactly as described: an unknown mode, control, request shape,
@@ -183,6 +202,10 @@ extension VideoModelDescriptor: Decodable {
             modes: try (file.modes ?? [:]).reduce(into: [:]) { result, entry in
                 let mode: Mode = try value(entry.key, key: .credits, in: container)
                 result[mode] = try credits(entry.value, in: container)
+            },
+            withSource: try (file.withSource ?? [:]).reduce(into: [:]) { result, entry in
+                let resolution: Resolution = try value(entry.key, key: .credits, in: container)
+                result[resolution] = entry.value
             })
     }
 
