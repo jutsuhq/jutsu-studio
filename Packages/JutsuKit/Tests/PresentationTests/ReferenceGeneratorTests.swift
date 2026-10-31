@@ -142,6 +142,26 @@ private let input = LocalImage(fileURL: URL(fileURLWithPath: "/tmp/knight.png"))
         #expect(generator.blocker == nil)
     }
 
+    /// An agent is told why there are no image models and what to do, and the list is read again, until the
+    /// connection's own is in; a connection that has none is said once, not read again.
+    @Test func agentsAreToldWhileTheConnectionsOwnModelsArentIn() throws {
+        let generator = ReferenceGenerator(spend: spend, jobLog: jobLog)
+        #expect(generator.needsModelRead)
+        #expect(try #require(generator.agentModelsNote).contains("hasn't read"))
+        #expect(generator.agentModelsNote?.contains("call show with page create") == true)
+        generator.useSavedModels([soul])
+        #expect(generator.needsModelRead && generator.agentModelsNote?.contains("saved at the last read") == true)
+        generator.useModels([], unavailableReason: "The account's catalog didn't answer.")
+        #expect(generator.needsModelRead)
+        #expect(
+            generator.agentModelsNote?.contains("couldn't read the image models: The account's catalog didn't answer.")
+                == true)
+        generator.useModels([soul])
+        #expect(!generator.needsModelRead && generator.agentModelsNote == nil)
+        generator.useModels([])
+        #expect(!generator.needsModelRead && generator.agentModelsNote == nil)
+    }
+
     @Test func theFrameFollowsTheSourceExceptForObjectSwap() {
         let generator = generator()
         #expect(generator.aspectRatio(source: landscape, mode: .motionTransfer) == "16:9")

@@ -523,3 +523,28 @@ extension ReferenceGenerator {
             confirmTitle: String(localized: "Generate anyway", bundle: .module))
     }
 }
+
+// What agents are told about the image models (`capabilities`, `create_image`).
+extension ReferenceGenerator {
+    /// The connection's own list isn't in: never read, only the saved one showing, or its read failed. Not when the
+    /// connection said it has none.
+    public var needsModelRead: Bool {
+        models.isEmpty ? unavailableReason != Self.noModels : modelsAreSaved
+    }
+
+    /// What an agent is told beside the image models while the connection's own list isn't in, with what to do; `nil`
+    /// once it is, or when the connection has none.
+    public var agentModelsNote: String? {
+        guard needsModelRead else { return nil }
+        let state =
+            if modelsAreSaved {
+                "These are the image models saved at the last read; Jutsu Studio is reading the connection's own."
+            } else if let unavailableReason {
+                "Jutsu Studio couldn't read the image models: \(unavailableReason.trimmingCharacters(in: ["."]))."
+            } else {
+                "Jutsu Studio hasn't read this connection's image models yet."
+            }
+        return state + " Ask again in a moment; if the list stays empty, call show with page create, which reads it "
+            + "too, then try again."
+    }
+}

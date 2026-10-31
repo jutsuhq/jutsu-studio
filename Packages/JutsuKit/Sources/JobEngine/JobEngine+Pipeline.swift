@@ -111,20 +111,7 @@ extension JobEngine {
     private func priceFitsCap(_ id: UUID, inputs: RemoteInputs) async throws -> Bool {
         var job = try await loadJob(id)
         guard job.submitAttempt == nil, !job.spec.usesUnlimited else { return true }
-        if job.serverPrice == nil {
-            let provider = try await networkProvider(for: job)
-            do {
-                if let price = try await provider.serverEstimate(job.spec, inputs: inputs) {
-                    try await save(id) { $0.serverPrice = price }
-                    job.serverPrice = price
-                }
-            } catch is CancellationError {
-                throw CancellationError()
-            } catch {
-                log.error(
-                    "Job \(id): no server estimate, keeping the preliminary price", detail: String(describing: error))
-            }
-        }
+        job = try await addServerPrice(to: job, inputs: inputs)
         let status = try await spendStatus(job)
         guard let price = job.serverPrice, let status else { return true }
         guard
@@ -134,6 +121,29 @@ extension JobEngine {
         else { return true }
         try await apply(.paused(.priceAboveCap), to: id) { $0.inputs = inputs }
         return false
+    }
+
+    /// The provider's price of the exact request, paid in credits or dollars rather than the plan's unlimited
+    /// allowance, saved as the job's `serverPrice`. A job that has one keeps it; without a quote it is returned as
+    /// it was and the preliminary price stands.
+    func addServerPrice(to job: Job, inputs: RemoteInputs) async throws -> Job {
+        guard job.serverPrice == nil else { return job }
+        var job = job
+        var spec = job.spec
+        spec.usesUnlimited = false
+        let provider = try await networkProvider(for: job)
+        do {
+            if let price = try await provider.serverEstimate(spec, inputs: inputs) {
+                try await save(job.id) { $0.serverPrice = price }
+                job.serverPrice = price
+            }
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            log.error(
+                "Job \(job.id): no server estimate, keeping the preliminary price", detail: String(describing: error))
+        }
+        return job
     }
 
     /// Unknown statuses read as in progress, so only the deadline ends a job the provider never finishes.

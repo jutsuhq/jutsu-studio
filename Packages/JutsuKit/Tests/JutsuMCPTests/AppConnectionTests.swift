@@ -153,6 +153,32 @@ actor FakeLauncher: AppLauncher {
         #expect(await launcher.activations == ["com.jutsustudio.JutsuStudio"])
     }
 
+    /// An answer that doesn't come in time says so, and that the same request_id is the safe retry.
+    @MainActor
+    @Test func anAnswerThatNeverCameSaysWhyAndHowToRetrySafely() async throws {
+        let socket = try ownSocket()
+        let release = AsyncStream<Void>.makeStream()
+        let server = AgentServer(socket: socket, isAllowed: { true }, answerDeadline: .seconds(30)) { _ in
+            for await _ in release.stream { break }
+            return AgentResponse()
+        }
+        try server.start()
+        defer {
+            release.continuation.finish()
+            server.stop()
+        }
+        var connection = AppConnection(location: .socket(socket), launcher: FakeLauncher())
+        connection.timeout = .seconds(1)
+        let answer = await Task.detached { [connection] in
+            await connection.send(.show(.page(.queue)), client: nil)
+        }.value
+        let error = try #require(answer.error)
+        #expect(error.code == .lostAnswer)
+        #expect(error.retryable)
+        #expect(error.message.contains("within 1 seconds"))
+        #expect(error.next?.contains("same request_id") == true)
+    }
+
     @MainActor
     @Test func aStagedFileLandsInTheInbox() async throws {
         let socket = try ownSocket()

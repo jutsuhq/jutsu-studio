@@ -1,7 +1,8 @@
 import Foundation
 
 // elements: the account's reference elements (characters, environments, props) by name, as References › From
-// Higgsfield lists them, and the @ImageN tags a request's images get.
+// Higgsfield lists them, and the @ImageN tags a request's images get. create_element makes one from the agent's
+// images, as Save to Higgsfield… does from a batch character.
 
 /// Lists the account's reference elements, in the account's order: name words, a category, a page at a time.
 /// Read-only and free.
@@ -49,12 +50,66 @@ public struct AgentElement: Codable, Equatable, Sendable {
     public var category: String?
     /// Images it has, when the account's page named them; `nil` when it didn't say.
     public var imageCount: Int?
+    /// create_element: `completed` once the account can use it; `processing` or `ip_checking` while Higgsfield still
+    /// checks it, and `elements` lists it only once it is completed. `nil` in `elements`, which lists only those.
+    public var status: String?
 
-    public init(id: String, name: String, category: String? = nil, imageCount: Int? = nil) {
+    public init(id: String, name: String, category: String? = nil, imageCount: Int? = nil, status: String? = nil) {
         self.id = id
         self.name = name
         self.category = category
         self.imageCount = imageCount
+        self.status = status
+    }
+}
+
+/// Makes a reference element on the account from the agent's images, idempotent by its request ID: sent again, it
+/// answers with the element it made instead of making a second one. Free.
+public struct CreateElementCommand: Codable, Equatable, Sendable, AgentFields {
+    /// Higgsfield's own limit on an element's name ("max 32 chars").
+    public static let maxNameLength = 32
+    /// A bound of the protocol: an element is a few clear images of one subject.
+    public static let maxImages = 10
+    public static let defaultCategory = "character"
+
+    public var requestID: String
+    /// `AgentFingerprint` of the request as the agent sent it, with its images' paths and sizes.
+    public var fingerprint: String
+    public var name: String
+    /// One of `ElementsCommand.categories`; `nil` is `defaultCategory`.
+    public var category: String?
+    /// The images' paths: the agent's own files, then the copies the helper handed the app.
+    public var images: [String]
+
+    public init(requestID: String, fingerprint: String, name: String, category: String? = nil, images: [String]) {
+        self.requestID = requestID
+        self.fingerprint = fingerprint
+        self.name = name
+        self.category = category
+        self.images = images
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case requestID = "requestId"
+        case fingerprint, name, category, images
+    }
+
+    public var problem: String? {
+        guard AgentNames.isValidRequestID(requestID) else { return AgentNames.requestIDRule }
+        guard AgentNames.isValidFingerprint(fingerprint) else { return "fingerprint is 64 lowercase hex digits" }
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty || trimmed.count > Self.maxNameLength {
+            return "name is 1 to \(Self.maxNameLength) characters"
+        }
+        if let category, !ElementsCommand.categories.contains(category) {
+            return "category is one of \(ElementsCommand.categories.joined(separator: ", "))"
+        }
+        if images.isEmpty { return "images takes the element's images, at least one" }
+        if images.count > Self.maxImages { return "images takes at most \(Self.maxImages) images" }
+        if let path = images.first(where: { !AgentVideoRequest.isValidPath($0) }) {
+            return "images has a path that isn't one: \(path.prefix(80))"
+        }
+        return nil
     }
 }
 

@@ -19,7 +19,8 @@ extension Tool {
             resolutions it takes there, and maxVariants, the most variants takes there on this connection, with \
             variantsUnavailable saying why it is 1). image_models: true adds the image models create_image takes (counts, aspect ratios, whether input \
             images are needed, maxInputs, the most inputs it takes, with maxInputsNote when that is a bound because \
-            the catalog states none), styles: true Restyle's style IDs, voices: true Change Voice's voices. onDevice \
+            the catalog states none; read when the app connects, window or not, with imageModelsNote saying why and what \
+            to do while the connection's own list isn't in), styles: true Restyle's style IDs, voices: true Change Voice's voices. onDevice \
             says what enhance runs free on this Mac: smoothMotion (its modes), upscaleVideo and upscaleImage, each \
             with available, the largest source either way round (maxLongSide, maxShortSide) and its model: none, \
             needs_consent (only the person can agree to macOS downloading it), downloading, ready (a run found it \
@@ -44,7 +45,8 @@ extension Tool {
             per job while the person uses them; a connection without variants), and images with minImages and \
             maxImages, the reference images the job has (elements' included) and the most and fewest its model takes \
             in this mode, the server's limits where it states them, else the app's, and aspectRatio, the result's \
-            frame (source: it keeps the source clip's orientation). A source \
+            frame (source: it keeps the source clip's orientation; model: the model takes no aspect ratio and picks it \
+            itself, with frameNote saying what to check). A source \
             needs end (its start and end in seconds) instead of a file; images may be paths or image_count. Free.
             """
         case .createVideo:
@@ -79,15 +81,29 @@ extension Tool {
             same request_id with the same parameters returns the same request and never pays twice. Right before it \
             is sent, a price above max_cost, above what is left of the daily agent budget, over the person's daily \
             cap or not known holds it (state paused, needsPerson) until the person sends it from the Queue. Follow \
-            it with jobs: results lists the images' paths once they are saved in Library › Images.
+            it with jobs: results lists the images' paths once they are saved in Library › Images. While the \
+            connection's image models aren't read yet it is refused, retryable, with next saying what to do.
             """
         case .elements:
             """
             The account's reference elements, characters, environments and props, as References › From Higgsfield \
             lists them: id, name (what create_video's and create_image's elements take), category and imageCount when \
             known. query (words of the name), category, limit (at most that many, up to 50; fewer when the account's \
-            pages read for one answer run out first); pass nextCursor back as cursor for the next page. Account \
-            connection only. Read-only and free.
+            pages read for one answer run out first); pass nextCursor back as cursor for the next page. Only elements \
+            Higgsfield finished checking are listed. Account connection only. Read-only and free.
+            """
+        case .createElement:
+            """
+            Makes a reference element on the account from images on this Mac, as Save to Higgsfield… does: the way to \
+            keep a face or a subject the same across clips. name (up to 32 characters; Higgsfield turns spaces into - \
+            and adds a number to a name the account already has), category (character, environment or prop; \
+            character when left out) and images, 1 to 10 clear images of one subject, the first its face or front. \
+            request_id works as in create_video: the same request_id with the same parameters answers with the \
+            element it made and never makes a second one (no files are sent again). Returns element with its id, the \
+            name to use in create_video's and create_image's elements, and status: completed once it can be used; \
+            processing or ip_checking while Higgsfield checks it, and until then elements doesn't list it and \
+            elements by name doesn't find it, so send the same request again to see its status. Account connection \
+            only. Free: no max_cost, and nothing counts against the budget.
             """
         case .jobs:
             """
@@ -95,14 +111,18 @@ extension Tool {
             or the latest agents started (limit, up to 50, newest first; pass nextCursor back as cursor for the page \
             after). Each has kind (video, image, export, delivery_export, on_device), state, pauseReason, hold, \
             needsPerson, progress, price, error and result (the finished video's path, with next saying how to check \
-            it with frames); a run on this Mac (on_device) has operation, mode, item, the Library item whose new \
+            it with frames, and width, height and duration, read from the file, with frameNote when its shape isn't \
+            the source's: scaling it to the source's frame would stretch it); a run on this Mac (on_device) has operation, mode, item, the Library item whose new \
             version it makes, estimatedSeconds and price 0, and is queued, downloading (its model), processing, done, \
             failed or canceled (subtitles' runs have operation subtitles and no mode); an image \
             request's results are its images' paths, an export's results the files written, with folder and files \
             (each done, failed or skipped). An ID Jutsu Studio doesn't know is state unknown with next: an export's ID \
             is forgotten when the app quits. wait_seconds (0–50) waits until everything named has settled (done, \
             failed, rejected, canceled, paused or unknown); a wait that runs out returns the state as it is, with \
-            timedOut, and stops nothing. Read-only.
+            timedOut, and stops nothing. To wait longer, call jobs again with the same ids until each is settled: \
+            that is the way to wait, and a done job's result is already the file's path, so there is no folder to \
+            watch. A run on this Mac that needs the person first (needs_person from enhance or subtitles make) was \
+            never started and isn't in jobs: there is nothing to wait for until it is sent again. Read-only.
             """
         case .jobAction:
             """
@@ -119,7 +139,7 @@ extension Tool {
             title), kind (all, video, image), starred, verdict (unreviewed, kept, rejected), model, mode (videos \
             only), from and to (ISO 8601). Rejected results stay out unless verdict is rejected or \
             include_rejected is true. Each item has its ID, file path, kind, model, mode, aspect ratio, duration, \
-            price, verdict, star, date, prompt (cut to 200 characters, promptTruncated) and version. limit up to 50; \
+            width and height (the current version's frame, when known), price, verdict, star, date, prompt (cut to 200 characters, promptTruncated) and version. limit up to 50; \
             pass nextCursor back as cursor for the next page. include_higgsfield also lists the account's Higgsfield \
             history, as Library › From Higgsfield shows it: those items have onHiggsfield true and no file until \
             library_download brings them here; refresh_higgsfield (with include_higgsfield) loads that history from \
@@ -159,7 +179,10 @@ extension Tool {
             One Enhance operation on a Library result, as the Library's Enhance menu does. On this Mac, free, with no \
             account, max_cost or budget: smooth_motion on a video (mode 60fps, keeping length and sound, or slow_2x \
             and slow_4x, without sound) and upscale with engine mac, 4× a video up to 1280×720 or an image up to \
-            1920×1080, either way round; the result becomes the item's new version (library_get's madeFrom names the \
+            1920×1080, either way round, or to target: 1080p, 2k or 4k (the short side 1080, 1440 or 2160 pixels) or \
+            a factor such as 2x or 2.5x, more than 1 and at most 4, keeping the source's shape with even sides, so a \
+            720×1280 clip at 1080p is 1080×1920; a target the source can't reach within 4×, or isn't larger than, is \
+            refused; the result becomes the item's new version (library_get's madeFrom names the \
             one before). Prefer it for drafts, for videos up to 720p and for smoothing motion or frame rate. Runs go \
             one at a time; an item with a run going is refused with busy, a Mac without the engine with \
             engine_unavailable, and an upscale before the person agreed to macOS downloading its model with \

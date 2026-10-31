@@ -17,34 +17,37 @@ protocol FrameScaling: AnyObject {
     func end()
 }
 
-/// Upscale › On this Mac for a video: every frame 4× larger, the sound as it is. A portrait frame the scaler refuses
-/// is turned a quarter for it and back (`OnDeviceUpscale.plan`). At a hard cut (`CutDetector`) the scaler starts
-/// afresh, so detail from the shot before doesn't carry into the next.
+/// Upscale › On this Mac for a video: every frame 4× larger, or scaled down from that to `target`, the sound as it
+/// is. A portrait frame the scaler refuses is turned a quarter for it and back (`OnDeviceUpscale.plan`). At a hard
+/// cut (`CutDetector`) the scaler starts afresh, so detail from the shot before doesn't carry into the next.
 enum SuperResolutionRenderer {
     /// On the frame loop's own thread (`FrameLoop`).
     static func renderVideo(
-        source url: URL, to output: URL, scaler: some FrameScaling, limit: PixelSize = OnDeviceUpscale.scalerLimit,
-        progress: @escaping @Sendable (OnDeviceProgress) -> Void
+        source url: URL, to output: URL, scaler: some FrameScaling, target: OnDeviceUpscale.Target = .full,
+        limit: PixelSize = OnDeviceUpscale.scalerLimit, progress: @escaping @Sendable (OnDeviceProgress) -> Void
     ) async throws -> OnDeviceOutput {
         try await FrameLoop.run {
-            try await renderFrames(source: url, to: output, scaler: scaler, limit: limit, progress: progress)
+            try await renderFrames(
+                source: url, to: output, scaler: scaler, target: target, limit: limit, progress: progress)
         }
     }
 
     private static func renderFrames(
-        source url: URL, to output: URL, scaler: some FrameScaling, limit: PixelSize,
+        source url: URL, to output: URL, scaler: some FrameScaling, target: OnDeviceUpscale.Target, limit: PixelSize,
         progress: @escaping @Sendable (OnDeviceProgress) -> Void
     ) async throws -> OnDeviceOutput {
         let source = try await FrameSource.load(url)
         guard OnDeviceUpscale.offersVideo(source.naturalSize),
             let plan = OnDeviceUpscale.plan(for: source.naturalSize, limit: limit)
         else { throw MediaError.engineUnavailable }
+        guard let size = target.output(for: source.naturalSize) else { throw Self.targetNotLarger }
         let format = try await scaler.start(size: plan.scalerInput) { progress(.downloadingModel($0)) }
         defer { scaler.end() }
         let pipeline = try await FramePipeline(
-            source, to: output, pixelFormat: format.pixelFormat, size: plan.output, frameRate: source.frameRate,
+            source, to: output, pixelFormat: format.pixelFormat, size: size, frameRate: source.frameRate,
             keepsAudio: true)
         let frames = try ScalerFrames(plan: plan, format: format)
+        let resizer = size == plan.output ? nil : try FrameResizer(to: size, attributes: format.destination)
         let expected = max(1, Int((source.duration * source.frameRate).rounded()))
         let luma = LumaSampler()
         var previous: (source: TimedFrame, output: TimedFrame)?
@@ -58,10 +61,11 @@ enum SuperResolutionRenderer {
                 if CutDetector.isCut(previousLuma, frameLuma) { previous = nil }
                 previousLuma = frameLuma
                 let input = try frames.toScaler(frame)
-                let target = TimedFrame(buffer: try frames.scaled.make(), time: frame.time)
-                try await scaler.scale(input, previous: previous, into: target)
-                previous = (input, target)
-                try await pipeline.append(try frames.fromScaler(target))
+                let scaled = TimedFrame(buffer: try frames.scaled.make(), time: frame.time)
+                try await scaler.scale(input, previous: previous, into: scaled)
+                previous = (input, scaled)
+                let upscaled = try frames.fromScaler(scaled)
+                try await pipeline.append(try resizer?.resize(upscaled) ?? upscaled)
                 done += 1
                 progress(.working(min(Double(done) / Double(expected), 1)))
             }
@@ -70,8 +74,36 @@ enum SuperResolutionRenderer {
             pipeline.cancel()
             throw error
         }
-        return OnDeviceOutput(
-            pixelSize: source.displaySize(of: plan.output), duration: source.duration, fileExtension: "mp4")
+        return OnDeviceOutput(pixelSize: source.displaySize(of: size), duration: source.duration, fileExtension: "mp4")
+    }
+
+    static let targetNotLarger = MediaError.exportFailed("The upscale target isn't larger than the source")
+}
+
+/// Scales the scaler's 4× frames down to a smaller target with VideoToolbox's pixel transfer, into frames of the
+/// target's size.
+private final class FrameResizer {
+    private let session: VTPixelTransferSession
+    private let pool: FramePool
+
+    init(to size: PixelSize, attributes: [String: any Sendable]) throws {
+        var session: VTPixelTransferSession?
+        guard VTPixelTransferSessionCreate(allocator: nil, pixelTransferSessionOut: &session) == noErr, let session
+        else { throw MediaError.exportFailed("Can't scale the frames") }
+        VTSessionSetProperty(session, key: kVTPixelTransferPropertyKey_ScalingMode, value: kVTScalingMode_Normal)
+        self.session = session
+        pool = try FramePool(size: size, attributes: attributes)
+    }
+
+    deinit {
+        VTPixelTransferSessionInvalidate(session)
+    }
+
+    func resize(_ frame: TimedFrame) throws -> TimedFrame {
+        let buffer = try pool.make()
+        let status = VTPixelTransferSessionTransferImage(session, from: frame.buffer, to: buffer)
+        guard status == noErr else { throw MediaError.exportFailed("Can't scale a frame (\(status))") }
+        return TimedFrame(buffer: buffer, time: frame.time)
     }
 }
 

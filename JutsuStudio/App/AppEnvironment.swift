@@ -70,6 +70,8 @@ final class AppEnvironment {
     var isChangingAllJobs = false
     /// The last settings write sent to the engine (`writeSetting`); the next one waits for it.
     @ObservationIgnored var settingsWrite: Task<Void, Never>?
+    /// The read of the image models going on, for the `providerGeneration` it reads (`loadImageModels`).
+    @ObservationIgnored var imageModelsLoad: (generation: Int, task: Task<Void, Never>)?
 
     @ObservationIgnored let store: SwiftDataStore
     /// Read by the app-side extensions (spend cap); never `.standard` directly, so tests and previews can inject.
@@ -232,6 +234,8 @@ final class AppEnvironment {
         lastCapabilities = nil
         followCharacterSheets()
         followImageJobs()
+        // Agents read them too, and an app an agent started has no window whose Create page would read them.
+        Task { [weak self] in await self?.loadImageModels() }
         history.switchAccount(to: provider.map { "\($0.kind.rawValue)|\($0.owner ?? "")" })
         // Before the provider, so the jobs it lets through take the connection's slots.
         let limit = AppSettings.maxConcurrency(in: defaults, for: provider?.kind)

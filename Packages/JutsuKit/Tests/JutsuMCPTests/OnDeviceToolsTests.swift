@@ -50,8 +50,8 @@ import Testing
             ["operation": "smooth_motion"], ["operation": "smooth_motion", "mode": "120fps"],
             ["operation": "smooth_motion", "mode": 60],
             ["operation": "smooth_motion", "mode": "60fps", "engine": "standard"],
-            ["operation": "upscale", "engine": "mac", "target": "4k"],
             ["operation": "upscale", "engine": "mac", "frame_rate": 60],
+            ["operation": "upscale", "engine": "mac", "target": "4k", "aspect_ratio": "9:16"],
             ["operation": "upscale", "engine": "standard"],
             ["operation": "upscale"], ["operation": "reframe", "aspect_ratio": "9:16", "mode": "60fps"],
         ]
@@ -70,7 +70,7 @@ import Testing
         let cases: [(String, [String: JSONValue])] = [
             ("enhance", ["operation": "smooth_motion"]), ("enhance", ["operation": "smooth_motion", "mode": "90fps"]),
             ("enhance", ["operation": "smooth_motion", "mode": "60fps", "engine": "topaz"]),
-            ("enhance", ["operation": "upscale", "engine": "mac", "target": "2k"]),
+            ("enhance", ["operation": "upscale", "engine": "mac", "target": "2k", "mode": "60fps"]),
             ("show", ["item": item]), ("show", ["sheet": "upscale_on_mac"]),
             ("show", ["page": "library", "item": item, "sheet": "upscale_on_mac"]),
         ]

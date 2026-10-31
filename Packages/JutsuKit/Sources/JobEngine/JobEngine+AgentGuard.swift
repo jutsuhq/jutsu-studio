@@ -18,11 +18,13 @@ extension JobEngine {
     /// allowance (`AgentSpendPolicy.allowsUnlimited`); it reserves 0, and the charge the answer reports replaces that.
     /// Once such a job was charged anyway today (`AgentSpendTotal.unlimitedCharged`), the allowance is no longer
     /// trusted to pay: until the day ends, agents' jobs for it keep the cap, `max_cost` and the budget like any other.
+    /// Such a job skipped the quote before the submit (`priceFitsCap`), so it is quoted here: without that price its
+    /// estimate would hold it as `unknownPrice` however far within `max_cost` it is.
     /// Over any limit, or when the ledger can't be read or written, the job pauses (`priceAboveCap` or `agentLimit`)
     /// and only the person resumes it (the agent may raise `max_cost` alone, `raiseAgentMaxCost`). A submit that may
     /// already have reached the server is resent with the reservation it holds and no new check.
     func clearAgentSpend(_ id: UUID, inputs: RemoteInputs) async throws -> AgentClearance {
-        let job = try await loadJob(id)
+        var job = try await loadJob(id)
         guard let origin = job.agent, job.submitAttempt == nil else { return .send(reservation: nil) }
         guard let agentPolicy else { return try await holdAgentJob(id, .ledgerUnavailable, inputs: inputs) }
         let allowsUnlimited = agentPolicy.allowsUnlimited()
@@ -38,6 +40,7 @@ extension JobEngine {
         }
         let unlimited = AgentSpendDecision.paysUnlimited(
             job.spec.usesUnlimited, allowsUnlimited: allowsUnlimited, chargedToday: chargedToday)
+        if !unlimited, job.spec.usesUnlimited { job = try await addServerPrice(to: job, inputs: inputs) }
         if !unlimited, let status = try await spendStatus(job), let cap = status.cap,
             Budget.allows(cost: job.price, committedToday: status.committedToday, cap: cap) != .allowed,
             !Budget.covers(approved: job.approvedPrice, job.price)

@@ -4,6 +4,22 @@ Notable changes to Jutsu Studio. Versions follow [Semantic Versioning](https://s
 
 ## [Unreleased]
 
+### Added
+
+- Agents see a finished video's frame: `jobs` gives its width, height and duration, read from the file, and a `frameNote` when its shape isn't the source's, so a result isn't scaled to the source's size and stretched. `library_search` and `library_get` give each item's width and height. Genjutsu Lite takes no aspect ratio and picks the frame itself, once a 3:4 result from a 9:16 source; `quote` says `aspectRatio: "model"` for it, with what to check.
+- Agents can give an upscale on this Mac a `target`: `1080p`, `2k` or `4k` sets the result's short side, and a factor such as `2x` or `2.5x` scales both sides, up to the engine's 4×, keeping the source's shape. A 720p portrait clip at `1080p` becomes 1080×1920 instead of 2880×5120. The result's file name says the target.
+- Agents can make a character, environment or prop element on the account with `create_element`: a name, a category and up to 10 images on this Mac, published as Save to Higgsfield… does, for free. The same `request_id` sent again answers with the element it made, and its status says when Higgsfield has checked it and the generation tools can use it by name.
+
+### Changed
+
+- The `jobs` description and the agent skill say outright that calling `jobs` again is the way to wait past `wait_seconds`, and that a done job's result is already the file's path, so agents don't build folder watchers. An Upscale on this Mac or subtitles that need the person first now say in the message that nothing was started, so an agent doesn't wait in `jobs` for a run that isn't there.
+
+### Fixed
+
+- Once a video sent for the plan's unlimited generations was charged anyway, an agent's later videos for them were held for an unknown price for the rest of the day, however far within their `max_cost`: they skipped Higgsfield's quote before the submit, as unlimited videos do, and the estimate alone isn't trusted. They are now quoted like any other video and run on their own when the quote fits.
+- An agent's request could end in `no_answer` while Jutsu Studio ran in the background with no window, as the helper starts it: macOS can put such an app in App Nap, which can hold back the answer, or the reading of a large file, past the helper's 60 s. The app now stays out of App Nap while it serves an agent. `no_answer` also says whether the wait ran out or the app closed the connection, and that the safe retry is the same `request_id`, which returns the job the app already took instead of paying again.
+- The image models are read as soon as Jutsu Studio is connected, with no window open too: `capabilities` with `image_models` and `create_image` came back empty, as if the model weren't there, until the Create page had been opened. While the list isn't read yet, or its read failed, they read it again, and `capabilities` says why in `imageModelsNote` and `create_image` is refused, retryable, with what to do.
+
 ## [0.2.6] - 2026-10-28
 
 ### Added

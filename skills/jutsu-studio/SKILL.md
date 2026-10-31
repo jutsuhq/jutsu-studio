@@ -27,7 +27,10 @@ says rather than guessing.
 - **Unlimited generations.** A video the plan's unlimited generations would pay for (`quote` says `paysUnlimited`)
   costs the budget nothing, but runs on its own only while the person lets agents use them
   (`capabilities` › `budget.unlimitedAllowed`); otherwise it is held for the person (`hold: unlimited_not_allowed`).
-  If one is charged anyway, `unlimitedAllowed` turns false for the rest of the day and such videos keep every limit.
+  If one is charged anyway, `unlimitedAllowed` turns false for the rest of the day and such videos keep every limit:
+  Higgsfield quotes them before they are sent, and they run on their own when that fits `max_cost` and the budget.
+- **Why a job waits.** `hold` says it: `unlimited_not_allowed` waits for the person to allow unlimited generations
+  or send it, `unknown_price` for a price Higgsfield couldn't quote, `over_max_cost` for a higher `max_cost`.
 
 ## How to work
 
@@ -35,7 +38,8 @@ says rather than guessing.
    groups. `window` says whether the app has a window open (`open`) and whether it runs in the menu bar
    (`menuBarMode`): when the app isn't running, the first call starts it in the background with no window, and only
    `show` opens one. Ask for `models`, `image_models`, `styles` or `voices` when you need them; they come from what
-   the app last read, never a network call.
+   the app last read, never a network call. The image models are read once the app is connected, window or not;
+   an empty list with `imageModelsNote` means they aren't read yet, not that the model is missing: follow the note.
 2. **Quote before you create.** `quote` a video with the same fields you mean to send, and tell the person the price.
    It also says `maxVariants` (and `variantsUnavailable`, why only one) and `minImages`/`maxImages`, the reference
    images the model takes in that mode; the same limits are in `capabilities` with `model`. There is no fixed image
@@ -54,8 +58,20 @@ says rather than guessing.
      `elements` to `create_video`, `quote` or `create_image`: their images go first, in order, then your own files.
      The answer's `references` gives each image's `@ImageN` tag; name them that way in the prompt, and the
      source video as `@Video1`.
-4. **Follow with `jobs`.** Pass the job IDs and `wait_seconds` (up to 50), and call again while they run. A finished
-   video's `result` and an image request's `results` are file paths.
+   - **Make an element.** `create_element` with a `request_id`, a `name` (up to 32 characters), a `category`
+     (`character` when left out) and `images`, 1 to 10 clear photos of one subject on this Mac, the face or front
+     first, makes it on the account, free. Use the `name` the answer's `element` gives: Higgsfield turns spaces into
+     `-` and numbers a name the account already has. Its `status` is `processing` or `ip_checking` while Higgsfield
+     checks it, and until it is `completed` `elements` doesn't list it and the generation tools don't find it: send
+     the same `create_element` again (same `request_id`, nothing is made twice) to see its status.
+4. **Follow with `jobs`.** Pass the job IDs and `wait_seconds` (up to 50), and call again while they run: calling
+   `jobs` again is the way to wait longer than 50 s, and a wait that runs out stops nothing. A finished video's
+   `result` and an image request's `results` are file paths, so there is no need to watch a folder for them.
+   - **Check the frame before you scale.** A finished video has `width`, `height` and `duration`, read from its file.
+     A model that takes no aspect ratio (`quote` says `aspectRatio: "model"`, as for Genjutsu Lite) picks the frame
+     itself and can answer in another shape than the source's, a 3:4 clip from a 9:16 source; then the job has a
+     `frameNote`. Scaling such a clip to the source's size stretches it: look at it with `frames`, then crop it or
+     make it again.
 5. **Review and show.** `library_search` finds results (newest first, `nextCursor` → `cursor`), `library_get` gives
    them in full (the whole prompt, the inputs in order, the settings), `frames` writes still frames of a result at the
    seconds you name, with `compare_source` or `compare_item` a contact sheet beside what it was made from, so look
@@ -67,13 +83,17 @@ says rather than guessing.
 6. **Finish.** `enhance` upscales, reframes, removes a background, dubs or changes the voice of a video on
    Higgsfield, with its own `request_id` and `max_cost`. Two operations run on this Mac instead, free and without
    `max_cost`: `smooth_motion` (`mode` `60fps`, `slow_2x` or `slow_4x`) on a video, and `upscale` with `engine: "mac"`
-   on a video up to 1280×720 or an image up to 1920×1080. Prefer them for drafts, small results and frame-rate
+   on a video up to 1280×720 or an image up to 1920×1080. That upscale is 4× unless you give `target`: `1080p`, `2k`
+   or `4k` sets the short side (a 720×1280 clip at `1080p` becomes 1080×1920), and a factor such as `2x` or `2.5x`
+   scales both sides; the shape stays the source's, so there is nothing to re-encode for delivery. Prefer them for drafts, small results and frame-rate
    smoothing; `capabilities`' `onDevice` says which this Mac has. They still take a `request_id`, answer with a job
    of kind `on_device` and its `estimatedSeconds`, and `jobs` and `job_action` cancel follow them; the result
    becomes the item's current version, and `library_get` names the version it was made from (`madeFrom`). The
-   first Upscale on this Mac answers `needs_person` until the person agrees to macOS downloading its model: call
-   `show` with the `item` and `sheet: "upscale_on_mac"` as `next` says, tell the person, and send `enhance` again
-   once they agreed. `busy` means a run on that item is going: follow it with `jobs` first. `engine_unavailable`
+   first Upscale on this Mac answers `needs_person` until the person agrees to macOS downloading its model. That
+   answer means nothing was started, so `jobs` has no run to wait for: call `show` with the `item` and
+   `sheet: "upscale_on_mac"` as `next` says, tell the person, and send `enhance` again once they agreed
+   (`capabilities`' `onDevice` says `model: "needs_consent"` until then). The run then shows `downloading` in `jobs`
+   while macOS fetches the model, once. `busy` means a run on that item is going: follow it with `jobs` first. `engine_unavailable`
    means this Mac has no such engine: use Higgsfield instead.
    - **Subtitles.** `subtitles` with `action: "make"`, a `request_id`, and optionally `language` and `engine`
      (`auto`, `built_in`, `parakeet`; `capabilities`' `onDevice.subtitles` lists each one's languages and model)
@@ -88,13 +108,15 @@ says rather than guessing.
    `wait_seconds`, up to 50) with a `job`: follow it with `jobs` like any job, and read its `files` and `results`
    once it is `done`. If the app was relaunched meanwhile, `jobs` answers `unknown`: look in its `folder` or export
    again. An answer of `still_working` means the app is still on it; send the same call again or call `jobs`.
+   `no_answer` means the app may have taken the request without its answer reaching you: check `capabilities`,
+   then send the same request with the same `request_id` and parameters, never a new one, so nothing is paid twice.
 
 ## Clips that belong together
 
 For an ad or a story made of several clips, treat them as one piece of work:
 
-- **One identity, every clip.** Make the character, product and place `elements` once, from a real photo when
-  there is one, never from a generated frame. Pass the same names in the same order to every clip, so `@Image1`
+- **One identity, every clip.** Make the character, product and place `elements` once (`create_element`), from a
+  real photo when there is one, never from a generated frame. Pass the same names in the same order to every clip, so `@Image1`
   means the same thing in every prompt. A clip sent without them makes the person up again from the text.
 - **First clip, then the rest.** Draft the first clip, show it, and send the others with the same elements and the
   same prompt skeleton only once the person likes it.

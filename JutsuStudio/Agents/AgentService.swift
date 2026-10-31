@@ -155,8 +155,8 @@ final class AgentService {
             return AgentResponse(library: try await librarySearch(fields))
         case .libraryGet(let fields):
             return AgentResponse(details: try await libraryGet(fields))
-        case .elements(let fields):
-            return AgentResponse(elements: try await elements(fields))
+        case .elements, .createElement:
+            return try await elementCommand(command, client: client)
         case .libraryDownload(let fields):
             return AgentResponse(downloads: try await libraryDownload(fields))
         case .libraryMark(let fields):
@@ -198,7 +198,11 @@ final class AgentService {
         if fields.models {
             answer.models = try models(fields.model, connection: state.kind)
         }
-        if fields.imageModels { answer.imageModels = imageModels() }
+        if fields.imageModels {
+            let images = await imageModels()
+            answer.imageModels = images.models
+            answer.imageModelsNote = images.note
+        }
         if fields.styles {
             answer.styles = (PresetCatalog.cachedPresets(in: environment.layout.presetCacheFolder) ?? [])
                 .map { AgentCapabilities.Style(id: $0.id, name: $0.name) }

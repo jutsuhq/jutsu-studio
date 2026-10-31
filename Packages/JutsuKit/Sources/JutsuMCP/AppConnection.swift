@@ -103,7 +103,7 @@ public struct AppConnection: Sendable {
                 }
                 return await startAndSend(body, app: app, bundleID: bundleID, socket: socket)
             } catch {
-                return AgentResponse(error: .lostAnswer)
+                return AgentResponse(error: lostAnswer(error))
             }
         }
     }
@@ -126,11 +126,26 @@ public struct AppConnection: Sendable {
             } catch AgentClient.Failure.notListening {
                 // Not yet.
             } catch {
-                return AgentResponse(error: .lostAnswer)
+                return AgentResponse(error: lostAnswer(error))
             }
             if running.isTerminated() { return AgentResponse(error: .notStarted(app, reason: "it quit")) }
             if Date.now >= deadline { return AgentResponse(error: .notListening(socket)) }
             try? await Task.sleep(for: .milliseconds(200))
+        }
+    }
+
+    /// A request that went out without an answer coming back, by why: the wait ran out, or the app closed the
+    /// connection.
+    private func lostAnswer(_ error: any Error) -> AgentError {
+        switch error {
+        case AgentClient.Failure.timedOut:
+            .lostAnswer(
+                "Jutsu Studio didn't answer within \(timeout.components.seconds) seconds: it was busy, or macOS held it "
+                    + "back in the background.")
+        case AgentClient.Failure.closed:
+            .lostAnswer("Jutsu Studio closed the connection before it answered: it quit or was stopped.")
+        default:
+            .lostAnswer("Jutsu Studio didn't answer the request: \(error.localizedDescription)")
         }
     }
 
@@ -178,7 +193,15 @@ extension AgentError {
         next: "Run the one at Jutsu Studio.app/Contents/Helpers/jutsu, or point \(AgentSocket.variable) at a socket.")
 
     /// The request went out but no answer came back: the app quit, or took longer than the timeout.
-    static let lostAnswer = AgentError(
-        .lostAnswer, message: "Jutsu Studio didn't answer the request.", retryable: true,
-        next: "Call capabilities to check that the app is running, then send the request again.")
+    static let lostAnswer = lostAnswer("Jutsu Studio didn't answer the request.")
+
+    /// The app may have taken the request, so the retry that is safe is the same request: one the app already took
+    /// answers with what it made.
+    static func lostAnswer(_ message: String) -> AgentError {
+        AgentError(
+            .lostAnswer, message: message, retryable: true,
+            next: "Call capabilities to check that the app is running, then send the request again. Send create_video, "
+                + "create_image, enhance, create_element or subtitles make with the same request_id and parameters: "
+                + "one the app already took returns its job or element and never runs or pays twice.")
+    }
 }

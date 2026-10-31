@@ -80,7 +80,22 @@ public struct AgentVideoOrder: Sendable, Hashable {
     /// The frame `spec`'s result gets, as `quote` says it: `source` when the job has one (its result keeps the
     /// source's orientation, Seedance asking for the source's nearest ratio), else the ratio the job asks for.
     public static func frame(of spec: JobSpec) -> String? {
-        spec.source == nil ? spec.aspectRatio?.rawValue : "source"
+        guard spec.source != nil else { return spec.aspectRatio?.rawValue }
+        return choosesOwnFrame(spec.model) ? "model" : "source"
+    }
+
+    /// What `quote` says about the frame of a model that picks it itself; nil for the others.
+    public static func frameNote(of spec: JobSpec) -> String? {
+        guard spec.source != nil, choosesOwnFrame(spec.model) else { return nil }
+        return "\(spec.model.title) takes no aspect ratio and picks the result's frame itself: it usually follows the "
+            + "source, but a 3:4 result from a 9:16 source has been seen. jobs gives the result's width and height "
+            + "once it is done, with frameNote when they aren't the source's shape; check them before scaling it."
+    }
+
+    /// Models with a source that Higgsfield sends no aspect ratio to (their catalog lists none) and that were seen to
+    /// answer in another frame than the source's: Genjutsu Lite (issue #38).
+    static func choosesOwnFrame(_ model: VideoModel) -> Bool {
+        model.rawValue == "genjutsuLite"
     }
 
     /// The agent's name for `mode`.

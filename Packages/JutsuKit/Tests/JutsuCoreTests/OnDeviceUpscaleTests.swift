@@ -62,9 +62,41 @@ import Testing
     @Test func onlySuperResolutionDownloadsAModel() {
         #expect(!OnDeviceEngine.frameRateConversion.downloadsModel)
         #expect(OnDeviceEngine.videoSuperResolution.downloadsModel)
-        #expect(OnDeviceAction.upscaleVideo.engine == .videoSuperResolution)
-        #expect(OnDeviceAction.upscaleVideo.fileSuffix == "4x")
+        #expect(OnDeviceAction.upscaleVideo(.full).engine == .videoSuperResolution)
+        #expect(OnDeviceAction.upscaleVideo(.full).fileSuffix == "4x")
         #expect(OnDeviceEngine.imageSuperResolution.downloadsModel)
-        #expect(OnDeviceAction.upscaleImage.engine == .imageSuperResolution)
+        #expect(OnDeviceAction.upscaleImage(.full).engine == .imageSuperResolution)
+    }
+
+    /// A delivery size keeps the source's shape with even sides, the short side exactly the one named; a factor
+    /// scales both sides. 4× is the most, and a target must be larger than the source.
+    @Test(arguments: [
+        ("1080p", PixelSize(width: 720, height: 1280), PixelSize(width: 1080, height: 1920)),
+        ("1080p", PixelSize(width: 576, height: 1024), PixelSize(width: 1080, height: 1920)),
+        ("1080p", PixelSize(width: 554, height: 740), PixelSize(width: 1080, height: 1442)),
+        ("2k", PixelSize(width: 1280, height: 720), PixelSize(width: 2560, height: 1440)),
+        ("4k", PixelSize(width: 720, height: 1280), PixelSize(width: 2160, height: 3840)),
+        ("2x", PixelSize(width: 480, height: 854), PixelSize(width: 960, height: 1708)),
+        ("2.5x", PixelSize(width: 481, height: 270), PixelSize(width: 1202, height: 676)),
+        ("4x", PixelSize(width: 480, height: 854), PixelSize(width: 1920, height: 3416)),
+    ])
+    func aTargetKeepsTheShape(name: String, source: PixelSize, output: PixelSize) throws {
+        let target = try #require(OnDeviceUpscale.Target(name: name))
+        #expect(target.output(for: source) == output)
+    }
+
+    @Test func aTargetMustBeLargerAndAtMostFourTimes() throws {
+        #expect(OnDeviceUpscale.Target(name: "4x") == .full)
+        #expect(OnDeviceUpscale.Target(name: "4K") == .shortSide(2160))
+        for name in ["1x", "0.5x", "4.5x", "8k", "x", "1080", "nanx", "infx"] {
+            #expect(OnDeviceUpscale.Target(name: name) == nil, "\(name)")
+        }
+        // 4k from 480p needs 4.5×; 1080p from a 1080 wide portrait clip adds nothing.
+        #expect(OnDeviceUpscale.Target.shortSide(2160).output(for: PixelSize(width: 480, height: 854)) == nil)
+        #expect(OnDeviceUpscale.Target.shortSide(1080).output(for: PixelSize(width: 1080, height: 1350)) == nil)
+        #expect(OnDeviceAction.upscaleVideo(.shortSide(1080)).fileSuffix == "1080p")
+        #expect(OnDeviceAction.upscaleImage(.shortSide(1440)).fileSuffix == "2k")
+        #expect(OnDeviceAction.upscaleImage(try #require(OnDeviceUpscale.Target(name: "2.5x"))).fileSuffix == "2.5x")
+        #expect(OnDeviceAction.upscaleVideo(try #require(OnDeviceUpscale.Target(name: "2x"))).fileSuffix == "2x")
     }
 }

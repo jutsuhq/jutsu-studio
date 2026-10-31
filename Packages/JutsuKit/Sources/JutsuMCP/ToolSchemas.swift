@@ -68,6 +68,7 @@ extension Tool {
                     ],
                 ],
             ]
+            properties["imageModelsNote"] = ["type": "string"]
             properties["styles"] = [
                 "type": "array",
                 "items": ["type": "object", "properties": ["id": ["type": "string"], "name": ["type": "string"]]],
@@ -128,6 +129,7 @@ extension Tool {
             properties["minImages"] = ["type": "integer"]
             properties["maxImages"] = ["type": "integer"]
             properties["aspectRatio"] = ["type": "string"]
+            properties["frameNote"] = ["type": "string"]
         case .createVideo, .createImage, .enhance:
             properties["requestId"] = ["type": "string"]
             properties["known"] = ["type": "boolean"]
@@ -154,6 +156,17 @@ extension Tool {
                 ],
             ]
             properties["nextCursor"] = ["type": "string"]
+        case .createElement:
+            properties["requestId"] = ["type": "string"]
+            properties["known"] = ["type": "boolean"]
+            properties["jobs"] = ["type": "array", "items": Self.jobSchema]
+            properties["element"] = [
+                "type": "object",
+                "properties": [
+                    "id": ["type": "string"], "name": ["type": "string"], "category": ["type": "string"],
+                    "imageCount": ["type": "integer"], "status": ["type": "string"],
+                ],
+            ]
         case .jobs:
             properties["jobs"] = ["type": "array", "items": Self.jobSchema]
             properties["timedOut"] = ["type": "boolean"]
@@ -281,7 +294,8 @@ extension Tool {
             "client": ["type": "string"], "mode": ["type": "string"], "model": ["type": "string"],
             "folder": ["type": "string"], "files": ["type": "array", "items": exportFileSchema],
             "set": ["type": "string"], "operation": ["type": "string"], "item": ["type": "string"],
-            "estimatedSeconds": ["type": "number"], "next": ["type": "string"],
+            "estimatedSeconds": ["type": "number"], "width": ["type": "integer"], "height": ["type": "integer"],
+            "duration": ["type": "number"], "frameNote": ["type": "string"], "next": ["type": "string"],
             "createdAt": ["type": "string"], "finishedAt": ["type": "string"],
         ],
     ]
@@ -291,8 +305,9 @@ extension Tool {
         "properties": [
             "id": ["type": "string"], "kind": ["type": "string"], "file": ["type": "string"],
             "model": ["type": "string"], "mode": ["type": "string"], "aspectRatio": ["type": "string"],
-            "duration": ["type": "number"], "price": amountSchema, "verdict": ["type": "string"],
-            "starred": ["type": "boolean"], "createdAt": ["type": "string"], "prompt": ["type": "string"],
+            "duration": ["type": "number"], "width": ["type": "integer"], "height": ["type": "integer"],
+            "price": amountSchema, "verdict": ["type": "string"], "starred": ["type": "boolean"],
+            "createdAt": ["type": "string"], "prompt": ["type": "string"],
             "promptTruncated": ["type": "boolean"], "versionId": ["type": "string"], "version": ["type": "integer"],
             "versionCount": ["type": "integer"], "jobId": ["type": "string"], "onHiggsfield": ["type": "boolean"],
         ],

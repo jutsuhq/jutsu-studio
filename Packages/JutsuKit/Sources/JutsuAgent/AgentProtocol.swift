@@ -59,6 +59,8 @@ public enum AgentCommand: Equatable, Sendable {
     case libraryGet(LibraryGetCommand)
     /// The account's reference elements by name.
     case elements(ElementsCommand)
+    /// Makes a reference element from the agent's images, idempotent by its request ID.
+    case createElement(CreateElementCommand)
     /// Downloads results of the Higgsfield history into the Library.
     case libraryDownload(LibraryDownloadCommand)
     /// Sets the culling verdict and the star of Library items.
@@ -87,6 +89,7 @@ public enum AgentCommand: Equatable, Sendable {
         case .librarySearch: "library_search"
         case .libraryGet: "library_get"
         case .elements: "elements"
+        case .createElement: "create_element"
         case .libraryDownload: "library_download"
         case .libraryMark: "library_mark"
         case .enhance: "enhance"
@@ -138,6 +141,7 @@ public struct AgentRequest: Codable, Equatable, Sendable {
         case "library_search": command = .librarySearch(try .checked(from: decoder))
         case "library_get": command = .libraryGet(try .checked(from: decoder))
         case "elements": command = .elements(try .checked(from: decoder))
+        case "create_element": command = .createElement(try .checked(from: decoder))
         case "library_download": command = .libraryDownload(try .checked(from: decoder))
         case "library_mark": command = .libraryMark(try .checked(from: decoder))
         case "enhance": command = .enhance(try .checked(from: decoder))
@@ -167,6 +171,7 @@ public struct AgentRequest: Codable, Equatable, Sendable {
         case .librarySearch(let fields): try fields.encode(to: encoder)
         case .libraryGet(let fields): try fields.encode(to: encoder)
         case .elements(let fields): try fields.encode(to: encoder)
+        case .createElement(let fields): try fields.encode(to: encoder)
         case .libraryDownload(let fields): try fields.encode(to: encoder)
         case .libraryMark(let fields): try fields.encode(to: encoder)
         case .enhance(let fields): try fields.encode(to: encoder)
@@ -187,7 +192,7 @@ public struct AgentResponse: Codable, Equatable, Sendable {
     /// upload: where the app put the file, a path inside its inbox.
     public var uploaded: String?
     public var quote: AgentQuote?
-    /// create_video, create_image and enhance: the jobs the request queued.
+    /// create_video, create_image and enhance: the jobs the request queued; create_element: the element it made.
     public var created: AgentCreated?
     public var jobs: AgentJobs?
     /// job_action: what was done.

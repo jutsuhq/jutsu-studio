@@ -22,7 +22,8 @@ enum AccountElementsMapping {
                 : element.images.map { image in
                     JutsuCore.ElementImage(
                         url: image.url, media: image.mediaID.map { ServerMedia(id: $0, url: image.url, owner: owner) })
-                })
+                },
+            status: element.status)
     }
 }
 

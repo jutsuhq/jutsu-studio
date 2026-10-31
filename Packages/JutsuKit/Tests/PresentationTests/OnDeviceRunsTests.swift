@@ -208,12 +208,12 @@ final class FakeOnDeviceEngine: OnDeviceEnhancing, @unchecked Sendable {
 
         #expect(runs.needsConsent(.videoSuperResolution))
         #expect(!runs.needsConsent(.frameRateConversion))
-        #expect(!runs.start(request(action: .upscaleVideo)))
+        #expect(!runs.start(request(action: .upscaleVideo(.full))))
         #expect(runs.runs.isEmpty)
         #expect(engine.started.isEmpty)
 
         runs.agree(to: .videoSuperResolution)
-        #expect(runs.start(request(action: .upscaleVideo)))
+        #expect(runs.start(request(action: .upscaleVideo(.full))))
         await runs.finish()
 
         #expect(files() == ["rooftop 4x.mp4"])
@@ -221,7 +221,7 @@ final class FakeOnDeviceEngine: OnDeviceEnhancing, @unchecked Sendable {
         #expect(!OnDeviceRuns(engine: engine, consent: consent) { _, _, _ in }.needsConsent(.videoSuperResolution))
         // Each kind has a model of its own, asked about on its own.
         #expect(runs.needsConsent(.imageSuperResolution))
-        #expect(!runs.start(request("portrait.png", action: .upscaleImage)))
+        #expect(!runs.start(request("portrait.png", action: .upscaleImage(.full))))
     }
 
     @Test func onlyAnImageUpTo1080pIsOfferedAnUpscale() {

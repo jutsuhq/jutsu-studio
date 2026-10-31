@@ -251,6 +251,9 @@ public struct AgentLibraryItem: Codable, Equatable, Sendable {
     public var aspectRatio: String?
     /// Seconds a video runs.
     public var duration: Double?
+    /// The current version's frame in pixels, upright, when known.
+    public var width: Int?
+    public var height: Int?
     public var price: AgentAmount?
     public var verdict: AgentVerdict
     public var starred: Bool
@@ -274,8 +277,10 @@ public struct AgentLibraryItem: Codable, Equatable, Sendable {
         duration: Double?, price: AgentAmount?, verdict: AgentVerdict, starred: Bool, createdAt: Date,
         prompt: String, promptTruncated: Bool, versionID: UUID, version: Int, versionCount: Int, jobID: UUID?,
         // swiftlint:disable:next discouraged_optional_boolean
-        onHiggsfield: Bool? = nil
+        onHiggsfield: Bool? = nil, width: Int? = nil, height: Int? = nil
     ) {
+        self.width = width
+        self.height = height
         self.id = id
         self.kind = kind
         self.file = file
@@ -297,8 +302,8 @@ public struct AgentLibraryItem: Codable, Equatable, Sendable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, kind, file, model, mode, aspectRatio, duration, price, verdict, starred, createdAt, prompt
-        case promptTruncated
+        case id, kind, file, model, mode, aspectRatio, duration, width, height, price, verdict, starred, createdAt
+        case prompt, promptTruncated
         case versionID = "versionId"
         case version, versionCount
         case jobID = "jobId"

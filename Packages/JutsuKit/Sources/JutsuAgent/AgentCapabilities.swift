@@ -79,7 +79,7 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
             ToolGroup(name: "app", tools: ["capabilities"]),
             ToolGroup(name: "video", tools: ["quote", "create_video", "jobs", "job_action"]),
             ToolGroup(name: "image", tools: ["create_image"]),
-            ToolGroup(name: "elements", tools: ["elements"]),
+            ToolGroup(name: "elements", tools: ["elements", "create_element"]),
             ToolGroup(
                 name: "library",
                 tools: [
@@ -267,6 +267,8 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
     public var models: [Model]?
     /// Only when asked for (`CapabilitiesCommand.imageModels`); empty when the connection makes no images.
     public var imageModels: [ImageModel]?
+    /// Beside `imageModels` while the connection's own list isn't read: why, and what to do; in English.
+    public var imageModelsNote: String?
     /// Only when asked for (`CapabilitiesCommand.styles`); empty until Create has read the catalog once.
     public var styles: [Style]?
     /// Only when asked for (`CapabilitiesCommand.voices`); empty without an account.

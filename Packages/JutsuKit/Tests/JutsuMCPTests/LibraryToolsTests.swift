@@ -102,6 +102,72 @@ import Testing
         }
     }
 
+    // MARK: create_element
+
+    private func element(_ extra: [String: JSONValue] = [:]) -> [String: JSONValue] {
+        var arguments: [String: JSONValue] = ["request_id": "el-1", "name": "Mara"]
+        for (key, value) in extra { arguments[key] = value }
+        return arguments
+    }
+
+    @Test func createElementStagesItsImagesInOrderThenSendsTheCopies() async throws {
+        let paths = try ["face.png", "side.png"].map { try file($0) }
+        let result = try await call(
+            "create_element", .object(element(["images": .array(paths.map { .string($0) }), "category": "prop"])))
+
+        #expect(result["isError"] == false)
+        let staged = await inbox.staged
+        #expect(staged.map(\.path) == paths)
+        #expect(staged.allSatisfy { $0.request.command == "create_element" && $0.request.requestID == "el-1" })
+        guard case .createElement(let command)? = await app.calls.first?.0 else {
+            Issue.record("create_element wasn't sent")
+            return
+        }
+        #expect(command.images == ["/tmp/inbox/1/face.png", "/tmp/inbox/2/side.png"])
+        #expect(command.name == "Mara")
+        #expect(command.category == "prop")
+        #expect(command.fingerprint == staged.first?.request.fingerprint)
+        let decoded = AgentWire.request(from: try AgentWire.line(AgentRequest(.createElement(command)))).request
+        #expect(try decoded.get().command == .createElement(command))
+    }
+
+    /// The same images and fields are the same request, whatever the category left out stands for; anything else,
+    /// or an image that changed, is another.
+    @Test func theElementFingerprintFollowsTheRequest() throws {
+        let face = try file("face.png")
+        func fingerprint(_ arguments: [String: JSONValue]) throws -> String {
+            guard case .success(.createElement(let command)) = command(.createElement, arguments) else {
+                throw AgentError.badRequest("not a create_element")
+            }
+            return command.fingerprint
+        }
+        let first = try fingerprint(element(["images": [.string(face)]]))
+        #expect(try fingerprint(element(["images": [.string(face)], "category": "character"])) == first)
+        #expect(try fingerprint(element(["images": [.string(face)], "category": "prop"])) != first)
+        #expect(try fingerprint(element(["images": [.string(face)], "name": "Mira"])) != first)
+        try Data(repeating: 2, count: 9).write(to: URL(filePath: face))
+        #expect(try fingerprint(element(["images": [.string(face)]])) != first)
+    }
+
+    @Test func anElementRequestIsCheckedBeforeAnythingIsSent() async throws {
+        let face = JSONValue.array([.string(try file("face.png"))])
+        for bad in [
+            element(), element(["images": []]), ["request_id": "el-1", "images": face],
+            element(["images": face, "name": "   "]),
+            element(["images": face, "name": .string(String(repeating: "a", count: 33))]),
+            element(["images": face, "category": "auto"]),
+            element(["images": .array((0...10).map { .string("/tmp/\($0).png") })]),
+            element(["images": face, "max_cost": ["amount": 1, "unit": "credits"]]),
+        ] {
+            guard case .failure(let error) = command(.createElement, bad) else {
+                Issue.record("taken: \(bad)")
+                continue
+            }
+            #expect(error.code == .badRequest)
+        }
+        #expect(await inbox.staged.isEmpty)
+    }
+
     @Test func aConflictingImageRequestStopsBeforeAnyByteOrCommand() async throws {
         await inbox.refuse(with: .requestConflict)
         let result = try await call("create_image", .object(image(["input": .string(try file("fox.png"))])))
