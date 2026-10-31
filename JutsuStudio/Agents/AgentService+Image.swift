@@ -35,6 +35,12 @@ extension AgentService {
         if let blocker = environment.referenceGenerationBlocker {
             throw AgentError(.notApplicable, message: blocker, retryable: true, next: "Try again in a moment.")
         }
+        await readImageModelsIfNeeded()
+        if let note = environment.referenceGenerator.agentModelsNote {
+            throw AgentError(
+                .notApplicable, message: "The image models of this connection aren't read yet.", retryable: true,
+                next: note)
+        }
         try Self.checkUnit(of: fields.maxCost, on: kind)
         var files: [LocalImage] = []
         for path in fields.image.inputs { files.append(LocalImage(fileURL: try inboxFile(path))) }
@@ -103,8 +109,17 @@ extension AgentService {
         }
     }
 
-    /// The image models Create offers on this connection, as last read; never a network call.
-    func imageModels() -> [AgentCapabilities.ImageModel] {
-        environment.referenceGenerator.models.map(AgentCapabilities.ImageModel.init)
+    /// The image models Create offers on this connection, and what to do while its own list isn't in. They are read
+    /// when the connection is set up; one not read yet, or whose read failed, is read now.
+    func imageModels() async -> (models: [AgentCapabilities.ImageModel], note: String?) {
+        await readImageModelsIfNeeded()
+        let generator = environment.referenceGenerator
+        return (generator.models.map(AgentCapabilities.ImageModel.init), generator.agentModelsNote)
+    }
+
+    /// Waits for the read going on, or starts one, while the connection's own image models aren't in.
+    private func readImageModelsIfNeeded() async {
+        guard environment.referenceGenerator.needsModelRead else { return }
+        await environment.loadImageModels()
     }
 }

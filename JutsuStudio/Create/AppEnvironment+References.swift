@@ -49,9 +49,23 @@ extension AppEnvironment {
         characterBuilder.log.retrySave()
     }
 
-    /// Hands the connection's image models to the Generate… sheet. Keyed on `providerGeneration`. The list saved at
-    /// the last load shows at once, so the form doesn't wait for the account's catalog at launch.
+    /// Hands the connection's image models to the Generate… sheet and to agents. Keyed on `providerGeneration`: read
+    /// when the connection is set up, with or without a window, and again whenever Create appears; a call while a
+    /// read of the same connection is going on waits for that one. The list saved at the last load shows at once,
+    /// so the form doesn't wait for the account's catalog at launch.
     func loadImageModels() async {
+        let generation = providerGeneration
+        if let load = imageModelsLoad, load.generation == generation {
+            await load.task.value
+            return
+        }
+        let task = Task { await readImageModels() }
+        imageModelsLoad = (generation, task)
+        await task.value
+        if imageModelsLoad?.generation == generation { imageModelsLoad = nil }
+    }
+
+    private func readImageModels() async {
         guard let provider = imageProvider, referenceGenerationBlocker == nil else {
             referenceGenerator.useModels([])
             return
@@ -60,14 +74,15 @@ extension AppEnvironment {
         if let saved = defaults.data(forKey: key) {
             referenceGenerator.useSavedModels((try? JSONDecoder().decode([ImageModel].self, from: saved)) ?? [])
         }
+        let generation = providerGeneration
         do {
             let models = try await provider.imageModels()
-            try Task.checkCancellation()
+            // Read for a connection replaced meanwhile: not this one's.
+            guard providerGeneration == generation else { return }
             referenceGenerator.useModels(models)
             defaults.set(try? JSONEncoder().encode(models), forKey: key)
-        } catch is CancellationError {
-            return
         } catch {
+            guard providerGeneration == generation else { return }
             referenceGenerator.useModels([], unavailableReason: UserMessage(error)?.message)
         }
     }

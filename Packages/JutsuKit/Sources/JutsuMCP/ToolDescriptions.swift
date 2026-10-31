@@ -19,7 +19,8 @@ extension Tool {
             resolutions it takes there, and maxVariants, the most variants takes there on this connection, with \
             variantsUnavailable saying why it is 1). image_models: true adds the image models create_image takes (counts, aspect ratios, whether input \
             images are needed, maxInputs, the most inputs it takes, with maxInputsNote when that is a bound because \
-            the catalog states none), styles: true Restyle's style IDs, voices: true Change Voice's voices. onDevice \
+            the catalog states none; read when the app connects, window or not, with imageModelsNote saying why and what \
+            to do while the connection's own list isn't in), styles: true Restyle's style IDs, voices: true Change Voice's voices. onDevice \
             says what enhance runs free on this Mac: smoothMotion (its modes), upscaleVideo and upscaleImage, each \
             with available, the largest source either way round (maxLongSide, maxShortSide) and its model: none, \
             needs_consent (only the person can agree to macOS downloading it), downloading, ready (a run found it \
@@ -80,7 +81,8 @@ extension Tool {
             same request_id with the same parameters returns the same request and never pays twice. Right before it \
             is sent, a price above max_cost, above what is left of the daily agent budget, over the person's daily \
             cap or not known holds it (state paused, needsPerson) until the person sends it from the Queue. Follow \
-            it with jobs: results lists the images' paths once they are saved in Library › Images.
+            it with jobs: results lists the images' paths once they are saved in Library › Images. While the \
+            connection's image models aren't read yet it is refused, retryable, with next saying what to do.
             """
         case .elements:
             """

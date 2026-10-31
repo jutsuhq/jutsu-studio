@@ -11,6 +11,7 @@ Notable changes to Jutsu Studio. Versions follow [Semantic Versioning](https://s
 ### Fixed
 
 - Once a video sent for the plan's unlimited generations was charged anyway, an agent's later videos for them were held for an unknown price for the rest of the day, however far within their `max_cost`: they skipped Higgsfield's quote before the submit, as unlimited videos do, and the estimate alone isn't trusted. They are now quoted like any other video and run on their own when the quote fits.
+- The image models are read as soon as Jutsu Studio is connected, with no window open too: `capabilities` with `image_models` and `create_image` came back empty, as if the model weren't there, until the Create page had been opened. While the list isn't read yet, or its read failed, they read it again, and `capabilities` says why in `imageModelsNote` and `create_image` is refused, retryable, with what to do.
 
 ## [0.2.6] - 2026-10-28
 
