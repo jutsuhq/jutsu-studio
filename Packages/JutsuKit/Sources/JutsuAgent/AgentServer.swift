@@ -22,17 +22,23 @@
         private let handle: Handler
         private let answerDeadline: Duration
         private let freeSpace: @Sendable (URL) -> Int64?
+        private let holdActivity: @MainActor (_ isServing: Bool) -> Void
         private var listener: AgentListener?
         private var connections: [ObjectIdentifier: AgentSocketConnection] = [:]
+        private var isServing = false
 
         /// - Parameters:
         ///   - answerDeadline: what a command's answer waits for its work at most (`AgentProtocol.answerDeadline`).
         ///   - freeSpace: the bytes free on the volume of the given file, `nil` when unknown; an upload must leave
         ///     `AgentInbox.minFreeSpace` (`AgentInbox.roomProblem`).
+        ///   - holdActivity: called with `true` when the first connection opens and `false` when the last one closes
+        ///     (`holdAppAwake`).
         public init(
             socket: URL, isAllowed: @escaping @MainActor () -> Bool, gate: @escaping UploadGate = { _, _ in },
             answerDeadline: Duration = AgentProtocol.answerDeadline,
-            freeSpace: @escaping @Sendable (URL) -> Int64? = { _ in nil }, handle: @escaping Handler
+            freeSpace: @escaping @Sendable (URL) -> Int64? = { _ in nil },
+            holdActivity: @escaping @MainActor (_ isServing: Bool) -> Void = AgentServer.holdAppAwake,
+            handle: @escaping Handler
         ) {
             self.socket = socket
             inbox = AgentInbox(socket: socket)
@@ -40,8 +46,25 @@
             self.gate = gate
             self.answerDeadline = answerDeadline
             self.freeSpace = freeSpace
+            self.holdActivity = holdActivity
             self.handle = handle
         }
+
+        /// Keeps App Nap from throttling the app while it serves an agent. An app in the background with no window,
+        /// as the helper starts it, naps: its timers and socket reads are put off, so the timer that answers
+        /// `still_working` and the reads of an upload could run past the helper's timeout, which the agent sees as
+        /// `no_answer`. The Mac may still sleep when idle.
+        public static func holdAppAwake(_ isServing: Bool) {
+            if isServing, servingActivity == nil {
+                servingActivity = ProcessInfo.processInfo.beginActivity(
+                    options: .userInitiatedAllowingIdleSystemSleep, reason: "Answering agents")
+            } else if !isServing, let activity = servingActivity {
+                ProcessInfo.processInfo.endActivity(activity)
+                servingActivity = nil
+            }
+        }
+
+        private static var servingActivity: (any NSObjectProtocol)?
 
         public var isListening: Bool { listener != nil }
 
@@ -64,7 +87,14 @@
             self.listener = nil
             for connection in connections.values { connection.cancel() }
             connections = [:]
+            serving(false)
             unlink(socket.path(percentEncoded: false))
+        }
+
+        private func serving(_ isServing: Bool) {
+            guard isServing != self.isServing else { return }
+            self.isServing = isServing
+            holdActivity(isServing)
         }
 
         /// The answer to one request line, for any command but `upload`, whose bytes follow its line on the socket.
@@ -113,9 +143,11 @@
         private func accept(_ connection: AgentSocketConnection) {
             let id = ObjectIdentifier(connection)
             connections[id] = connection
+            serving(true)
             Task {
                 await serve(connection)
                 connections[id] = nil
+                if connections.isEmpty { serving(false) }
             }
         }
 

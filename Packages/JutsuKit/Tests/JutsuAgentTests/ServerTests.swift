@@ -41,6 +41,13 @@ final class Switch: @unchecked Sendable {
     func handle() { lock.withLock { count += 1 } }
 }
 
+/// What the server asked of App Nap, and what it held while a command ran.
+@MainActor
+final class ActivityRecorder {
+    var calls: [Bool] = []
+    var heldWhileHandling: [Bool] = []
+}
+
 @MainActor
 @Suite struct ServerTests {
     private let capabilities = AgentCapabilities(
@@ -107,6 +114,33 @@ final class Switch: @unchecked Sendable {
         release.continuation.yield()
         await eventually { finished.isOn }
         #expect(finished.isOn)
+    }
+
+    /// Held from the first connection until the last one closes, so App Nap can't put off an answer or an upload.
+    @Test func theAppIsKeptFromNappingWhileItServesAnAgent() async throws {
+        let recorder = ActivityRecorder()
+        let server = AgentServer(
+            socket: try temporarySocket(), isAllowed: { true }, holdActivity: { recorder.calls.append($0) }
+        ) { _ in
+            recorder.heldWhileHandling.append(recorder.calls.last ?? false)
+            return AgentResponse(shown: AgentShown(page: .queue))
+        }
+        try server.start()
+        defer { server.stop() }
+        #expect(recorder.calls.isEmpty)
+
+        for _ in 0..<2 {
+            let answer = try await exchange(server.socket) { client in
+                (
+                    try client.send(AgentRequest(.show(.page(.queue)))),
+                    try client.send(AgentRequest(.show(.page(.queue))))
+                )
+            }
+            #expect(answer.0.shown != nil && answer.1.shown != nil)
+            await eventually { recorder.calls.last == false }
+        }
+        #expect(recorder.heldWhileHandling == [true, true, true, true])
+        #expect(recorder.calls == [true, false, true, false])
     }
 
     @Test func theHelperWaitsLongerThanTheAppTakesToAnswer() {

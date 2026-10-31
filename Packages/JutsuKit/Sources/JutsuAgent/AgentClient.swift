@@ -9,8 +9,10 @@
         public enum Failure: Error, Equatable {
             /// Nothing listens there: the app isn't running, or is still starting.
             case notListening(errno: Int32)
-            /// The app closed the connection, or didn't answer within the timeout.
+            /// The app closed the connection.
             case closed
+            /// A write or the wait for the answer took longer than the timeout.
+            case timedOut
             /// Longer than `AgentSocket.maxPathLength`.
             case pathTooLong
             /// The file to upload ended before the size it was sent with.
@@ -87,7 +89,7 @@
                 while offset < raw.count {
                     let written = Darwin.write(socket, base + offset, raw.count - offset)
                     if written < 0 && errno == EINTR { continue }
-                    guard written > 0 else { throw Failure.closed }
+                    guard written > 0 else { throw written < 0 && Self.isTimeout(errno) ? Failure.timedOut : .closed }
                     offset += written
                 }
             }
@@ -100,9 +102,12 @@
                 if let line = buffer.nextLine() { return line }
                 let count = read(socket, &chunk, chunk.count)
                 if count < 0 && errno == EINTR { continue }
-                guard count > 0 else { throw Failure.closed }
+                guard count > 0 else { throw count < 0 && Self.isTimeout(errno) ? Failure.timedOut : .closed }
                 buffer.push(Data(chunk[..<count]))
             }
         }
+
+        /// What `SO_RCVTIMEO` and `SO_SNDTIMEO` end a read or write with.
+        private static func isTimeout(_ code: Int32) -> Bool { code == EAGAIN || code == EWOULDBLOCK }
     }
 #endif

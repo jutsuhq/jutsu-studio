@@ -105,6 +105,8 @@ says rather than guessing.
    `wait_seconds`, up to 50) with a `job`: follow it with `jobs` like any job, and read its `files` and `results`
    once it is `done`. If the app was relaunched meanwhile, `jobs` answers `unknown`: look in its `folder` or export
    again. An answer of `still_working` means the app is still on it; send the same call again or call `jobs`.
+   `no_answer` means the app may have taken the request without its answer reaching you: check `capabilities`,
+   then send the same request with the same `request_id` and parameters, never a new one, so nothing is paid twice.
 
 ## Clips that belong together
 
