@@ -89,6 +89,24 @@ says rather than guessing.
    once it is `done`. If the app was relaunched meanwhile, `jobs` answers `unknown`: look in its `folder` or export
    again. An answer of `still_working` means the app is still on it; send the same call again or call `jobs`.
 
+## Clips that belong together
+
+For an ad or a story made of several clips, treat them as one piece of work:
+
+- **One identity, every clip.** Make the character, product and place `elements` once, from a real photo when
+  there is one, never from a generated frame. Pass the same names in the same order to every clip, so `@Image1`
+  means the same thing in every prompt. A clip sent without them makes the person up again from the text.
+- **First clip, then the rest.** Draft the first clip, show it, and send the others with the same elements and the
+  same prompt skeleton only once the person likes it.
+- **Check against the reference.** Run `frames` with `compare_item` set to the approved first clip, or
+  `compare_file` set to the photo the character was made from, and look at the face, the hands, the product label
+  (not mirrored) and any text in frame. Text the model invents on screens and labels comes out scrambled: leave it
+  out of the prompt and add it in the edit.
+- **Fix the cheapest way.** A bad still: change just that detail with `create_image` and the still as an input. A
+  good clip with one thing wrong: `mode: "edit"` on it, saying what to keep and what to change, with
+  `audio: "original"`. Make it again only when neither works, and reject the failed take with `library_mark`.
+- **One voice.** If the voice drifts between clips, give them all the same voice with `enhance`'s `change_voice`.
+
 ## Rules
 
 - **Held means tell the person.** A job over your `max_cost`, over what is left of the daily agent budget, over the
