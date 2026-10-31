@@ -57,6 +57,8 @@ public struct AgentLibraryHit: Sendable, Hashable {
     public var mode: String?
     public var aspectRatio: String?
     public var duration: TimeInterval?
+    /// The current version's frame, upright, when known.
+    public var pixelSize: PixelSize?
     public var price: Cost?
     public var culling: Culling
     public var isStarred: Bool
@@ -138,7 +140,9 @@ public enum AgentLibrarySearch {
                 id: material.id, isVideo: true, file: file, model: item.spec.model.rawValue,
                 mode: AgentVideoOrder.name(of: item.spec.mode),
                 aspectRatio: item.spec.aspectRatio?.rawValue ?? version.aspectRatio,
-                duration: item.job.outputDuration, price: item.isFromHiggsfield ? nil : item.job.price,
+                duration: item.job.outputDuration,
+                pixelSize: version.pixelSize ?? item.job.outputMedia?.pixelSize,
+                price: item.isFromHiggsfield ? nil : item.job.price,
                 culling: index.culling(of: material.id), isStarred: item.isStarred, createdAt: row.createdAt,
                 prompt: prompt.text, isPromptTruncated: prompt.isTruncated, versionID: version.id, version: position,
                 versionCount: material.versions.count,
@@ -147,13 +151,15 @@ public enum AgentLibrarySearch {
         case .localImage(let image):
             return AgentLibraryHit(
                 id: material.id, isVideo: false, file: image.fileURL, model: image.model, mode: nil,
-                aspectRatio: image.aspectRatio, duration: nil, price: nil, culling: index.culling(of: material.id),
+                aspectRatio: image.aspectRatio, duration: nil, pixelSize: version.pixelSize, price: nil,
+                culling: index.culling(of: material.id),
                 isStarred: image.isStarred, createdAt: row.createdAt, prompt: prompt, isPromptTruncated: isTruncated,
                 versionID: version.id, version: position, versionCount: material.versions.count, jobID: nil)
         case .remoteImage(let image):
             return AgentLibraryHit(
                 id: material.id, isVideo: false, file: nil, model: image.model, mode: nil,
-                aspectRatio: image.aspectRatio, duration: nil, price: nil, culling: index.culling(of: material.id),
+                aspectRatio: image.aspectRatio, duration: nil, pixelSize: version.pixelSize, price: nil,
+                culling: index.culling(of: material.id),
                 isStarred: image.isLiked, createdAt: row.createdAt, prompt: prompt, isPromptTruncated: isTruncated,
                 versionID: version.id, version: position, versionCount: material.versions.count, jobID: nil,
                 isOnHiggsfield: true)

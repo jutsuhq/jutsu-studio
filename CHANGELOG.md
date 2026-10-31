@@ -4,6 +4,10 @@ Notable changes to Jutsu Studio. Versions follow [Semantic Versioning](https://s
 
 ## [Unreleased]
 
+### Added
+
+- Agents see a finished video's frame: `jobs` gives its width, height and duration, read from the file, and a `frameNote` when its shape isn't the source's, so a result isn't scaled to the source's size and stretched. `library_search` and `library_get` give each item's width and height. Genjutsu Lite takes no aspect ratio and picks the frame itself, once a 3:4 result from a 9:16 source; `quote` says `aspectRatio: "model"` for it, with what to check.
+
 ## [0.2.6] - 2026-10-28
 
 ### Added

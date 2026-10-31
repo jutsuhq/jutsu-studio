@@ -137,6 +137,20 @@ import Testing
         #expect(try motion.spec(from: base, in: Self.account).get().resolution == .p480)
     }
 
+    /// Genjutsu Lite takes no aspect ratio and picks the frame itself, so quote says "model" and what to check.
+    @Test func aQuoteSaysTheModelPicksTheFrame() throws {
+        let order = AgentVideoOrder(
+            mode: "motion_transfer", model: "genjutsuLite", prompt: "",
+            source: AgentVideoOrder.Source(video: CreateFixture.video(duration: 20), start: 0, end: 12),
+            images: [LocalImage(fileURL: CreateFixture.image(0))])
+        let spec = try order.spec(from: CreateForm(mode: .motionTransfer, resolution: .p720), in: Self.account).get()
+        #expect(AgentVideoOrder.frame(of: spec) == "model")
+        #expect(AgentVideoOrder.frameNote(of: spec)?.contains("width and height") == true)
+        var other = spec
+        other.model = .genjutsu
+        #expect(AgentVideoOrder.frame(of: other) == "source" && AgentVideoOrder.frameNote(of: other) == nil)
+    }
+
     @Test func anAgentCanPickIt() throws {
         let order = AgentVideoOrder(
             mode: "object_swap", model: "genjutsuLite", prompt: "",

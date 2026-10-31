@@ -56,6 +56,11 @@ says rather than guessing.
      source video as `@Video1`.
 4. **Follow with `jobs`.** Pass the job IDs and `wait_seconds` (up to 50), and call again while they run. A finished
    video's `result` and an image request's `results` are file paths.
+   - **Check the frame before you scale.** A finished video has `width`, `height` and `duration`, read from its file.
+     A model that takes no aspect ratio (`quote` says `aspectRatio: "model"`, as for Genjutsu Lite) picks the frame
+     itself and can answer in another shape than the source's, a 3:4 clip from a 9:16 source; then the job has a
+     `frameNote`. Scaling such a clip to the source's size stretches it: look at it with `frames`, then crop it or
+     make it again.
 5. **Review and show.** `library_search` finds results (newest first, `nextCursor` → `cursor`), `library_get` gives
    them in full (the whole prompt, the inputs in order, the settings), `frames` writes still frames of a result at the
    seconds you name, with `compare_source` or `compare_item` a contact sheet beside what it was made from, so look

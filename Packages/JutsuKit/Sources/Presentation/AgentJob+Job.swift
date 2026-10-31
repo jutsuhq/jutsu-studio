@@ -27,6 +27,12 @@ extension AgentJob {
         default: error = nil
         }
         result = job.state == .done ? job.outputFile?.path(percentEncoded: false) : nil
+        if job.state == .done, let media = job.outputMedia {
+            width = media.pixelSize.width
+            height = media.pixelSize.height
+            duration = media.duration
+            frameNote = AgentJobRules.frameNote(source: job.spec.source?.pixelSize, result: media.pixelSize)
+        }
     }
 
     public static func name(of state: JobState) -> String {
@@ -118,6 +124,21 @@ public enum AgentJobRules {
             ? "To check it, call frames with item \(item) and a few times; it writes the frames and a contact sheet."
             : "To check it against its source, call frames with item \(item), a few times and compare_source true; "
                 + "it writes both clips' frames side by side on a contact sheet."
+    }
+
+    /// Says so when a finished video's frame isn't its source's shape: Genjutsu Lite takes no aspect ratio and once
+    /// made a 3:4 draft (554×740) from a 9:16 source, which an agent scaled to 1080×1920 and stretched. Shapes within
+    /// 2 % of each other are the same frame, as `PixelSize.aspectLabel` names them.
+    public static func frameNote(source: PixelSize?, result: PixelSize) -> String? {
+        guard let source, source.isValid, result.isValid else { return nil }
+        let difference =
+            log(Double(result.width) / Double(result.height))
+            - log(Double(source.width) / Double(source.height))
+        guard abs(difference) >= 0.02 else { return nil }
+        let shape = { (size: PixelSize) in "\(size.width)×\(size.height) (\(size.aspectLabel ?? "?"))" }
+        return "The result is \(shape(result)), not the source's frame, \(shape(source)): the model chose its own. "
+            + "Scaling it to the source's frame stretches it; check it with frames, then crop it (delivery_set) or "
+            + "make it again."
     }
 
     /// Why a job sent again with a higher `max_cost` still waits: the hold it would get now, or `nil` for the

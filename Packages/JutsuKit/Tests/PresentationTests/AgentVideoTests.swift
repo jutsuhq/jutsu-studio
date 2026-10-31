@@ -258,6 +258,30 @@ import Testing
         #expect(AgentJobRules.checkHint(agentJob(.done)) == nil)
     }
 
+    /// A finished video says its frame and length, and says so when the model answered in another shape than the
+    /// source's: a 3:4 draft from a 9:16 source, scaled to 1080×1920, stretched.
+    @Test func aFinishedVideoSaysItsFrameAndWhenItIsNotTheSources() {
+        var done = agentJob(.done)
+        done.outputFile = URL(filePath: "/tmp/out.mp4")
+        done.spec.source = SourceClip(
+            fileURL: URL(filePath: "/tmp/in.mov"), duration: 5, pixelSize: PixelSize(width: 576, height: 1024),
+            range: 0...5)
+        done.outputMedia = OutputMedia(duration: 5.04, pixelSize: PixelSize(width: 554, height: 740))
+        let wire = AgentJob(done)
+        #expect(wire.width == 554 && wire.height == 740 && wire.duration == 5.04)
+        #expect(wire.frameNote?.contains("554×740 (3:4)") == true)
+        #expect(wire.frameNote?.contains("576×1024 (9:16)") == true)
+
+        // The same shape at another size is the source's frame.
+        done.outputMedia = OutputMedia(duration: 5, pixelSize: PixelSize(width: 720, height: 1280))
+        #expect(AgentJob(done).frameNote == nil && AgentJob(done).width == 720)
+        // Without a source there is nothing to compare; before it is done nothing is known.
+        #expect(AgentJobRules.frameNote(source: nil, result: PixelSize(width: 554, height: 740)) == nil)
+        var running = done
+        running.state = .processing
+        #expect(AgentJob(running).width == nil && AgentJob(running).frameNote == nil)
+    }
+
     /// over_cap says what the cap counted, in the whole units agents read, and that it isn't the agent budget.
     @Test func overCapGivesTheCapTodayAndTheJobsPrice() {
         let credits = AgentCap.overCapMessage(

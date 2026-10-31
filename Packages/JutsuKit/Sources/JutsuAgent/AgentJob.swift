@@ -48,6 +48,14 @@ public struct AgentJob: Codable, Equatable, Sendable {
     public var item: UUID?
     /// An on-device run's expected length in seconds, as its sheet says it.
     public var estimatedSeconds: Double?
+    /// A finished video's frame, upright, and length, read from its file: what to check before scaling or
+    /// delivering it.
+    public var width: Int?
+    public var height: Int?
+    public var duration: Double?
+    /// Why a finished video's frame isn't its source's (a model that takes no aspect ratio chose its own), in
+    /// English; nil when it keeps the source's shape or has no source.
+    public var frameNote: String?
     /// What to do about it: for state unknown; for a finished video, how to check it with `frames`; for a request
     /// sent again with a higher max_cost, why its job is still held.
     public var next: String?
@@ -61,9 +69,14 @@ public struct AgentJob: Codable, Equatable, Sendable {
         error: String? = nil, result: String? = nil, results: [String]? = nil, kind: String = "video",
         requestID: String? = nil, client: String? = nil, mode: String? = nil, model: String? = nil,
         folder: String? = nil, files: [AgentExportFile]? = nil, set: UUID? = nil, operation: String? = nil,
-        item: UUID? = nil, estimatedSeconds: Double? = nil, next: String? = nil, createdAt: Date?,
+        item: UUID? = nil, estimatedSeconds: Double? = nil, width: Int? = nil, height: Int? = nil,
+        duration: Double? = nil, frameNote: String? = nil, next: String? = nil, createdAt: Date?,
         finishedAt: Date? = nil
     ) {
+        self.width = width
+        self.height = height
+        self.duration = duration
+        self.frameNote = frameNote
         self.operation = operation
         self.item = item
         self.estimatedSeconds = estimatedSeconds
@@ -96,7 +109,8 @@ public struct AgentJob: Codable, Equatable, Sendable {
         case id, state, pauseReason, hold, needsPerson, progress, price, isPriceExact, charged, error, result
         case results, kind
         case requestID = "requestId"
-        case client, mode, model, folder, files, set, operation, item, estimatedSeconds, next, createdAt, finishedAt
+        case client, mode, model, folder, files, set, operation, item, estimatedSeconds, width, height, duration
+        case frameNote, next, createdAt, finishedAt
     }
 }
 

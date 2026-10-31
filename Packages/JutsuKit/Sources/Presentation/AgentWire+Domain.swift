@@ -179,7 +179,8 @@ extension AgentLibraryItem {
             price: hit.price.flatMap(AgentMoney.init).map(AgentAmount.init), verdict: AgentVerdict(hit.culling),
             starred: hit.isStarred, createdAt: hit.createdAt, prompt: hit.prompt,
             promptTruncated: hit.isPromptTruncated, versionID: hit.versionID, version: hit.version,
-            versionCount: hit.versionCount, jobID: hit.jobID, onHiggsfield: hit.isOnHiggsfield ? true : nil)
+            versionCount: hit.versionCount, jobID: hit.jobID, onHiggsfield: hit.isOnHiggsfield ? true : nil,
+            width: hit.pixelSize?.width, height: hit.pixelSize?.height)
     }
 }
 

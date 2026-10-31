@@ -44,7 +44,8 @@ extension Tool {
             per job while the person uses them; a connection without variants), and images with minImages and \
             maxImages, the reference images the job has (elements' included) and the most and fewest its model takes \
             in this mode, the server's limits where it states them, else the app's, and aspectRatio, the result's \
-            frame (source: it keeps the source clip's orientation). A source \
+            frame (source: it keeps the source clip's orientation; model: the model takes no aspect ratio and picks it \
+            itself, with frameNote saying what to check). A source \
             needs end (its start and end in seconds) instead of a file; images may be paths or image_count. Free.
             """
         case .createVideo:
@@ -95,7 +96,8 @@ extension Tool {
             or the latest agents started (limit, up to 50, newest first; pass nextCursor back as cursor for the page \
             after). Each has kind (video, image, export, delivery_export, on_device), state, pauseReason, hold, \
             needsPerson, progress, price, error and result (the finished video's path, with next saying how to check \
-            it with frames); a run on this Mac (on_device) has operation, mode, item, the Library item whose new \
+            it with frames, and width, height and duration, read from the file, with frameNote when its shape isn't \
+            the source's: scaling it to the source's frame would stretch it); a run on this Mac (on_device) has operation, mode, item, the Library item whose new \
             version it makes, estimatedSeconds and price 0, and is queued, downloading (its model), processing, done, \
             failed or canceled (subtitles' runs have operation subtitles and no mode); an image \
             request's results are its images' paths, an export's results the files written, with folder and files \
@@ -119,7 +121,7 @@ extension Tool {
             title), kind (all, video, image), starred, verdict (unreviewed, kept, rejected), model, mode (videos \
             only), from and to (ISO 8601). Rejected results stay out unless verdict is rejected or \
             include_rejected is true. Each item has its ID, file path, kind, model, mode, aspect ratio, duration, \
-            price, verdict, star, date, prompt (cut to 200 characters, promptTruncated) and version. limit up to 50; \
+            width and height (the current version's frame, when known), price, verdict, star, date, prompt (cut to 200 characters, promptTruncated) and version. limit up to 50; \
             pass nextCursor back as cursor for the next page. include_higgsfield also lists the account's Higgsfield \
             history, as Library › From Higgsfield shows it: those items have onHiggsfield true and no file until \
             library_download brings them here; refresh_higgsfield (with include_higgsfield) loads that history from \

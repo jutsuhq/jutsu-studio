@@ -1,4 +1,5 @@
 import Foundation
+import JutsuAgent
 import JutsuCore
 import Testing
 
@@ -97,6 +98,16 @@ import Testing
         #expect(video.mode == "restyle")
         #expect(video.version == 1 && video.versionCount == 1)
         #expect(video.file?.lastPathComponent == "out.mp4")
+    }
+
+    /// An item says its current version's frame, so an agent checks it before scaling a result to a delivery size.
+    @Test func anItemSaysItsFrame() throws {
+        var video = fox
+        video.current.pixelSize = PixelSize(width: 554, height: 740)
+        let hit = try #require(AgentLibrarySearch.page([video], AgentLibraryQuery()).hits.first)
+        #expect(hit.pixelSize == PixelSize(width: 554, height: 740))
+        let item = AgentLibraryItem(hit)
+        #expect(item.width == 554 && item.height == 740)
     }
 
     @Test func markingAgainChangesNothing() {
