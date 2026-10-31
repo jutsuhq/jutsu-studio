@@ -119,7 +119,10 @@ extension Tool {
             (each done, failed or skipped). An ID Jutsu Studio doesn't know is state unknown with next: an export's ID \
             is forgotten when the app quits. wait_seconds (0–50) waits until everything named has settled (done, \
             failed, rejected, canceled, paused or unknown); a wait that runs out returns the state as it is, with \
-            timedOut, and stops nothing. Read-only.
+            timedOut, and stops nothing. To wait longer, call jobs again with the same ids until each is settled: \
+            that is the way to wait, and a done job's result is already the file's path, so there is no folder to \
+            watch. A run on this Mac that needs the person first (needs_person from enhance or subtitles make) was \
+            never started and isn't in jobs: there is nothing to wait for until it is sent again. Read-only.
             """
         case .jobAction:
             """

@@ -133,15 +133,16 @@ public final class AgentSubtitleRuns {
         if runs.needsDownload(language, engine: engine) {
             return AgentError(
                 .needsPerson,
-                message: "\(language) needs Parakeet Ultra, which isn't downloaded, and only the person downloads it.",
+                message: "Nothing was started: \(language) needs Parakeet Ultra, which isn't downloaded, and only the "
+                    + "person downloads it.",
                 retryable: true,
                 next: show + "once they downloaded it in Settings › Subtitles, send make again with a new request_id.")
         }
         if runs.needsConsent(language, engine: engine) {
             return AgentError(
                 .needsPerson,
-                message: "\(language) needs macOS to download its speech model from Apple once, and only the person "
-                    + "can agree to that.",
+                message: "Nothing was started: \(language) needs macOS to download its speech model from Apple once, "
+                    + "and only the person can agree to that.",
                 retryable: true,
                 next: show + "once they agreed (and may make the subtitles there), send make again with a new "
                     + "request_id.")

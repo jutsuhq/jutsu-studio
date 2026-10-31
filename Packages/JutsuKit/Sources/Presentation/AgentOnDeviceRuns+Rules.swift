@@ -89,13 +89,14 @@ extension AgentOnDeviceRuns {
         if runs.needsConsent(action.engine) {
             return AgentError(
                 .needsPerson,
-                message: "Upscale on this Mac needs macOS to download its model from Apple once, and only the person "
-                    + "can agree to that.",
+                message: "Nothing was started: Upscale on this Mac needs macOS to download its model from Apple once, "
+                    + "and only the person can agree to that. There is no run to follow in jobs until enhance is sent "
+                    + "again.",
                 retryable: true,
                 next:
                     "Call show with item \(item.uuidString) and sheet upscale_on_mac, which opens the sheet where the "
                     + "person agrees (and may start the upscale there), and tell the person; once they agreed, send "
-                    + "enhance again.")
+                    + "enhance again. capabilities' onDevice model says needs_consent until then.")
         }
         return nil
     }

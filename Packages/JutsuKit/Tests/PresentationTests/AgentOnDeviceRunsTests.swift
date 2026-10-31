@@ -216,6 +216,8 @@ import Testing
         #expect(waiting?.code == .needsPerson)
         #expect(
             waiting?.next?.contains("show with item \(source.materialID.uuidString) and sheet upscale_on_mac") == true)
+        // Said outright, so an agent doesn't wait in jobs for a run that was never started.
+        #expect(waiting?.message.hasPrefix("Nothing was started") == true)
         #expect(runs.runs.isEmpty)
         #expect(agent.capabilities().upscaleVideo.model == "needs_consent")
         // Smooth Motion has no model to agree to.

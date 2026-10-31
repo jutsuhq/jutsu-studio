@@ -10,6 +10,10 @@ Notable changes to Jutsu Studio. Versions follow [Semantic Versioning](https://s
 - Agents can give an upscale on this Mac a `target`: `1080p`, `2k` or `4k` sets the result's short side, and a factor such as `2x` or `2.5x` scales both sides, up to the engine's 4×, keeping the source's shape. A 720p portrait clip at `1080p` becomes 1080×1920 instead of 2880×5120. The result's file name says the target.
 - Agents can make a character, environment or prop element on the account with `create_element`: a name, a category and up to 10 images on this Mac, published as Save to Higgsfield… does, for free. The same `request_id` sent again answers with the element it made, and its status says when Higgsfield has checked it and the generation tools can use it by name.
 
+### Changed
+
+- The `jobs` description and the agent skill say outright that calling `jobs` again is the way to wait past `wait_seconds`, and that a done job's result is already the file's path, so agents don't build folder watchers. An Upscale on this Mac or subtitles that need the person first now say in the message that nothing was started, so an agent doesn't wait in `jobs` for a run that isn't there.
+
 ### Fixed
 
 - Once a video sent for the plan's unlimited generations was charged anyway, an agent's later videos for them were held for an unknown price for the rest of the day, however far within their `max_cost`: they skipped Higgsfield's quote before the submit, as unlimited videos do, and the estimate alone isn't trusted. They are now quoted like any other video and run on their own when the quote fits.

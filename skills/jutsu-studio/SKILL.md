@@ -64,8 +64,9 @@ says rather than guessing.
      `-` and numbers a name the account already has. Its `status` is `processing` or `ip_checking` while Higgsfield
      checks it, and until it is `completed` `elements` doesn't list it and the generation tools don't find it: send
      the same `create_element` again (same `request_id`, nothing is made twice) to see its status.
-4. **Follow with `jobs`.** Pass the job IDs and `wait_seconds` (up to 50), and call again while they run. A finished
-   video's `result` and an image request's `results` are file paths.
+4. **Follow with `jobs`.** Pass the job IDs and `wait_seconds` (up to 50), and call again while they run: calling
+   `jobs` again is the way to wait longer than 50 s, and a wait that runs out stops nothing. A finished video's
+   `result` and an image request's `results` are file paths, so there is no need to watch a folder for them.
    - **Check the frame before you scale.** A finished video has `width`, `height` and `duration`, read from its file.
      A model that takes no aspect ratio (`quote` says `aspectRatio: "model"`, as for Genjutsu Lite) picks the frame
      itself and can answer in another shape than the source's, a 3:4 clip from a 9:16 source; then the job has a
@@ -88,9 +89,11 @@ says rather than guessing.
    smoothing; `capabilities`' `onDevice` says which this Mac has. They still take a `request_id`, answer with a job
    of kind `on_device` and its `estimatedSeconds`, and `jobs` and `job_action` cancel follow them; the result
    becomes the item's current version, and `library_get` names the version it was made from (`madeFrom`). The
-   first Upscale on this Mac answers `needs_person` until the person agrees to macOS downloading its model: call
-   `show` with the `item` and `sheet: "upscale_on_mac"` as `next` says, tell the person, and send `enhance` again
-   once they agreed. `busy` means a run on that item is going: follow it with `jobs` first. `engine_unavailable`
+   first Upscale on this Mac answers `needs_person` until the person agrees to macOS downloading its model. That
+   answer means nothing was started, so `jobs` has no run to wait for: call `show` with the `item` and
+   `sheet: "upscale_on_mac"` as `next` says, tell the person, and send `enhance` again once they agreed
+   (`capabilities`' `onDevice` says `model: "needs_consent"` until then). The run then shows `downloading` in `jobs`
+   while macOS fetches the model, once. `busy` means a run on that item is going: follow it with `jobs` first. `engine_unavailable`
    means this Mac has no such engine: use Higgsfield instead.
    - **Subtitles.** `subtitles` with `action: "make"`, a `request_id`, and optionally `language` and `engine`
      (`auto`, `built_in`, `parakeet`; `capabilities`' `onDevice.subtitles` lists each one's languages and model)
