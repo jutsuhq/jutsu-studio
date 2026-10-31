@@ -397,6 +397,29 @@ struct AgentGuardTests {
                 .unlimitedCharged)
     }
 
+    /// Once the allowance is no longer trusted, a job for it is quoted like any other before it is sent: an estimate
+    /// alone would hold every such job as unknown_price for the rest of the day, however far within max_cost.
+    @Test func aJobTheAllowanceNoLongerPaysIsQuotedNotHeldForAnUnknownPrice() async throws {
+        let harness = Harness()
+        await harness.provider.setPreliminary(.usd(1, isEstimate: true))
+        await harness.provider.setQuote(.success(.usd(1.2, isEstimate: false)))
+        await harness.provider.payUnlimited(true, answer: (paid: false, charged: .usd(2, isEstimate: false)))
+        let ledger = ledger(harness)
+        let engine = try await harness.makeEngine(agentPolicy: policy(ledger, unlimited: true))
+
+        let first = try await engine.enqueue(makeSpec(), agent: origin())
+        await harness.repository.wait(for: first.id, .done)
+        #expect(harness.log.count("serverEstimate") == 0)
+
+        let second = try await engine.enqueue(makeSpec(), agent: origin(request: "r-2"))
+        try #require(await harness.repository.wait(for: second.id, .done) != nil)
+        #expect(harness.log.count("serverEstimate") == 1 && harness.log.count("submit") == 2)
+        // It reserved the quote, then what it was charged replaced that.
+        #expect(
+            try await ledger.total(on: harness.clock.now, unit: .usdCents)
+                == AgentSpendTotal(spent: 400, unlimitedCharged: true))
+    }
+
     /// The setting only covers the allowance: a job it doesn't pay for keeps every limit.
     @Test func lettingAgentsUseUnlimitedLeavesOtherJobsWithinTheBudget() async throws {
         let harness = Harness()

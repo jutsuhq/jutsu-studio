@@ -8,6 +8,10 @@ Notable changes to Jutsu Studio. Versions follow [Semantic Versioning](https://s
 
 - Agents see a finished video's frame: `jobs` gives its width, height and duration, read from the file, and a `frameNote` when its shape isn't the source's, so a result isn't scaled to the source's size and stretched. `library_search` and `library_get` give each item's width and height. Genjutsu Lite takes no aspect ratio and picks the frame itself, once a 3:4 result from a 9:16 source; `quote` says `aspectRatio: "model"` for it, with what to check.
 
+### Fixed
+
+- Once a video sent for the plan's unlimited generations was charged anyway, an agent's later videos for them were held for an unknown price for the rest of the day, however far within their `max_cost`: they skipped Higgsfield's quote before the submit, as unlimited videos do, and the estimate alone isn't trusted. They are now quoted like any other video and run on their own when the quote fits.
+
 ## [0.2.6] - 2026-10-28
 
 ### Added

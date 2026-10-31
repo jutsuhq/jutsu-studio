@@ -27,7 +27,10 @@ says rather than guessing.
 - **Unlimited generations.** A video the plan's unlimited generations would pay for (`quote` says `paysUnlimited`)
   costs the budget nothing, but runs on its own only while the person lets agents use them
   (`capabilities` › `budget.unlimitedAllowed`); otherwise it is held for the person (`hold: unlimited_not_allowed`).
-  If one is charged anyway, `unlimitedAllowed` turns false for the rest of the day and such videos keep every limit.
+  If one is charged anyway, `unlimitedAllowed` turns false for the rest of the day and such videos keep every limit:
+  Higgsfield quotes them before they are sent, and they run on their own when that fits `max_cost` and the budget.
+- **Why a job waits.** `hold` says it: `unlimited_not_allowed` waits for the person to allow unlimited generations
+  or send it, `unknown_price` for a price Higgsfield couldn't quote, `over_max_cost` for a higher `max_cost`.
 
 ## How to work
 
