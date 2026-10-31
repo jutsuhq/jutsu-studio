@@ -7,6 +7,7 @@ Notable changes to Jutsu Studio. Versions follow [Semantic Versioning](https://s
 ### Added
 
 - Agents see a finished video's frame: `jobs` gives its width, height and duration, read from the file, and a `frameNote` when its shape isn't the source's, so a result isn't scaled to the source's size and stretched. `library_search` and `library_get` give each item's width and height. Genjutsu Lite takes no aspect ratio and picks the frame itself, once a 3:4 result from a 9:16 source; `quote` says `aspectRatio: "model"` for it, with what to check.
+- Agents can give an upscale on this Mac a `target`: `1080p`, `2k` or `4k` sets the result's short side, and a factor such as `2x` or `2.5x` scales both sides, up to the engine's 4×, keeping the source's shape. A 720p portrait clip at `1080p` becomes 1080×1920 instead of 2880×5120. The result's file name says the target.
 
 ### Fixed
 

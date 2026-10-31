@@ -37,14 +37,16 @@ public struct OnDeviceEnhancer: OnDeviceEnhancing {
                 guard #available(macOS 15.4, *) else { throw MediaError.engineUnavailable }
                 return try await SmoothMotionRenderer.render(
                     motion, source: source, to: output, interpolator: FrameRateConverter(), progress: progress)
-            case .upscaleVideo:
+            case .upscaleVideo(let target):
                 guard #available(macOS 26, *) else { throw MediaError.engineUnavailable }
                 return try await SuperResolutionRenderer.renderVideo(
-                    source: source, to: output, scaler: SuperResolutionScaler(inputType: .video), progress: progress)
-            case .upscaleImage:
+                    source: source, to: output, scaler: SuperResolutionScaler(inputType: .video), target: target,
+                    progress: progress)
+            case .upscaleImage(let target):
                 guard #available(macOS 26, *) else { throw MediaError.engineUnavailable }
                 return try await SuperResolutionRenderer.renderImage(
-                    source: source, to: output, scaler: SuperResolutionScaler(inputType: .image), progress: progress)
+                    source: source, to: output, scaler: SuperResolutionScaler(inputType: .image), target: target,
+                    progress: progress)
             }
         } catch {
             try? FileManager.default.removeItem(at: output)

@@ -52,7 +52,9 @@ import Testing
         #expect(
             enhance(.smoothMotion, engine: "standard", mode: "60fps").problem
                 == "smooth_motion runs on this Mac only: engine is mac or left out")
-        #expect(enhance(.upscale, engine: "mac", target: "4k").problem == "upscale with engine mac takes no target")
+        // A target is checked against the item later, by the app.
+        #expect(enhance(.upscale, engine: "mac", target: "1080p").problem == nil)
+        #expect(enhance(.upscale, engine: "mac", target: "2.5x").problem == nil)
         #expect(
             enhance(.upscale, engine: "mac", mode: "60fps").problem == "upscale with engine mac takes no mode")
         #expect(

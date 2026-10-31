@@ -32,6 +32,21 @@ import UniformTypeIdentifiers
         #expect(Fixtures.imageSize(at: output).map { [$0.width, $0.height] } == [640, 360])
     }
 
+    @Test func aSmallerTargetIsWhatTheImageIsWrittenAt() async throws {
+        let folder = try Fixtures.makeDirectory()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let image = try #require(Fixtures.makeImage(in: folder, width: 160, height: 90, type: .png))
+        let output = folder.appending(path: ".\(UUID().uuidString).partial")
+        let scaler = Scaler()
+
+        let result = try await SuperResolutionRenderer.renderImage(
+            source: image, to: output, scaler: scaler, target: .shortSide(270), progress: { _ in })
+
+        #expect(scaler.startedFor == PixelSize(width: 160, height: 90))
+        #expect(result.pixelSize == PixelSize(width: 480, height: 270))
+        #expect(Fixtures.imageSize(at: output).map { [$0.width, $0.height] } == [480, 270])
+    }
+
     @Test func aTurnedJPEGIsUpscaledUpright() async throws {
         let folder = try Fixtures.makeDirectory()
         defer { try? FileManager.default.removeItem(at: folder) }

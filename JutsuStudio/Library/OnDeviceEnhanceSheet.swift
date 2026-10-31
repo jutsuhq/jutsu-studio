@@ -41,8 +41,8 @@ struct OnDeviceEnhanceSheet: View {
     private var action: OnDeviceAction {
         switch target.kind {
         case .smoothMotion: .smoothMotion(motion)
-        case .upscaleVideo: .upscaleVideo
-        case .upscaleImage: .upscaleImage
+        case .upscaleVideo: .upscaleVideo(.full)
+        case .upscaleImage: .upscaleImage(.full)
         }
     }
 

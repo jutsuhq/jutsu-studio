@@ -78,12 +78,14 @@ extension SmoothMotion {
 }
 
 extension OnDeviceAction {
-    /// "Smooth Motion to 60 fps", "2× Slow Motion".
+    /// "Smooth Motion to 60 fps", "2× Slow Motion", "Upscale 4×", "Upscale to 1080p".
     public var title: String {
         switch self {
         case .smoothMotion(.fps60): String(localized: "Smooth Motion to 60 fps", bundle: .module)
         case .smoothMotion(let motion): motion.title
-        case .upscaleVideo, .upscaleImage: String(localized: "Upscale 4×", bundle: .module)
+        case .upscaleVideo(.full), .upscaleImage(.full): String(localized: "Upscale 4×", bundle: .module)
+        case .upscaleVideo(let target), .upscaleImage(let target):
+            String(localized: "Upscale to \(target.fileSuffix)", bundle: .module)
         }
     }
 }

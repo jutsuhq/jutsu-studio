@@ -3,10 +3,10 @@ import Foundation
 /// What an on-device Enhance run makes from the item it was started on (`OnDeviceEnhancing`).
 public enum OnDeviceAction: Sendable, Hashable {
     case smoothMotion(SmoothMotion)
-    /// 4× the frame size of a clip up to 720p (`OnDeviceUpscale`).
-    case upscaleVideo
-    /// 4× the size of an image up to 1920×1080 (`OnDeviceUpscale.offersImage`).
-    case upscaleImage
+    /// A clip up to 720p at `target`, 4× its frame size or less (`OnDeviceUpscale`).
+    case upscaleVideo(OnDeviceUpscale.Target)
+    /// An image up to 1920×1080 at `target`, 4× its size or less (`OnDeviceUpscale.offersImage`).
+    case upscaleImage(OnDeviceUpscale.Target)
 
     /// The engine the action runs on.
     public var engine: OnDeviceEngine {
@@ -17,13 +17,21 @@ public enum OnDeviceAction: Sendable, Hashable {
         }
     }
 
-    /// What the result's file name adds to the source's: "rooftop 60fps.mp4", "rooftop 4x.mp4".
+    /// What the result's file name adds to the source's: "rooftop 60fps.mp4", "rooftop 4x.mp4", "rooftop 1080p.mp4".
     public var fileSuffix: String {
         switch self {
         case .smoothMotion(.fps60): "60fps"
         case .smoothMotion(.slowMotion2x): "slow 2x"
         case .smoothMotion(.slowMotion4x): "slow 4x"
-        case .upscaleVideo, .upscaleImage: "4x"
+        case .upscaleVideo(let target), .upscaleImage(let target): target.fileSuffix
+        }
+    }
+
+    /// The size an upscale ends at; `nil` for another run.
+    public var upscaleTarget: OnDeviceUpscale.Target? {
+        switch self {
+        case .smoothMotion: nil
+        case .upscaleVideo(let target), .upscaleImage(let target): target
         }
     }
 }
@@ -87,6 +95,64 @@ public enum OnDeviceUpscale {
         }
         guard size.height <= limit.width, size.width <= limit.height else { return nil }
         return Plan(scalerInput: PixelSize(width: size.height, height: size.width), rotates: true, output: output)
+    }
+}
+
+extension OnDeviceUpscale {
+    /// The size an upscale on this Mac ends at: the scaler's own 4×, or that scaled down to a delivery size with the
+    /// source's shape. A 720p portrait clip at 4× is 2880×5120, and agents scaled such results to 1080×1920 with
+    /// tools of their own (#38).
+    public enum Target: Sendable, Hashable {
+        /// The scaler's own 4×.
+        case full
+        /// The short side this many pixels: 1080 (1080p), 1440 (2k) or 2160 (4k).
+        case shortSide(Int)
+        /// This many times the source's sides, more than 1 and less than 4.
+        case factor(Double)
+
+        /// What `init(name:)` takes, for an agent.
+        public static let names = "1080p, 2k, 4k, or a factor more than 1 and at most 4 such as 2x or 2.5x"
+
+        /// "1080p", "2k", "4k" or a factor such as "2x" or "2.5x" (more than 1, at most 4); `nil` for anything else.
+        public init?(name: String) {
+            switch name.lowercased() {
+            case "1080p": self = .shortSide(1080)
+            case "2k": self = .shortSide(1440)
+            case "4k": self = .shortSide(2160)
+            case let factor where factor.hasSuffix("x"):
+                guard let value = Double(factor.dropLast()), value.isFinite, value > 1, value <= Double(scale) else {
+                    return nil
+                }
+                self = value == Double(scale) ? .full : .factor(value)
+            default: return nil
+            }
+        }
+
+        /// What the result's file name adds: "4x", "1080p", "2k", "4k", "2.5x".
+        public var fileSuffix: String {
+            switch self {
+            case .full: "\(scale)x"
+            case .shortSide(1440): "2k"
+            case .shortSide(2160): "4k"
+            case .shortSide(let side): "\(side)p"
+            case .factor(let value): "\(value == value.rounded() ? String(Int(value)) : String(value))x"
+            }
+        }
+
+        /// The result's size for frames of `source`, in their orientation: the source's shape with even sides, the
+        /// short side exactly the one asked for. `nil` when that isn't larger than the source or needs more than 4×.
+        public func output(for source: PixelSize) -> PixelSize? {
+            guard source.isValid else { return nil }
+            let factor: Double
+            switch self {
+            case .full: return PixelSize(width: source.width * scale, height: source.height * scale)
+            case .factor(let value): factor = value
+            case .shortSide(let side): factor = Double(side) / Double(min(source.width, source.height))
+            }
+            guard factor > 1, factor <= Double(scale) else { return nil }
+            let even = { (side: Int) in min(Int((Double(side) * factor / 2).rounded()) * 2, side * scale) }
+            return PixelSize(width: even(source.width), height: even(source.height))
+        }
     }
 }
 

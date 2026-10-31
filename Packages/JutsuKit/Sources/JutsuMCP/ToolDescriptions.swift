@@ -163,7 +163,10 @@ extension Tool {
             One Enhance operation on a Library result, as the Library's Enhance menu does. On this Mac, free, with no \
             account, max_cost or budget: smooth_motion on a video (mode 60fps, keeping length and sound, or slow_2x \
             and slow_4x, without sound) and upscale with engine mac, 4× a video up to 1280×720 or an image up to \
-            1920×1080, either way round; the result becomes the item's new version (library_get's madeFrom names the \
+            1920×1080, either way round, or to target: 1080p, 2k or 4k (the short side 1080, 1440 or 2160 pixels) or \
+            a factor such as 2x or 2.5x, more than 1 and at most 4, keeping the source's shape with even sides, so a \
+            720×1280 clip at 1080p is 1080×1920; a target the source can't reach within 4×, or isn't larger than, is \
+            refused; the result becomes the item's new version (library_get's madeFrom names the \
             one before). Prefer it for drafts, for videos up to 720p and for smoothing motion or frame rate. Runs go \
             one at a time; an item with a run going is refused with busy, a Mac without the engine with \
             engine_unavailable, and an upscale before the person agreed to macOS downloading its model with \

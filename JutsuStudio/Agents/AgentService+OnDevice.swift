@@ -81,12 +81,12 @@ extension AgentService {
         switch try await onDeviceItem(id) {
         case .video(let material, let item, let file):
             target = OnDeviceTarget(kind: .upscaleVideo, source: material.reference, file: file, title: item.title)
-            action = .upscaleVideo
+            action = .upscaleVideo(.full)
         case .image(let material, let image):
             target = OnDeviceTarget(
                 kind: .upscaleImage, source: material.reference, file: image.fileURL,
                 title: image.title ?? image.prompt)
-            action = .upscaleImage
+            action = .upscaleImage(.full)
         }
         if let refusal = onDeviceAgent.sheetRefusal(action) { throw refusal }
         let navigation = environment.navigation

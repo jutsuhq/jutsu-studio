@@ -32,11 +32,11 @@ import Testing
 
     private func command(
         _ operation: AgentEnhancement = .smoothMotion, mode: String? = "slow_2x", engine: String? = nil,
-        requestID: String = "run-1", fingerprint: String = String(repeating: "a", count: 64)
+        target: String? = nil, requestID: String = "run-1", fingerprint: String = String(repeating: "a", count: 64)
     ) -> EnhanceCommand {
         EnhanceCommand(
             requestID: requestID, fingerprint: fingerprint, item: source.materialID, operation: operation,
-            engine: engine, mode: mode, maxCost: nil)
+            target: target, engine: engine, mode: mode, maxCost: nil)
     }
 
     private func video(
@@ -172,6 +172,28 @@ import Testing
         #expect(await refusal(command(), on: target(.unreadableVideo))?.code == .failed)
         #expect(await refusal(command(), on: target(.image(PixelSize(width: 10, height: 10))))?.code == .invalidRequest)
         #expect(runs.runs.isEmpty)
+    }
+
+    /// An upscale on this Mac ends at the target asked for, keeping the source's shape; one the source can't reach
+    /// within 4×, or isn't larger than, is refused before anything runs.
+    @Test func anUpscaleEndsAtItsTarget() async throws {
+        defer { try? FileManager.default.removeItem(at: folder) }
+        consent.agree(to: .videoSuperResolution)
+        let portrait = video(PixelSize(width: 720, height: 1280))
+        let tooFar = await refusal(
+            command(.upscale, mode: nil, engine: "mac", target: "4k"), on: video(PixelSize(width: 480, height: 854)))
+        #expect(tooFar?.code == .invalidRequest && tooFar?.message.contains("at most 1920×3416") == true)
+        let named = await refusal(command(.upscale, mode: nil, engine: "mac", target: "720p"), on: portrait)
+        #expect(named?.code == .badRequest && named?.message.contains("1080p, 2k, 4k") == true)
+        #expect(runs.runs.isEmpty)
+
+        let id = try #require(
+            try await enhance(command(.upscale, mode: nil, engine: "mac", target: "1080p"), on: portrait).jobs.first?.id
+        )
+        #expect(runs.runs.first?.request.action == .upscaleVideo(.shortSide(1080)))
+        engine.release()
+        await runs.finish()
+        #expect(agent.job(id)?.result?.hasSuffix("rooftop 1080p.mp4") == true)
     }
 
     @Test func anItemWithARunGoingIsBusyAndSaysWhichRun() async throws {

@@ -149,7 +149,10 @@ extension Tool {
                 "operation": [
                     "type": "string", "enum": .array(AgentEnhancement.allCases.map { .string($0.rawValue) }),
                 ],
-                "target": ["type": "string", "enum": ["1080p", "2k", "4k"]],
+                "target": [
+                    "type": "string",
+                    "description": "upscale: 1080p, 2k or 4k; with engine mac also a factor such as 2x or 2.5x.",
+                ],
                 "frame_rate": ["type": "integer", "enum": [24, 30, 60]],
                 "engine": [
                     "type": "string", "enum": ["standard", .string(EnhanceCommand.macEngine)],

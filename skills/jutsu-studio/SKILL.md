@@ -76,7 +76,9 @@ says rather than guessing.
 6. **Finish.** `enhance` upscales, reframes, removes a background, dubs or changes the voice of a video on
    Higgsfield, with its own `request_id` and `max_cost`. Two operations run on this Mac instead, free and without
    `max_cost`: `smooth_motion` (`mode` `60fps`, `slow_2x` or `slow_4x`) on a video, and `upscale` with `engine: "mac"`
-   on a video up to 1280×720 or an image up to 1920×1080. Prefer them for drafts, small results and frame-rate
+   on a video up to 1280×720 or an image up to 1920×1080. That upscale is 4× unless you give `target`: `1080p`, `2k`
+   or `4k` sets the short side (a 720×1280 clip at `1080p` becomes 1080×1920), and a factor such as `2x` or `2.5x`
+   scales both sides; the shape stays the source's, so there is nothing to re-encode for delivery. Prefer them for drafts, small results and frame-rate
    smoothing; `capabilities`' `onDevice` says which this Mac has. They still take a `request_id`, answer with a job
    of kind `on_device` and its `estimatedSeconds`, and `jobs` and `job_action` cancel follow them; the result
    becomes the item's current version, and `library_get` names the version it was made from (`madeFrom`). The

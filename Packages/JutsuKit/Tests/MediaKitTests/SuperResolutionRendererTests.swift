@@ -108,6 +108,38 @@ import Testing
         #expect(try await written(output).size == CGSize(width: 360, height: 640))
     }
 
+    /// A target below 4× is what the file is written at, the scaler still run at its 4×, turned or not.
+    @Test func aSmallerTargetIsWhatTheFileIsWrittenAt() async throws {
+        let folder = try Fixtures.makeDirectory()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let clip = try await Fixtures.makeVideo(in: folder, width: 90, height: 160, seconds: 1, frameRate: 5)
+        let output = folder.appending(path: ".\(UUID().uuidString).partial")
+        let scaler = RecordingScaler()
+
+        let result = try await SuperResolutionRenderer.renderVideo(
+            source: clip, to: output, scaler: scaler, target: .factor(2), limit: PixelSize(width: 160, height: 90),
+            progress: { _ in })
+
+        #expect(scaler.startedFor == PixelSize(width: 160, height: 90))
+        #expect(result.pixelSize == PixelSize(width: 180, height: 320))
+        let file = try await written(output)
+        #expect(file.size == CGSize(width: 180, height: 320) && file.frames == 5)
+    }
+
+    @Test func aTargetNotLargerThanTheSourceIsRefused() async throws {
+        let folder = try Fixtures.makeDirectory()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let clip = try await Fixtures.makeVideo(in: folder, width: 160, height: 90, seconds: 1, frameRate: 2)
+        let output = folder.appending(path: ".\(UUID().uuidString).partial")
+        let scaler = RecordingScaler()
+
+        await #expect(throws: SuperResolutionRenderer.targetNotLarger) {
+            _ = try await SuperResolutionRenderer.renderVideo(
+                source: clip, to: output, scaler: scaler, target: .shortSide(90), progress: { _ in })
+        }
+        #expect(scaler.startedFor == nil)
+    }
+
     @Test func aVideoOver720pIsRefused() async throws {
         let folder = try Fixtures.makeDirectory()
         defer { try? FileManager.default.removeItem(at: folder) }

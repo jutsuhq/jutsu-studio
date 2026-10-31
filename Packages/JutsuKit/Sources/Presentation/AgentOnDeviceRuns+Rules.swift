@@ -33,7 +33,15 @@ extension AgentOnDeviceRuns {
             }
             return .smoothMotion(SmoothMotion(mode))
         case .upscale where fields.isOnDevice:
-            return isImage ? .upscaleImage : .upscaleVideo
+            var target = OnDeviceUpscale.Target.full
+            if let name = fields.target {
+                guard let named = OnDeviceUpscale.Target(name: name) else {
+                    throw .badRequest(
+                        "upscale with engine mac takes target \(OnDeviceUpscale.Target.names); left out it is 4×")
+                }
+                target = named
+            }
+            return isImage ? .upscaleImage(target) : .upscaleVideo(target)
         default:
             throw .badRequest("\(fields.operation.rawValue) runs on Higgsfield, not on this Mac")
         }
@@ -56,6 +64,9 @@ extension AgentOnDeviceRuns {
             return tooLarge(
                 "images", size, limit: OnDeviceUpscale.scalerLimit,
                 next: "Pick an image up to that size; Higgsfield's upscale here takes videos only.")
+        case (.upscaleVideo(let goal), .video(let size, _, _)) where goal.output(for: size) == nil,
+            (.upscaleImage(let goal), .image(let size?)) where goal.output(for: size) == nil:
+            return unreachable(goal, from: size)
         case (.smoothMotion(let motion), .video(_, let rate, _)) where !motion.isOffered(sourceFrameRate: rate):
             let offered = SmoothMotion.offered(sourceFrameRate: rate).map { AgentSmoothMotion($0).rawValue }
             return AgentError(
@@ -106,7 +117,8 @@ extension AgentOnDeviceRuns {
                 message: "Upscale on this Mac needs macOS 26 or later with VideoToolbox's super resolution, which this "
                     + "Mac doesn't have.",
                 retryable: false,
-                next: action == .upscaleVideo ? higgsfieldUpscale : "Higgsfield's upscale here takes videos only.")
+                next: action.engine == .videoSuperResolution
+                    ? higgsfieldUpscale : "Higgsfield's upscale here takes videos only.")
         }
     }
 
@@ -117,6 +129,15 @@ extension AgentOnDeviceRuns {
                 "Upscale on this Mac takes \(what) up to \(limit.width)×\(limit.height) either way round; this one "
                 + "is \(size.width)×\(size.height).",
             retryable: false, next: next)
+    }
+
+    private static func unreachable(_ target: OnDeviceUpscale.Target, from size: PixelSize) -> AgentError {
+        let most = PixelSize(width: size.width * OnDeviceUpscale.scale, height: size.height * OnDeviceUpscale.scale)
+        return AgentError(
+            .invalidRequest,
+            message: "target \(target.fileSuffix) isn't larger than this item, \(size.width)×\(size.height), or needs "
+                + "more than 4×: on this Mac it upscales to at most \(most.width)×\(most.height).",
+            retryable: false, next: "Pick a target in between, or leave target out for 4×.")
     }
 
     /// The sheet's estimate of how long the run takes.

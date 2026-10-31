@@ -39,7 +39,8 @@ public struct EnhanceCommand: Codable, Equatable, Sendable, AgentFields {
     /// The Library item: a video result, or an image for an upscale on this Mac.
     public var item: UUID
     public var operation: AgentEnhancement
-    /// Upscale on Higgsfield: "1080p", "2k" or "4k"; 1080p when left out.
+    /// Upscale on Higgsfield: "1080p", "2k" or "4k"; 1080p when left out. With engine mac also a factor such as "2x"
+    /// or "2.5x" (more than 1, at most 4), the result keeping the source's shape; 4× when left out.
     public var target: String?
     /// Upscale on Higgsfield: 24, 30 or 60; 24 when left out.
     public var frameRate: Int?
@@ -131,7 +132,7 @@ public struct EnhanceCommand: Codable, Equatable, Sendable, AgentFields {
         ]
         let allowed: Set<String> =
             switch operation {
-            case .upscale: isOnDevice ? ["engine"] : ["target", "frame_rate", "engine"]
+            case .upscale: isOnDevice ? ["target", "engine"] : ["target", "frame_rate", "engine"]
             case .smoothMotion: ["mode", "engine"]
             case .reframe: ["aspect_ratio"]
             case .removeBackground: []
