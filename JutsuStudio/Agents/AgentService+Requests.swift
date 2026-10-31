@@ -11,15 +11,15 @@ private let logger = Logger(subsystem: "com.jutsustudio", category: "Agents")
 extension AgentService {
     // MARK: Uploads
 
-    /// Checks an upload's request before a byte of it is read: only `create_video` takes files, a request ID taken by
+    /// Checks an upload's request before a byte of it is read: only commands with files take one, a request ID taken by
     /// other parameters is refused (`request_conflict`), and one already queued with these needs no file again
     /// (`request_known`).
     func admit(_ upload: UploadCommand) throws(AgentError) {
-        guard let request = upload.request, ["create_video", "create_image", "frames"].contains(request.command)
-        else {
+        let commands = ["create_video", "create_image", "create_element", "frames"]
+        guard let request = upload.request, commands.contains(request.command) else {
             throw AgentError(
-                .fileRefused, message: "Only create_video, create_image and frames take files.", retryable: false,
-                next: "Send files with create_video, create_image or frames.")
+                .fileRefused, message: "Only create_video, create_image, create_element and frames take files.",
+                retryable: false, next: "Send files with create_video, create_image, create_element or frames.")
         }
         // Free and never logged as a request: its files are removed once its frames are written.
         if request.command == "frames" { return }

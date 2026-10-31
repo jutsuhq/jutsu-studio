@@ -21,6 +21,7 @@ extension Tool {
         case .createVideo: "Create a video"
         case .createImage: "Create images"
         case .elements: "Characters and elements"
+        case .createElement: "Create an element"
         case .jobs: "Jobs"
         case .jobAction: "Act on a job or the queue"
         case .librarySearch: "Search the Library"
@@ -270,6 +271,11 @@ extension Tool {
                 "limit": ["type": "integer", "minimum": 1, "maximum": .number(Double(ElementsCommand.maxLimit))],
                 "cursor": ["type": "string", "description": "nextCursor of the page before."],
             ]
+        case .createElement:
+            var properties = Self.createElementProperties
+            properties["request_id"] = Self.requestIDSchema
+            schema["properties"] = .object(properties)
+            schema["required"] = ["request_id", "name", "images"]
         // Exactly one of the two, said in words and checked on the call: some model APIs refuse oneOf at the top of
         // an input schema.
         case .show:
@@ -385,8 +391,9 @@ extension Tool {
         // Adds files to the Library from Higgsfield; one downloaded already is left as it is.
         case .libraryDownload:
             ["readOnlyHint": false, "destructiveHint": false, "idempotentHint": true, "openWorldHint": true]
-        // Spends, but the same request_id never queues twice; it reaches Higgsfield.
-        case .createVideo, .createImage, .enhance:
+        // Spends, but the same request_id never queues twice; it reaches Higgsfield. create_element is free, and the
+        // same request_id never makes a second element.
+        case .createVideo, .createImage, .enhance, .createElement:
             ["readOnlyHint": false, "destructiveHint": false, "idempotentHint": true, "openWorldHint": true]
         // Cancel stops a job, retry may queue another attempt.
         case .jobAction:

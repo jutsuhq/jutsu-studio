@@ -138,21 +138,25 @@ public struct AgentCreated: Codable, Equatable, Sendable {
     /// With `wait_seconds`: the wait ran out before every job's price was known or it was held; nothing was stopped.
     // swiftlint:disable:next discouraged_optional_boolean
     public var timedOut: Bool?
+    /// create_element: the element it made, which queues no job.
+    public var element: AgentElement?
 
     public init(
         // swiftlint:disable:next discouraged_optional_boolean
-        requestID: String, known: Bool, jobs: [AgentJob], references: [AgentReference]? = nil, timedOut: Bool? = nil
+        requestID: String, known: Bool, jobs: [AgentJob], references: [AgentReference]? = nil, timedOut: Bool? = nil,
+        element: AgentElement? = nil
     ) {
         self.requestID = requestID
         self.known = known
         self.jobs = jobs
         self.references = references
         self.timedOut = timedOut
+        self.element = element
     }
 
     private enum CodingKeys: String, CodingKey {
         case requestID = "requestId"
-        case known, jobs, references, timedOut
+        case known, jobs, references, timedOut, element
     }
 }
 

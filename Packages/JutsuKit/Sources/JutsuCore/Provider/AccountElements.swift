@@ -31,16 +31,20 @@ public struct AccountElement: Sendable, Hashable, Identifiable {
     public var category: ElementCategory?
     public var thumbnailURL: URL?
     public var images: [ElementImage]
+    /// The provider's state of it, such as `completed` once it can be used or `processing` while it is checked;
+    /// `nil` when the provider didn't say. Lists hold only usable ones.
+    public var status: String?
 
     public init(
         id: String, name: String, category: ElementCategory? = nil, thumbnailURL: URL? = nil,
-        images: [ElementImage] = []
+        images: [ElementImage] = [], status: String? = nil
     ) {
         self.id = id
         self.name = name
         self.category = category
         self.thumbnailURL = thumbnailURL
         self.images = images
+        self.status = status
     }
 }
 

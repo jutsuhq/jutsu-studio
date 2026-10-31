@@ -8,8 +8,18 @@ import os
 private let logger = Logger(subsystem: "com.jutsustudio", category: "Agents")
 
 // elements, and the elements create_video, quote and create_image take by name: References › From Higgsfield's own
-// source (`accountElements`) and download (`downloadElementImage`), read-only and free.
+// source (`accountElements`) and download (`downloadElementImage`), read-only and free. create_element publishes the
+// agent's images as Save to Higgsfield… does, free too.
 extension AgentService {
+    /// `elements` and `create_element`.
+    func elementCommand(_ command: AgentCommand, client: String?) async throws(AgentError) -> AgentResponse {
+        switch command {
+        case .elements(let fields): AgentResponse(elements: try await elements(fields))
+        case .createElement(let fields): AgentResponse(created: try await createElement(fields, client: client))
+        default: throw .badRequest("\(command.name) isn't an elements command")
+        }
+    }
+
     func elements(_ fields: ElementsCommand) async throws(AgentError) -> AgentElementsPage {
         let source = try elementSource()
         let category = fields.category.flatMap(ElementCategory.init(rawValue:))
@@ -78,6 +88,27 @@ extension AgentService {
         return references.map {
             AgentReference(tag: $0.tag, element: $0.element, file: $0.image.fileURL.path(percentEncoded: false))
         }
+    }
+
+    // MARK: create_element
+
+    func createElement(_ fields: CreateElementCommand, client: String?) async throws(AgentError) -> AgentCreated {
+        let source = try elementSource()
+        guard let upload = environment.elementUploader() else { throw Self.notConnected }
+        let making = AgentElementMaking(
+            requests: requests, source: source, upload: upload,
+            refusals: Self.refusals("create_element", made: "its element was never made"))
+        let created = try await making.create(
+            fields,
+            images: { [weak self] () throws(AgentError) in
+                guard let self else { throw .agentsOff }
+                var images: [LocalImage] = []
+                for path in fields.images { images.append(LocalImage(fileURL: try self.inboxFile(path))) }
+                return images
+            },
+            discard: { discard(fields.images) })
+        logger.info("Agent \(client ?? "unnamed", privacy: .private) made an element, known: \(created.known)")
+        return created
     }
 
     private func elementSource() throws(AgentError) -> any AccountElements {

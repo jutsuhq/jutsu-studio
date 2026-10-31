@@ -156,6 +156,17 @@ extension Tool {
                 ],
             ]
             properties["nextCursor"] = ["type": "string"]
+        case .createElement:
+            properties["requestId"] = ["type": "string"]
+            properties["known"] = ["type": "boolean"]
+            properties["jobs"] = ["type": "array", "items": Self.jobSchema]
+            properties["element"] = [
+                "type": "object",
+                "properties": [
+                    "id": ["type": "string"], "name": ["type": "string"], "category": ["type": "string"],
+                    "imageCount": ["type": "integer"], "status": ["type": "string"],
+                ],
+            ]
         case .jobs:
             properties["jobs"] = ["type": "array", "items": Self.jobSchema]
             properties["timedOut"] = ["type": "boolean"]

@@ -79,7 +79,7 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
             ToolGroup(name: "app", tools: ["capabilities"]),
             ToolGroup(name: "video", tools: ["quote", "create_video", "jobs", "job_action"]),
             ToolGroup(name: "image", tools: ["create_image"]),
-            ToolGroup(name: "elements", tools: ["elements"]),
+            ToolGroup(name: "elements", tools: ["elements", "create_element"]),
             ToolGroup(
                 name: "library",
                 tools: [

@@ -156,7 +156,7 @@ actor FakeApp {
             tools.map { $0["name"]?.stringValue }
                 == [
                     "capabilities", "quote", "create_video", "jobs", "job_action", "create_image", "elements",
-                    "library_search",
+                    "create_element", "library_search",
                     "library_get", "library_download", "library_mark", "enhance", "delivery_set", "export", "frames",
                     "subtitles", "show",
                 ])
@@ -189,6 +189,9 @@ actor FakeApp {
         #expect(quote?["image_count"]?["maximum"] == .number(Double(AgentVideoRequest.protocolMaxImages)))
         let search = schemas["library_search"]??["properties"]
         #expect(search?["model"]?["maxLength"] == .number(Double(LibrarySearchCommand.maxModelLength)))
+        let element = schemas["create_element"]??["properties"]
+        #expect(element?["name"]?["maxLength"] == .number(Double(CreateElementCommand.maxNameLength)))
+        #expect(element?["images"]?["maxItems"] == .number(Double(CreateElementCommand.maxImages)))
         let enhance = schemas["enhance"]??["properties"]
         #expect(enhance?["voice"]?["maxLength"] == .number(Double(EnhanceCommand.maxVoiceLength)))
         let hints = Dictionary(uniqueKeysWithValues: tools.map { ($0["name"]?.stringValue ?? "", $0["annotations"]) })
@@ -201,7 +204,7 @@ actor FakeApp {
         #expect(hints["create_video"]??["destructiveHint"] == false)
         #expect(hints["job_action"]??["readOnlyHint"] == false)
         #expect(hints["job_action"]??["idempotentHint"] == false)
-        for name in ["create_image", "enhance"] {
+        for name in ["create_image", "enhance", "create_element"] {
             #expect(hints[name]??["readOnlyHint"] == false, "\(name)")
             #expect(hints[name]??["idempotentHint"] == true, "\(name)")
             #expect(hints[name]??["destructiveHint"] == false, "\(name)")

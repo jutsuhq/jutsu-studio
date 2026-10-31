@@ -89,8 +89,21 @@ extension Tool {
             The account's reference elements, characters, environments and props, as References › From Higgsfield \
             lists them: id, name (what create_video's and create_image's elements take), category and imageCount when \
             known. query (words of the name), category, limit (at most that many, up to 50; fewer when the account's \
-            pages read for one answer run out first); pass nextCursor back as cursor for the next page. Account \
-            connection only. Read-only and free.
+            pages read for one answer run out first); pass nextCursor back as cursor for the next page. Only elements \
+            Higgsfield finished checking are listed. Account connection only. Read-only and free.
+            """
+        case .createElement:
+            """
+            Makes a reference element on the account from images on this Mac, as Save to Higgsfield… does: the way to \
+            keep a face or a subject the same across clips. name (up to 32 characters; Higgsfield turns spaces into - \
+            and adds a number to a name the account already has), category (character, environment or prop; \
+            character when left out) and images, 1 to 10 clear images of one subject, the first its face or front. \
+            request_id works as in create_video: the same request_id with the same parameters answers with the \
+            element it made and never makes a second one (no files are sent again). Returns element with its id, the \
+            name to use in create_video's and create_image's elements, and status: completed once it can be used; \
+            processing or ip_checking while Higgsfield checks it, and until then elements doesn't list it and \
+            elements by name doesn't find it, so send the same request again to see its status. Account connection \
+            only. Free: no max_cost, and nothing counts against the budget.
             """
         case .jobs:
             """

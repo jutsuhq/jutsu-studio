@@ -226,6 +226,7 @@ public struct MCPServer: Sendable {
         switch tool.command(arguments) {
         case .success(.createVideo(let command)): response = await createVideo(command, client: client)
         case .success(.createImage(let command)): response = await createImage(command, client: client)
+        case .success(.createElement(let command)): response = await createElement(command, client: client)
         case .success(.frames(let command)): response = await frames(command, client: client)
         case .success(let command): response = await send(command, client)
         case .failure(let error): response = AgentResponse(error: error)
@@ -275,6 +276,24 @@ public struct MCPServer: Sendable {
             return AgentResponse(error: error)
         }
         return await send(.createImage(staged), client)
+    }
+
+    /// `create_element` likewise: its images are handed over first, in order, unless the app already took the request.
+    private func createElement(_ command: CreateElementCommand, client: String?) async -> AgentResponse {
+        let request = UploadRequest(
+            command: "create_element", requestID: command.requestID, fingerprint: command.fingerprint)
+        var staged = command
+        do throws(AgentError) {
+            staged.images = []
+            for path in command.images {
+                staged.images.append(try await stage(path, request, client).get())
+            }
+        } catch  where error.code == .requestKnown {
+            staged.images = []
+        } catch {
+            return AgentResponse(error: error)
+        }
+        return await send(.createElement(staged), client)
     }
 
     /// `frames` of the agent's own files: they are handed over first, and the app removes its copies once the
@@ -367,8 +386,8 @@ extension MCPServer {
         the plan's unlimited generations would pay for (quote's paysUnlimited) costs the budget nothing, but is held \
         the same way unless the person lets agents use them (capabilities budget.unlimitedAllowed). Tell the person \
         when something waits for them. elements lists the account's characters and other elements, which \
-        create_video and create_image take by name (references in the answer tags each image sent @ImageN). \
-        library_search finds results (paths on this Mac, or with include_higgsfield the account's history too, which \
+        create_video and create_image take by name (references in the answer tags each image sent @ImageN), and \
+        create_element makes one from images on this Mac, free. library_search finds results (paths on this Mac, or with include_higgsfield the account's history too, which \
         library_download brings here for free), library_get gives one in full (the whole prompt, its inputs in \
         order, its settings), frames writes still frames and a contact sheet to check a result, library_mark keeps, \
         rejects or stars them, delivery_set and export write files for delivery or editing, never over a file. \

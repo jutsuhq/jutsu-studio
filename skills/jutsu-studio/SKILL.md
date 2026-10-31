@@ -58,6 +58,12 @@ says rather than guessing.
      `elements` to `create_video`, `quote` or `create_image`: their images go first, in order, then your own files.
      The answer's `references` gives each image's `@ImageN` tag; name them that way in the prompt, and the
      source video as `@Video1`.
+   - **Make an element.** `create_element` with a `request_id`, a `name` (up to 32 characters), a `category`
+     (`character` when left out) and `images`, 1 to 10 clear photos of one subject on this Mac, the face or front
+     first, makes it on the account, free. Use the `name` the answer's `element` gives: Higgsfield turns spaces into
+     `-` and numbers a name the account already has. Its `status` is `processing` or `ip_checking` while Higgsfield
+     checks it, and until it is `completed` `elements` doesn't list it and the generation tools don't find it: send
+     the same `create_element` again (same `request_id`, nothing is made twice) to see its status.
 4. **Follow with `jobs`.** Pass the job IDs and `wait_seconds` (up to 50), and call again while they run. A finished
    video's `result` and an image request's `results` are file paths.
    - **Check the frame before you scale.** A finished video has `width`, `height` and `duration`, read from its file.
@@ -104,8 +110,8 @@ says rather than guessing.
 
 For an ad or a story made of several clips, treat them as one piece of work:
 
-- **One identity, every clip.** Make the character, product and place `elements` once, from a real photo when
-  there is one, never from a generated frame. Pass the same names in the same order to every clip, so `@Image1`
+- **One identity, every clip.** Make the character, product and place `elements` once (`create_element`), from a
+  real photo when there is one, never from a generated frame. Pass the same names in the same order to every clip, so `@Image1`
   means the same thing in every prompt. A clip sent without them makes the person up again from the text.
 - **First clip, then the rest.** Draft the first clip, show it, and send the others with the same elements and the
   same prompt skeleton only once the person likes it.

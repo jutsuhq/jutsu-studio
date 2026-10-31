@@ -78,6 +78,28 @@ extension Tool {
         return .elements(command)
     }
 
+    static func createElement(_ given: Arguments, workingDirectory: URL) throws(AgentError) -> AgentCommand {
+        try given.allow(["request_id", "name", "category", "images"])
+        let requestID = try given.requestID()
+        guard let name = try given.string("name") else {
+            throw .badRequest("create_element needs name, what create_video's and create_image's elements call it")
+        }
+        var command = CreateElementCommand(
+            requestID: requestID, fingerprint: String(repeating: "0", count: 64), name: name,
+            category: try given.string("category"), images: try given.strings("images"))
+        if let problem = command.problem { throw .badRequest("create_element: \(problem)") }
+        command.images = command.images.map { Inbox.resolve($0, from: workingDirectory).path(percentEncoded: false) }
+        struct Fields: Encodable {
+            var name: String
+            var category: String
+            var images: [String]
+        }
+        let fields = Fields(
+            name: name, category: command.category ?? CreateElementCommand.defaultCategory, images: command.images)
+        command.fingerprint = try Self.fingerprint("create_element", fields, files: command.images, nil)
+        return .createElement(command)
+    }
+
     static func libraryDownload(_ given: Arguments) throws(AgentError) -> AgentCommand {
         try given.allow(["ids"])
         let command = LibraryDownloadCommand(ids: try given.ids("ids"))

@@ -138,6 +138,7 @@ extension Network {
 
             #expect(element.id == Self.elementID)
             #expect(element.category == .character)
+            #expect(element.status == "processing")
             let url = URL(string: "https://upload.higgsfield.ai/user_1/m-1.png")!
             #expect(
                 element.images == [ElementImage(url: url, media: ServerMedia(id: "m-1", url: url, owner: "user_1"))])
