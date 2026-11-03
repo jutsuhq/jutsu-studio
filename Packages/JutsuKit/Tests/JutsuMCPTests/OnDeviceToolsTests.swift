@@ -51,6 +51,8 @@ import Testing
             ["operation": "smooth_motion", "mode": 60],
             ["operation": "smooth_motion", "mode": "60fps", "engine": "standard"],
             ["operation": "upscale", "engine": "mac", "frame_rate": 60],
+            ["operation": "upscale", "engine": "mac", "preset": "aigc"],
+            ["operation": "reframe", "aspect_ratio": "9:16", "preset": "aigc"],
             ["operation": "upscale", "engine": "mac", "target": "4k", "aspect_ratio": "9:16"],
             ["operation": "upscale", "engine": "standard"],
             ["operation": "upscale"], ["operation": "reframe", "aspect_ratio": "9:16", "mode": "60fps"],

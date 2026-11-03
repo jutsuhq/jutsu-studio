@@ -44,6 +44,9 @@ public struct EnhanceCommand: Codable, Equatable, Sendable, AgentFields {
     public var target: String?
     /// Upscale on Higgsfield: 24, 30 or 60; 24 when left out.
     public var frameRate: Int?
+    /// Upscale on Higgsfield: what the upscaler tunes itself for, "aigc" (the default), "common", "ugc",
+    /// "short_series" or "old_film".
+    public var preset: String?
     /// Upscale: "standard" on Higgsfield, "mac" on this Mac (4×); "topaz" is refused, as its price is known only after
     /// it runs. Smooth Motion: "mac" or left out.
     public var engine: String?
@@ -60,8 +63,8 @@ public struct EnhanceCommand: Codable, Equatable, Sendable, AgentFields {
 
     public init(
         requestID: String, fingerprint: String, item: UUID, operation: AgentEnhancement, target: String? = nil,
-        frameRate: Int? = nil, engine: String? = nil, mode: String? = nil, aspectRatio: String? = nil,
-        language: String? = nil, voice: String? = nil, maxCost: AgentAmount?
+        frameRate: Int? = nil, preset: String? = nil, engine: String? = nil, mode: String? = nil,
+        aspectRatio: String? = nil, language: String? = nil, voice: String? = nil, maxCost: AgentAmount?
     ) {
         self.requestID = requestID
         self.fingerprint = fingerprint
@@ -69,6 +72,7 @@ public struct EnhanceCommand: Codable, Equatable, Sendable, AgentFields {
         self.operation = operation
         self.target = target
         self.frameRate = frameRate
+        self.preset = preset
         self.engine = engine
         self.mode = mode
         self.aspectRatio = aspectRatio
@@ -79,7 +83,8 @@ public struct EnhanceCommand: Codable, Equatable, Sendable, AgentFields {
 
     private enum CodingKeys: String, CodingKey {
         case requestID = "requestId"
-        case fingerprint, item, operation, target, frameRate, engine, mode, aspectRatio, language, voice, maxCost
+        case fingerprint, item, operation, target, frameRate, preset, engine, mode, aspectRatio, language, voice
+        case maxCost
     }
 
     /// Runs on this Mac rather than on Higgsfield.
@@ -107,7 +112,7 @@ public struct EnhanceCommand: Codable, Equatable, Sendable, AgentFields {
         default: break
         }
         if let mode, AgentSmoothMotion(rawValue: mode) == nil { return "mode is one of \(AgentSmoothMotion.names)" }
-        for value in [target, engine, aspectRatio, language] {
+        for value in [target, preset, engine, aspectRatio, language] {
             if let value, value.utf8.count > 16 {
                 return "\(value.prefix(16)) is not an option of \(operation.rawValue)"
             }
@@ -126,13 +131,14 @@ public struct EnhanceCommand: Codable, Equatable, Sendable, AgentFields {
     /// The first option sent that the operation doesn't take.
     private var extraOption: String? {
         let options: [(String, Bool)] = [
-            ("target", target != nil), ("frame_rate", frameRate != nil), ("engine", engine != nil),
+            ("target", target != nil), ("frame_rate", frameRate != nil), ("preset", preset != nil),
+            ("engine", engine != nil),
             ("mode", mode != nil), ("aspect_ratio", aspectRatio != nil), ("language", language != nil),
             ("voice", voice != nil),
         ]
         let allowed: Set<String> =
             switch operation {
-            case .upscale: isOnDevice ? ["target", "engine"] : ["target", "frame_rate", "engine"]
+            case .upscale: isOnDevice ? ["target", "engine"] : ["target", "frame_rate", "preset", "engine"]
             case .smoothMotion: ["mode", "engine"]
             case .reframe: ["aspect_ratio"]
             case .removeBackground: []

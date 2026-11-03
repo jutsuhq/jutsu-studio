@@ -187,7 +187,8 @@ extension Tool {
             one at a time; an item with a run going is refused with busy, a Mac without the engine with \
             engine_unavailable, and an upscale before the person agreed to macOS downloading its model with \
             needs_person: then call show with the item and sheet upscale_on_mac and tell the person. On Higgsfield, \
-            paid, on a video: upscale (target 1080p, 2k or 4k; frame_rate 24, 30 or 60; engine standard), reframe \
+            paid, on a video: upscale (target 1080p, 2k or 4k; frame_rate 24, 30 or 60; preset aigc, the default, or common, ugc, \
+            short_series, old_film; engine standard), reframe \
             (aspect_ratio 9:16, 1:1 or 16:9, results up to a minute), remove_background, dub (language, an ISO 639-3 \
             code) or change_voice (voice, from capabilities with voices); needs a Higgsfield account and max_cost, \
             and the job is checked by the same spending guard as create_video; one whose price isn't known waits for \

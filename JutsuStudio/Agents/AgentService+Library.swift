@@ -123,7 +123,7 @@ extension AgentService {
             throw .badRequest("enhance: \(fields.operation.rawValue) runs on this Mac only")
         }
         let order = AgentEnhanceOrder(
-            kind: postKind, target: fields.target, frameRate: fields.frameRate,
+            kind: postKind, target: fields.target, frameRate: fields.frameRate, preset: fields.preset,
             engine: fields.engine, aspectRatio: fields.aspectRatio, language: fields.language, voice: fields.voice)
         let voices = fields.operation == .changeVoice ? await environment.voices()?.map(\.choice) : nil
         let action: PostAction

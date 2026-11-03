@@ -44,7 +44,7 @@ enum AccountModel {
     }
 
     /// `upscale_video` per its schema: `bytedance` takes "1080p", "2k" or "4k", needs the source's size and takes a
-    /// frame rate (left out for the server's 24 fps); `topaz` takes "1080p" or "2160p" and neither.
+    /// frame rate (left out for the server's 24 fps) and a preset; `topaz` takes "1080p" or "2160p" and none of them.
     private static func upscale(_ options: UpscaleOptions, size: PixelSize?) -> VideoEdit.Operation? {
         switch options.engine {
         case .standard:
@@ -52,7 +52,7 @@ enum AccountModel {
             return .upscale(
                 resolution: options.target.rawValue,
                 fps: options.frameRate == .keep ? nil : options.frameRate.rawValue, provider: .bytedance,
-                width: size.width, height: size.height)
+                width: size.width, height: size.height, preset: options.preset.rawValue)
         case .topaz:
             let resolution: String? =
                 switch options.target {
@@ -60,7 +60,9 @@ enum AccountModel {
                 case .k4: "2160p"
                 case .k2: nil
                 }
-            return resolution.map { .upscale(resolution: $0, fps: nil, provider: .topaz, width: nil, height: nil) }
+            return resolution.map {
+                .upscale(resolution: $0, fps: nil, provider: .topaz, width: nil, height: nil, preset: nil)
+            }
         }
     }
 

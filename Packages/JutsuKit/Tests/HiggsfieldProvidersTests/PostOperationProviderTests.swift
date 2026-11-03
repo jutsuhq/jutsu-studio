@@ -67,8 +67,7 @@ extension Network {
                     quote, quote,
                     [
                         "video_id": "3f1c8a52-6b0e-4d7a-9a51-2f4b8c9d0e17", "provider": "bytedance", "resolution": "4k",
-                        "fps": 60, "width": 1280,
-                        "height": 720,
+                        "fps": 60, "width": 1280, "height": 720, "preset": "aigc",
                     ],
                 ])
         }

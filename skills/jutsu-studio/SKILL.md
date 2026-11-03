@@ -81,7 +81,9 @@ says rather than guessing.
      (`onHiggsfield`, no file yet; `refresh_higgsfield` reloads it), and `library_download` brings those results
      into the Library. Both are free.
 6. **Finish.** `enhance` upscales, reframes, removes a background, dubs or changes the voice of a video on
-   Higgsfield, with its own `request_id` and `max_cost`. Two operations run on this Mac instead, free and without
+   Higgsfield, with its own `request_id` and `max_cost`. An upscale there is tuned for AI video (`preset: "aigc"`)
+   unless you name another `preset` (`common`, `ugc`, `short_series`, `old_film`); the preset doesn't change the
+   price, `target` and `frame_rate` do. Two operations run on this Mac instead, free and without
    `max_cost`: `smooth_motion` (`mode` `60fps`, `slow_2x` or `slow_4x`) on a video, and `upscale` with `engine: "mac"`
    on a video up to 1280×720 or an image up to 1920×1080. That upscale is 4× unless you give `target`: `1080p`, `2k`
    or `4k` sets the short side (a 720×1280 clip at `1080p` becomes 1080×1920), and a factor such as `2x` or `2.5x`

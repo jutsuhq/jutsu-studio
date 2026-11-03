@@ -172,6 +172,18 @@ extension UpscaleFrameRate {
     }
 }
 
+extension UpscalePreset {
+    public var title: String {
+        switch self {
+        case .aigc: String(localized: "AI video", bundle: .module)
+        case .common: String(localized: "General", bundle: .module)
+        case .ugc: String(localized: "Phone footage", bundle: .module)
+        case .shortSeries: String(localized: "Short series", bundle: .module)
+        case .oldFilm: String(localized: "Old film", bundle: .module)
+        }
+    }
+}
+
 extension UpscaleEngine {
     public var title: String {
         switch self {

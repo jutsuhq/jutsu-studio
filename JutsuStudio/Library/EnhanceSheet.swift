@@ -120,6 +120,11 @@ struct EnhanceSheet: View {
                 Text("60 fps costs twice as much.")
                     .font(.system(size: 12))
                     .foregroundStyle(Theme.muted)
+                SectionLabel(title: "Tuned for")
+                Picker(String(localized: "Tuned for"), selection: $upscale.preset) {
+                    ForEach(UpscalePreset.allCases, id: \.self) { Text($0.title).tag($0) }
+                }
+                .labelsHidden()
             }
         case .reframe:
             SectionLabel(title: "Canvas")

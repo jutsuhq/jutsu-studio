@@ -22,7 +22,8 @@ extension Network {
         }
 
         static let upscaleEdit = VideoEdit(
-            operation: .upscale(resolution: "4k", fps: 30, provider: .bytedance, width: 1280, height: 720),
+            operation: .upscale(
+                resolution: "4k", fps: 30, provider: .bytedance, width: 1280, height: 720, preset: "aigc"),
             input: .job("3f1c8a52-6b0e-4d7a-9a51-2f4b8c9d0e17"))
         static func reframing(seconds: Double) -> VideoEdit.Operation {
             .reframe(aspectRatio: "9:16", durationSeconds: seconds, resolution: "720p")
@@ -49,7 +50,7 @@ extension Network {
                     == [
                         "params": [
                             "video_id": "3f1c8a52-6b0e-4d7a-9a51-2f4b8c9d0e17", "provider": "bytedance",
-                            "resolution": "4k", "fps": 30,
+                            "resolution": "4k", "fps": 30, "preset": "aigc",
                             "width": 1280, "height": 720,
                         ]
                     ])
@@ -61,7 +62,8 @@ extension Network {
                 ["results": [["id": "job-2"]]]
             }
             let edit = VideoEdit(
-                operation: .upscale(resolution: "2160p", fps: nil, provider: .topaz, width: nil, height: nil),
+                operation: .upscale(
+                    resolution: "2160p", fps: nil, provider: .topaz, width: nil, height: nil, preset: nil),
                 input: .media("5b7d1e90-2a4c-4e8f-9d36-7c1a2b3e4f50"))
 
             _ = try await account.run(edit)
@@ -95,13 +97,14 @@ extension Network {
             #expect(try Account.schemaViolations(stub).isEmpty)
         }
 
-        /// The live server prices an upscale by its resolution and frame rate, so they go along.
+        /// The live server prices an upscale by its resolution and frame rate, so they go along; the preset doesn't
+        /// change the price and isn't sent.
         @Test func aByteDanceUpscaleIsQuotedWithItsResolutionAndFrameRate() async throws {
             let (account, stub) = Account.account(tools: Account.fullSet + [Self.upscale]) { _, _ in
                 ["cost": ["credits": 15]]
             }
             let operation = VideoEdit.Operation.upscale(
-                resolution: "4k", fps: 60, provider: .bytedance, width: 1, height: 1)
+                resolution: "4k", fps: 60, provider: .bytedance, width: 1, height: 1, preset: "aigc")
 
             #expect(try await account.cost(of: operation, duration: 10) == 15)
             #expect(
@@ -114,7 +117,7 @@ extension Network {
         @Test func topazAndAMissingLengthAreNotQuoted() async throws {
             let (account, stub) = Account.account(tools: Account.fullSet + [Self.upscale, Self.dubbing])
             let topaz = VideoEdit.Operation.upscale(
-                resolution: "1080p", fps: nil, provider: .topaz, width: nil, height: nil)
+                resolution: "1080p", fps: nil, provider: .topaz, width: nil, height: nil, preset: nil)
             #expect(try await account.cost(of: topaz, duration: 10) == nil)
             #expect(try await account.cost(of: .dub(language: "fra")) == nil)
             #expect(Account.calls(stub).isEmpty)

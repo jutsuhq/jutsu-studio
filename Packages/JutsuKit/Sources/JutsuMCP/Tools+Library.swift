@@ -123,8 +123,8 @@ extension Tool {
 
     static func enhance(_ given: Arguments) throws(AgentError) -> AgentCommand {
         try given.allow([
-            "request_id", "item", "operation", "target", "frame_rate", "engine", "mode", "aspect_ratio", "language",
-            "voice", "max_cost",
+            "request_id", "item", "operation", "target", "frame_rate", "preset", "engine", "mode", "aspect_ratio",
+            "language", "voice", "max_cost",
         ])
         let requestID = try given.requestID()
         guard let item = try given.string("item").flatMap(UUID.init(uuidString:)) else {
@@ -139,7 +139,8 @@ extension Tool {
         let maxCost = EnhanceCommand.isOnDevice(operation, engine: engine) ? nil : try given.maxCost()
         var command = EnhanceCommand(
             requestID: requestID, fingerprint: String(repeating: "0", count: 64), item: item, operation: operation,
-            target: try given.string("target"), frameRate: try given.int("frame_rate"), engine: engine,
+            target: try given.string("target"), frameRate: try given.int("frame_rate"),
+            preset: try given.string("preset"), engine: engine,
             mode: try given.string("mode"), aspectRatio: try given.string("aspect_ratio"),
             language: try given.string("language"), voice: try given.string("voice"), maxCost: maxCost)
         if let problem = command.problem { throw .badRequest("enhance: \(problem)") }

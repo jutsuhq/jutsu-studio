@@ -66,13 +66,42 @@ public struct UpscaleOptions: Codable, Sendable, Hashable {
     public var target: UpscaleTarget
     public var frameRate: UpscaleFrameRate
     public var engine: UpscaleEngine
+    /// The standard upscaler's tuning for the source material; Topaz takes none.
+    public var preset: UpscalePreset
 
-    public init(target: UpscaleTarget = .p1080, frameRate: UpscaleFrameRate = .fps24, engine: UpscaleEngine = .standard)
-    {
+    public init(
+        target: UpscaleTarget = .p1080, frameRate: UpscaleFrameRate = .fps24, engine: UpscaleEngine = .standard,
+        preset: UpscalePreset = .aigc
+    ) {
         self.target = target
         self.frameRate = frameRate
         self.engine = engine
+        self.preset = preset
     }
+
+    private enum CodingKeys: String, CodingKey {
+        case target, frameRate, engine, preset
+    }
+
+    /// A job stored before the preset was sent ran with the server's default, `common`, and reads as one.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        target = try container.decode(UpscaleTarget.self, forKey: .target)
+        frameRate = try container.decode(UpscaleFrameRate.self, forKey: .frameRate)
+        engine = try container.decode(UpscaleEngine.self, forKey: .engine)
+        preset = try container.decodeIfPresent(UpscalePreset.self, forKey: .preset) ?? .common
+    }
+}
+
+/// The standard upscaler's `preset`: what kind of video it tunes itself for. The price doesn't depend on it.
+public enum UpscalePreset: String, Codable, Sendable, CaseIterable {
+    /// AI-generated video, which every result here is; the default.
+    case aigc
+    /// The server's own default.
+    case common
+    case ugc
+    case shortSeries = "short_series"
+    case oldFilm = "old_film"
 }
 
 public enum UpscaleTarget: String, Codable, Sendable, CaseIterable {
@@ -107,7 +136,7 @@ public enum UpscaleEngine: String, Codable, Sendable, CaseIterable {
         }
     }
 
-    /// Whether the engine takes a frame rate.
+    /// Whether the engine takes a frame rate and a preset.
     public var takesFrameRate: Bool { self == .standard }
 }
 

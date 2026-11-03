@@ -25,18 +25,20 @@ public struct AgentEnhanceOrder: Sendable, Hashable {
     public var kind: PostAction.Kind
     public var target: String?
     public var frameRate: Int?
+    public var preset: String?
     public var engine: String?
     public var aspectRatio: String?
     public var language: String?
     public var voice: String?
 
     public init(
-        kind: PostAction.Kind, target: String? = nil, frameRate: Int? = nil, engine: String? = nil,
-        aspectRatio: String? = nil, language: String? = nil, voice: String? = nil
+        kind: PostAction.Kind, target: String? = nil, frameRate: Int? = nil, preset: String? = nil,
+        engine: String? = nil, aspectRatio: String? = nil, language: String? = nil, voice: String? = nil
     ) {
         self.kind = kind
         self.target = target
         self.frameRate = frameRate
+        self.preset = preset
         self.engine = engine
         self.aspectRatio = aspectRatio
         self.language = language
@@ -62,7 +64,11 @@ public struct AgentEnhanceOrder: Sendable, Hashable {
             guard let rate, UpscaleFrameRate.offered.contains(rate) else {
                 return .failure(Self.invalid("frame_rate is 24, 30 or 60"))
             }
-            return .success(.upscale(UpscaleOptions(target: target, frameRate: rate, engine: engine)))
+            guard let preset = preset.map({ UpscalePreset(rawValue: $0) }) ?? .aigc else {
+                let names = UpscalePreset.allCases.map(\.rawValue).joined(separator: ", ")
+                return .failure(Self.invalid("preset is one of \(names)"))
+            }
+            return .success(.upscale(UpscaleOptions(target: target, frameRate: rate, engine: engine, preset: preset)))
         case .reframe:
             guard let aspect = aspectRatio.flatMap(ReframeAspect.init(rawValue:)) else {
                 return .failure(Self.invalid("aspect_ratio is one of 9:16, 1:1, 16:9"))

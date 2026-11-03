@@ -193,6 +193,7 @@ enum ToolKey {
     static let pollAfterSeconds = "poll_after_seconds"
     static let provider = "provider"
     static let fps = "fps"
+    static let preset = "preset"
     static let mediaType = "media_type"
     static let videoID = "video_id"
     static let targetLanguage = "target_language"
