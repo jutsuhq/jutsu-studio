@@ -47,6 +47,10 @@ public struct VideoModelDescriptor: Sendable, Hashable {
         /// alone), from references (the source and the images), or the source edited as the prompt says, each with the
         /// length and the resolution.
         case kling4
+        /// Gemini Omni Flash 1.2, on the account only: Kling 4.0's clips from the prompt, frames or references, with
+        /// its own `mode`s for an Edit of the source and an Extend of it, and no `aspect_ratio` that follows the
+        /// source.
+        case geminiOmni
     }
 
     /// The account's estimate of a job's credits, for when Higgsfield can't quote it yet (a model billed by its
@@ -106,6 +110,9 @@ public struct VideoModelDescriptor: Sendable, Hashable {
     /// The images a clip from frames takes (`frames`): a start frame and an optional end frame, or the start alone
     /// (Kling 4.0 Flash, whose `image-to-video` has no end frame).
     public var frameImages: ClosedRange<Int>
+    /// The shorter length window of a job with references, a source or an end frame, over `duration`; Edit keeps
+    /// `duration` (`VideoModel.duration(_:in:withReferences:)`). `nil` where the model has one window.
+    public var durationWithReferences: ClosedRange<TimeInterval>?
     public var controls: Set<Control>
     /// A job needs a prompt even with a source.
     public var requiresPrompt: Bool
@@ -127,7 +134,8 @@ public struct VideoModelDescriptor: Sendable, Hashable {
             id: id, family: id, title: id, detail: "", modes: [], resolutions: Resolution.standard,
             modeResolutions: [:],
             aspectRatios: [],
-            duration: nil, referenceImages: nil, frameImages: 1...2, controls: [],
+            duration: nil, referenceImages: nil, frameImages: 1...2,
+            durationWithReferences: nil, controls: [],
             requiresPrompt: false, billsSourceVideo: false, listPriceIsExact: false, shape: .genjutsu, endpoints: [:],
             accountModels: [:],
             credits: Credits(base: 0, perSecond: [:]))
@@ -145,6 +153,7 @@ extension VideoModelDescriptor: Decodable {
         var duration: [TimeInterval]?
         var referenceImages: [Int]?
         var frames: [Int]?
+        var durationWithReferences: [TimeInterval]?
     }
 
     private struct Request: Decodable {
@@ -197,6 +206,8 @@ extension VideoModelDescriptor: Decodable {
         duration = try limits?.duration.map { try Self.range($0, key: .limits, in: container) }
         referenceImages = try limits?.referenceImages.map { try Self.range($0, key: .limits, in: container) }
         frameImages = try limits?.frames.map { try Self.range($0, key: .limits, in: container) } ?? 1...2
+        let window = limits?.durationWithReferences
+        durationWithReferences = try window.map { try Self.range($0, key: .limits, in: container) }
         let controls = try container.decodeIfPresent([String].self, forKey: .controls) ?? []
         self.controls = Set(try controls.map { try Self.value($0, key: .controls, in: container) })
         requiresPrompt = try container.decodeIfPresent(Bool.self, forKey: .requiresPrompt) ?? false

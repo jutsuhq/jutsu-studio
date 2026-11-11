@@ -20,10 +20,11 @@ enum HistoryMapping {
 
     /// `nil` for anything the app can't show or run again: other media types and models, unfinished
     /// generations, and inputs without a source video, except for a model that makes clips without one (not in
-    /// Edit) and a Style run's, whose input roles are unconfirmed. Kling 4.0 and 4.0 Flash come back in the mode
-    /// their `params.mode` names (`jobMode`), and a clip from frames with them as frames (`frames(of:)`). Only https URLs count: the app downloads them and runs
-    /// them again. A Style job is `type: "image"` until it completes and `"video"` once it has, so only a
-    /// completed one, a video, is kept, like every other job.
+    /// Edit or Extend) and a Style run's, whose input roles are unconfirmed. Kling 4.0, 4.0 Flash and Gemini Omni
+    /// Flash 1.2 come back in the mode their `params.mode` names (`jobMode`), and a clip from frames with them as
+    /// frames (`frames(of:)`). Only https URLs count: the app downloads them and runs them again. A Style job is
+    /// `type: "image"` until it completes and `"video"` once it has, so only a completed one, a video, is kept, like
+    /// every other job.
     static func item(_ generation: PastGeneration) -> HistoryItem? {
         let video = generation.media.lazy.compactMap(asset(.video)).first
         guard generation.type == GenerationType.video.rawValue, generation.status == "completed",
@@ -31,7 +32,8 @@ enum HistoryMapping {
             case (let catalogMode, let videoModel)? = kind(ofModel: generation.model)
         else { return nil }
         let mode = jobMode(of: generation, model: videoModel) ?? catalogMode
-        guard video != nil || (mode != .edit && (mode == .restyle || videoModel.makesClipsWithoutSource)) else {
+        guard video != nil || (!mode.isVideoOperation && (mode == .restyle || videoModel.makesClipsWithoutSource))
+        else {
             return nil
         }
         let frames = video == nil && videoModel.declares(.frames) ? self.frames(of: generation) : nil
@@ -51,11 +53,17 @@ enum HistoryMapping {
     }
 
     /// The job mode a generation's `params.mode` names, for a model whose one server model runs several of the
-    /// app's (Kling 4.0's and Flash's `video-edit` is Edit, their other modes Motion Transfer); `nil` keeps the
-    /// catalog's.
+    /// app's (Kling 4.0's and Flash's `video-edit` is Edit, Gemini Omni Flash 1.2's `edit` and `extend` Edit and
+    /// Extend, their other modes Motion Transfer); `nil` keeps the catalog's.
     static func jobMode(of generation: PastGeneration, model: VideoModel) -> Mode? {
-        guard model.descriptor.shape == .kling4, let mode = generation.mode else { return nil }
-        return mode == VideoRequest.kling4VideoEdit ? .edit : .motionTransfer
+        guard let mode = generation.mode else { return nil }
+        switch model.descriptor.shape {
+        case .kling4: return mode == VideoRequest.kling4VideoEdit ? .edit : .motionTransfer
+        case .geminiOmni:
+            if mode == VideoRequest.geminiEdit { return .edit }
+            return mode == VideoRequest.geminiExtend ? .extend : .motionTransfer
+        default: return nil
+        }
     }
 
     /// The start and, when there is one, end frame of a clip made from frames, in that order: the inputs with those

@@ -54,7 +54,9 @@ says rather than guessing.
      2.5, Kling 4.0, Kling 4.0 Flash) makes a clip from the prompt and `images` alone: leave out `source` and set
      `length` and `aspect_ratio`. With `needsPrompt` the prompt is required. Kling 4.0 also edits a video as the
      prompt says (`mode: "edit"`), with up to ten images. Kling 4.0 Flash (`kling40Flash`) does the same for less,
-     at 720p and up to 20 s: the cheap draft option before a Kling 4.0 final.
+     at 720p and up to 20 s: the cheap draft option before a Kling 4.0 final. On an account, Gemini Omni Flash 1.2
+     (`geminiOmniFlash12`) is the pick for a clip with native sound, an Extend outside Seedance, or 4K: 360p to
+     `4k`, 3–15 s from a prompt alone but 3–10 s with images or a source (and for what Extend adds), 16:9 or 9:16.
    - **Characters by name.** `elements` lists the account's characters, environments and props. Pass their names in
      `elements` to `create_video`, `quote` or `create_image`: their images go first, in order, then your own files.
      The answer's `references` gives each image's `@ImageN` tag; name them that way in the prompt, and the

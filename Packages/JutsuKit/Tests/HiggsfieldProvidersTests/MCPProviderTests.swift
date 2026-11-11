@@ -59,7 +59,8 @@ extension Network {
             #expect(capabilities.modes == [.motionTransfer, .objectSwap, .edit, .extend])
             #expect(
                 capabilities.models.map(\.rawValue).sorted() == [
-                    "cinemaStudio4", "genjutsu", "genjutsuLite", "kling40", "kling40Flash", "klingMotionControl",
+                    "cinemaStudio4", "geminiOmniFlash12", "genjutsu", "genjutsuLite", "kling40", "kling40Flash",
+                    "klingMotionControl",
                     "klingO3VideoEdit",
                     "minimaxH3MaxReference", "minimaxH3Reference", "seedance25", "wan30PrimeReference",
                     "wan30Reference",

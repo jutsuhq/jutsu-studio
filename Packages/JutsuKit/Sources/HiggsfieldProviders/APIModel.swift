@@ -31,6 +31,8 @@ struct APIModel {
         case .klingVideoEdit: body = try Self.klingVideoEdit(spec, inputs: inputs)
         case .wanReference, .cinemaStudio: body = try Self.referenceToVideo(spec, inputs: inputs)
         case .kling4: body = try Self.kling4(spec, inputs: inputs)
+        // No REST endpoint (`models.json`), so `endpointID` refused it above.
+        case .geminiOmni: throw APIModel.needsAccount
         }
     }
 

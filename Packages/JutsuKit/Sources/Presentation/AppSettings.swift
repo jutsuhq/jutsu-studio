@@ -78,12 +78,17 @@ public enum AppSettings {
         }
     }
 
+    /// One of `Resolution.standard`, the ones Settings offers; any other stored value gives the default.
     public static func defaultResolution(in defaults: UserDefaults) -> Resolution {
-        defaults.string(forKey: defaultResolutionKey).flatMap(Resolution.init(rawValue:)) ?? defaultResolution
+        settingsResolution(defaults.string(forKey: defaultResolutionKey)) ?? defaultResolution
     }
 
     public static func draftResolution(in defaults: UserDefaults) -> Resolution {
-        defaults.string(forKey: draftResolutionKey).flatMap(Resolution.init(rawValue:)) ?? defaultDraftResolution
+        settingsResolution(defaults.string(forKey: draftResolutionKey)) ?? defaultDraftResolution
+    }
+
+    private static func settingsResolution(_ stored: String?) -> Resolution? {
+        stored.flatMap(Resolution.init(rawValue:)).flatMap { Resolution.standard.contains($0) ? $0 : nil }
     }
 
     public static func defaultMode(in defaults: UserDefaults) -> Mode {

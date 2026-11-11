@@ -126,6 +126,17 @@ public struct VideoModel: RawRepresentable, Codable, Sendable, Hashable, CaseIte
         return limits
     }
 
+    /// `duration` inside the shorter window the model keeps for a job with references, a source or an end frame
+    /// (`durationWithReferences`): Gemini Omni Flash 1.2 makes 3–15 s from a prompt or a start frame alone, but 3–10 s
+    /// from references or a start and an end frame, and Extend adds 3–10 s. Edit, whose output follows the source,
+    /// keeps `duration`.
+    public func duration(
+        _ duration: ClosedRange<TimeInterval>, in mode: Mode, withReferences: Bool
+    ) -> ClosedRange<TimeInterval> {
+        guard withReferences, mode != .edit, let window = descriptor.durationWithReferences else { return duration }
+        return duration.clamped(to: window)
+    }
+
     /// The account's `generate_video` model ID for a job in `mode`; `nil` where the account doesn't run it.
     public func accountModelID(for mode: Mode) -> String? { descriptor.accountModels[mode] }
 

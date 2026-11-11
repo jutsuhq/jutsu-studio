@@ -228,11 +228,15 @@ extension CreateForm {
     }
 
     /// What one job takes on the selected model, by the server's `constraints` where the app has them: the ranges
-    /// and references stay inside these.
+    /// and references stay inside these. A job with a source, references or an end frame keeps to the model's window
+    /// for them (`VideoModel.duration(_:in:withReferences:)`), as `JobSpec.limits` does.
     public var limits: ModeLimits {
-        selectedModel.limits(
+        var limits = selectedModel.limits(
             for: mode, hasSource: source != nil || !selectedModel.makesClipsWithoutSource,
             constraints: constraints ?? .builtIn)
+        let withReferences = source != nil || (usesFrames ? frames.end != nil : !references.isEmpty)
+        limits.duration = selectedModel.duration(limits.duration, in: mode, withReferences: withReferences)
+        return limits
     }
 
     /// The models the picker offers for the tab, in a fixed order; one entry means no picker. Motion's lists every

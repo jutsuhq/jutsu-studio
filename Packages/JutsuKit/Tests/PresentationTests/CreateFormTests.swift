@@ -312,7 +312,9 @@ enum CreateFixture {
         form.addReferences(CreateFixture.references((1...8).map(CreateFixture.image)))
         for model in VideoModel.allCases where model.serves(.motionTransfer) {
             form.model = model
-            let limits = model.limits(for: .motionTransfer)
+            // With the source, a model's window for references applies (Gemini Omni Flash 1.2's 3–10 s).
+            var limits = model.limits(for: .motionTransfer)
+            limits.duration = model.duration(limits.duration, in: .motionTransfer, withReferences: true)
             #expect(form.limits == limits)
             #expect(limits.referenceImages.contains(form.references.count))
             #expect(form.ranges.allSatisfy { limits.duration.contains($0.upperBound - $0.lowerBound) })

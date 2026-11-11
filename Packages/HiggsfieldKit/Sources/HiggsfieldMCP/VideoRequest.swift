@@ -55,6 +55,11 @@ public struct VideoRequest: Sendable, Hashable {
     public static let kling4ImageToVideo = "image-to-video"
     public static let kling4ReferenceToVideo = "reference-to-video"
     public static let kling4VideoEdit = "video-edit"
+    /// Gemini Omni Flash 1.2's own `mode`s (`gemini_omni_flash_1_2`, catalog snapshot of 2026-11-10) beside Kling
+    /// 4.0's other three, which it names alike: the clip changed as the prompt says, whose `duration` is ignored as
+    /// the output follows it, and the clip extended by `duration` seconds, each sent as `video_references`.
+    public static let geminiEdit = "edit"
+    public static let geminiExtend = "extend"
     /// Kling's `background_source`: the output keeps the reference video's background, not the image's.
     public static let backgroundFromVideo = "input_video"
 
@@ -63,7 +68,8 @@ public struct VideoRequest: Sendable, Hashable {
     public var media: [Media]
     /// Left out when empty.
     public var prompt: String
-    /// "480p", "720p" or "1080p", from the model's `resolution` options; Kling takes `mode` instead.
+    /// "480p", "720p" or "1080p", from the model's `resolution` options (Gemini Omni Flash 1.2 also "360p" and
+    /// "4k"); Kling takes `mode` instead.
     public var resolution: String?
     public var mode: String?
     /// Seconds: Seedance and Cinema Studio take 4–30, Wan 3.0 2–30; Kling 3.0 requires it, Kling O3 Edit takes

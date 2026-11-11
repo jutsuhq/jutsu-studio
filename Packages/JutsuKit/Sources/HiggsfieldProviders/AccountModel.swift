@@ -27,7 +27,8 @@ enum AccountModel {
         case .reframe(let aspect):
             let length = sourceLength(of: spec)
             guard length > 0, length <= ReframeAspect.maxSourceLength else { return nil }
-            // `reframe` takes 480p, 720p or 1080p: a MiniMax result's 768p or 2K goes as the nearest.
+            // `reframe` takes 480p, 720p or 1080p: a MiniMax result's 768p or 2K, or a Gemini one's 360p or 4K, goes
+            // as the nearest.
             return .reframe(
                 aspectRatio: aspect.rawValue, durationSeconds: length,
                 resolution: spec.resolution.standardized.rawValue)
@@ -177,8 +178,8 @@ enum AccountModel {
             request.resolution = spec.resolution.rawValue
             request.duration = Double(durationSeconds(of: spec, constraints: constraints))
             request.generateAudio = generatesAudio(spec)
-        case .kling4:
-            kling4(&request, spec: spec, constraints: constraints)
+        case .kling4: kling4(&request, spec: spec, constraints: constraints)
+        case .geminiOmni: geminiOmni(&request, spec: spec, constraints: constraints)
         }
         return request
     }
@@ -208,11 +209,35 @@ enum AccountModel {
             ? VideoRequest.kling4TextToVideo : VideoRequest.kling4ReferenceToVideo
     }
 
-    /// Kling 4.0's `aspect_ratio` on either connection: `auto` (REST's `adaptive`, the account's `auto`), which
-    /// follows the references, for a job with a source and for Auto; otherwise the model's fixed frame
-    /// (`models.json` `aspectRatios`) nearest the one asked for, as no Kling 4.0 schema has 4:3 or 3:4. A clip from
-    /// frames is asked for its start frame's shape, set when the job is queued (`JobEngine.insert`). `nil` for `auto`
-    /// leaves the field out (REST's text-to-video, which has no `adaptive` and defaults to 16:9).
+    /// Gemini Omni Flash 1.2's settings (`gemini_omni_flash_1_2`, catalog snapshot of 2026-11-10): the resolution, the
+    /// `mode` (`geminiOmniMode`), the length but for Edit, whose output follows the source, and frames as
+    /// `start_image` and `end_image`. Its `aspect_ratios` are 16:9 and 9:16 with no `auto`, so a clip without a source
+    /// is sent the nearest of them, and Auto or a job with a source none, to follow the inputs. It makes its soundtrack
+    /// on its own (no `generate_audio`); a muted job has it removed after download (`AudioPlan`).
+    static func geminiOmni(_ request: inout VideoRequest, spec: JobSpec, constraints: ModelConstraintTable) {
+        request.resolution = spec.resolution.rawValue
+        request.mode = geminiOmniMode(of: spec)
+        if spec.mode != .edit { request.duration = Double(durationSeconds(of: spec, constraints: constraints)) }
+        request.aspectRatio = kling4Frame(of: spec, auto: nil)
+        if spec.usesFrames { request.media = asFrames(request.media) }
+    }
+
+    /// Gemini Omni Flash 1.2's `mode`: its own for Edit and Extend, else Kling 4.0's (`kling4Mode`), which it names
+    /// alike.
+    static func geminiOmniMode(of spec: JobSpec) -> String {
+        switch spec.mode {
+        case .edit: VideoRequest.geminiEdit
+        case .extend: VideoRequest.geminiExtend
+        default: kling4Mode(of: spec)
+        }
+    }
+
+    /// Kling 4.0's `aspect_ratio` on either connection, and Gemini Omni Flash 1.2's: `auto` (REST's `adaptive`, the
+    /// account's `auto`), which follows the references, for a job with a source and for Auto; otherwise the model's
+    /// fixed frame (`models.json` `aspectRatios`) nearest the one asked for, as no Kling 4.0 schema has 4:3 or 3:4. A
+    /// clip from frames is asked for its start frame's shape, set when the job is queued (`JobEngine.insert`). `nil`
+    /// for `auto` leaves the field out (REST's text-to-video, which has no `adaptive` and defaults to 16:9, and
+    /// Gemini, which has no `auto`).
     static func kling4Frame(of spec: JobSpec, auto: String?) -> String? {
         guard spec.source == nil, let shape = spec.aspectRatio?.widthOverHeight else { return auto }
         let size = PixelSize(width: Int((shape * 10_000).rounded()), height: 10_000)
@@ -269,11 +294,13 @@ enum AccountModel {
     }
 
     /// Whether `get_cost` can price the job only with its media: one billed by its source (`billsSource`), and a
-    /// Kling 4.0 job with a source, frames or images. A quote without media can't name its `mode` truthfully, and
-    /// Higgsfield's announcement of Kling 4.0 says references may change the price, so it is quoted once uploaded.
+    /// Kling 4.0 or Gemini Omni Flash 1.2 job with a source, frames or images. A quote without media can't name its
+    /// `mode` truthfully, and Higgsfield's announcement of Kling 4.0 says references may change the price, so it is
+    /// quoted once uploaded; Gemini's input video is billed too (Google's API prices it as input tokens).
     static func quotesAfterUpload(_ spec: JobSpec) -> Bool {
         billsSource(spec)
-            || (spec.model.descriptor.shape == .kling4 && (spec.source != nil || !spec.references.isEmpty))
+            || ([.kling4, .geminiOmni].contains(spec.model.descriptor.shape)
+                && (spec.source != nil || !spec.references.isEmpty))
     }
 
     /// The `get_cost` question for a job before anything is uploaded: its request with no media, prompt or variants,

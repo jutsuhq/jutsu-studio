@@ -1409,6 +1409,39 @@
         }
       }
     },
+    "geminiOmniFlash12.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gemini Omni Flash 1.2 · native audio, up to 4K, on an account"
+          }
+        }
+      }
+    },
+    "geminiOmniFlash12.family" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gemini"
+          }
+        }
+      }
+    },
+    "geminiOmniFlash12.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gemini Omni Flash 1.2"
+          }
+        }
+      }
+    },
     "genjutsu.detail" : {
       "extractionState" : "manual",
       "localizations" : {

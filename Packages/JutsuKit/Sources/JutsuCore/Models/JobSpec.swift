@@ -140,10 +140,13 @@ public struct JobSpec: Codable, Sendable, Hashable {
     }
 
     /// The inputs `model` takes in `mode`, by `constraints` where they say; for `usesFrames` a start frame and at
-    /// most an end frame, or the start alone (`VideoModelDescriptor.frameImages`).
+    /// most an end frame, or the start alone (`VideoModelDescriptor.frameImages`). A job with a source, references or
+    /// an end frame keeps to the model's window for them (`VideoModel.duration(_:in:withReferences:)`).
     public func limits(in constraints: ModelConstraintTable = .builtIn) -> ModeLimits {
         var limits = model.limits(for: mode, hasSource: source != nil, constraints: constraints)
         if usesFrames { limits.referenceImages = model.descriptor.frameImages }
+        let withReferences = source != nil || references.count > (usesFrames ? 1 : 0)
+        limits.duration = model.duration(limits.duration, in: mode, withReferences: withReferences)
         return limits
     }
 
