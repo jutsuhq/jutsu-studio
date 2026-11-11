@@ -32,7 +32,7 @@ Some features depend on how you connect. **Account** means a Higgsfield account 
 ## Create
 
 - Create has a Video side and an Image side, switched next to the page title. Each side keeps its own draft, so switching never loses either.
-- Image side: make still images from a prompt with the connection's image models (model, aspect ratio, how many, an optional image to edit), with the price on Generate. It doesn't block the window: requests keep running while you switch side or page, and their results show under the form, in the Queue and in Library › Images.
+- Image side: make still images from a prompt with the connection's image models (model, aspect ratio, how many, an optional image to edit), with the price on Generate. On a Higgsfield account the menu offers the newest model of each family it lists: Soul 2.0 and Soul Cinema, Nano Banana 2.1, GPT Image 2.6, Seedream 5.5, Grok Image 2.0 and MiniMax H3 Image (which picks its own frame, shown as auto); with an API key Soul 2, Grok Image 2 and Qwen Image 3 Edit. It doesn't block the window: requests keep running while you switch side or page, and their results show under the form, in the Queue and in Library › Images.
 - Open a video or images from Finder, drop them on the window or the Dock icon, paste them, or import them from a link.
 - Pick a 4–30 s range; only that range is uploaded and billed.
 - Cut several ranges from one clip and queue them in one click with one total price.

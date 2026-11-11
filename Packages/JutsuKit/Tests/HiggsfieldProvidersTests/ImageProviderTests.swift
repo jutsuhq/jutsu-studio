@@ -137,6 +137,52 @@ extension Network {
             }
         }
 
+        /// The whole image list of the catalog snapshot of 2026-11-10, in its order, and each model's `get` answer.
+        static func snapshotReply(_ name: String, _ arguments: JSONValue) -> JSONValue {
+            switch name {
+            case "models_explore" where arguments["action"] == "get":
+                return (try? CatalogSnapshot.model(arguments["model_id"]?.stringValue ?? "")) ?? [:]
+            case "models_explore" where arguments["after"] == nil:
+                return (try? CatalogSnapshot.imageListing()) ?? [:]
+            default:
+                return reply(name, arguments)
+            }
+        }
+
+        /// The newest model of each family the snapshot lists, and Soul Cinema; each request, with an image where the
+        /// model takes one, keeps to that model's `models_explore get` schema. MiniMax H3 Image lists no frame, so it
+        /// is offered as "auto" and sends none.
+        @Test func theSnapshotsNewestModelOfEachFamilyIsOffered() async throws {
+            let (provider, stub) = Provider.provider(tools: try Self.tools(), call: Self.snapshotReply)
+
+            let models = try await provider.imageModels()
+            for model in models {
+                let ratio = model.aspectRatios.contains("1:1") ? "1:1" : try #require(model.aspectRatios.first)
+                let request = ImageRequest(
+                    model: model.id, prompt: "a knight", aspectRatio: ratio, count: 4,
+                    inputImages: model.input == .none ? [] : [input])
+                _ = try await provider.imageEstimate(request)
+                _ = try await provider.submitImages(request, idempotencyKey: UUID())
+            }
+
+            #expect(
+                models.map(\.id) == [
+                    "soul_2", "soul_cinematic", "nano_banana_2_1", "gpt_image_2_6", "seedream_5_5", "grok_image_2_0",
+                    "minimax_h3_image",
+                ])
+            #expect(models.first { $0.id == "minimax_h3_image" }?.aspectRatios == ["auto"])
+            #expect(models.map(\.inputLimit) == [1, 1] + Array(repeating: ImageModel.inputBound, count: 5))
+            let generates = Provider.calls(stub).filter { $0["name"] == "generate_image" }
+            #expect(generates.count == models.count * 2)
+            for call in generates {
+                let params = call["arguments"]?["params"] ?? .null
+                #expect(try CatalogSnapshot.violations(ofParams: params).isEmpty)
+            }
+            let minimax = generates.last { $0["arguments"]?["params"]?["model"] == "minimax_h3_image" }
+            #expect(minimax?["arguments"]?["params"]?["aspect_ratio"] == nil)
+            #expect(try Provider.schemaViolations(stub).isEmpty)
+        }
+
         @Test func imagesRunWithEachModelsOwnFramesAndImageRole() async throws {
             let (provider, stub) = Provider.provider(tools: try Self.tools(), call: Self.reply)
 
@@ -182,14 +228,25 @@ extension Network {
             #expect(Provider.calls(stub).filter { $0["name"] == "generate_image" }.count == 1)
         }
 
-        @Test func eachFamilyGetsATurnAndATwiceListedModelShowsOnce() {
+        @Test func eachFamilyGetsATurnNewestFirstAndATwiceListedModelShowsOnce() {
             let listed = [
                 "soul_2", "soul_cinematic", "gpt_image_2", "soul_cast", "soul_location", "soul_v2", "nano_banana",
-                "grok_image", "grok_image_2_0", "nano_banana_pro",
+                "grok_image", "grok_image_2_0", "nano_banana_pro", "gpt_image_2_6",
             ].map { AccountImageModel(id: $0, name: $0 == "soul_v2" ? "soul_2" : $0, aspectRatios: ["1:1"]) }
             #expect(
-                HiggsfieldProviders.AccountImages.models(listed).map(\.id)
-                    == ["soul_2", "soul_cinematic", "gpt_image_2", "nano_banana", "grok_image", "grok_image_2_0"])
+                HiggsfieldProviders.AccountImages.models(listed).map(\.id) == [
+                    "soul_2", "soul_cinematic", "nano_banana", "grok_image", "grok_image_2_0", "nano_banana_pro",
+                    "gpt_image_2_6",
+                ])
+        }
+
+        @Test(arguments: [
+            ("seedream_5_5", "seedream", [5, 5]), ("seedream_v5_pro", "seedream", [5]),
+            ("seedream_5_0_flash", "seedream", [5, 0]), ("grok_image_2_0", "grok", [2, 0]),
+            ("nano_banana_pro", "nano_banana", []), ("soul_cinematic", "soul", []),
+        ])
+        func aFamilysVersionIsTheFirstNumbersAfterItsFragment(id: String, fragment: String, version: [Int]) {
+            #expect(HiggsfieldProviders.AccountImages.version(of: id, after: fragment) == version)
         }
 
         /// How many images a model edits comes from its `medias` entry's `max`. Where the catalog names none, as
@@ -217,7 +274,7 @@ extension Network {
             let animation = AccountImageModel(id: "soul_sprite", name: "Sprite")
             #expect(
                 HiggsfieldProviders.AccountImages.models([animation] + listed).map(\.id)
-                    == (1...6).map { "model_\($0)" })
+                    == (1...7).map { "model_\($0)" })
         }
     }
 }

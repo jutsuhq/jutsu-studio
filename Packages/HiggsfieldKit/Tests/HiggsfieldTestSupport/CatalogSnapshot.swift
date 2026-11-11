@@ -172,6 +172,15 @@ public enum CatalogSnapshot {
         return model
     }
 
+    /// The snapshot's `models_explore {action: "list", type: "image"}` answer (its `structuredContent`): every image
+    /// model on one page, in the server's order.
+    public static func imageListing() throws -> JSONValue {
+        guard let listing = snapshot?["models"]?["list"]?["image"]?.arrayValue?.first?["structuredContent"],
+            listing["items"]?.arrayValue != nil
+        else { throw MissingModel(id: "image list") }
+        return listing
+    }
+
     /// `generate_video`'s own `params`, which no model schema lists.
     static let toolParams: Set<String> = [
         "model", "prompt", "medias", "use_unlim", "get_cost", "count",
