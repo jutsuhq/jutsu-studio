@@ -173,8 +173,6 @@ enum ToolKey {
     static let genjutsu = "genjutsu"
     static let notice = "notice"
     static let message = "message"
-    static let retryLiteral = "retry_literal_with"
-    static let declinedPresetID = "declined_preset_id"
     static let all = "all"
     static let kind = "kind"
     static let thumbnailURLCamel = "thumbnailUrl"

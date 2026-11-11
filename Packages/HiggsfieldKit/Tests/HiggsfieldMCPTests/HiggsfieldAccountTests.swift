@@ -90,34 +90,14 @@ extension Network {
             }
         }
 
-        /// As the server answered a long Genjutsu prompt on 2026-10-14, trimmed.
-        static let presetNotice: JSONValue = [
-            "notice": [
-                "type": "preset_recommendation",
-                "message": "This prompt looks like the Higgsfield preset \"IN THE DARK\".",
-                "data": ["retry_literal_with": ["declined_preset_id": "preset-1"]],
-            ]
+        /// A reply with only a `notice` (`type` and `message`, as `generate_video`'s output schema has it).
+        static let notice: JSONValue = [
+            "notice": ["type": "info", "message": "Nothing was submitted."]
         ]
 
-        @Test func aSuggestedPresetIsDeclinedOnce() async throws {
-            let (account, stub) = Self.account { _, arguments in
-                arguments["params"]?["declined_preset_id"] == nil ? Self.presetNotice : ["results": [["id": "job-1"]]]
-            }
-            #expect(try await account.generate(Self.request).id == "job-1")
-            let sent = Self.calls(stub).map { $0["arguments"]?["params"]?["declined_preset_id"] }
-            #expect(sent == [nil, "preset-1"])
-        }
-
-        @Test func aQuoteDeclinesTheSuggestedPresetToo() async throws {
-            let (account, _) = Self.account { _, arguments in
-                arguments["params"]?["declined_preset_id"] == nil ? Self.presetNotice : ["cost": ["credits_exact": 45]]
-            }
-            #expect(try await account.cost(of: Self.request) == 45)
-        }
-
-        @Test func aNoticeDoesNotResubmitAnAcceptedGeneration() async throws {
+        @Test func aNoticeBesideResultsIsTheGeneration() async throws {
             let (account, stub) = Self.account { _, _ in
-                var answer = Self.presetNotice.objectValue ?? [:]
+                var answer = Self.notice.objectValue ?? [:]
                 answer["results"] = [["id": "paid-job"]]
                 return .object(answer)
             }
@@ -126,12 +106,11 @@ extension Network {
         }
 
         @Test func aNoticeAloneSubmittedNothing() async throws {
-            let (account, stub) = Self.account { _, _ in Self.presetNotice }
-            await #expect(
-                throws: HiggsfieldError.validation(
-                    field: nil, message: "This prompt looks like the Higgsfield preset \"IN THE DARK\".")
-            ) { try await account.generate(Self.request) }
-            #expect(Self.calls(stub).count == 2)
+            let (account, stub) = Self.account { _, _ in Self.notice }
+            await #expect(throws: HiggsfieldError.validation(field: nil, message: "Nothing was submitted.")) {
+                try await account.generate(Self.request)
+            }
+            #expect(Self.calls(stub).count == 1)
         }
 
         @Test func costAsksForAQuote() async throws {

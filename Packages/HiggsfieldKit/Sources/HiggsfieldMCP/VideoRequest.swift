@@ -119,9 +119,8 @@ public struct VideoRequest: Sendable, Hashable {
     /// What a draft is finalized at; `draft_job_id` takes no other.
     public static let finalizeResolution = "1080p"
 
-    /// With `getCost`, the server quotes the request instead of submitting it. `declinedPresetID` turns down a
-    /// preset the server suggested for this prompt, so the prompt is used as written.
-    func arguments(getCost: Bool = false, declinedPresetID: String? = nil) -> [String: JSONValue] {
+    /// With `getCost`, the server quotes the request instead of submitting it.
+    func arguments(getCost: Bool = false) -> [String: JSONValue] {
         var params: [String: JSONValue] = [
             ToolKey.model: .string(model.rawValue),
             ToolKey.useUnlim: .bool(usesUnlimited),
@@ -144,7 +143,6 @@ public struct VideoRequest: Sendable, Hashable {
         if let generateAudio { params[ToolKey.generateAudio] = .bool(generateAudio) }
         if !prompt.isEmpty { params[ToolKey.prompt] = .string(prompt) }
         if getCost { params[ToolKey.getCost] = true }
-        if let declinedPresetID { params[ToolKey.declinedPresetID] = .string(declinedPresetID) }
         return [ToolKey.params: .object(params)]
     }
 }

@@ -14,6 +14,7 @@ Notable changes to Jutsu Studio. Versions follow [Semantic Versioning](https://s
 
 - The standard upscale on Higgsfield is tuned for AI video: it sends the upscaler's `aigc` preset instead of leaving the server's general-purpose default, for the same price. The Enhance sheet's Tuned for menu picks another (General, Phone footage, Short series, Old film), and agents pass `preset` to `enhance`. Upscales queued before keep the default they ran with.
 - The `jobs` description and the agent skill say outright that calling `jobs` again is the way to wait past `wait_seconds`, and that a done job's result is already the file's path, so agents don't build folder watchers. An Upscale on this Mac or subtitles that need the person first now say in the message that nothing was started, so an agent doesn't wait in `jobs` for a run that isn't there.
+- On a Higgsfield account, a video request is no longer sent a second time to turn down a preset Higgsfield suggested for its prompt: Higgsfield dropped the suggestion and the parameter that declined it from its catalog of 2026-11-10.
 
 ### Fixed
 

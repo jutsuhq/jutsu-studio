@@ -18,7 +18,8 @@ public struct VideoEdit: Sendable, Hashable {
         case upscale(resolution: String, fps: Int?, provider: Provider, width: Int?, height: Int?, preset: String?)
         case removeBackground
         /// `aspectRatio` "9:16" and the like. The source's length in seconds (at most 60) and a resolution ("480p",
-        /// "720p", "1080p") price the call, and are sent with it for a source longer than `reframeShortSource`.
+        /// "720p", "1080p") price the call, and are sent with it for a source longer than `reframeShortSource`. A
+        /// shorter source goes without them, so the output keeps the source's resolution; its quote still needs one.
         case reframe(aspectRatio: String, durationSeconds: Double, resolution: String)
         /// `language` is an ISO 639-3 code ("fra").
         case dub(language: String)
@@ -71,8 +72,9 @@ public struct VideoEdit: Sendable, Hashable {
         }
     }
 
-    /// The length up to which `reframe` takes the source alone ("for source videos over 15 seconds, pass
-    /// duration_seconds and resolution").
+    /// The length up to which `reframe` takes the source alone. Its `resolution` is "required when get_cost is true or
+    /// duration_seconds is over 15 seconds; when omitted for shorter videos, the source video resolution is used"
+    /// (catalog snapshot of 2026-11-10).
     public static let reframeShortSource: TimeInterval = 15
 
     public var operation: Operation

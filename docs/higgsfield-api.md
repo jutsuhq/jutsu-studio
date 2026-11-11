@@ -2,7 +2,7 @@
 
 How Jutsu Studio talks to Higgsfield: the REST API used with an API key, and the MCP server used with a Higgsfield account. Each section covers the contract the app relies on, what the public documentation says, and what the app doesn't use yet.
 
-- **Last reviewed:** 2026-10-28
+- **Last reviewed:** 2026-11-10
 - **Code:** `Packages/HiggsfieldKit` (`HiggsfieldAPI`, `HiggsfieldMCP`, `HiggsfieldCore`) and `Packages/JutsuKit/Sources/HiggsfieldProviders`
 - **Audience:** contributors changing the providers, adding models, or debugging a failed request
 
@@ -579,7 +579,7 @@ Calls, per the snapshot (every tool takes one `params` object with `additionalPr
 | Tool | Arguments Jutsu sends | What Jutsu reads |
 |---|---|---|
 | `upscale_video` | `params`: `video_id` (the parent's job ID or an upload's `media_id`); `provider: "bytedance"` with `resolution` `1080p`/`2k`/`4k`, the source's `width` and `height` (required) and `fps` 24/30/60; or `provider: "topaz"` with `resolution` `1080p`/`2160p` and nothing else | `results[].id` (read as `execute_preset`'s job ID, so `job_ids`/`jobs`/`job_id` work too), `request_id`, `cost.credits(_exact)` if present |
-| `reframe` | `params`: `medias: [{role: "video", value: job ID or media_id}]`, `aspect_ratio` `9:16`/`1:1`/`16:9`; for a source over 15 s also `duration_seconds` and `resolution` (`480p`/`720p`/`1080p`, the parent's). Quote: `params: {get_cost: true, duration_seconds, resolution}` | Same; a quote from `cost.credits_exact` or `cost.credits` |
+| `reframe` | `params`: `medias: [{role: "video", value: job ID or media_id}]`, `aspect_ratio` `9:16`/`1:1`/`16:9`; for a source over 15 s also `duration_seconds` and `resolution` (`480p`/`720p`/`1080p`, the parent's, the nearest of the three); up to 15 s neither, so the output keeps the source's resolution (the schema of 2026-11-10: "when omitted for shorter videos, the source video resolution is used"). Quote: `params: {get_cost: true, duration_seconds, resolution}`, always with the parent's resolution, as `get_cost` requires one | Same; a quote from `cost.credits_exact` or `cost.credits` |
 | `remove_background` | `params`: `media_id` (the job ID or an upload's `media_id`), `media_type: "video"` | Same |
 | `dubbing` | `params`: `video_id`, `target_language`, one of the 18 ISO 639-3 codes in the schema's enum (`eng`, `cmn`, `fra`, `hin`, `ita`, `jpn`, `kor`, `por`, `rus`, `tur`, `spa`, `deu`, `ara`, `pol`, `ind`, `fil`, `swe`, `fin`) | Same |
 | `voice_change` | `params`: `video_id`, `voice_id`, `voice_type` (`preset` or `element`, as `list_voices` named it) | Same |
@@ -669,7 +669,7 @@ Not seen live, and shown or handled as unknown: the price of a Topaz upscale bef
 
 ### 4.5 `generate_video`
 
-Status: arguments checked against the catalog snapshot `docs/mcp-snapshots/2026-10-28.json` (`tools/list` and `models_explore get` of each mapped model; 2026-10-15's until then). Jutsu builds the arguments in `VideoRequest.arguments` (`Packages/HiggsfieldKit/Sources/HiggsfieldMCP/VideoRequest.swift`) from a `JobSpec` (`AccountModel.request`):
+Status: arguments checked against the catalog snapshot `docs/mcp-snapshots/2026-11-10.json` (`tools/list` and `models_explore get` of each mapped model; 2026-10-28's and 2026-10-15's before it). Jutsu builds the arguments in `VideoRequest.arguments` (`Packages/HiggsfieldKit/Sources/HiggsfieldMCP/VideoRequest.swift`) from a `JobSpec` (`AccountModel.request`):
 
 ```json
 {
@@ -714,7 +714,7 @@ Rules Jutsu depends on:
   - the top-level `unlim` (and each `get` answer's) is `{available, expires_at, remaining}`; `remaining: null` means unmetered, so it no longer reads as "no". The snapshot's account had `available: false`. A trailing text block lists "Unlim configs" the allowance covers; Jutsu doesn't read it;
   - other keys (`models`/`data`, `model_id`/`model`, flags `can_use`/`enabled`/`active`/`eligible`, count `left`) are still read; anything else counts as "no";
   - a submit's answer that named credits would still clear the job's unlimited flag (`HiggsfieldMCPProvider.unlimitedCharge`), but per the schema it never does.
-- **Preset notice:** the server may answer with `notice.type: preset_recommendation` and `notice.data.retry_literal_with.declined_preset_id`. Only when that answer contains neither `results` nor `cost` does Jutsu resend with `declined_preset_id` so the prompt is used as written. An accepted job is kept without resending, even if the answer also includes a notice. A notice still alone after the retry is shown as a validation error.
+- **Notice:** an answer with a `notice` but neither `results` nor `cost` submitted nothing and is shown as a validation error with the notice's `message`; an answer with `results` is the job, notice or not. Until the catalog of 2026-11-10 the server could answer `notice.type: preset_recommendation` and Jutsu resent once with `declined_preset_id`; that parameter is gone from `generate_video` and `generate_video_batch` (4.8), and so is the retry.
 - **Limits:** the constants in `VideoModel.limits(for:hasSource:constraints:)`, overridden bound by bound by what `models_explore` says (below):
   - Seedance's 4–30 s comes from `get_cost` answers and `models_explore get`.
   - Kling's single image comes from the server's refusal "exactly one image_references entry is required".
@@ -767,7 +767,7 @@ The first guess (#89) sent `video_extend` and no `extension_mode`. Free quotes o
 
 **Seedance's native draft on the account (issue #115).** `models_explore get` of `seedance_2_5` (catalog snapshot of 2026-10-15) lists `draft` (bool, default `false`, "Generate a 480p draft that can be finalized within seven days") and `draft_job_id` (string, nullable, "Completed draft job to finalize at 1080p"). The job's `params` echo both, in `show_generations`/`show_generation_by_ids` too, and `job_status`'s `outputSchema` names `draft`/`draftJobId`. The owner's paid run of 2026-10-15 (plan `ultra`):
 
-- **Draft:** `{model: "seedance_2_5", mode: "omni_reference", prompt, duration: 15, resolution: "480p", aspect_ratio: "9:16", draft: true, use_unlim: false, medias: [7 × image_references], declined_preset_id}` quoted 45, exactly as the same request with `draft: false`, and was charged 45 ("Seedance 2.5" in `transactions`). The result is a normal 480×854 MP4 of 15.04 s with audio; its params say `draft: true, resolution: 480p`. The first quote answered only a `preset_recommendation` notice; declining it with `declined_preset_id` gave the cost, as the client does for every `generate_video` quote and submit (Preset notice, above).
+- **Draft:** `{model: "seedance_2_5", mode: "omni_reference", prompt, duration: 15, resolution: "480p", aspect_ratio: "9:16", draft: true, use_unlim: false, medias: [7 × image_references], declined_preset_id}` quoted 45, exactly as the same request with `draft: false`, and was charged 45 ("Seedance 2.5" in `transactions`). The result is a normal 480×854 MP4 of 15.04 s with audio; its params say `draft: true, resolution: 480p`. The first quote answered only a `preset_recommendation` notice; declining it with `declined_preset_id` gave the cost, as the client then did for every `generate_video` quote and submit (the parameter is gone since the catalog of 2026-11-10, 4.8).
 - **Finalize quote:** `{model: "seedance_2_5", draft_job_id: "<draft job>", resolution: "1080p", get_cost: true}` quoted 80 credits, against 240 for a plain 1080p 15 s Seedance: a third, 16 → about 5.33 credits a second. With `mode`, `prompt`, `duration` and `aspect_ratio` beside `draft_job_id` it quoted 240, so extra parameters make it a fresh render.
 - **Finalize submit:** not run. The owner accepted the request on the strength of the 80-credit quote, without a live finalize, so it is on like any other confirmed call; its answer and output are read as any `generate_video` job's.
 
@@ -807,6 +807,16 @@ The owner ran issue #114's checklist on the account (plan `ultra`) from a 4.02 s
 - **Tools:** 187, up from 158; none removed. The 29 new ones are for products Jutsu doesn't use: projects and folders (`get_project`, `update_project`, `archive_project`, `unarchive_project`, `delete_project`, `get_folder`, `rename_folder`, `move_folder`, `delete_folder`, `search_folders`, and placing assets with `attach_project_asset`, `copy_project_asset`, `move_project_asset`, `remove_project_asset`, `resolve_project_assets`, `get_project_asset_prompt`, `get_project_asset_source`), Cinema publishing (`publish_project`, `unpublish_project`, `get_project_publication`, `update_project_publication`, `save_project_publication_preview`, `confirm_project_publication_review`, `cancel_project_publication_review`), playable games (`publish_playable_game`, `get_playable_game_publication`), What If shorts (`what_if_compose_message`, `register_what_if_result`) and the 3D scene builder's phone camera (`scene_builder_3d_phone_camera`). `media_upload` and `media_confirm` gain optional `source_type` and `workspace_id`, which Jutsu doesn't send; `list_project_assets` gains filters.
 - **Models:** `kling4_0` (Kling 4.0, now used, 4.4), `hf_mult_motion_control_flash` and `hf_mult_replace_object_flash` (Genjutsu Lite, until now from the live catalog of 2026-10-21), and the image models `ideogram_vector` (SVG images, or vectorizing one) and `recraft_v4_styles` (images in a saved Recraft style) are new; `clipify`, `gemini_omni` (Gemini Omni Flash) and `veo3` (Google Veo 3) are gone. Still 57 video models.
 - **Genjutsu Lite's schemas:** both take `image_references` and `video_references` and only `resolution`; Motion Transfer (Wan 3.0, up to 15 s) offers 480p, 720p and 1080p, Object Swap (Kling 4.0) 720p and 1080p, both defaulting to 720p. Jutsu sent Object Swap 480p before (the form's default and Draft); it now sends 720p there. Genjutsu's own two take 480p, 720p and 1080p.
+
+### 4.8 Catalog snapshot of 2026-11-10
+
+`docs/mcp-snapshots/2026-11-10.json` replaces 2026-10-28's as the one the tests replay (`CatalogSnapshot`). Against 2026-10-28's:
+
+- **Tools:** 186, down from 187. New, for products Jutsu doesn't use: the Ads Studio micro drama (`ads_studio_list_avatars`, `ads_studio_story_add_avatar`, `ads_studio_story_presets`, `ads_studio_story_recipe`, `ads_studio_story_stage`) and `register_result`, which saves a finished video as a completed job (a Shorts Studio reel). Gone: `reset_balance`, `show_credit_reset` and Shorts Studio's own five (`shorts_studio_create`, `shorts_studio_create_preset`, `shorts_studio_list_presets`, `shorts_studio_list_sessions`, `shorts_studio_status`); `get_presets` lists `shorts_studio` as a source instead.
+- **`generate_video` and `generate_video_batch`** no longer take `declined_preset_id`: the preset recommendation and its retry are gone, and Jutsu no longer resends (4.5, Notice).
+- **`reframe`:** `resolution` is optional: "when omitted for shorter videos, the source video resolution is used"; it is still required for a source over 15 s and for `get_cost`. Jutsu already left it out up to 15 s, so such a result keeps its resolution (4.4, Operations).
+- **Models:** new, not in Jutsu yet: video `kling_4_0_flash` (Kling 4.0 Flash, 720p), `gemini_omni_flash_1_2` (Gemini Omni Flash 1.2) and `intone` (Higgsfield Intone, talking heads); image `gpt_image_2_6` and `gpt_image_2_6_flare` (GPT Image 2.6 and its Flare), `image_command`, `minimax_h3_image` and `seedream_5_5`; audio `elevenlabs_music_v2` and `elevenlabs_music_v2_5`. None is gone: 60 video, 52 image and 10 audio models.
+- **`supports_unlim`:** among video models only `seedance_2_0`, `seedance_2_0_mini` and now `seedance_2_5` carry it; `kling3_0`, `kling3_0_motion_control` and `wan2_7` no longer do. Jutsu reads the flag live (`UnlimitedAllowance`), so nothing changes in the app. `seedance_2_5`'s `draft_job_id` adds that a final renders and bills the draft's whole length and ignores `duration`.
 
 ---
 
@@ -851,6 +861,7 @@ The owner ran issue #114's checklist on the account (plan `ultra`) from a 4.02 s
 
 | Date | Change |
 |---|---|
+| 2026-11-10 | Catalog snapshot of 2026-11-10 (4.8): Ads Studio micro drama tools and `register_result` new; `reset_balance`, `show_credit_reset` and the five `shorts_studio_*` tools gone. `generate_video` and `generate_video_batch` drop `declined_preset_id`, so Jutsu's preset-recommendation retry is removed (4.5). `reframe`'s `resolution` is optional for a source of 15 s or less, which then keeps its resolution, as Jutsu already sent it (4.4). New models, not in Jutsu yet: `kling_4_0_flash`, `gemini_omni_flash_1_2`, `intone`, `gpt_image_2_6`, `gpt_image_2_6_flare`, `image_command`, `minimax_h3_image`, `seedream_5_5`, `elevenlabs_music_v2`, `elevenlabs_music_v2_5`. |
 | 2026-10-28 | Kling 4.0 used on both connections (3.13, 4.4, 4.5): with an API key its four endpoints, on the account `kling4_0` with its four `mode`s; list prices from its model pages, the account's fallback from Higgsfield's announcement. Catalog snapshot of 2026-10-28 (4.7): 29 new tools Jutsu doesn't use (projects, folders, publishing, What If, scene builder), `clipify`, `gemini_omni` and `veo3` gone, `ideogram_vector` and `recraft_v4_styles` new, Genjutsu Lite's schemas. Genjutsu Lite takes up to 10 images, and its Object Swap renders at 720p and 1080p only. |
 | 2026-10-28 | Reviewed against the docs changelog of 2026-10-23 and 2026-10-24. Queueing (3.11): submits above the concurrency limit are queued; only a full queue refuses one, with `429` `account_queue_full` and `Retry-After`, now `.concurrencyLimit(retryAfter:)`, waited out and sent again with the same key; `503` `admission_control_unavailable` is retried as a server fault; the `400` concurrency text parse is removed. Keys (3.1, 3.10): `403` `api_key_expired` and `api_key_disabled` map to `.unauthorized`. Documented, not used yet: data retention and `DELETE /requests/{id}` (3.12; the OpenAPI file has 9 paths), Standard Webhooks signing (3.9), Kling 4.0 (3.14). `platform.higgsfield.ai` is retired by 2026-10-31; Jutsu uses `api.higgsfield.ai` (3.1). Soul 2's `batch_size` is 1 or 4 (3.13). MCP protected-resource metadata lists only `clerk.higgsfield.ai` (4.2). The account's MiniMax H3 (2K) and H3 Max (768p) get fallback rates from free quotes: 2 and 2.5 credits a second. |
 | 2026-10-21 | Issue #15: Genjutsu Lite (Wan 3.0) on the account as `hf_mult_motion_control_flash` and `hf_mult_replace_object_flash`, with Genjutsu's inputs, up to 15 s, priced by `get_cost` after upload (no fallback rate yet). Its REST endpoints `higgsfield/genjutsu-light/motion-transfer/v1.0` and `.../object-swap/v1.0` are priced in `pricing.json` ($0.05, $0.10 and $0.20 a second at 480p, 720p and 1080p) but have no published request schema (not in `llms.txt` or `openapi.json` on 2026-10-21), so an API key isn't offered Lite. |
@@ -986,7 +997,7 @@ All 84 endpoints from `https://docs.higgsfield.ai/docs/models.md` as of 2026-10-
 
 ## Appendix B. MCP tools Jutsu doesn't use
 
-Status: **Unverified**. Names come from Higgsfield's official plugin and CLI. Descriptions and arguments come from third-party MCP directories as of 2026-10-14. Confirm with the live catalog (issue #37) before building on them. Rows marked "checked against the snapshot" were compared with `docs/mcp-snapshots/2026-10-15.json`; the tools new in 2026-10-28's are in 4.7.
+Status: **Unverified**. Names come from Higgsfield's official plugin and CLI. Descriptions and arguments come from third-party MCP directories as of 2026-10-14. Confirm with the live catalog (issue #37) before building on them. Rows marked "checked against the snapshot" were compared with `docs/mcp-snapshots/2026-10-15.json`; the tools new in 2026-10-28's are in 4.7, and the changes in 2026-11-10's in 4.8.
 
 **Generation**
 
@@ -1035,7 +1046,7 @@ Status: **Unverified**. Names come from Higgsfield's official plugin and CLI. De
 | `virality_predictor` | Score a video's hook, engagement and sustain: `create` starts a free job, whose `job_status` carries the scores (4.4, issues #45, #111) |
 | `video_analysis_create` / `_status` / `_jobs` | Scene-by-scene analysis of an upload or a YouTube link |
 | `get_workflow_instructions`, `get_workflow_bundle_file` | Server-side multi-step recipes (for example `ad-multiplier`) |
-| `shorts_studio_*`, `personal_clipper_*`, `get_explainer_presets` | Shorts, clipping and explainer products |
+| `personal_clipper_*`, `get_explainer_presets` | Clipping and explainer products (the `shorts_studio_*` tools are gone since 2026-11-10, 4.8) |
 | `apps_search` / `apps_describe` / `apps_invoke` | Higgsfield Marketplace apps |
 | `tiktok_*` | Connect and publish to TikTok |
 | `*_website*`, `sandbox_exec`, `sync_agents` | Hosted websites and agent tooling |

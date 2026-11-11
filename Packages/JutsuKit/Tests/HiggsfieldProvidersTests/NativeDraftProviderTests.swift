@@ -73,21 +73,12 @@ extension Network {
             #expect(!job.isNativeDraft)
         }
 
-        /// The draft's quote before upload asks with `draft: true`, and declines a suggested preset as a submit
-        /// does: the paid run's first quote answered only a `preset_recommendation` notice.
-        @Test func theDraftQuoteDeclinesASuggestedPreset() async throws {
-            let notice: JSONValue = [
-                "notice": [
-                    "type": "preset_recommendation", "message": "This prompt looks like a preset.",
-                    "data": ["retry_literal_with": ["declined_preset_id": "preset-1"]],
-                ]
-            ]
-            let (provider, stub) = Provider.provider(tools: Provider.fullSet) { _, arguments in
-                arguments["params"]?["declined_preset_id"] == nil ? notice : ["cost": ["credits": 45]]
-            }
+        /// The draft's quote before upload asks with `draft: true`.
+        @Test func theDraftQuoteAsksForADraft() async throws {
+            let (provider, stub) = Provider.provider(tools: Provider.fullSet) { _, _ in ["cost": ["credits": 45]] }
             #expect(try await provider.estimate(Self.draft()) == .credits(45, isEstimate: false))
             let quotes = Self.params(stub)
-            #expect(quotes.map { $0["declined_preset_id"] } == [nil, "preset-1"])
+            #expect(quotes.count == 1)
             #expect(quotes.allSatisfy { $0["draft"] == true && $0["get_cost"] == true })
         }
 
