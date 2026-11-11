@@ -188,8 +188,9 @@ enum AccountModel {
         zip(media, [MediaRole.startFrame, .endFrame]).map { item, role in VideoRequest.Media(role: role, id: item.id) }
     }
 
-    /// Kling 4.0's `kling4_0` settings: the resolution, the length, the frame and the `mode`, with frames as
-    /// `start_image` and `end_image`.
+    /// The settings of Kling 4.0 (`kling4_0`) and 4.0 Flash (`kling_4_0_flash`, the same fields at 720p and 3–20 s,
+    /// with no `end_image` role): the resolution, the length, the frame and the `mode`, with frames as `start_image`
+    /// and `end_image`; Flash's one frame is its `start_image`.
     static func kling4(_ request: inout VideoRequest, spec: JobSpec, constraints: ModelConstraintTable) {
         request.resolution = spec.resolution.rawValue
         request.duration = Double(durationSeconds(of: spec, constraints: constraints))

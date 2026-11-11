@@ -43,8 +43,9 @@ public struct VideoModelDescriptor: Sendable, Hashable {
         /// the resolution and the soundtrack, and the creative controls the job sets (`CinemaControls`); the director
         /// picks the rest.
         case cinemaStudio
-        /// Kling 4.0: from the prompt alone, from a start and an optional end frame, from references (the source and
-        /// the images), or the source edited as the prompt says, each with the length and the resolution.
+        /// Kling 4.0 and 4.0 Flash: from the prompt alone, from a start and an optional end frame (Flash a start
+        /// alone), from references (the source and the images), or the source edited as the prompt says, each with the
+        /// length and the resolution.
         case kling4
     }
 
@@ -102,6 +103,9 @@ public struct VideoModelDescriptor: Sendable, Hashable {
     /// Over the mode's own (`Mode.limits`); `nil` keeps it.
     public var duration: ClosedRange<TimeInterval>?
     public var referenceImages: ClosedRange<Int>?
+    /// The images a clip from frames takes (`frames`): a start frame and an optional end frame, or the start alone
+    /// (Kling 4.0 Flash, whose `image-to-video` has no end frame).
+    public var frameImages: ClosedRange<Int>
     public var controls: Set<Control>
     /// A job needs a prompt even with a source.
     public var requiresPrompt: Bool
@@ -123,7 +127,7 @@ public struct VideoModelDescriptor: Sendable, Hashable {
             id: id, family: id, title: id, detail: "", modes: [], resolutions: Resolution.standard,
             modeResolutions: [:],
             aspectRatios: [],
-            duration: nil, referenceImages: nil, controls: [],
+            duration: nil, referenceImages: nil, frameImages: 1...2, controls: [],
             requiresPrompt: false, billsSourceVideo: false, listPriceIsExact: false, shape: .genjutsu, endpoints: [:],
             accountModels: [:],
             credits: Credits(base: 0, perSecond: [:]))
@@ -140,6 +144,7 @@ extension VideoModelDescriptor: Decodable {
     private struct Limits: Decodable {
         var duration: [TimeInterval]?
         var referenceImages: [Int]?
+        var frames: [Int]?
     }
 
     private struct Request: Decodable {
@@ -186,11 +191,12 @@ extension VideoModelDescriptor: Decodable {
             }
             result[mode] = Resolution.allCases.filter(listed.contains)
         }
-        let frames = try container.decodeIfPresent([String].self, forKey: .aspectRatios) ?? []
-        aspectRatios = try frames.map { try Self.value($0, key: .aspectRatios, in: container) }
+        let shapes = try container.decodeIfPresent([String].self, forKey: .aspectRatios) ?? []
+        aspectRatios = try shapes.map { try Self.value($0, key: .aspectRatios, in: container) }
         let limits = try container.decodeIfPresent(Limits.self, forKey: .limits)
         duration = try limits?.duration.map { try Self.range($0, key: .limits, in: container) }
         referenceImages = try limits?.referenceImages.map { try Self.range($0, key: .limits, in: container) }
+        frameImages = try limits?.frames.map { try Self.range($0, key: .limits, in: container) } ?? 1...2
         let controls = try container.decodeIfPresent([String].self, forKey: .controls) ?? []
         self.controls = Set(try controls.map { try Self.value($0, key: .controls, in: container) })
         requiresPrompt = try container.decodeIfPresent(Bool.self, forKey: .requiresPrompt) ?? false

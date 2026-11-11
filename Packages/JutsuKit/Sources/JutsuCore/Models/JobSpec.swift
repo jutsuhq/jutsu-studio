@@ -139,11 +139,11 @@ public struct JobSpec: Codable, Sendable, Hashable {
         referencesAreFrames && model.declares(.frames) && source == nil && !mode.isVideoOperation
     }
 
-    /// The inputs `model` takes in `mode`, by `constraints` where they say; a start frame and at most an end frame
-    /// for `usesFrames`.
+    /// The inputs `model` takes in `mode`, by `constraints` where they say; for `usesFrames` a start frame and at
+    /// most an end frame, or the start alone (`VideoModelDescriptor.frameImages`).
     public func limits(in constraints: ModelConstraintTable = .builtIn) -> ModeLimits {
         var limits = model.limits(for: mode, hasSource: source != nil, constraints: constraints)
-        if usesFrames { limits.referenceImages = 1...2 }
+        if usesFrames { limits.referenceImages = model.descriptor.frameImages }
         return limits
     }
 

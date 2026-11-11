@@ -89,6 +89,9 @@ public struct VideoModel: RawRepresentable, Codable, Sendable, Hashable, CaseIte
     /// Makes a clip from the prompt and images alone (`clipWithoutSource`).
     public var makesClipsWithoutSource: Bool { declares(.clipWithoutSource) }
 
+    /// A clip from frames may end on a second image (`frameImages`); Kling 4.0 Flash takes a start frame alone.
+    public var takesEndFrame: Bool { descriptor.frameImages.upperBound > 1 }
+
     /// A model without a draft has a cheapest quality instead (Kling's Standard, whose 480p costs as much as 720p).
     public var offersDraft: Bool { declares(.draft) }
 

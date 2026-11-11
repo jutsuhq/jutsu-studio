@@ -115,6 +115,10 @@ struct FieldKey: CodingKey {
 /// clip is `@video_1`). Each takes `duration` 3–30 (the output's, also for an edit) and `resolution` 720p or 1080p;
 /// the reference and edit endpoints add `adaptive` to the frames, their default. Unset fields and empty arrays are left
 /// out. `elements` (Kling element IDs) and image-to-video's middle frames aren't sent.
+///
+/// Kling 4.0 Flash's endpoints (`kling-video/v4.0-flash/…`, model pages read 2026-11-11) take the same fields with
+/// `duration` 3–20, `resolution` 720p only, no `end_image_url` and no `elements`; their reference and edit
+/// `aspect_ratio` defaults to 16:9, so Auto is sent as `adaptive` there too.
 public struct Kling4Request: Encodable, Sendable, Hashable {
     /// Left out when blank, which only `image-to-video` allows.
     public var prompt: String

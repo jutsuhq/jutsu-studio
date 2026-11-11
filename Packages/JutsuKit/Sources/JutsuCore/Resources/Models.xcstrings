@@ -1508,6 +1508,39 @@
         }
       }
     },
+    "kling40Flash.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kling 4.0 Flash · cheaper 720p drafts, up to 20 s"
+          }
+        }
+      }
+    },
+    "kling40Flash.family" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kling"
+          }
+        }
+      }
+    },
+    "kling40Flash.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kling 4.0 Flash"
+          }
+        }
+      }
+    },
     "klingMotionControl.detail" : {
       "extractionState" : "manual",
       "localizations" : {

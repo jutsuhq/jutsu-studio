@@ -20,8 +20,8 @@ enum HistoryMapping {
 
     /// `nil` for anything the app can't show or run again: other media types and models, unfinished
     /// generations, and inputs without a source video, except for a model that makes clips without one (not in
-    /// Edit) and a Style run's, whose input roles are unconfirmed. Kling 4.0 comes back in the mode its
-    /// `params.mode` names (`jobMode`), and a clip from frames with them as frames (`frames(of:)`). Only https URLs count: the app downloads them and runs
+    /// Edit) and a Style run's, whose input roles are unconfirmed. Kling 4.0 and 4.0 Flash come back in the mode
+    /// their `params.mode` names (`jobMode`), and a clip from frames with them as frames (`frames(of:)`). Only https URLs count: the app downloads them and runs
     /// them again. A Style job is `type: "image"` until it completes and `"video"` once it has, so only a
     /// completed one, a video, is kept, like every other job.
     static func item(_ generation: PastGeneration) -> HistoryItem? {
@@ -51,7 +51,8 @@ enum HistoryMapping {
     }
 
     /// The job mode a generation's `params.mode` names, for a model whose one server model runs several of the
-    /// app's (Kling 4.0's `video-edit` is Edit, its other modes Motion Transfer); `nil` to keep the catalog's.
+    /// app's (Kling 4.0's and Flash's `video-edit` is Edit, their other modes Motion Transfer); `nil` keeps the
+    /// catalog's.
     static func jobMode(of generation: PastGeneration, model: VideoModel) -> Mode? {
         guard model.descriptor.shape == .kling4, let mode = generation.mode else { return nil }
         return mode == VideoRequest.kling4VideoEdit ? .edit : .motionTransfer

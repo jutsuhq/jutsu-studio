@@ -51,9 +51,10 @@ says rather than guessing.
    `maxInputs`; with `maxInputsNote` that is only a bound, and Higgsfield's quote refuses (for free) what the model
    doesn't take.
    - **Clips without a source.** A model with `makesClipsWithoutSource` in `capabilities` with `model` (Seedance
-     2.5, Kling 4.0) makes a clip from the prompt and `images` alone: leave out `source` and set `length` and
-     `aspect_ratio`. With `needsPrompt` the prompt is required. Kling 4.0 also edits a video as the prompt says
-     (`mode: "edit"`), with up to ten images.
+     2.5, Kling 4.0, Kling 4.0 Flash) makes a clip from the prompt and `images` alone: leave out `source` and set
+     `length` and `aspect_ratio`. With `needsPrompt` the prompt is required. Kling 4.0 also edits a video as the
+     prompt says (`mode: "edit"`), with up to ten images. Kling 4.0 Flash (`kling40Flash`) does the same for less,
+     at 720p and up to 20 s: the cheap draft option before a Kling 4.0 final.
    - **Characters by name.** `elements` lists the account's characters, environments and props. Pass their names in
      `elements` to `create_video`, `quote` or `create_image`: their images go first, in order, then your own files.
      The answer's `references` gives each image's `@ImageN` tag; name them that way in the prompt, and the

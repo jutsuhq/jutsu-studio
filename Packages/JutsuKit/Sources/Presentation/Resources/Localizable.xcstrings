@@ -2828,6 +2828,9 @@
     "%@ doesn't take start and end frames, so they are references now." : {
 
     },
+    "%@ takes only a start frame, so the end frame is a reference now." : {
+
+    },
     "%lld images were removed" : {
       "localizations" : {
         "en" : {
