@@ -141,9 +141,7 @@ public struct AgentVideoOrder: Sendable, Hashable {
             throw Refusal("Jutsu Studio isn't connected to Higgsfield; the person connects it in Settings.")
         }
         let model = try pickModel(for: mode)
-        if let offered = context.capabilities?.models, !offered.contains(model) {
-            throw Refusal("\(model.title) isn't available on this connection.")
-        }
+        try Self.checkOffered(model, in: mode, capabilities: context.capabilities)
         if let reason = context.unavailableReason(for: mode) { throw Refusal(reason) }
         var form = base
         form.constraints = constraints
@@ -302,5 +300,22 @@ public struct AgentVideoOrder: Sendable, Hashable {
         guard value.isFinite else { return "?" }
         let rounded = (value * 10).rounded() / 10
         return rounded == rounded.rounded() ? String(Int(rounded)) : String(rounded)
+    }
+}
+
+extension AgentVideoOrder {
+    /// Refuses a model the connection doesn't offer, or doesn't run in `mode` (Genjutsu Lite's Object Swap with an
+    /// API key); `nil` capabilities, still loading, refuse nothing.
+    static func checkOffered(_ model: VideoModel, in mode: Mode, capabilities: Capabilities?) throws(Refusal) {
+        guard let capabilities else { return }
+        guard capabilities.models.contains(model) else {
+            throw Refusal("\(model.title) isn't available on this connection.")
+        }
+        guard capabilities.runs(model, in: mode) else {
+            let modes = model.modes.filter { capabilities.runs(model, in: $0) }.map(name(of:))
+            throw Refusal(
+                "\(model.title) doesn't do \(name(of: mode)) on this connection; it does "
+                    + "\(modes.joined(separator: ", ")).")
+        }
     }
 }

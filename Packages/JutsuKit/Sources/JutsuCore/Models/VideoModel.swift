@@ -70,9 +70,18 @@ public struct VideoModel: RawRepresentable, Codable, Sendable, Hashable, CaseIte
 
     public func serves(_ mode: Mode) -> Bool { descriptor.modes.contains(mode) }
 
-    /// Whether the REST API runs it, with an API key; a model without endpoints runs on the account only (MiniMax H3
-    /// Max, which the public docs don't list).
-    public var runsWithAPIKey: Bool { !descriptor.endpoints.isEmpty }
+    /// Whether the REST API runs it, with an API key, in any of its modes; a model without endpoints runs on the
+    /// account only (MiniMax H3 Max, which the public docs don't list).
+    public var runsWithAPIKey: Bool { modes.contains(where: runsWithAPIKey(in:)) }
+
+    /// Whether the REST API runs it in `mode`: some endpoint applies to a job in that mode (`endpointID`). Genjutsu
+    /// Lite has a Motion Transfer endpoint and none for Object Swap, which only the account runs.
+    public func runsWithAPIKey(in mode: Mode) -> Bool {
+        serves(mode)
+            && resolutions(for: mode).contains { resolution in
+                [true, false].contains { !endpointID(for: mode, resolution: resolution, hasMedia: $0).isEmpty }
+            }
+    }
 
     /// Whether Create shows `control` for this model.
     public func declares(_ control: VideoModelDescriptor.Control) -> Bool { descriptor.controls.contains(control) }

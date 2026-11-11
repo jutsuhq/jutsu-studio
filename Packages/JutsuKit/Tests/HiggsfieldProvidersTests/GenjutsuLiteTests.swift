@@ -9,7 +9,7 @@ import Testing
 
 extension Network {
     /// Genjutsu Lite (issue #15): Genjutsu's Motion Transfer and Object Swap on Wan 3.0, as `generate_video` models of
-    /// their own. Its REST schema isn't published, so an API key doesn't run it.
+    /// their own. With an API key, Motion Transfer alone on its REST endpoint.
     @Suite struct GenjutsuLite {
         static let lite = VideoModel(rawValue: "genjutsuLite") ?? .genjutsu
 
@@ -110,15 +110,72 @@ extension Network {
             #expect(try Provider.schemaViolations(stub).isEmpty)
         }
 
-        /// The account offers it; an API key doesn't, and refuses a job on it.
-        @Test func itRunsOnTheAccountOnly() async throws {
-            let (provider, _) = Provider.provider(tools: Provider.fullSet)
-            #expect(try await provider.capabilities().models.contains(Self.lite))
+        /// The account runs both modes; an API key runs Motion Transfer alone, the one mode REST lists
+        /// (`higgsfield/genjutsu-light/motion-transfer/v1.0`), and refuses an Object Swap before anything is sent.
+        @Test func anAPIKeyRunsMotionTransferAlone() async throws {
+            let (account, _) = Provider.provider(tools: Provider.fullSet)
+            let accountCapabilities = try await account.capabilities()
             #expect(AccountModel.runs(Self.lite))
-            #expect(!Self.lite.runsWithAPIKey)
+            #expect(accountCapabilities.runs(Self.lite, in: .motionTransfer))
+            #expect(accountCapabilities.runs(Self.lite, in: .objectSwap))
+
+            let server = StubServer()
+            let capabilities = try await server.makeAPIProvider().capabilities()
+            #expect(Self.lite.runsWithAPIKey)
+            #expect(capabilities.unservedModes == [Self.lite: [.objectSwap]])
+            #expect(capabilities.runs(Self.lite, in: .motionTransfer))
+            #expect(!capabilities.runs(Self.lite, in: .objectSwap))
             #expect(throws: ProviderError.self) {
-                try APIModel(Self.spec(.motionTransfer), inputs: Provider.inputs)
+                try APIModel(Self.spec(.objectSwap), inputs: Self.restInputs)
             }
+        }
+
+        static let queued = """
+            {"status": "queued", "request_id": "req-1",
+             "status_url": "https://api.higgsfield.ai/requests/req-1/status"}
+            """
+
+        static let restInputs = RemoteInputs(
+            video: RemoteAsset(url: URL(string: "https://cdn.example.com/in.mp4")!),
+            images: [RemoteAsset(url: URL(string: "https://cdn.example.com/a.jpg")!)])
+
+        /// The body of its console.higgsfield.ai schema, Genjutsu's: `video_url`, `image_urls`, `prompt` and
+        /// `resolution`, sent to its own endpoint.
+        @Test(arguments: [Resolution.p480, .p720, .p1080])
+        func anAPIKeySendsGenjutsusBodyToLitesEndpoint(resolution: Resolution) async throws {
+            let server = StubServer()
+            server.on("POST", "/higgsfield/genjutsu-light/motion-transfer/v1.0", StubResponse(body: Self.queued))
+            _ = try await server.makeAPIProvider().submit(
+                Self.spec(.motionTransfer, resolution: resolution), inputs: Self.restInputs, idempotencyKey: UUID())
+
+            let body = try #require(server.requests.first?.bodyText)
+            #expect(
+                try JSONDecoder().decode(JSONValue.self, from: Data(body.utf8))
+                    == [
+                        "video_url": "https://cdn.example.com/in.mp4", "image_urls": ["https://cdn.example.com/a.jpg"],
+                        "prompt": "make it rain", "resolution": .string(resolution.rawValue),
+                    ])
+        }
+
+        /// The list price bills the output's seconds and the input video's, both the selection's: 12 s at 720p is
+        /// 24 × $0.10. The source is uploaded, so nothing is quoted before.
+        @Test(arguments: [(Resolution.p480, "1.2"), (.p720, "2.4"), (.p1080, "4.8")])
+        func anAPIKeyEstimatesTheListPrice(resolution: Resolution, usd: String) async throws {
+            let server = StubServer()
+            let cost = try await server.makeAPIProvider().estimate(Self.spec(.motionTransfer, resolution: resolution))
+            #expect(cost == .usd(Decimal(string: usd)!, isEstimate: false))
+            #expect(server.requests.isEmpty)
+        }
+
+        /// REST's schema takes 1-8 images, the account up to 10: an API key reports 8 as Lite's limit.
+        @Test func anAPIKeyTakesUpTo8Images() async throws {
+            let table = try #require(try await StubServer().makeAPIProvider().modelConstraints())
+            #expect(Self.lite.limits(for: .motionTransfer, constraints: table).referenceImages == 1...8)
+            #expect(VideoModel.genjutsu.limits(for: .motionTransfer, constraints: table).referenceImages == 1...8)
+            var spec = Self.spec(.motionTransfer)
+            spec.references = Array(repeating: LocalImage(fileURL: URL(fileURLWithPath: "/tmp/a.jpg")), count: 9)
+            #expect(Validation.check(spec, constraints: table) == [.tooManyReferences(maximum: 8)])
+            #expect(Validation.check(spec).isEmpty)
         }
 
         /// Its `models_explore` answers limit its own jobs, not Genjutsu's.

@@ -117,6 +117,9 @@ struct CreateView: View {
         .task(id: loader.capabilities?.models) {
             navigation.createDraft.fitModel(to: loader.capabilities?.models)
         }
+        .task(id: loader.capabilities?.unservedModes) {
+            navigation.createDraft.unservedModes = loader.capabilities?.unservedModes ?? [:]
+        }
         .task(id: navigation.pendingOpens) {
             takePendingOpens()
         }

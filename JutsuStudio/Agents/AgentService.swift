@@ -231,23 +231,28 @@ final class AgentService {
         let capabilities = environment.lastCapabilities
         let optedIn = AppSettings.usesUnlimited(in: environment.defaults)
         return models.map { model in
-            AgentCapabilities.Model(
-                id: model.rawValue, title: model.title, modes: model.modes.map(AgentVideoOrder.name(of:)),
+            // The modes it runs on this connection: an API key has no Genjutsu Lite Object Swap.
+            let unserved = connection == nil ? [] : capabilities?.unservedModes[model] ?? []
+            let modes = model.modes.filter { !unserved.contains($0) }
+            return AgentCapabilities.Model(
+                id: model.rawValue, title: model.title, modes: modes.map(AgentVideoOrder.name(of:)),
                 resolutions: model.resolutions.map(\.rawValue),
                 available: connection != nil && offered.contains(model),
                 details: id == nil
                     ? nil
                     : Self.details(
-                        of: model, constraints: constraints, capabilities: connection == nil ? nil : capabilities,
+                        of: model, in: modes, constraints: constraints,
+                        capabilities: connection == nil ? nil : capabilities,
                         unlimitedOptIn: optedIn))
         }
     }
 
     /// A model's limits in each of its modes, as a job on it takes them.
     private static func details(
-        of model: VideoModel, constraints: ModelConstraintTable, capabilities: Capabilities?, unlimitedOptIn: Bool
+        of model: VideoModel, in modes: [Mode], constraints: ModelConstraintTable, capabilities: Capabilities?,
+        unlimitedOptIn: Bool
     ) -> AgentCapabilities.ModelDetails {
-        let modes = model.modes.map { mode in
+        let details = modes.map { mode in
             let hasSource = !model.makesClipsWithoutSource || mode != .motionTransfer
             let limits = model.limits(for: mode, hasSource: hasSource, constraints: constraints)
             let variants = AgentVideoOrder.variants(
@@ -260,7 +265,7 @@ final class AgentService {
                 maxVariants: variants.maximum, variantsUnavailable: variants.reason)
         }
         return AgentCapabilities.ModelDetails(
-            modes: modes, hasDraft: model.offersDraft, makesClipsWithoutSource: model.makesClipsWithoutSource,
+            modes: details, hasDraft: model.offersDraft, makesClipsWithoutSource: model.makesClipsWithoutSource,
             needsPrompt: model.descriptor.requiresPrompt)
     }
 

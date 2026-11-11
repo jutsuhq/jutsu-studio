@@ -18,10 +18,16 @@ public struct HiggsfieldAPIProvider: GenerationProvider {
         self.pricing = pricing
     }
 
+    /// Every model with an endpoint, each in the modes it has one for (`VideoModel.runsWithAPIKey(in:)`).
     public func capabilities() async throws -> Capabilities {
-        Capabilities(
-            modes: Set(Mode.allCases), models: Set(VideoModel.allCases.filter(\.runsWithAPIKey)),
-            resolutions: Set(Resolution.allCases), costUnit: .usd, maxConcurrency: nil, parameters: APIModel.parameters)
+        let models = VideoModel.allCases.filter(\.runsWithAPIKey)
+        let unserved = models.reduce(into: [VideoModel: Set<Mode>]()) { unserved, model in
+            let modes = Set(model.modes.filter { !model.runsWithAPIKey(in: $0) })
+            if !modes.isEmpty { unserved[model] = modes }
+        }
+        return Capabilities(
+            modes: Set(Mode.allCases), models: Set(models), resolutions: Set(Resolution.allCases), costUnit: .usd,
+            maxConcurrency: nil, parameters: APIModel.parameters, unservedModes: unserved)
     }
 
     public func presets() async throws -> [StylePreset] {
@@ -126,4 +132,18 @@ public struct HiggsfieldAPIProvider: GenerationProvider {
     public func balance() async throws -> Balance? {
         nil
     }
+}
+
+extension HiggsfieldAPIProvider: ModelConstraintsSource {
+    /// The REST schemas' limits where they are tighter than the catalog's, which follow the account: Genjutsu Lite's
+    /// Motion Transfer takes 1–8 `image_urls` (its schema on console.higgsfield.ai, read 2026-11-11), the account up
+    /// to 10. Nothing is asked of the server.
+    public func modelConstraints() async throws -> ModelConstraintTable? {
+        Self.constraints
+    }
+
+    static let constraints = ModelConstraintTable(
+        entries: VideoModel(rawValue: "genjutsuLite").map { model in
+            [.init(model: model, mode: .motionTransfer, constraints: ModelConstraints(maxReferenceImages: 8))]
+        } ?? [])
 }

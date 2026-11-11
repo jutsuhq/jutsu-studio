@@ -53,6 +53,12 @@ public struct CreateContext: Sendable, Hashable {
     /// Genjutsu alone until the capabilities are known.
     public var offeredModels: Set<VideoModel> { capabilities?.models ?? [.genjutsu] }
 
+    /// Whether a job on `model` in `mode` runs on this connection (`Capabilities.runs`); until the capabilities are
+    /// known, whether the model is offered and serves the mode.
+    public func runs(_ model: VideoModel, in mode: Mode) -> Bool {
+        capabilities?.runs(model, in: mode) ?? (offeredModels.contains(model) && model.serves(mode))
+    }
+
     /// Why Kling can't keep the video's background here; `nil` when it can, or while the capabilities are unknown.
     public var videoBackgroundUnavailableReason: String? {
         unavailableReason(for: .klingVideoBackground)
@@ -215,9 +221,10 @@ public enum SubmitDecision: Sendable, Hashable {
 }
 
 extension CreateForm {
-    /// The model the jobs run on: the picked one when it serves the mode, else `Mode.defaultModel`.
+    /// The model the jobs run on: the picked one when it serves the mode on this connection (`unservedModes`), else
+    /// `Mode.defaultModel`.
     public var selectedModel: VideoModel {
-        model.serves(mode) ? model : mode.defaultModel
+        model.serves(mode) && unservedModes[model]?.contains(mode) != true ? model : mode.defaultModel
     }
 
     /// What one job takes on the selected model, by the server's `constraints` where the app has them: the ranges
@@ -235,18 +242,19 @@ extension CreateForm {
             tab == .motionTransfer
             ? Self.motionTasks.filter { $0 == mode || context.unavailableReason(for: $0) == nil } : [mode]
         return VideoModel.allCases.filter { model in
-            context.offeredModels.contains(model) && modes.contains(where: model.serves)
+            modes.contains { context.runs(model, in: $0) }
         }
     }
 
-    /// Moves a model the connection doesn't offer (Seedance or Kling on an account without `generate_video`) to
-    /// Genjutsu, so a re-run or a switch of connection never leaves the form on a model its picker can't show.
+    /// Moves a model the connection doesn't offer (Seedance or Kling on an account without `generate_video`), or
+    /// doesn't run in the form's mode (`unservedModes`), to Genjutsu, so a re-run or a switch of connection never
+    /// leaves the form on a model its picker can't show.
     /// `nil` while the capabilities are unknown, which changes nothing.
     /// Returns what to tell the user when the model changed, for inputs they opened themselves (Edit Inputs, Render
     /// final); `nil` when it stays.
     @discardableResult
     public mutating func fitModel(to offered: Set<VideoModel>?) -> UserMessage? {
-        guard let offered, !offered.contains(model) else { return nil }
+        guard let offered, !offered.contains(model) || unservedModes[model]?.contains(mode) == true else { return nil }
         let unavailable = model
         model = .genjutsu
         return UserMessage(
@@ -273,7 +281,7 @@ extension CreateForm {
             return String(localized: "Connect Higgsfield in Settings", bundle: .module)
         }
         if let reason = context.unavailableReason(for: mode) { return reason }
-        if let offered = context.capabilities?.models, !offered.contains(selectedModel) {
+        if context.capabilities != nil, !context.runs(selectedModel, in: mode) {
             return String(localized: "\(selectedModel.title) isn't available on this connection", bundle: .module)
         }
         guard source != nil || isWithoutSource else { return String(localized: "Add a source video", bundle: .module) }

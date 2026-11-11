@@ -66,6 +66,14 @@ public struct CreateForm: Sendable, Hashable, Codable {
             clamp(to: limits)
         }
     }
+    /// The connection's `Capabilities.unservedModes`: a model picked for one of these runs as one it doesn't serve, on
+    /// `Mode.defaultModel` (Genjutsu Lite's Object Swap with an API key). The app sets it, never an edit.
+    public var unservedModes: [VideoModel: Set<Mode>] = [:] {
+        didSet {
+            guard unservedModes != oldValue else { return }
+            clamp(to: limits)
+        }
+    }
 
     public init(
         mode: Mode = AppSettings.defaultMode, resolution: Resolution = AppSettings.defaultResolution,

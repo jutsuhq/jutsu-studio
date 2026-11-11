@@ -5,28 +5,34 @@ import Testing
 @testable import Presentation
 
 /// Genjutsu Lite in Create, templates, the queue and the agent tools (issue #15): offered on an account next to
-/// Genjutsu, not with an API key, where what was saved with it falls back to Genjutsu and says so.
+/// Genjutsu in both its modes; with an API key for Motion Transfer alone, where an Object Swap saved with it falls back
+/// to Genjutsu and says so.
 @Suite struct GenjutsuLiteFormTests {
     static let lite = VideoModel(rawValue: "genjutsuLite") ?? .genjutsu
 
-    static func context(_ connection: ConnectionState, models: Set<VideoModel>) -> CreateContext {
+    static func context(
+        _ connection: ConnectionState, models: Set<VideoModel>, unservedModes: [VideoModel: Set<Mode>] = [:]
+    ) -> CreateContext {
         var context = CreateContext(connection: connection, pricing: CreateFixture.pricing)
         context.capabilities = Capabilities(
             modes: [.motionTransfer, .objectSwap], models: models, resolutions: Set(Resolution.allCases),
-            costUnit: connection.kind == .account ? .credits : .usd, maxConcurrency: nil)
+            costUnit: connection.kind == .account ? .credits : .usd, maxConcurrency: nil, unservedModes: unservedModes)
         return context
     }
 
     static let account = context(
         .account(AccountInfo(credits: 1000)), models: Set(VideoModel.allCases.filter { !$0.modes.isEmpty }))
-    static let apiKey = context(.apiKey(keyID: "kid"), models: Set(VideoModel.allCases.filter(\.runsWithAPIKey)))
+    /// What `HiggsfieldAPIProvider.capabilities()` answers: Lite without Object Swap.
+    static let apiKey = context(
+        .apiKey(keyID: "kid"), models: Set(VideoModel.allCases.filter(\.runsWithAPIKey)),
+        unservedModes: [lite: [.objectSwap]])
 
     @Test func theAccountOffersItNextToGenjutsuForMotionAndSwap() {
         for mode in [Mode.motionTransfer, .objectSwap] {
             var form = CreateFixture.ready()
             form.mode = mode
             #expect(Array(form.modelOptions(in: Self.account).prefix(2)) == [.genjutsu, Self.lite])
-            #expect(!form.modelOptions(in: Self.apiKey).contains(Self.lite))
+            #expect(form.modelOptions(in: Self.apiKey).contains(Self.lite) == (mode == .motionTransfer))
         }
         var restyle = CreateFixture.ready()
         restyle.mode = .restyle
@@ -56,13 +62,19 @@ import Testing
         #expect(opened.makeSpecs(isDraft: true, in: Self.account).map(\.model) == [Self.lite])
     }
 
+    /// With an API key an Object Swap template falls back; a Motion Transfer one keeps Lite.
     @Test func withAnAPIKeyATemplateFallsBackToGenjutsuAndSaysSo() {
         let template = JobTemplate(name: "Cheap dance", mode: .objectSwap, model: Self.lite, resolution: .p720)
         var form = CreateFixture.ready()
+        form.unservedModes = Self.apiKey.capabilities?.unservedModes ?? [:]
         let message = form.apply(template, offered: Self.apiKey.offeredModels)
         #expect(form.model == .genjutsu)
         #expect(message?.title == "Running on Genjutsu")
         #expect(message?.message == "\"Cheap dance\" uses Genjutsu Lite, which this connection doesn't offer.")
+
+        let motion = JobTemplate(name: "Cheap dance", mode: .motionTransfer, model: Self.lite, resolution: .p720)
+        #expect(form.apply(motion, offered: Self.apiKey.offeredModels) == nil)
+        #expect(form.makeSpecs(isDraft: false, in: Self.apiKey).map(\.model) == [Self.lite])
     }
 
     /// A draft opened again (Edit Inputs, Render final) keeps Lite where it runs and says when it can't.
@@ -76,6 +88,10 @@ import Testing
         reopened.load(draft, source: CreateFixture.video())
         #expect(reopened.fitModel(to: Self.account.offeredModels) == nil)
         #expect(reopened.model == Self.lite)
+        #expect(reopened.fitModel(to: Self.apiKey.offeredModels) == nil)
+        reopened.unservedModes = Self.apiKey.capabilities?.unservedModes ?? [:]
+        reopened.mode = .objectSwap
+        reopened.model = Self.lite
         let message = reopened.fitModel(to: Self.apiKey.offeredModels)
         #expect(reopened.model == .genjutsu)
         #expect(message?.title == "Running on Genjutsu")
@@ -162,7 +178,13 @@ import Testing
             Issue.record("expected a refusal")
             return
         }
-        #expect(refusal.message == "Genjutsu Lite isn't available on this connection.")
+        #expect(
+            refusal.message == "Genjutsu Lite doesn't do object_swap on this connection; it does motion_transfer.")
+        var motion = order
+        motion.mode = "motion_transfer"
+        let spec = try motion.spec(from: base, in: Self.apiKey).get()
+        #expect(spec.model == Self.lite)
+        #expect(Self.apiKey.cost(for: spec) == .usd(Decimal(string: "2.4")!, isEstimate: false))
 
         var long = order
         long.source = AgentVideoOrder.Source(video: CreateFixture.video(duration: 20), start: 0, end: 18)
@@ -171,5 +193,30 @@ import Testing
             return
         }
         #expect(tooLong.message.contains("too long"))
+    }
+}
+
+extension GenjutsuLiteFormTests {
+    /// With an API key, Lite picked in Motion and the tab moved to Object Swap runs on Genjutsu there, which the
+    /// picker shows alone, and Motion keeps Lite.
+    @Test func withAnAPIKeyObjectSwapRunsOnGenjutsu() {
+        var form = CreateFixture.ready()
+        form.unservedModes = Self.apiKey.capabilities?.unservedModes ?? [:]
+        form.model = Self.lite
+        #expect(form.makeSpecs(isDraft: false, in: Self.apiKey).map(\.model) == [Self.lite])
+        #expect(form.blocker(isDraft: false, in: Self.apiKey) == nil)
+
+        form.tab = .objectSwap
+        #expect(form.selectedModel == .genjutsu)
+        #expect(form.modelOptions(in: Self.apiKey) == [.genjutsu])
+        #expect(form.makeSpecs(isDraft: false, in: Self.apiKey).map(\.model) == [.genjutsu])
+        form.tab = .motionTransfer
+        #expect(form.selectedModel == Self.lite)
+
+        // The account's form runs Lite in both.
+        var account = CreateFixture.ready()
+        account.model = Self.lite
+        account.tab = .objectSwap
+        #expect(account.selectedModel == Self.lite)
     }
 }

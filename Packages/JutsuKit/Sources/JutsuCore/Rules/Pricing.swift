@@ -94,11 +94,12 @@ public struct Pricing: Sendable, Hashable {
     static let withVideoReference = " with video reference"
 
     /// Every tariff a job can have with an API key, with each resolution its model renders at in that mode
-    /// (`VideoModel.resolutions(for:)`). A model the account alone runs (`VideoModel.runsWithAPIKey`) has none.
+    /// (`VideoModel.resolutions(for:)`). A model or mode the account alone runs (`VideoModel.runsWithAPIKey(in:)`)
+    /// has none.
     static var tariffs: [(String, Resolution)] {
         var tariffs: [(String, Resolution)] = []
         for model in VideoModel.allCases where model.runsWithAPIKey {
-            for mode in Mode.allCases where model.serves(mode) {
+            for mode in Mode.allCases where model.runsWithAPIKey(in: mode) {
                 for resolution in model.resolutions(for: mode) {
                     for hasSource in [true, false] {
                         for hasReferences in [true, false] {

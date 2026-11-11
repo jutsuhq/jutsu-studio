@@ -116,6 +116,8 @@ func submitGoesToTheModeWorkflowAndKeepsTheReturnedURLs(mode: Mode, path: String
 
 @Test func providerReportsStaticCapabilitiesAndListPrice() async throws {
     let provider = StubServer().makeAPIProvider(keyID: "kid-1")
+    // Genjutsu Lite's Object Swap has no REST endpoint.
+    let lite = try #require(VideoModel(rawValue: "genjutsuLite"))
 
     #expect(provider.kind == .apiKey)
     #expect(provider.owner == "kid-1")
@@ -124,7 +126,8 @@ func submitGoesToTheModeWorkflowAndKeepsTheReturnedURLs(mode: Mode, path: String
             == Capabilities(
                 modes: Set(Mode.allCases), models: Set(VideoModel.allCases.filter(\.runsWithAPIKey)),
                 resolutions: Set(Resolution.allCases), costUnit: .usd, maxConcurrency: nil,
-                parameters: Set(ModelParameter.allCases).subtracting([.klingVideoBackground])))
+                parameters: Set(ModelParameter.allCases).subtracting([.klingVideoBackground]),
+                unservedModes: [lite: [.objectSwap]]))
     #expect(try await provider.estimate(spec()) == .usd(Decimal(string: "3.816") ?? 0, isEstimate: false))
     #expect(try await provider.balance() == nil)
     #expect(try await provider.submitIsIdempotent(spec()))

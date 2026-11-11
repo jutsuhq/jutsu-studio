@@ -19,12 +19,19 @@ func billedSecondsRoundUp(duration: TimeInterval, expected: Int) {
     }
 }
 
-/// Genjutsu Lite's list prices are kept for its REST endpoints, which no job uses until its schema is published.
+/// Genjutsu Lite's list prices per second, -e.05, -e.10 and -e.20, bill the output and the input video alike, so a
+/// job on a source pays twice the rate per second of its selection. Object Swap's are kept, though no job uses them.
 @Test func genjutsuLiteHasItsListPrices() throws {
     let pricing = try Pricing.bundled()
     let rates = [Resolution.p480: "0.05", .p720: "0.1", .p1080: "0.2"].compactMapValues { Decimal(string: $0) }
     #expect(pricing.rates["higgsfield/genjutsu-light/motion-transfer/v1.0"] == rates)
     #expect(pricing.rates["higgsfield/genjutsu-light/object-swap/v1.0"] == rates)
+    let lite = try #require(VideoModel(rawValue: "genjutsuLite"))
+    for (resolution, rate) in rates {
+        var spec = makeSpec(mode: .motionTransfer, resolution: resolution)
+        spec.model = lite
+        #expect(try pricing.rate(for: spec) == rate * 2)
+    }
 }
 
 /// Seedance's list price is per second of output, and a source clip is billed as input too, at 0.6 of the rate for

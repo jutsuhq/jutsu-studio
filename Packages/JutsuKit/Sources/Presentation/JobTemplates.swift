@@ -17,7 +17,8 @@ extension CreateForm {
     @discardableResult
     public mutating func apply(_ template: JobTemplate, offered: Set<VideoModel> = [.genjutsu]) -> UserMessage? {
         mode = template.mode
-        let runsOnModel = offered.contains(template.model)
+        let runsOnModel =
+            offered.contains(template.model) && unservedModes[template.model]?.contains(template.mode) != true
         model = runsOnModel ? template.model : .genjutsu
         if template.referencesAreFrames && model.declares(.frames) {
             references = []

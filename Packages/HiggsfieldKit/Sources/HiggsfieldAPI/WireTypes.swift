@@ -32,6 +32,8 @@ public enum ModelEndpoint: String, Sendable, CaseIterable {
     case motionTransfer = "higgsfield/genjutsu/motion-transfer/v1.0"
     case restyle = "higgsfield/genjutsu/restyle/v1.0"
     case objectSwap = "higgsfield/genjutsu/object-swap/v1.0"
+    /// Genjutsu Lite's one REST endpoint; the same body as Genjutsu's (`GenerationRequest`).
+    case genjutsuLiteMotionTransfer = "higgsfield/genjutsu-light/motion-transfer/v1.0"
     case seedanceTextToVideo = "bytedance/seedance-2.5/text-to-video"
     case seedanceReferenceToVideo = "bytedance/seedance-2.5/reference-to-video"
     case seedanceImageToVideo = "bytedance/seedance-2.5/image-to-video"
