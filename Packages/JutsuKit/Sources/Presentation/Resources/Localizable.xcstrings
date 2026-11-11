@@ -4,6 +4,12 @@
     "Agents off" : {
 
     },
+    "AI video" : {
+
+    },
+    "General" : {
+
+    },
     "No agent connected" : {
 
     },
@@ -11,6 +17,15 @@
 
     },
     "%lld agents connected" : {
+
+    },
+    "Old film" : {
+
+    },
+    "Phone footage" : {
+
+    },
+    "Short series" : {
 
     },
     "Your daily cap: %@ of %@" : {
