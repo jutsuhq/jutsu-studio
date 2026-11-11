@@ -23,7 +23,7 @@ Some features depend on how you connect. **Account** means a Higgsfield account 
 | MiniMax H3 | Motion transfer from a reference video and up to five images, 5–15 s, at 2K | Both |
 | MiniMax H3 Max | Motion transfer from a reference video and up to five images, 5–15 s, 480p or 768p | Account |
 | Gemini Omni Flash 1.2 | Google's model with native audio, at 360p, 720p, 1080p or 4K: a 3–15 s clip from a prompt or a start frame, 3–10 s from a start and an end frame or from up to six images and the source video as references; Edit of a 3–15 s clip as the prompt says, with images; Extend of a clip by 3–10 s. Frames are 16:9 or 9:16 | Account |
-| Higgsfield Intone | A talking head: one or two people from your images say your speech recording (MP3, WAV, M4A or any audio file, 2–30 s), at 480p, 720p or 1080p, in a frame from 21:9 to 3:4; the clip runs the speech and 2.5 s more. No source video | Account |
+| Higgsfield Intone | A talking head: one or two people from your images say your speech recording (MP3, WAV, M4A or any audio file, 2–27.5 s), at 480p, 720p or 1080p, in a frame from 21:9 to 3:4; the clip runs the speech and 2.5 s more. No source video | Account |
 
 - Each mode shows only the fields it needs, and a model the connection can't run isn't offered.
 - Model limits (lengths, resolutions, image counts) come from Higgsfield's live model catalog, with built-in values as a fallback.

@@ -42,7 +42,7 @@ import Testing
         let specs = form.makeSpecs(isDraft: false, in: CreateFixture.apiKey)
         #expect(specs.map(\.speech) == [speech] && specs.map(\.duration) == [8.9])
         #expect(Validation.check(try #require(specs.first)).isEmpty)
-        #expect(form.text(for: .speechTooLong(31)) == "Use a speech of at most 30 s")
+        #expect(form.text(for: .speechTooLong(28)) == "Use a speech of at most \(CostText.limit(27.5))")
     }
 
     @Test func editInputsAndTheSavedDraftKeepTheSpeech() throws {

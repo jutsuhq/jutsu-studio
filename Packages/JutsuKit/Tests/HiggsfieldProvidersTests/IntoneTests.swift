@@ -35,7 +35,7 @@ extension Network {
             #expect(model.declares(.speech) && model.makesClipsWithoutSource && !model.declares(.frames))
             #expect(!model.declares(.generatedAudio) && !model.offersDraft)
             #expect(!model.runsWithAPIKey && AccountModel.runs(model))
-            #expect(model.descriptor.speechSeconds == 2...30 && model.descriptor.speechTail == 2.5)
+            #expect(model.descriptor.speechSeconds == 2...27.5 && model.descriptor.speechTail == 2.5)
             #expect(throws: ProviderError.self) {
                 try APIModel(try Self.clip(), inputs: RemoteInputs(video: nil, images: []))
             }
@@ -87,7 +87,7 @@ extension Network {
 
         // MARK: Limits
 
-        /// One or two characters, a speech of 2–30 s, and no source video.
+        /// One or two characters, a speech of 2–27.5 s (30 s with its tail), and no source video.
         @Test func validationKeepsToTheSchema() throws {
             #expect(Validation.check(try Self.clip()).isEmpty)
             #expect(Validation.check(try Self.clip(characters: 2)).isEmpty)
@@ -95,10 +95,10 @@ extension Network {
             #expect(Validation.check(try Self.clip(characters: 3)) == [.tooManyReferences(maximum: 2)])
             #expect(Validation.check(try Self.clip(speech: nil)) == [.speechRequired])
             let short = LocalAudio(fileURL: Self.speech.fileURL, duration: 1.5)
-            let long = LocalAudio(fileURL: Self.speech.fileURL, duration: 31)
-            let longest = LocalAudio(fileURL: Self.speech.fileURL, duration: 30)
+            let long = LocalAudio(fileURL: Self.speech.fileURL, duration: 28)
+            let longest = LocalAudio(fileURL: Self.speech.fileURL, duration: 27.5)
             #expect(Validation.check(try Self.clip(speech: short)) == [.speechTooShort(1.5)])
-            #expect(Validation.check(try Self.clip(speech: long)) == [.speechTooLong(31)])
+            #expect(Validation.check(try Self.clip(speech: long)) == [.speechTooLong(28)])
             #expect(Validation.check(try Self.clip(speech: longest)).isEmpty)
             var withSource = try Self.clip()
             withSource.source = SourceClip(
