@@ -34,11 +34,15 @@ public struct AgentVideoOrder: Sendable, Hashable {
     public var variants: Int?
     /// The job's name in lists, as the agent sent it; the job keeps it trimmed and cut (`JobSpec.title(from:)`).
     public var title: String?
+    /// The recording the characters say, read as Create reads a dropped one; for a quote, a stand-in as long as
+    /// `speech_length`.
+    public var speech: LocalAudio?
 
     public init(
         mode: String, model: String? = nil, prompt: String = "", source: Source? = nil, images: [LocalImage] = [],
         style: UUID? = nil, resolution: String? = nil, isDraft: Bool = false, length: TimeInterval? = nil,
-        aspectRatio: String? = nil, audio: String? = nil, variants: Int? = nil, title: String? = nil
+        aspectRatio: String? = nil, audio: String? = nil, variants: Int? = nil, title: String? = nil,
+        speech: LocalAudio? = nil
     ) {
         self.mode = mode
         self.model = model
@@ -53,6 +57,7 @@ public struct AgentVideoOrder: Sendable, Hashable {
         self.audio = audio
         self.variants = variants
         self.title = title
+        self.speech = speech
     }
 
     /// A quote's stand-in for a source of `end` seconds: only its length and frame matter to a price.
@@ -67,6 +72,11 @@ public struct AgentVideoOrder: Sendable, Hashable {
     /// A quote's stand-ins for `count` reference images.
     public static func quoteImages(_ count: Int) -> [LocalImage] {
         (0..<max(0, count)).map { LocalImage(fileURL: URL(filePath: "/quote/image-\($0).png")) }
+    }
+
+    /// A quote's stand-in for a speech recording of `seconds`: only its length matters to a price.
+    public static func quoteSpeech(_ seconds: TimeInterval) -> LocalAudio {
+        LocalAudio(fileURL: URL(filePath: "/quote/speech.m4a"), duration: seconds)
     }
 
     static let modes: [String: Mode] = [
@@ -163,6 +173,7 @@ public struct AgentVideoOrder: Sendable, Hashable {
         try setLength(in: &form)
         try setAspectRatio(in: &form)
         try setAudio(in: &form)
+        try setSpeech(in: &form)
         try setVariants(in: &form, context: context)
         let specs = form.makeSpecs(isDraft: isDraft, in: context)
         guard specs.count == 1, var spec = specs.first else {
@@ -244,17 +255,6 @@ public struct AgentVideoOrder: Sendable, Hashable {
         form.aspectRatio = ratio
     }
 
-    private func setAudio(in form: inout CreateForm) throws(Refusal) {
-        guard let name = audio else { return }
-        guard let option = Self.audioOptions[name] else {
-            throw Refusal("audio is one of \(Self.audioOptions.keys.sorted().joined(separator: ", ")).")
-        }
-        if option == .generated, !form.offersGeneratedAudio {
-            throw Refusal("\(form.selectedModel.title) can't make the sound here; leave audio out or keep original.")
-        }
-        form.audio = option
-    }
-
     private func setVariants(in form: inout CreateForm, context: CreateContext) throws(Refusal) {
         guard let variants, variants != 1 else { return }
         guard CreateForm.variantChoices.contains(variants) else {
@@ -317,5 +317,27 @@ extension AgentVideoOrder {
                 "\(model.title) doesn't do \(name(of: mode)) on this connection; it does "
                     + "\(modes.joined(separator: ", ")).")
         }
+    }
+}
+
+// The sound: the audio option, and the speech of a model whose characters say a recording.
+extension AgentVideoOrder {
+    private func setAudio(in form: inout CreateForm) throws(Refusal) {
+        guard let name = audio else { return }
+        guard let option = Self.audioOptions[name] else {
+            throw Refusal("audio is one of \(Self.audioOptions.keys.sorted().joined(separator: ", ")).")
+        }
+        if option == .generated, !form.offersGeneratedAudio {
+            throw Refusal("\(form.selectedModel.title) can't make the sound here; leave audio out or keep original.")
+        }
+        form.audio = option
+    }
+
+    private func setSpeech(in form: inout CreateForm) throws(Refusal) {
+        guard let speech else { return }
+        guard form.offersSpeech else {
+            throw Refusal("\(form.selectedModel.title) takes no speech; leave speech out.")
+        }
+        form.setSpeech(speech)
     }
 }

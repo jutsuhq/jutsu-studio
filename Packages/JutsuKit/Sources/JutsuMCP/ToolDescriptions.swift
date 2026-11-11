@@ -47,7 +47,8 @@ extension Tool {
             in this mode, the server's limits where it states them, else the app's, and aspectRatio, the result's \
             frame (source: it keeps the source clip's orientation; model: the model takes no aspect ratio and picks it \
             itself, with frameNote saying what to check). A source \
-            needs end (its start and end in seconds) instead of a file; images may be paths or image_count. Free.
+            needs end (its start and end in seconds) instead of a file; images may be paths or image_count; a model \
+            that takes speech (capabilities takesSpeech) is quoted with speech_length, the recording's seconds. Free.
             """
         case .createVideo:
             """
@@ -61,7 +62,8 @@ extension Tool {
             use them (hold unlimited_not_allowed). A job held over_max_cost goes on when the same request_id and \
             parameters come again with a higher max_cost that covers its price, what is left of the budget and the \
             person's cap (no files are sent again); otherwise it stays held, with next saying why. Files (source.path, \
-            images) are paths on this Mac, copied into the app. elements names the account's characters and other \
+            images, speech) are paths on this Mac, copied into the app; speech is the recording the characters say, \
+            on a model that takes one (capabilities takesSpeech), and its length sets the clip's. elements names the account's characters and other \
             reference elements (from the elements tool, account only): their images are added first, in the element's \
             order, then images; the answer's references lists every image sent with its @ImageN tag, the N the prompt \
             names it by, and a source is @Video1 (Kling 4.0 and 4.0 Flash read them as @image_N and @video_1). title names the job in the Queue, the Library and export file names instead of the source's \
@@ -149,9 +151,9 @@ extension Tool {
             """
             The full details of up to 20 Library items by ID (from library_search or a job), rejected ones too: the \
             item as library_search lists it but with the whole prompt; inputs, the files that went in, in the order \
-            the job sent them (role source, start_frame, end_frame, reference or edited_from; position, the N of the \
-            prompt's @ImageN; file, the path on this Mac when it is here; item, its own Library ID when the Library \
-            lists it; onHiggsfield; start and end, the source's range); and settings (resolution, draft, audio, \
+            the job sent them (role source, start_frame, end_frame, reference, edited_from or speech; position, the N \
+            of the prompt's @ImageN; file, the path on this Mac when it is here; item, its own Library ID when the \
+            Library lists it; onHiggsfield; start and end, the source's range); and settings (resolution, draft, audio, \
             style, length, aspectRatio, paidWithUnlimited, operation for an Enhance result, count for images); and \
             madeFrom, for an item whose current version was made from an earlier one of its own (a run on this Mac, \
             an edit in another app): that version's item, versionId, version and file, to compare or go back. A \

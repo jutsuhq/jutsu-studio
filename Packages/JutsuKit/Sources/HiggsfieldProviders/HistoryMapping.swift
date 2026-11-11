@@ -42,7 +42,9 @@ enum HistoryMapping {
             id: generation.id, mode: mode, model: videoModel, createdAt: generation.createdAt,
             isLiked: generation.isLiked, outputURL: output, duration: generation.duration, pixelSize: size,
             resolution: generation.resolution.flatMap(Resolution.init(rawValue:)), prompt: generation.prompt,
-            inputs: RemoteInputs(video: video, images: frames ?? generation.media.compactMap(asset(.image))))
+            inputs: RemoteInputs(
+                video: video, images: frames ?? generation.media.compactMap(asset(.image)),
+                audio: generation.media.lazy.compactMap(asset(.audio)).first))
         history.referencesAreFrames = frames != nil
         // Only Seedance 2.5 has a native draft and its finalize (`models_explore get`, 2026-10-15).
         if VideoRequest.Model(rawValue: generation.model) == .seedance25 {

@@ -11,6 +11,8 @@ public protocol MediaPreparing: Sendable {
         -> PreparedFile
     /// Converts to JPEG or PNG and downscales oversized images.
     func prepareImage(_ image: LocalImage) async throws -> PreparedFile
+    /// Passes MP3, WAV and M4A through untouched and converts any other audio to M4A (AAC).
+    func prepareAudio(_ audio: LocalAudio) async throws -> PreparedFile
     /// Writes the downloaded `result` to `output` with its sound as `spec.audio` asks (`AudioPlan`),
     /// without re-encoding the video. Returns `false` and writes nothing when the result stays as it is.
     func restoreAudio(of spec: JobSpec, result: URL, to output: URL) async throws -> Bool

@@ -120,12 +120,16 @@ public struct AgentVideoRequest: Codable, Equatable, Hashable, Sendable {
     public var elements: [String]
     /// What the Queue, the Library and export names call the job instead of the source's file name.
     public var title: String?
+    /// For `create_video`: the speech recording's path in the app's inbox, on a model that voices one.
+    public var speech: String?
+    /// For `quote`: the seconds the speech recording runs.
+    public var speechLength: Double?
 
     public init(
         mode: String, model: String? = nil, prompt: String? = nil, source: AgentSource? = nil, images: [String] = [],
         imageCount: Int? = nil, style: UUID? = nil, resolution: String? = nil, draft: Bool = false,
         length: Double? = nil, aspectRatio: String? = nil, audio: String? = nil, variants: Int? = nil,
-        elements: [String] = [], title: String? = nil
+        elements: [String] = [], title: String? = nil, speech: String? = nil, speechLength: Double? = nil
     ) {
         self.mode = mode
         self.model = model
@@ -142,6 +146,8 @@ public struct AgentVideoRequest: Codable, Equatable, Hashable, Sendable {
         self.variants = variants
         self.elements = elements
         self.title = title
+        self.speech = speech
+        self.speechLength = speechLength
     }
 
     /// How many reference images the job has: the files, else the count a quote names.
@@ -149,7 +155,7 @@ public struct AgentVideoRequest: Codable, Equatable, Hashable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case mode, model, prompt, source, images, imageCount, style, resolution, draft, length, aspectRatio, audio
-        case variants, elements, title
+        case variants, elements, title, speech, speechLength
     }
 
     public init(from decoder: any Decoder) throws {
@@ -169,6 +175,8 @@ public struct AgentVideoRequest: Codable, Equatable, Hashable, Sendable {
         variants = try container.decodeIfPresent(Int.self, forKey: .variants)
         elements = try container.decodeIfPresent([String].self, forKey: .elements) ?? []
         title = try container.decodeIfPresent(String.self, forKey: .title)
+        speech = try container.decodeIfPresent(String.self, forKey: .speech)
+        speechLength = try container.decodeIfPresent(Double.self, forKey: .speechLength)
         if let problem { throw AgentError.badRequest(problem) }
     }
 
@@ -189,6 +197,8 @@ public struct AgentVideoRequest: Codable, Equatable, Hashable, Sendable {
         try container.encodeIfPresent(variants, forKey: .variants)
         if !elements.isEmpty { try container.encode(elements, forKey: .elements) }
         try container.encodeIfPresent(title, forKey: .title)
+        try container.encodeIfPresent(speech, forKey: .speech)
+        try container.encodeIfPresent(speechLength, forKey: .speechLength)
     }
 
     /// Why the fields can't be a request, before the app's own rules; nil when they can. Shared by the helper, which
@@ -207,6 +217,10 @@ public struct AgentVideoRequest: Codable, Equatable, Hashable, Sendable {
         }
         if let path = images.first(where: { !Self.isValidPath($0) }) {
             return "images has a path that isn't one: \(path.prefix(80))"
+        }
+        if let speech, !Self.isValidPath(speech) { return "speech is the path of an audio file" }
+        if let speechLength, !(speechLength.isFinite && speechLength > 0 && speechLength <= Self.maxLength) {
+            return "speech_length is a number of seconds above 0 and up to \(Int(Self.maxLength))"
         }
         if let imageCount, !(0...Self.protocolMaxImages).contains(imageCount) {
             return "image_count is 0 to \(Self.protocolMaxImages)"

@@ -223,14 +223,20 @@ extension Network {
             #expect(try await account.balance() == AccountBalance(credits: 2596.34, plan: "ultra"))
         }
 
-        @Test func uploadPutsTheFileAndConfirmsItsMediaID() async throws {
+        /// `media_confirm`'s `type` follows the content type: a video, an audio file (a speech recording), else an image.
+        @Test(arguments: [("image/png", "png", "image"), ("video/mp4", "mp4", "video"), ("audio/mpeg", "mp3", "audio")])
+        func uploadPutsTheFileAndConfirmsItsMediaID(
+            contentType: String, fileExtension: String, type: String
+        )
+            async throws
+        {
             let mcp = mcpServer(tools: Self.fullSet) { name, _ in
                 name == "media_upload"
                     ? [
                         "uploads": [
                             [
-                                "media_id": "media-1", "upload_url": "https://upload.example/in.png?X-Signature=abc",
-                                "url": "https://cdn.example/media-1.png",
+                                "media_id": "media-1", "upload_url": "https://upload.example/in?X-Signature=abc",
+                                "url": "https://cdn.example/media-1",
                             ]
                         ]
                     ]
@@ -240,18 +246,19 @@ extension Network {
             let session = stub.session()
             let client = MCPClient(endpoint: Fixture.mcpURL, tokens: tokenProvider(), session: session)
             let account = HiggsfieldAccount(client: client, session: session)
-            let file = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).png")
-            try Data("png".utf8).write(to: file)
+            let file = FileManager.default.temporaryDirectory.appendingPathComponent(
+                "\(UUID().uuidString).\(fileExtension)")
+            try Data("file".utf8).write(to: file)
             defer { try? FileManager.default.removeItem(at: file) }
 
-            let media = try await account.upload(fileAt: file, contentType: "image/png")
+            let media = try await account.upload(fileAt: file, contentType: contentType)
 
-            let url = try #require(URL(string: "https://cdn.example/media-1.png"))
+            let url = try #require(URL(string: "https://cdn.example/media-1"))
             #expect(media == UploadedMedia(id: "media-1", url: url))
             let put = try #require(stub.requests.first { $0.method == "PUT" })
             #expect(put.header("Authorization") == nil)
-            #expect(put.header("Content-Type") == "image/png")
-            #expect(Self.calls(stub).last?["arguments"] == ["media_id": "media-1", "type": "image"])
+            #expect(put.header("Content-Type") == contentType)
+            #expect(Self.calls(stub).last?["arguments"] == ["media_id": "media-1", "type": .string(type)])
         }
 
         @Test func uploadURLThatIsNotHTTPSIsNeverOpened() async throws {

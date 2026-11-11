@@ -4,6 +4,15 @@
     "%@ · %@ %@" : {
 
     },
+    "A voice recording the characters say" : {
+
+    },
+    "Add speech" : {
+
+    },
+    "Can't read this audio file" : {
+
+    },
     "Library item" : {
 
     },
@@ -13,10 +22,16 @@
     "Open the item's sheet" : {
 
     },
+    "Replace" : {
+
+    },
     "Show in Library" : {
 
     },
     "Show %@ in Finder" : {
+
+    },
+    "Speech" : {
 
     },
     "Today" : {
@@ -65,6 +80,9 @@
 
     },
     "Upscale" : {
+
+    },
+    "Use an MP3, WAV or M4A recording." : {
 
     },
     "With Higgsfield…" : {

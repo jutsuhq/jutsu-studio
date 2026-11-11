@@ -71,8 +71,9 @@ public actor HiggsfieldAccount {
             variantIDs: Array(ids.dropFirst()))
     }
 
-    /// Asks for an upload URL, PUTs the file there and confirms it. The server tells video from image by the
-    /// file name's extension. An upload URL that isn't https is never opened.
+    /// Asks for an upload URL, PUTs the file there and confirms it as a video, an audio file or an image, by its
+    /// content type. The server tells them apart by the file name's extension. An upload URL that isn't https is never
+    /// opened.
     public func upload(fileAt fileURL: URL, contentType: String) async throws -> UploadedMedia {
         let value = try await call(
             .upload,
@@ -87,7 +88,7 @@ public actor HiggsfieldAccount {
         request.setValue(contentType, forHTTPHeaderField: "Content-Type")
         let (_, response) = try await session.send(request, fromFile: fileURL)
         guard response.isSuccess else { throw HiggsfieldError.server(status: response.statusCode) }
-        let type = contentType.hasPrefix("video/") ? "video" : "image"
+        let type = ["video", "audio"].first { contentType.hasPrefix("\($0)/") } ?? "image"
         let confirmed = try await call(
             .confirmUpload, [ToolKey.mediaID: .string(mediaID), ToolKey.type: .string(type)])
         if let error = confirmed[ToolKey.error]?.stringValue {

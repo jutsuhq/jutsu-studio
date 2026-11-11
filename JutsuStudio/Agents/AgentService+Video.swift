@@ -26,7 +26,8 @@ extension AgentService {
         // An element's images count as the references they become; reading them is free.
         let elementImages = try await namedElements(video.elements).reduce(0) { $0 + $1.images.count }
         let order = Self.order(
-            video, source: source, images: AgentVideoOrder.quoteImages(video.referenceCount + elementImages))
+            video, source: source, images: AgentVideoOrder.quoteImages(video.referenceCount + elementImages),
+            speech: video.speechLength.map(AgentVideoOrder.quoteSpeech))
         let (spec, paysUnlimited) = try await spec(for: order)
         let kind = environment.connection.state.kind
         var taken: AgentSpendTotal?
@@ -61,7 +62,8 @@ extension AgentService {
 
     func createVideo(_ fields: CreateVideoCommand, client: String?) async throws(AgentError) -> AgentCreated {
         let started = ContinuousClock.now
-        let files = [fields.video.source?.path].compactMap(\.self) + fields.video.images
+        let video = fields.video
+        let files = [video.source?.path].compactMap(\.self) + video.images + [video.speech].compactMap(\.self)
         defer { Task { await sweepInbox() } }
         let created = try await requests.run(
             fields.requestID, fingerprint: fields.fingerprint, parameters: fields.parameters,
@@ -119,7 +121,9 @@ extension AgentService {
         {
             throw .invalidRequest(refusal)
         }
-        let (spec, _) = try await spec(for: Self.order(video, source: source, images: images))
+        var speech: LocalAudio?
+        if let path = video.speech { speech = try await speechFile(path) }
+        let (spec, _) = try await spec(for: Self.order(video, source: source, images: images, speech: speech))
         let jobID = UUID()
         try recordRequest(
             fields.requestID, fingerprint: fields.fingerprint, parameters: fields.parameters, jobIDs: [jobID])
@@ -148,6 +152,16 @@ extension AgentService {
         }
     }
 
+    /// The agent's speech recording, read as Create reads a dropped one.
+    private func speechFile(_ path: String) async throws(AgentError) -> LocalAudio {
+        let file = try inboxFile(path)
+        do {
+            return try await AppEnvironment.probeSpeech(file, bookmark: nil)
+        } catch {
+            throw .invalidRequest("The speech can't be read as audio: \(error.localizedDescription)")
+        }
+    }
+
     /// Refuses a `max_cost` in another unit than the connection's.
     static func checkUnit(of maxCost: AgentAmount, on kind: ProviderKind) throws(AgentError) {
         let unit = AgentBudgetUnit(for: kind)
@@ -157,12 +171,13 @@ extension AgentService {
 
     /// The request's fields as an order, with its files as the app holds them.
     private static func order(
-        _ video: AgentVideoRequest, source: AgentVideoOrder.Source?, images: [LocalImage]
+        _ video: AgentVideoRequest, source: AgentVideoOrder.Source?, images: [LocalImage], speech: LocalAudio?
     ) -> AgentVideoOrder {
         AgentVideoOrder(
             mode: video.mode, model: video.model, prompt: video.prompt ?? "", source: source, images: images,
             style: video.style, resolution: video.resolution, isDraft: video.draft, length: video.length,
-            aspectRatio: video.aspectRatio, audio: video.audio, variants: video.variants, title: video.title)
+            aspectRatio: video.aspectRatio, audio: video.audio, variants: video.variants, title: video.title,
+            speech: speech)
     }
 
     /// The one job `order` makes, built and checked as Create does, on the connection as it is now, and whether the

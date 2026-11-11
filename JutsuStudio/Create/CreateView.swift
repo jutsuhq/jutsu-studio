@@ -202,6 +202,27 @@ struct CreateView: View {
             addCharacter(urls)
         case .frame(let slot):
             navigation.createDraft.setFrame(ReferencesSection.references(urls).first, for: slot)
+        case .speech:
+            if let url = urls.first { importSpeech(url) }
+        }
+    }
+
+    /// Reads the recording's length while access is held, then makes it the form's speech.
+    func importSpeech(_ url: URL) {
+        let access = SecurityScopedAccess(url: url, bookmark: nil)
+        let bookmark = AppEnvironment.bookmark(for: url)
+        Task {
+            do {
+                let speech = try await AppEnvironment.probeSpeech(url, bookmark: bookmark)
+                withExtendedLifetime(access) {}
+                navigation.createDraft.setSpeech(speech)
+            } catch MediaError.unsupportedFormat {
+                alert = UserMessage(
+                    title: String(localized: "Can't read this audio file"),
+                    message: String(localized: "Use an MP3, WAV or M4A recording."))
+            } catch {
+                alert = UserMessage(error)
+            }
         }
     }
 
@@ -309,7 +330,7 @@ extension CreateView {
     fileprivate func panel(_ form: Binding<CreateForm>) -> some View {
         CreatePanel(
             form: form, context: context, catalog: loader.catalog, isSubmitting: submitting.isBusy,
-            onImportSource: { importSource($0) }, onPick: { pick($0) },
+            onImportSource: { importSource($0) }, onImportSpeech: { importSpeech($0) }, onPick: { pick($0) },
             onAddCharacter: { addCharacter($0) },
             onRefreshPresets: { Task { await loader.refreshPresets(environment) } },
             onSubmit: { submit(isDraft: $0) },

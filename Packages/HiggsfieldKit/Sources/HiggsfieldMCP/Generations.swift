@@ -87,13 +87,14 @@ public struct PastMedia: Sendable, Hashable {
 
 extension MediaRole {
     /// History names the inputs `video` and `image`; `generate_video` takes the `_references` names. A start or end
-    /// frame keeps its role.
+    /// frame keeps its role. A speech recording is `audio_references`, or `audio` by the same rule (unconfirmed).
     public init?(historyRole: String) {
         switch historyRole {
         case "video", MediaRole.video.rawValue: self = .video
         case "image", MediaRole.image.rawValue: self = .image
         case MediaRole.startFrame.rawValue: self = .startFrame
         case MediaRole.endFrame.rawValue: self = .endFrame
+        case "audio", MediaRole.audio.rawValue: self = .audio
         default: return nil
         }
     }

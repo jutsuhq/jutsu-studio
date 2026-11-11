@@ -61,6 +61,13 @@ extension SourceClip {
     }
 }
 
+extension LocalAudio {
+    /// Runs `body` with access to the recording's file, then gives the access up.
+    public func withAccess<T: Sendable>(_ body: @Sendable (URL) async throws -> T) async throws -> T {
+        try await SecurityScopedAccess.withAccess(to: fileURL, bookmark: bookmark, body)
+    }
+}
+
 extension LocalImage {
     /// Runs `body` with access to the image file, then gives the access up.
     public func withAccess<T: Sendable>(_ body: @Sendable (URL) async throws -> T) async throws -> T {

@@ -162,6 +162,8 @@ public enum MediaRole: String, Sendable {
     /// mode the server's Seedance 2.5 tools put these roles under (catalog snapshot of 2026-10-15).
     case startFrame = "start_image"
     case endFrame = "end_image"
+    /// A speech recording (`JobSpec.speech`), as the models that voice one list it in `medias[].roles`.
+    case audio = "audio_references"
 }
 
 /// A submitted generation.

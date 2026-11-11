@@ -23,6 +23,8 @@ public struct VideoModelDescriptor: Sendable, Hashable {
         case videoBackground
         /// Cinema Studio 4.0's camera, lens, genre, era and the rest (`CinemaControls`).
         case cinemaControls
+        /// A speech recording the characters say (`JobSpec.speech`), which Create and the agents take only here.
+        case speech
     }
 
     /// The code that encodes a job's body for the REST endpoint and its `generate_video` arguments. A model whose

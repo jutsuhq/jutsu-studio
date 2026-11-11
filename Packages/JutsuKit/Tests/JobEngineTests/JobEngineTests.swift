@@ -56,6 +56,25 @@ struct JobEngineTests {
         #expect(done.outputFile != nil)
     }
 
+    @Test func aSpeechIsPreparedAndUploadedAfterTheImages() async throws {
+        let harness = Harness()
+        let engine = try await harness.makeEngine()
+        let spec = JobSpec(
+            mode: .motionTransfer, model: .seedance25, source: nil,
+            references: [LocalImage(fileURL: URL(fileURLWithPath: "/tmp/ref0.png"))], prompt: "two friends talk",
+            resolution: .p720, length: 8, aspectRatio: .landscape,
+            speech: LocalAudio(fileURL: URL(fileURLWithPath: "/tmp/speech.mp3"), duration: 6))
+
+        let job = try await engine.enqueue(spec)
+        _ = try #require(await harness.repository.wait(for: job.id, .done))
+
+        #expect(harness.log.count("prepareAudio") == 1)
+        #expect(harness.log.count("upload") == 2)
+        let submitted = try #require(await harness.provider.submittedInputs.first)
+        #expect(submitted.images.count == 1)
+        #expect(submitted.audio?.url.lastPathComponent == "audio")
+    }
+
     @Test func enqueueKeepsTheParent() async throws {
         let harness = Harness()
         let engine = try await harness.makeEngine()

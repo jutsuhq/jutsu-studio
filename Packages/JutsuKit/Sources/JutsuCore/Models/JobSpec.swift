@@ -57,6 +57,9 @@ public struct JobSpec: Codable, Sendable, Hashable {
     /// What the job is called in lists instead of its source's file name (`name`): an agent's `title`, trimmed and
     /// cut to `maxTitleLength` (`title(from:)`). `nil` for the person's own jobs, and in jobs stored before it existed.
     public var title: String?
+    /// The recording the characters say, on a model that takes one (`VideoModelDescriptor.Control.speech`); `nil`
+    /// for any other job, and in jobs stored before it existed.
+    public var speech: LocalAudio?
 
     /// The most variants one submit makes (`generate_video`'s `count`).
     public static let maximumVariants = 4
@@ -73,7 +76,7 @@ public struct JobSpec: Codable, Sendable, Hashable {
         length: TimeInterval? = nil, aspectRatio: AspectRatio? = nil, bitrate: SeedanceBitrate? = nil,
         characterOrientation: CharacterOrientation? = nil, cinemaControls: CinemaControls = CinemaControls(),
         referencesAreFrames: Bool = false, usesUnlimited: Bool = false, operation: PostOperation? = nil,
-        variants: Int = 1, draftJobID: String? = nil, title: String? = nil
+        variants: Int = 1, draftJobID: String? = nil, title: String? = nil, speech: LocalAudio? = nil
     ) {
         self.mode = mode
         self.model = model
@@ -97,12 +100,13 @@ public struct JobSpec: Codable, Sendable, Hashable {
         self.variants = variants
         self.draftJobID = draftJobID
         self.title = title
+        self.speech = speech
     }
 
     /// Jobs stored before `audio` existed decode as `.original`, before `model` as Genjutsu, before
     /// `keepsVideoBackground` with the image's background, before `referencesAreFrames` with references, and
     /// before `usesUnlimited` paid in credits, before `operation` as generations, before `variants` as one, and
-    /// before `cinemaControls` with none set, and before `title` named after their source.
+    /// before `cinemaControls` with none set, before `title` named after their source, and before `speech` without one.
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         mode = try container.decode(Mode.self, forKey: .mode)
@@ -127,6 +131,7 @@ public struct JobSpec: Codable, Sendable, Hashable {
         variants = try container.decodeIfPresent(Int.self, forKey: .variants) ?? 1
         draftJobID = try container.decodeIfPresent(String.self, forKey: .draftJobID)
         title = try container.decodeIfPresent(String.self, forKey: .title)
+        speech = try container.decodeIfPresent(LocalAudio.self, forKey: .speech)
         // A generation stored at a resolution its mode doesn't render at, such as a Genjutsu Lite Object Swap at
         // 480p from before modes had their own, is the job it is sent as, so the Queue, the Library, the estimate
         // and the cap read the same. An operation keeps the result's resolution.

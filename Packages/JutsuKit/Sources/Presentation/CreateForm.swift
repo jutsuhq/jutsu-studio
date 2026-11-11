@@ -30,6 +30,9 @@ public struct CreateForm: Sendable, Hashable, Codable {
     /// The range the trim handles move.
     public internal(set) var selectedRangeIndex = 0
     public internal(set) var references: [LocalImage] = []
+    /// The recording the characters say; kept across model switches, and sent only on a model that takes one
+    /// (`offersSpeech`).
+    public internal(set) var speech: LocalAudio?
     /// Kept across mode switches; only restyle sends it.
     public var presetID: UUID?
     public var prompt = ""
@@ -195,6 +198,19 @@ public struct CreateForm: Sendable, Hashable, Codable {
         references.insert(image, at: min(max(newIndex, 0), references.count))
     }
 
+    // MARK: Speech
+
+    /// The selected model voices a recording (`VideoModelDescriptor.Control.speech`), so Create shows Speech.
+    public var offersSpeech: Bool { selectedModel.declares(.speech) }
+
+    /// Replaces the recording; `nil` removes it.
+    public mutating func setSpeech(_ audio: LocalAudio?) {
+        speech = audio
+    }
+
+    /// `speech` as the jobs take it: only on a model that takes one.
+    var jobSpeech: LocalAudio? { offersSpeech ? speech : nil }
+
     // MARK: Prompt
 
     /// Counted in Unicode scalars, as the API does.
@@ -320,7 +336,7 @@ public struct CreateForm: Sendable, Hashable, Codable {
                     resolution: jobResolution(isDraft: isDraft), isDraft: isDraft, audio: jobAudio,
                     remoteInputs: reusableInputs(for: images), length: clipLength,
                     aspectRatio: usesFrames ? nil : aspectRatio, bitrate: jobBitrate,
-                    referencesAreFrames: usesFrames)
+                    referencesAreFrames: usesFrames, speech: jobSpeech)
             ]
         }
         return ranges.map { range in
@@ -338,7 +354,8 @@ public struct CreateForm: Sendable, Hashable, Codable {
                 remoteInputs: reusableInputs,
                 keepsVideoBackground: showsVideoBackground && keepsVideoBackground,
                 length: mode == .extend ? clipLength : nil, bitrate: jobBitrate,
-                characterOrientation: jobCharacterOrientation, cinemaControls: jobCinemaControls)
+                characterOrientation: jobCharacterOrientation, cinemaControls: jobCinemaControls,
+                speech: jobSpeech)
         }
     }
 }
@@ -353,15 +370,18 @@ extension CreateForm {
     /// reordered. A local file added since means the job uploads everything instead.
     var reusableInputs: RemoteInputs? { reusableInputs(for: references) }
 
-    /// The held media IDs for these references, or `nil` when any of them isn't one the IDs belong to.
+    /// The held media IDs for these references and the speech, or `nil` when any of them isn't one the IDs belong to.
     func reusableInputs(for references: [LocalImage]) -> RemoteInputs? {
-        guard let remoteInputs, source?.fileURL == remoteInputs.video?.url else { return nil }
+        guard let remoteInputs, source?.fileURL == remoteInputs.video?.url,
+            jobSpeech.map({ $0.fileURL == remoteInputs.audio?.url }) ?? true
+        else { return nil }
         var images: [RemoteAsset] = []
         for reference in references {
             guard let image = remoteInputs.images.first(where: { $0.url == reference.fileURL }) else { return nil }
             images.append(image)
         }
-        return RemoteInputs(video: remoteInputs.video, images: images)
+        return RemoteInputs(
+            video: remoteInputs.video, images: images, audio: jobSpeech == nil ? nil : remoteInputs.audio)
     }
 }
 
@@ -401,6 +421,7 @@ extension CreateForm {
             frames = FramePair()
         }
         presetID = spec.presetID
+        speech = spec.speech
         prompt = spec.prompt
         resolution = spec.resolution
         allowsUpscale = spec.source?.allowsUpscale ?? false

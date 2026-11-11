@@ -70,8 +70,12 @@ enum Tool: String, CaseIterable {
     }
 
     private static func quote(_ given: Arguments) throws(AgentError) -> AgentCommand {
-        try given.allow(videoKeys.union(["image_count"]))
+        try given.allow(videoKeys.union(["image_count", "speech_length"]))
         var video = try given.video()
+        if video.speech != nil {
+            throw .badRequest("quote takes speech_length, the recording's seconds, not the speech file")
+        }
+        video.speechLength = try given.number("speech_length")
         // A quote reads no file: only how many images there are counts.
         if !video.images.isEmpty, try given.int("image_count") == nil {
             video.imageCount = video.images.count
@@ -98,6 +102,7 @@ enum Tool: String, CaseIterable {
         }
         if let path = video.source?.path { video.source?.path = local(path) }
         video.images = video.images.map(local)
+        video.speech = video.speech.map(local)
         let fingerprint = try Self.fingerprint(video, maxCost: maxCost)
         return .createVideo(
             CreateVideoCommand(
@@ -167,7 +172,7 @@ enum Tool: String, CaseIterable {
     /// What `quote` and `create_video` both take.
     static let videoKeys: Set<String> = [
         "mode", "model", "prompt", "source", "images", "style", "resolution", "draft", "length", "aspect_ratio",
-        "audio", "variants", "elements", "title",
+        "audio", "variants", "elements", "title", "speech",
     ]
 
     /// What makes two `create_video` requests the same: the parameters, the files by path and size, and the most the
@@ -178,12 +183,17 @@ enum Tool: String, CaseIterable {
             var sizes: [Int?]
             var maxCost: AgentAmount
         }
-        let sizes = Self.sizes([video.source?.path].compactMap(\.self) + video.images)
+        let sizes = Self.sizes(files(of: video))
         do {
             return try AgentFingerprint.of(Fingerprinted(video: video, sizes: sizes, maxCost: maxCost))
         } catch {
             throw .badRequest("create_video: the parameters can't be read")
         }
+    }
+
+    /// The request's files, in a fixed order: the source, the images and the speech.
+    static func files(of video: AgentVideoRequest) -> [String] {
+        [video.source?.path].compactMap(\.self) + video.images + [video.speech].compactMap(\.self)
     }
 
     /// The files' sizes, `nil` for one that can't be read: a file that changed size makes another request.
@@ -198,7 +208,7 @@ enum Tool: String, CaseIterable {
             var video: AgentVideoRequest
             var sizes: [Int?]
         }
-        let sizes = Self.sizes([video.source?.path].compactMap(\.self) + video.images)
+        let sizes = Self.sizes(files(of: video))
         do {
             return try AgentFingerprint.of(Parameters(video: video, sizes: sizes))
         } catch {
@@ -363,7 +373,7 @@ struct Arguments {
             images: try strings("images"), style: style, resolution: try string("resolution"),
             draft: try bool("draft"), length: try number("length"), aspectRatio: try string("aspect_ratio"),
             audio: try string("audio"), variants: try int("variants"), elements: try strings("elements"),
-            title: try string("title"))
+            title: try string("title"), speech: try string("speech"))
     }
 
     /// `max_cost` as whole units: dollars become cents, rounded down so the job never costs more than was said.

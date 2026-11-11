@@ -519,7 +519,7 @@ Status: **Verified** 2026-10-14 (`Packages/HiggsfieldKit/Sources/HiggsfieldMCP/T
 |---|---|---|
 | `generate_video` | `{"params": {…}}`, see [4.5](#45-generate_video) | `results[0].id` (job ID), `request_id`; with `get_cost`: `cost.credits_exact` or `cost.credits` |
 | `media_upload` | `filename`, `content_type` | `uploads[0].media_id`, `.upload_url` (must be HTTPS), `.url` |
-| `media_confirm` | `media_id`, `type` (`image`/`video`) | `error` if refused |
+| `media_confirm` | `media_id`, `type` (`image`/`video`/`audio`) | `error` if refused |
 | `job_status` | `jobId` | `generation.status`, `generation.results.rawUrl`, `generation.error` |
 | `balance` | — | `credits`, `subscription_plan_type` (for example `creator_plus`) |
 | `show_generations` | `size` 1–100, `only_completed`, optional `type` (`video`/`image`/`audio`/`3d`), `cursor` | `items[]` (`id`, `type`, `status`, `model`, `createdAt`, `liked`, `results.rawUrl`, `width`, `height`, `duration`, `prompt`, `resolution`, `medias`), `next_cursor`. `width`, `height` and `duration` are the job's params and can be wrong (4.6), so they are only shown until the file is downloaded; the import reads the file's own (`Job.outputMedia`) |
@@ -532,7 +532,7 @@ Status: **Verified** 2026-10-14 (`Packages/HiggsfieldKit/Sources/HiggsfieldMCP/T
 
 Notes:
 
-- **Upload flow:** `media_upload` → `PUT` bytes to `upload_url` → `media_confirm` → use `media_id` in `medias`.
+- **Upload flow:** `media_upload` → `PUT` bytes to `upload_url` → `media_confirm` → use `media_id` in `medias`. The confirm's `type` follows the file's content type: `video`, `audio` (a speech recording, `JobSpec.speech`: MP3, WAV and M4A as they are, anything else converted to M4A, `MediaPreparer.prepareAudio`) or `image`; the snapshot's `media_upload` says audio extensions "become generation inputs" without listing them.
 - **Job statuses:**
   - `queued` / `pending` → `.queued`
   - `in_progress` / `processing` → `.inProgress`
@@ -721,7 +721,7 @@ Status: arguments checked against the catalog snapshot `docs/mcp-snapshots/2026-
 
 Rules Jutsu depends on:
 
-- **Media roles** are `video_references` and `image_references`, and Seedance's frames `start_image` and `end_image`, as each model's `medias[].roles` lists them (Seedance 2.5 also takes `audio_references`, unused). The server also accepts `video` and `image` and renames them.
+- **Media roles** are `video_references` and `image_references`, and Seedance's frames `start_image` and `end_image`, as each model's `medias[].roles` lists them (Seedance 2.5 also takes `audio_references`, unused). A job's speech recording (`JobSpec.speech`, on a model that declares the `speech` control in `models.json`) is sent as `audio_references`, after the images; history reads `audio_references` (or `audio`) back as the job's speech. The server also accepts `video` and `image` and renames them.
 - **Optional fields:** empty `medias` and `prompt` are left out, and so are unset optional fields.
 - **Cost:** `get_cost: true` quotes the exact credits and charges nothing. The same params without it submit. Per the `outputSchema`, `cost` comes only with `get_cost`, never in a submit's answer.
 - **`count`** (confirmed: an integer 1–4 inside `params`, default 1) is `JobSpec.variants`, sent only above 1 and never with `use_unlim` (4.4, issue #44).

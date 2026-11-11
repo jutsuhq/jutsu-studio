@@ -10,6 +10,8 @@ struct CreatePanel: View {
     let catalog: PresetCatalog?
     let isSubmitting: Bool
     let onImportSource: (URL) -> Void
+    /// Reads a dropped speech recording, then sets it.
+    let onImportSpeech: (URL) -> Void
     /// Opens the screen's one file picker; see `FilePickTarget`.
     let onPick: (FilePickTarget) -> Void
     /// Images dropped as one new batch character.
@@ -57,6 +59,9 @@ struct CreatePanel: View {
                     }
                     if form.showsAddedLength {
                         addedLengthSection
+                    }
+                    if form.offersSpeech {
+                        SpeechSection(form: $form, onPick: { onPick(.speech) }, onImport: onImportSpeech)
                     }
                     if form.mode == .restyle {
                         presetSection

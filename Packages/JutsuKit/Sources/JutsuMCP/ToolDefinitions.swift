@@ -379,7 +379,7 @@ extension Tool {
                 "description": "How many reference images there will be.",
             ]
         }
-        return properties
+        return properties.merging(speechProperty(files: files)) { $1 }
     }
 
     private var annotations: JSONValue {

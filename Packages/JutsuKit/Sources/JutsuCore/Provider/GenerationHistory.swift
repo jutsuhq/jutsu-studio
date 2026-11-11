@@ -49,7 +49,7 @@ public struct HistoryItem: Sendable, Hashable, Identifiable {
     public var pixelSize: PixelSize?
     public var resolution: Resolution?
     public var prompt: String
-    /// The uploaded source video and reference images, reusable by media ID while the provider keeps them.
+    /// The uploaded source video, reference images and speech, reusable by media ID while the provider keeps them.
     public var inputs: RemoteInputs
     /// Seedance's native draft (`draft: true` in its params): imported as a draft that can be finalized at 1080p
     /// within seven days of `createdAt` (`RemoteJob.isNativeDraft`).
@@ -81,7 +81,7 @@ public struct HistoryItem: Sendable, Hashable, Identifiable {
 
     /// The inputs as a job that reuses the uploaded media. A remote file can't be trimmed, so the whole source
     /// is selected. Without the source's probed length and frame size, the output's stand in. A generation made
-    /// without a source video keeps the output's length.
+    /// without a source video keeps the output's length. The speech's length isn't known until it is downloaded.
     public func spec(sourceDuration: TimeInterval? = nil, sourceSize: PixelSize? = nil) -> JobSpec {
         let length = max(0, sourceDuration ?? duration ?? 0)
         let size = sourceSize ?? pixelSize ?? PixelSize(width: 0, height: 0)
@@ -92,7 +92,8 @@ public struct HistoryItem: Sendable, Hashable, Identifiable {
             mode: mode, model: model, source: clip, references: inputs.images.map { LocalImage(fileURL: $0.url) },
             prompt: prompt, resolution: resolution ?? .p720, isDraft: isNativeDraft, remoteInputs: inputs,
             length: clip == nil ? length : nil, aspectRatio: clip == nil ? .auto : nil,
-            referencesAreFrames: referencesAreFrames && clip == nil, draftJobID: draftJobID)
+            referencesAreFrames: referencesAreFrames && clip == nil, draftJobID: draftJobID,
+            speech: inputs.audio.map { LocalAudio(fileURL: $0.url, duration: 0) })
     }
 }
 

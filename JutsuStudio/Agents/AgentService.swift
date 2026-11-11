@@ -266,7 +266,7 @@ final class AgentService {
         }
         return AgentCapabilities.ModelDetails(
             modes: details, hasDraft: model.offersDraft, makesClipsWithoutSource: model.makesClipsWithoutSource,
-            needsPrompt: model.descriptor.requiresPrompt)
+            needsPrompt: model.descriptor.requiresPrompt, takesSpeech: model.declares(.speech) ? true : nil)
     }
 
     private static var appVersion: String {
