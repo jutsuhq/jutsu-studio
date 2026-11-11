@@ -81,7 +81,8 @@ public struct HistoryItem: Sendable, Hashable, Identifiable {
 
     /// The inputs as a job that reuses the uploaded media. A remote file can't be trimmed, so the whole source
     /// is selected. Without the source's probed length and frame size, the output's stand in. A generation made
-    /// without a source video keeps the output's length. The speech's length isn't known until it is downloaded.
+    /// without a source video keeps the output's length. A speech is taken to be as long as the output without the
+    /// model's tail (`VideoModelDescriptor.speechTail`).
     public func spec(sourceDuration: TimeInterval? = nil, sourceSize: PixelSize? = nil) -> JobSpec {
         let length = max(0, sourceDuration ?? duration ?? 0)
         let size = sourceSize ?? pixelSize ?? PixelSize(width: 0, height: 0)
@@ -93,7 +94,9 @@ public struct HistoryItem: Sendable, Hashable, Identifiable {
             prompt: prompt, resolution: resolution ?? .p720, isDraft: isNativeDraft, remoteInputs: inputs,
             length: clip == nil ? length : nil, aspectRatio: clip == nil ? .auto : nil,
             referencesAreFrames: referencesAreFrames && clip == nil, draftJobID: draftJobID,
-            speech: inputs.audio.map { LocalAudio(fileURL: $0.url, duration: 0) })
+            speech: inputs.audio.map {
+                LocalAudio(fileURL: $0.url, duration: max(0, (duration ?? 0) - model.descriptor.speechTail))
+            })
     }
 }
 

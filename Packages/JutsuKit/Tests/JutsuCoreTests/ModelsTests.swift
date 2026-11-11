@@ -136,7 +136,7 @@ func costRoundTripsExactly(cost: Cost) throws {
     #expect(spec.limits().referenceImages == 0...8)
     #expect(
         VideoModel.allCases.filter(\.makesClipsWithoutSource).map(\.rawValue) == [
-            "seedance25", "kling40", "kling40Flash", "geminiOmniFlash12",
+            "seedance25", "kling40", "kling40Flash", "geminiOmniFlash12", "intone",
         ])
 }
 

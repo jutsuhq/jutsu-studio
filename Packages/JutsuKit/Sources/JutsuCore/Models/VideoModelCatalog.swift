@@ -53,6 +53,9 @@ public struct VideoModelDescriptor: Sendable, Hashable {
         /// its own `mode`s for an Edit of the source and an Extend of it, and no `aspect_ratio` that follows the
         /// source.
         case geminiOmni
+        /// Higgsfield Intone, on the account only: one or two characters (the images) say the speech, in the frame
+        /// asked for, with the resolution alone; the speech sets the length.
+        case intone
     }
 
     /// The account's estimate of a job's credits, for when Higgsfield can't quote it yet (a model billed by its
@@ -115,6 +118,10 @@ public struct VideoModelDescriptor: Sendable, Hashable {
     /// The shorter length window of a job with references, a source or an end frame, over `duration`; Edit keeps
     /// `duration` (`VideoModel.duration(_:in:withReferences:)`). `nil` where the model has one window.
     public var durationWithReferences: ClosedRange<TimeInterval>?
+    /// How long the speech of a model that takes one (`speech`) may run, and what the clip adds to it: Intone runs
+    /// the voices and 2.5 s more (`JobSpec.duration`). `nil` and 0 for every other model.
+    public var speechSeconds: ClosedRange<TimeInterval>?
+    public var speechTail: TimeInterval
     public var controls: Set<Control>
     /// A job needs a prompt even with a source.
     public var requiresPrompt: Bool
@@ -137,7 +144,7 @@ public struct VideoModelDescriptor: Sendable, Hashable {
             modeResolutions: [:],
             aspectRatios: [],
             duration: nil, referenceImages: nil, frameImages: 1...2,
-            durationWithReferences: nil, controls: [],
+            durationWithReferences: nil, speechSeconds: nil, speechTail: 0, controls: [],
             requiresPrompt: false, billsSourceVideo: false, listPriceIsExact: false, shape: .genjutsu, endpoints: [:],
             accountModels: [:],
             credits: Credits(base: 0, perSecond: [:]))
@@ -156,6 +163,8 @@ extension VideoModelDescriptor: Decodable {
         var referenceImages: [Int]?
         var frames: [Int]?
         var durationWithReferences: [TimeInterval]?
+        var speech: [TimeInterval]?
+        var speechTail: TimeInterval?
     }
 
     private struct Request: Decodable {
@@ -208,8 +217,8 @@ extension VideoModelDescriptor: Decodable {
         duration = try limits?.duration.map { try Self.range($0, key: .limits, in: container) }
         referenceImages = try limits?.referenceImages.map { try Self.range($0, key: .limits, in: container) }
         frameImages = try limits?.frames.map { try Self.range($0, key: .limits, in: container) } ?? 1...2
-        let window = limits?.durationWithReferences
-        durationWithReferences = try window.map { try Self.range($0, key: .limits, in: container) }
+        (durationWithReferences, speechSeconds) = try Self.windows(limits, in: container)
+        speechTail = limits?.speechTail ?? 0
         let controls = try container.decodeIfPresent([String].self, forKey: .controls) ?? []
         self.controls = Set(try controls.map { try Self.value($0, key: .controls, in: container) })
         requiresPrompt = try container.decodeIfPresent(Bool.self, forKey: .requiresPrompt) ?? false
@@ -224,6 +233,16 @@ extension VideoModelDescriptor: Decodable {
         }
         let credits = try container.decodeIfPresent(CreditsFile.self, forKey: .credits)
         self.credits = try credits.map { try Self.credits($0, in: container) } ?? Credits(base: 0, perSecond: [:])
+    }
+
+    /// The length windows besides `duration`: with references, and of a speech.
+    private static func windows(
+        _ limits: Limits?, in container: KeyedDecodingContainer<CodingKeys>
+    ) throws -> (ClosedRange<TimeInterval>?, ClosedRange<TimeInterval>?) {
+        (
+            try limits?.durationWithReferences.map { try range($0, key: .limits, in: container) },
+            try limits?.speech.map { try range($0, key: .limits, in: container) }
+        )
     }
 
     private static func credits(

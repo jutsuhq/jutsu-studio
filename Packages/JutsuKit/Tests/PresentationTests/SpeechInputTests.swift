@@ -30,6 +30,21 @@ import Testing
         #expect(form.makeSpecs(isDraft: false, in: CreateFixture.apiKey).map(\.speech) == [nil])
     }
 
+    /// Intone offers Speech, sends it, and runs as long as it and 2.5 s more; Create says what is missing.
+    @Test func intoneTakesTheSpeechAndRunsAsLongAsIt() throws {
+        var form = CreateForm(mode: .motionTransfer, resolution: .p720)
+        form.model = try #require(VideoModel(rawValue: "intone"))
+        form.references = CreateFixture.references([CreateFixture.image(1)])
+        #expect(form.offersSpeech && form.isWithoutSource)
+        #expect(form.text(for: .speechRequired) == "Add a speech recording")
+
+        form.setSpeech(speech)
+        let specs = form.makeSpecs(isDraft: false, in: CreateFixture.apiKey)
+        #expect(specs.map(\.speech) == [speech] && specs.map(\.duration) == [8.9])
+        #expect(Validation.check(try #require(specs.first)).isEmpty)
+        #expect(form.text(for: .speechTooLong(31)) == "Use a speech of at most 30 s")
+    }
+
     @Test func editInputsAndTheSavedDraftKeepTheSpeech() throws {
         let spec = JobSpec(
             mode: .motionTransfer, model: .seedance25, source: nil, prompt: "talk", resolution: .p720, length: 8,

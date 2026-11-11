@@ -112,8 +112,9 @@ public struct VideoModel: RawRepresentable, Codable, Sendable, Hashable, CaseIte
     /// What one job on this model takes in `mode`: the mode's limits with the catalog's over them. Seedance's 4–30 s
     /// is confirmed by `get_cost`, and Kling's one image by the server refusing more ("exactly one image_references
     /// entry is required"); a limit with no quote, schema or refusal behind it is Genjutsu's. Without a source
-    /// (`hasSource`) the prompt may stand alone, so no image is required. Edit takes up to 30 s of source and makes as
-    /// much; Extend takes up to 30 s of source and adds 4–30 s (`duration` 4–30 in the `video-extend` schema).
+    /// (`hasSource`) the prompt may stand alone, so no image is required, except by a model that voices a speech,
+    /// whose images are the people who say it (Intone). Edit takes up to 30 s of source and makes as much; Extend
+    /// takes up to 30 s of source and adds 4–30 s (`duration` 4–30 in the `video-extend` schema).
     /// `constraints` replaces these with what the server says, bound by bound, where it says something.
     public func limits(
         for mode: Mode, hasSource: Bool = true, constraints: ModelConstraintTable = .builtIn
@@ -122,7 +123,7 @@ public struct VideoModel: RawRepresentable, Codable, Sendable, Hashable, CaseIte
         if let duration = descriptor.duration { limits.duration = duration }
         if let images = descriptor.referenceImages { limits.referenceImages = images }
         if let server = constraints[self, mode] { limits = server.applied(to: limits) }
-        if !hasSource { limits.referenceImages = 0...limits.referenceImages.upperBound }
+        if !hasSource, !declares(.speech) { limits.referenceImages = 0...limits.referenceImages.upperBound }
         return limits
     }
 

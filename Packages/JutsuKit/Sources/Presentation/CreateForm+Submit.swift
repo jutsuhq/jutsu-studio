@@ -333,6 +333,13 @@ extension CreateForm {
         case .presetRequired: String(localized: "Pick a style", bundle: .module)
         case .frameTooSmall: String(localized: "Object swap needs 640×640 px, allow the upscale", bundle: .module)
         case .promptTooLong: String(localized: "Shorten the prompt to 10 000 characters", bundle: .module)
+        case .speechRequired: String(localized: "Add a speech recording", bundle: .module)
+        case .speechTooShort:
+            String(localized: "Use a speech of at least \(CostText.limit(speechSeconds.lowerBound))", bundle: .module)
+        case .speechTooLong:
+            String(localized: "Use a speech of at most \(CostText.limit(speechSeconds.upperBound))", bundle: .module)
+        case .sourceNotTaken:
+            String(localized: "Remove the source video, \(selectedModel.title) takes none", bundle: .module)
         }
     }
 

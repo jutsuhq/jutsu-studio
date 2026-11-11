@@ -161,9 +161,11 @@ public struct JobSpec: Codable, Sendable, Hashable {
             for: mode, resolution: resolution, hasMedia: source != nil || !references.isEmpty, usesFrames: usesFrames)
     }
 
-    /// Seconds the result runs: the part Extend adds, else the source selection, else the length asked for.
+    /// Seconds the result runs: the part Extend adds, else the source selection, else the length asked for; on a
+    /// model that voices a speech, the speech and the model's tail after it (`VideoModelDescriptor.speechTail`).
     public var duration: TimeInterval {
         if mode == .extend { return length ?? 0 }
+        if let speech, model.declares(.speech) { return speech.duration + model.descriptor.speechTail }
         return source?.selectedDuration ?? length ?? 0
     }
 

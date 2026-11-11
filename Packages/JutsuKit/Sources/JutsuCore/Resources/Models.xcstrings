@@ -1508,6 +1508,39 @@
         }
       }
     },
+    "intone.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Higgsfield Intone · talking heads that say your recording, on an account"
+          }
+        }
+      }
+    },
+    "intone.family" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Higgsfield"
+          }
+        }
+      }
+    },
+    "intone.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Higgsfield Intone"
+          }
+        }
+      }
+    },
     "kling40.detail" : {
       "extractionState" : "manual",
       "localizations" : {

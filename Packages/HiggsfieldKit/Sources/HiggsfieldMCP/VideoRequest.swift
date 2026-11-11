@@ -164,6 +164,8 @@ public enum MediaRole: String, Sendable {
     case endFrame = "end_image"
     /// A speech recording (`JobSpec.speech`), as the models that voice one list it in `medias[].roles`.
     case audio = "audio_references"
+    /// Intone's speakers, the one or two people who say the speech (`intone`, catalog snapshot of 2026-11-10).
+    case character = "character_images"
 }
 
 /// A submitted generation.

@@ -188,20 +188,6 @@ public struct AgentVideoOrder: Sendable, Hashable {
         return spec
     }
 
-    private func setLength(in form: inout CreateForm) throws(Refusal) {
-        guard let length else { return }
-        form.length = length
-        let window = form.limits.duration
-        guard form.isWithoutSource || form.mode == .extend else {
-            throw Refusal("length is only for a clip without a source, or extend; the source range sets it.")
-        }
-        if !window.contains(length) {
-            throw Refusal(
-                "length is \(Self.seconds(window.lowerBound)) to \(Self.seconds(window.upperBound)) seconds on "
-                    + "\(form.selectedModel.title).")
-        }
-    }
-
     private func pickModel(for mode: Mode) throws(Refusal) -> VideoModel {
         guard let id = model else { return mode.defaultModel }
         guard let model = VideoModel(rawValue: id) else {
@@ -292,6 +278,13 @@ public struct AgentVideoOrder: Sendable, Hashable {
         case .presetRequired: return "restyle needs style, a style ID."
         case .frameTooSmall: return "The source frame is below 640×640 for object_swap."
         case .promptTooLong: return "The prompt is over 10 000 characters."
+        case .speechRequired: return "\(model) needs speech, the recording its characters say."
+        case .speechTooShort(let seconds), .speechTooLong(let seconds):
+            let window = spec.model.descriptor.speechSeconds ?? 0...0
+            return
+                "The speech runs \(Self.seconds(seconds)) seconds: \(model) takes \(Self.seconds(window.lowerBound)) "
+                + "to \(Self.seconds(window.upperBound)) seconds."
+        case .sourceNotTaken: return "\(model) makes the clip from images and speech; leave source out."
         }
     }
 
@@ -320,8 +313,26 @@ extension AgentVideoOrder {
     }
 }
 
-// The sound: the audio option, and the speech of a model whose characters say a recording.
+// The length and the sound: the clip's length, the audio option, and the speech of a model whose characters say a
+// recording, which sets the length.
 extension AgentVideoOrder {
+    private func setLength(in form: inout CreateForm) throws(Refusal) {
+        guard let length else { return }
+        if form.offersSpeech {
+            throw Refusal("\(form.selectedModel.title) runs as long as the speech; leave length out.")
+        }
+        form.length = length
+        let window = form.limits.duration
+        guard form.isWithoutSource || form.mode == .extend else {
+            throw Refusal("length is only for a clip without a source, or extend; the source range sets it.")
+        }
+        if !window.contains(length) {
+            throw Refusal(
+                "length is \(Self.seconds(window.lowerBound)) to \(Self.seconds(window.upperBound)) seconds on "
+                    + "\(form.selectedModel.title).")
+        }
+    }
+
     private func setAudio(in form: inout CreateForm) throws(Refusal) {
         guard let name = audio else { return }
         guard let option = Self.audioOptions[name] else {

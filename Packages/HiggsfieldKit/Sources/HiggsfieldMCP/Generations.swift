@@ -95,6 +95,7 @@ extension MediaRole {
         case MediaRole.startFrame.rawValue: self = .startFrame
         case MediaRole.endFrame.rawValue: self = .endFrame
         case "audio", MediaRole.audio.rawValue: self = .audio
+        case MediaRole.character.rawValue: self = .character
         default: return nil
         }
     }

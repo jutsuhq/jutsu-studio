@@ -126,8 +126,7 @@ enum AccountModel {
         if let draftJobID = spec.draftJobID, model == .seedance25 { return .finalize(draftJobID: draftJobID) }
         var request = VideoRequest(model: model, media: media, prompt: spec.prompt)
         switch spec.model.descriptor.shape {
-        case .genjutsu:
-            request.resolution = spec.resolution.rawValue
+        case .genjutsu: request.resolution = spec.resolution.rawValue
         case .seedance:
             request.resolution = spec.resolution.rawValue
             request.generateAudio = generatesAudio(spec)
@@ -180,6 +179,7 @@ enum AccountModel {
             request.generateAudio = generatesAudio(spec)
         case .kling4: kling4(&request, spec: spec, constraints: constraints)
         case .geminiOmni: geminiOmni(&request, spec: spec, constraints: constraints)
+        case .intone: intone(&request, spec: spec)
         }
         return request
     }
@@ -220,6 +220,16 @@ enum AccountModel {
         if spec.mode != .edit { request.duration = Double(durationSeconds(of: spec, constraints: constraints)) }
         request.aspectRatio = kling4Frame(of: spec, auto: nil)
         if spec.usesFrames { request.media = asFrames(request.media) }
+    }
+
+    /// Higgsfield Intone's settings (`intone`, catalog snapshot of 2026-11-10): the images as the speakers
+    /// (`character_images`), the speech as `audio_references`, the resolution and the frame. It takes no `duration`
+    /// (the speech sets it), `mode` or `generate_audio`; `bitrate_mode` is left at the server's default. Its
+    /// `aspect_ratios` have no `auto`, so Auto sends none, and a frame asked for the nearest of them.
+    static func intone(_ request: inout VideoRequest, spec: JobSpec) {
+        request.resolution = spec.resolution.rawValue
+        request.aspectRatio = kling4Frame(of: spec, auto: nil)
+        request.media = request.media.map { $0.role == .image ? VideoRequest.Media(role: .character, id: $0.id) : $0 }
     }
 
     /// Gemini Omni Flash 1.2's `mode`: its own for Edit and Extend, else Kling 4.0's (`kling4Mode`), which it names
@@ -297,10 +307,12 @@ enum AccountModel {
     /// Kling 4.0 or Gemini Omni Flash 1.2 job with a source, frames or images. A quote without media can't name its
     /// `mode` truthfully, and Higgsfield's announcement of Kling 4.0 says references may change the price, so it is
     /// quoted once uploaded; Gemini's input video is billed too (Google's API prices it as input tokens).
+    /// A model that voices a speech is priced by it, and sent no length, so it too is quoted with its media.
     static func quotesAfterUpload(_ spec: JobSpec) -> Bool {
         billsSource(spec)
             || ([.kling4, .geminiOmni].contains(spec.model.descriptor.shape)
                 && (spec.source != nil || !spec.references.isEmpty))
+            || spec.model.declares(.speech)
     }
 
     /// The `get_cost` question for a job before anything is uploaded: its request with no media, prompt or variants,

@@ -211,6 +211,10 @@ public struct CreateForm: Sendable, Hashable, Codable {
     /// `speech` as the jobs take it: only on a model that takes one.
     var jobSpeech: LocalAudio? { offersSpeech ? speech : nil }
 
+    /// How long the selected model's speech may run (`VideoModelDescriptor.speechSeconds`); a model without a window
+    /// takes any length.
+    var speechSeconds: ClosedRange<TimeInterval> { selectedModel.descriptor.speechSeconds ?? 0...TimeInterval.infinity }
+
     // MARK: Prompt
 
     /// Counted in Unicode scalars, as the API does.

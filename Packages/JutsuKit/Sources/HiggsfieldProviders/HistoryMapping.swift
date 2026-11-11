@@ -22,9 +22,9 @@ enum HistoryMapping {
     /// generations, and inputs without a source video, except for a model that makes clips without one (not in
     /// Edit or Extend) and a Style run's, whose input roles are unconfirmed. Kling 4.0, 4.0 Flash and Gemini Omni
     /// Flash 1.2 come back in the mode their `params.mode` names (`jobMode`), and a clip from frames with them as
-    /// frames (`frames(of:)`). Only https URLs count: the app downloads them and runs them again. A Style job is
-    /// `type: "image"` until it completes and `"video"` once it has, so only a completed one, a video, is kept, like
-    /// every other job.
+    /// frames (`frames(of:)`); Intone's speakers (`character_images`) come back as its images, in order. Only https
+    /// URLs count: the app downloads them and runs them again. A Style job is `type: "image"` until it completes and
+    /// `"video"` once it has, so only a completed one, a video, is kept, like every other job.
     static func item(_ generation: PastGeneration) -> HistoryItem? {
         let video = generation.media.lazy.compactMap(asset(.video)).first
         guard generation.type == GenerationType.video.rawValue, generation.status == "completed",
@@ -43,7 +43,8 @@ enum HistoryMapping {
             isLiked: generation.isLiked, outputURL: output, duration: generation.duration, pixelSize: size,
             resolution: generation.resolution.flatMap(Resolution.init(rawValue:)), prompt: generation.prompt,
             inputs: RemoteInputs(
-                video: video, images: frames ?? generation.media.compactMap(asset(.image)),
+                video: video,
+                images: frames ?? generation.media.compactMap { asset(.image)($0) ?? asset(.character)($0) },
                 audio: generation.media.lazy.compactMap(asset(.audio)).first))
         history.referencesAreFrames = frames != nil
         // Only Seedance 2.5 has a native draft and its finalize (`models_explore get`, 2026-10-15).

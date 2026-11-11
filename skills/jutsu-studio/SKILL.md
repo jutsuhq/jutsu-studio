@@ -57,6 +57,9 @@ says rather than guessing.
      at 720p and up to 20 s: the cheap draft option before a Kling 4.0 final. On an account, Gemini Omni Flash 1.2
      (`geminiOmniFlash12`) is the pick for a clip with native sound, an Extend outside Seedance, or 4K: 360p to
      `4k`, 3–15 s from a prompt alone but 3–10 s with images or a source (and for what Extend adds), 16:9 or 9:16.
+     Higgsfield Intone (`intone`, account, `takesSpeech`) is a talking head: one or two people in `images` say the
+     `speech` file (2–30 s) in `create_video`; leave out `source` and `length`, as the clip runs the speech and
+     2.5 s more. Quote it with `speech_length`, the recording's seconds.
    - **Characters by name.** `elements` lists the account's characters, environments and props. Pass their names in
      `elements` to `create_video`, `quote` or `create_image`: their images go first, in order, then your own files.
      The answer's `references` gives each image's `@ImageN` tag; name them that way in the prompt, and the

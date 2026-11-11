@@ -1,6 +1,9 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Add a speech recording" : {
+
+    },
     "Agents off" : {
 
     },
@@ -25,10 +28,19 @@
     "Phone footage" : {
 
     },
+    "Remove the source video, %@ takes none" : {
+
+    },
     "Short series" : {
 
     },
     "Speech" : {
+
+    },
+    "Use a speech of at least %@" : {
+
+    },
+    "Use a speech of at most %@" : {
 
     },
     "Your daily cap: %@ of %@" : {

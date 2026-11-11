@@ -115,6 +115,6 @@ import Testing
 
         #expect(item.inputs.images.map(\.id) == ["image-1"])
         #expect(item.inputs.audio?.id == "audio-1")
-        #expect(item.spec().speech == LocalAudio(fileURL: try #require(audio.url), duration: 0))
+        #expect(item.spec().speech?.fileURL == audio.url)
     }
 }

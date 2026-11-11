@@ -86,7 +86,8 @@ import Testing
         #expect(max.accountModelID(for: .motionTransfer) == "minimax_h3_max")
         #expect(!Pricing.tariffs.contains { $0.0.isEmpty })
         let gemini = try #require(VideoModel(rawValue: "geminiOmniFlash12"))
-        #expect(VideoModel.allCases.filter { !$0.runsWithAPIKey } == [max, gemini])
+        let intone = try #require(VideoModel(rawValue: "intone"))
+        #expect(VideoModel.allCases.filter { !$0.runsWithAPIKey } == [max, gemini, intone])
         #expect(lite.runsWithAPIKey(in: .motionTransfer) && !lite.runsWithAPIKey(in: .objectSwap))
         #expect(
             lite.endpointID(for: .motionTransfer, resolution: .p480, hasMedia: true)

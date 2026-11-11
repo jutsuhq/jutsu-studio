@@ -225,14 +225,17 @@ struct CreatePanel: View {
     /// The length and frame of a clip made without a source; with one, the trim and the video set them.
     private var clipSection: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.small) {
-            SectionLabel(title: "Length", detail: CostText.limit(form.clipLength))
-            Slider(
-                value: Binding(get: { form.clipLength }, set: { form.length = $0.rounded() }),
-                in: form.limits.duration, step: 1
-            )
-            .controlSize(.small)
-            .tint(Theme.accent)
-            .accessibilityValue(CostText.limit(form.clipLength))
+            // A model that voices a speech runs as long as the speech.
+            if !form.offersSpeech {
+                SectionLabel(title: "Length", detail: CostText.limit(form.clipLength))
+                Slider(
+                    value: Binding(get: { form.clipLength }, set: { form.length = $0.rounded() }),
+                    in: form.limits.duration, step: 1
+                )
+                .controlSize(.small)
+                .tint(Theme.accent)
+                .accessibilityValue(CostText.limit(form.clipLength))
+            }
             // Seven frames don't fit a segmented row in the panel. From a start frame, the clip takes its frame.
             if !form.usesFrames {
                 HStack(spacing: Theme.Spacing.small) {

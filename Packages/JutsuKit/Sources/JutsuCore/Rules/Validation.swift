@@ -10,8 +10,13 @@ public enum Validation {
     public static func check(_ spec: JobSpec, constraints: ModelConstraintTable = .builtIn) -> [ValidationIssue] {
         let limits = spec.limits(in: constraints)
         var issues = sourceIssues(spec)
-        // The selection's length means nothing until the selection is inside the video.
-        if !issues.contains(.selectionOutsideSource), let issue = durationIssue(spec, limits: limits.duration) {
+        if spec.model.declares(.speech) {
+            // The speech sets the length.
+            issues += speechIssues(spec)
+        } else if !issues.contains(.selectionOutsideSource),
+            // The selection's length means nothing until the selection is inside the video.
+            let issue = durationIssue(spec, limits: limits.duration)
+        {
             issues.append(issue)
         }
 
@@ -55,6 +60,18 @@ public enum Validation {
         var issues: [ValidationIssue] = isInside ? [] : [.selectionOutsideSource]
         if (spec.mode.isVideoOperation || spec.model.descriptor.requiresPrompt) && !hasPrompt {
             issues.append(.promptRequired)
+        }
+        return issues
+    }
+
+    /// A model that voices a speech: a source it doesn't take, and the speech missing or outside its window.
+    private static func speechIssues(_ spec: JobSpec) -> [ValidationIssue] {
+        var issues: [ValidationIssue] = spec.source == nil ? [] : [.sourceNotTaken]
+        guard let speech = spec.speech else { return issues + [.speechRequired] }
+        let tolerance = Pricing.durationTolerance
+        if let window = spec.model.descriptor.speechSeconds {
+            if speech.duration < window.lowerBound - tolerance { issues.append(.speechTooShort(speech.duration)) }
+            if speech.duration > window.upperBound + tolerance { issues.append(.speechTooLong(speech.duration)) }
         }
         return issues
     }
