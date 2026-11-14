@@ -2,9 +2,7 @@
 
 ![Jutsu Studio](docs/assets/hero-banner.png)
 
-**The open-source Higgsfield desktop app for Mac. Unofficial.**
-
-Jutsu Studio is a free, open-source Mac app for Higgsfield (macOS 14+, Apple silicon and Intel). It is unofficial: Higgsfield itself has no standalone desktop app. Seedance, Kling and Genjutsu run in one queue with the price on every button, and every result is saved to your disk.
+**Jutsu Studio is the open-source Higgsfield desktop app for Mac. Unofficial.** It is free, for macOS 14+ on Apple silicon and Intel; Higgsfield itself has no standalone desktop app. It runs 14 Higgsfield video models, including Genjutsu, Seedance 2.5 and Kling 4.0, and saves every result to your disk.
 
 [![Download for macOS](https://img.shields.io/badge/Download-macOS-8b5cf6?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/jutsuhq/jutsu-studio/releases/latest)
 
@@ -21,6 +19,33 @@ Jutsu Studio is a free, open-source Mac app for Higgsfield (macOS 14+, Apple sil
 </div>
 
 ---
+
+## At a glance
+
+| | |
+|---|---|
+| Platform | macOS 14 Sonoma or later, Apple silicon and Intel. Signed DMG, 25 MB (0.2.6) |
+| Requirements | A Higgsfield account (plan credits) or a Higgsfield API key (pay as you go). Generation runs on Higgsfield's servers, not on your Mac |
+| License | MIT |
+| Price | The app is free and adds no markup. Higgsfield bills your own account at its prices: Genjutsu by API key is $0.318 a second at 480p, $0.681 at 720p and $1.632 at 1080p (list price, 2026-10-13) |
+| Models | 14: Genjutsu, Genjutsu Lite, Seedance 2.5, Kling 4.0, Kling 3.0 Motion Control, Kling O3 Edit, Kling O3 video reference, Kling 2.6 Motion Control, Wan 3.0, Wan 3.0 Prime, Wan 2.7, Cinema Studio 4.0, MiniMax H3, MiniMax H3 Max. Some need an account, some an API key: [features](docs/features.md#models-and-modes) |
+| Input and output | A 4–30 s range of any video; only that range is uploaded and billed. Results land in `~/Movies/Jutsu Studio/Videos`; export as ProRes 422 or H.264 |
+| Install | `brew install jutsuhq/tap/jutsu-studio` |
+| Download | [Latest release](https://github.com/jutsuhq/jutsu-studio/releases/latest) |
+| Website | [jutsustudio.com](https://jutsustudio.com/) |
+
+## Compared with the Higgsfield web app
+
+| | Jutsu Studio | Higgsfield web app |
+|---|---|---|
+| Runs as | A native Mac app | A browser tab, on any OS |
+| Price | Higgsfield's own prices, no markup | Higgsfield's prices |
+| Results | Downloaded to your disk with source, prompt and cost; the library opens offline | Higgsfield's links expire |
+| Source | MIT, on GitHub | Closed |
+
+What Jutsu Studio does not do: run on Windows, Linux or iPhone, or generate video on your Mac. Every generation runs
+on Higgsfield's servers and is billed to your Higgsfield account; only smoothing, slow motion, upscaling and subtitles
+run on the Mac, for free. It is not made or endorsed by Higgsfield.
 
 ## Demo
 
