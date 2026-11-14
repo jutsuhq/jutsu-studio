@@ -13,9 +13,10 @@ func billedSecondsRoundUp(duration: TimeInterval, expected: Int) {
 @Test func bundledRatesAreExactDecimals() throws {
     let pricing = try Pricing.bundled()
     for mode in Mode.allCases where VideoModel.genjutsu.serves(mode) {
-        #expect(try pricing.rate(for: makeSpec(mode: mode, resolution: .p480)) == Decimal(string: "0.318"))
-        #expect(try pricing.rate(for: makeSpec(mode: mode, resolution: .p720)) == Decimal(string: "0.681"))
-        #expect(try pricing.rate(for: makeSpec(mode: mode, resolution: .p1080)) == Decimal(string: "1.632"))
+        let rates = mode == .restyle ? ["0.318", "0.681", "1.632"] : ["0.154", "0.3446", "0.8346"]
+        #expect(try pricing.rate(for: makeSpec(mode: mode, resolution: .p480)) == Decimal(string: rates[0]))
+        #expect(try pricing.rate(for: makeSpec(mode: mode, resolution: .p720)) == Decimal(string: rates[1]))
+        #expect(try pricing.rate(for: makeSpec(mode: mode, resolution: .p1080)) == Decimal(string: rates[2]))
     }
 }
 
@@ -23,26 +24,26 @@ func billedSecondsRoundUp(duration: TimeInterval, expected: Int) {
 /// job on a source pays twice the rate per second of its selection. Object Swap's are kept, though no job uses them.
 @Test func genjutsuLiteHasItsListPrices() throws {
     let pricing = try Pricing.bundled()
-    let rates = [Resolution.p480: "0.05", .p720: "0.1", .p1080: "0.2"].compactMapValues { Decimal(string: $0) }
+    let rates = [Resolution.p480: "0.0739", .p720: "0.1471", .p1080: "0.2936"].compactMapValues { Decimal(string: $0) }
     #expect(pricing.rates["higgsfield/genjutsu-light/motion-transfer/v1.0"] == rates)
     #expect(pricing.rates["higgsfield/genjutsu-light/object-swap/v1.0"] == rates)
     let lite = try #require(VideoModel(rawValue: "genjutsuLite"))
     for (resolution, rate) in rates {
         var spec = makeSpec(mode: .motionTransfer, resolution: resolution)
         spec.model = lite
-        #expect(try pricing.rate(for: spec) == rate * 2)
+        #expect(try pricing.rate(for: spec) == rate)
     }
 }
 
-/// Seedance's list price is per second of output, and a source clip is billed as input too, at 0.6 of the rate for
-/// both: 1.2 times the rate. Kling's quality is its endpoint: Standard below 1080p, Pro at 1080p.
+/// Seedance's list price is per second of output, with a higher rate when a source clip goes with the job; the
+/// clip's own seconds aren't added. Kling's quality is its endpoint: Standard below 1080p, Pro at 1080p.
 @Test(arguments: [
-    (VideoModel.seedance25, false, false, Resolution.p720, "0.4622"),
-    (.seedance25, false, true, .p480, "0.2056"),
-    (.seedance25, true, true, .p1080, "1.36464"),
-    (.klingMotionControl, true, true, .p480, "0.126"),
-    (.klingMotionControl, true, true, .p720, "0.126"),
-    (.klingMotionControl, true, true, .p1080, "0.168"),
+    (VideoModel.seedance25, false, false, Resolution.p720, "0.2647"),
+    (.seedance25, false, true, .p480, "0.1177"),
+    (.seedance25, true, true, .p1080, "0.7858"),
+    (.klingMotionControl, true, true, .p480, "0.092"),
+    (.klingMotionControl, true, true, .p720, "0.092"),
+    (.klingMotionControl, true, true, .p1080, "0.1189"),
 ])
 func otherModelsArePricedByTheirEndpoint(
     model: VideoModel, hasSource: Bool, hasReferences: Bool, resolution: Resolution, rate: String
@@ -58,26 +59,25 @@ func otherModelsArePricedByTheirEndpoint(
     var spec = makeSpec(duration: 10, resolution: .p720)
     spec.model = .klingMotionControl
 
-    #expect(try Pricing.bundled().cost(for: spec) == .usd(Decimal(string: "1.26")!, isEstimate: true))
+    #expect(try Pricing.bundled().cost(for: spec) == .usd(Decimal(string: "0.92")!, isEstimate: true))
 }
 
 @Test func costIsBilledSecondsTimesRate() throws {
     let pricing = try Pricing.bundled()
     #expect(
         try pricing.cost(for: makeSpec(duration: 12, resolution: .p480))
-            == .usd(Decimal(string: "3.816")!, isEstimate: false))
+            == .usd(Decimal(string: "1.848")!, isEstimate: false))
     #expect(
         try pricing.cost(for: makeSpec(duration: 8.1, resolution: .p720))
-            == .usd(Decimal(string: "6.129")!, isEstimate: false))
+            == .usd(Decimal(string: "3.1014")!, isEstimate: false))
     #expect(
         try pricing.cost(for: makeSpec(mode: .objectSwap, duration: 30, resolution: .p1080))
-            == .usd(Decimal(string: "48.96")!, isEstimate: false))
+            == .usd(Decimal(string: "25.038")!, isEstimate: false))
 }
 
-/// open.higgsfield.ai: Edit and Extend need a video input and bill the input and generated seconds alike at 0.6 of
-/// the rate. Edit's output is as long as its source, so it costs 1.2 times the rate per second of source; Extend
-/// pays 0.6 times for the source selection plus the part it adds.
-@Test func editIsBilledOnTheSourceAndExtendOnTheSourceAndTheAddedPart() throws {
+/// open.higgsfield.ai: Edit and Extend take the with-video rate per second of output. Edit's output is as long as its
+/// source selection; Extend bills only the part it adds, not the existing video.
+@Test func editIsBilledOnTheSourceAndExtendOnlyOnTheAddedPart() throws {
     let pricing = try Pricing.bundled()
     var edit = makeSpec(mode: .edit, duration: 8, resolution: .p720)
     edit.model = .seedance25
@@ -86,10 +86,11 @@ func otherModelsArePricedByTheirEndpoint(
     extend.length = 5
 
     #expect(Pricing.billedSeconds(for: edit) == 8)
-    #expect(Pricing.billedSeconds(for: extend) == 13)
-    #expect(try pricing.cost(for: edit) == .usd(Decimal(string: "4.43712")!, isEstimate: true))
-    #expect(try pricing.cost(for: extend) == .usd(Decimal(string: "3.60516")!, isEstimate: true))
-    #expect(try pricing.rate(for: extend) == Decimal(string: "0.27732"))
+    #expect(Pricing.billedSeconds(for: extend) == 5)
+    #expect(Pricing.billedSeconds(for: extend, on: .apiKey) == 5)
+    #expect(try pricing.cost(for: edit) == .usd(Decimal(string: "2.6112")!, isEstimate: true))
+    #expect(try pricing.cost(for: extend) == .usd(Decimal(string: "1.632")!, isEstimate: true))
+    #expect(try pricing.rate(for: extend) == Decimal(string: "0.3264"))
 }
 
 @Test func missingRateIsRejectedAtLoad() {
@@ -108,9 +109,14 @@ func otherModelsArePricedByTheirEndpoint(
     }
 }
 
-/// A `null` rate loads as unpriced: the job's list price is `Cost.unknownUSD`, never $0, and the rate throws.
+/// A `null` rate loads as unpriced: the job's list price is `Cost.unknownUSD`, never $0, and the rate throws. No
+/// bundled tariff is unpriced any more, so Kling O3 Edit at 1080p is taken out of the bundled rates here.
 @Test func anUnpricedRateIsUnknownNotFree() throws {
-    let pricing = try Pricing.bundled()
+    let unpriced = Pricing.TariffKey("kling-video/o3/video-edit", .p1080)
+    let bundled = try Pricing.bundled()
+    var rates = bundled.rates
+    rates[unpriced.tariff]?[unpriced.resolution] = nil
+    let pricing = try Pricing(rates: rates, unpriced: [unpriced], upperBounds: bundled.upperBounds)
     let edit = try #require(VideoModel(rawValue: "klingO3VideoEdit"))
     let spec = JobSpec(
         mode: .edit, model: edit,
@@ -137,10 +143,10 @@ func otherModelsArePricedByTheirEndpoint(
     #expect(tariffs.contains { $0.0 == "higgsfield/genjutsu/motion-transfer/v1.0" && $0.1 == .p480 })
 }
 
-/// The published list prices of the models added for issue #101, before discounts.
+/// The list prices of the models added for issue #101, at the 2026-11-14 rates.
 @Test(arguments: [
-    ("klingMotionControl26", Resolution.p720, "0.07"), ("klingMotionControl26", .p1080, "0.112"),
-    ("klingO3VideoEdit", .p720, "0.126"), ("wan27Reference", .p720, "0.1"), ("wan27Reference", .p1080, "0.15"),
+    ("klingMotionControl26", Resolution.p720, "0.0523"), ("klingMotionControl26", .p1080, "0.0779"),
+    ("klingO3VideoEdit", .p720, "0.0945"), ("wan27Reference", .p720, "0.075"), ("wan27Reference", .p1080, "0.1125"),
 ])
 func listPricesOfTheNewModels(id: String, resolution: Resolution, rate: String) throws {
     let model = try #require(VideoModel(rawValue: id))
@@ -150,21 +156,23 @@ func listPricesOfTheNewModels(id: String, resolution: Resolution, rate: String) 
     #expect(found == Decimal(string: rate))
 }
 
-/// Issue #113: the rates open.higgsfield.ai/pricing publishes (2026-10-15, before discounts). Wan 3.0 and Wan 3.0
-/// Prime state one per resolution; Cinema Studio 4.0, Kling O3 and Kling O3 Edit only a range or a price naming no
-/// mode, so they take its top and are marked as an upper bound.
+/// Issue #113's models at the rates open.higgsfield.ai publishes on 2026-11-14, with a source clip: Wan 3.0, Wan 3.0
+/// Prime and Cinema Studio 4.0 take their "with video reference" rate. Kling O3 and Kling O3 Edit state no 480p rate,
+/// so 480p takes the 720p one as its top and is marked as an upper bound.
 @Test(arguments: [
-    ("wan30Reference", Mode.motionTransfer, Resolution.p480, "0.05", false),
-    ("wan30Reference", .motionTransfer, .p720, "0.1", false),
-    ("wan30Reference", .motionTransfer, .p1080, "0.2", false),
-    ("wan30PrimeReference", .motionTransfer, .p480, "0.068", false),
-    ("wan30PrimeReference", .motionTransfer, .p720, "0.14", false),
-    ("wan30PrimeReference", .motionTransfer, .p1080, "0.28", false),
-    ("cinemaStudio4", .motionTransfer, .p480, "0.4623", true),
-    ("cinemaStudio4", .motionTransfer, .p720, "0.4623", true),
-    ("klingO3VideoReference", .motionTransfer, .p720, "0.168", true),
-    ("klingO3VideoReference", .motionTransfer, .p1080, "0.168", true),
-    ("klingO3VideoEdit", .edit, .p720, "0.126", true),
+    ("wan30Reference", Mode.motionTransfer, Resolution.p480, "0.0747", false),
+    ("wan30Reference", .motionTransfer, .p720, "0.1493", false),
+    ("wan30Reference", .motionTransfer, .p1080, "0.3011", false),
+    ("wan30PrimeReference", .motionTransfer, .p480, "0.1013", false),
+    ("wan30PrimeReference", .motionTransfer, .p720, "0.2084", false),
+    ("wan30PrimeReference", .motionTransfer, .p1080, "0.4341", false),
+    ("cinemaStudio4", .motionTransfer, .p480, "0.2468", false),
+    ("cinemaStudio4", .motionTransfer, .p720, "0.5547", false),
+    ("klingO3VideoReference", .motionTransfer, .p480, "0.0945", true),
+    ("klingO3VideoReference", .motionTransfer, .p720, "0.0945", false),
+    ("klingO3VideoReference", .motionTransfer, .p1080, "0.1263", false),
+    ("klingO3VideoEdit", .edit, .p480, "0.0945", true),
+    ("klingO3VideoEdit", .edit, .p720, "0.0945", false),
 ])
 func publishedRatesOfIssue113(id: String, mode: Mode, resolution: Resolution, rate: String, isUpTo: Bool) throws {
     let model = try #require(VideoModel(rawValue: id))
@@ -174,6 +182,22 @@ func publishedRatesOfIssue113(id: String, mode: Mode, resolution: Resolution, ra
     #expect(
         pricing.isUpperBound(model: model, mode: mode, resolution: resolution, hasSource: true, hasReferences: true)
             == isUpTo)
+}
+
+/// Wan 3.0, Wan 3.0 Prime and Cinema Studio 4.0 bill a source clip at their "with video reference" tariff, and
+/// without one at the plain endpoint.
+@Test(arguments: [
+    ("wan30Reference", "alibaba/wan-3.0/reference-to-video"),
+    ("wan30PrimeReference", "alibaba/wan-3.0-prime/reference-to-video"),
+    ("cinemaStudio4", "higgsfield/cinema-studio/4.0"),
+])
+func aSourceClipUsesTheWithVideoReferenceTariff(id: String, endpoint: String) throws {
+    let model = try #require(VideoModel(rawValue: id))
+    for hasSource in [true, false] {
+        let tariff = Pricing.tariffID(
+            model: model, mode: .motionTransfer, resolution: .p720, hasSource: hasSource, hasReferences: true)
+        #expect(tariff == (hasSource ? endpoint + " with video reference" : endpoint))
+    }
 }
 
 /// `{"upTo": rate}` loads as that rate, marked as the top of a range: always an estimate, even on a model whose list
@@ -211,6 +235,6 @@ func billedSecondsClampsInsteadOfTrapping(duration: TimeInterval, expected: Int)
         model: .seedance25, mode: .motionTransfer, resolution: .p1080, hasSource: false, hasReferences: true,
         usesFrames: true)
     #expect(tariff == "bytedance/seedance-2.5/image-to-video")
-    #expect(try pricing.rate(for: spec) == Decimal(string: "1.1372"))
-    #expect(try pricing.cost(for: spec) == .usd(Decimal(string: "9.0976") ?? 0, isEstimate: true))
+    #expect(try pricing.rate(for: spec) == Decimal(string: "0.6518"))
+    #expect(try pricing.cost(for: spec) == .usd(Decimal(string: "5.2144") ?? 0, isEstimate: true))
 }

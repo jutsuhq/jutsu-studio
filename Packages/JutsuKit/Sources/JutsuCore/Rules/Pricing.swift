@@ -76,9 +76,10 @@ public struct Pricing: Sendable, Hashable {
     }
 
     /// The key of a job's rates in `pricing.json`: its endpoint, with `withVideoReference` appended for a source on a
-    /// model that bills the source video (`VideoModelDescriptor.billsSourceVideo`, Seedance). Seedance bills the input video's seconds too, at 0.6 of the rate for input and output alike,
-    /// so a source clip costs 1.2 times the rate per second of it (open.higgsfield.ai lists this "with video
-    /// reference" price separately). Edit and Extend have their own endpoints and rates (`billedSeconds(for:)`).
+    /// model whose rate changes when a video goes with the job (`VideoModelDescriptor.billsSourceVideo`: Seedance,
+    /// Kling 4.0, Wan 3.0 and Cinema Studio). open.higgsfield.ai lists that "with video input" rate separately, per
+    /// second of output; Cinema Studio's also counts the input's seconds. Edit and Extend have their own endpoints
+    /// and rates (`billedSeconds(for:)`).
     public static func tariffID(
         model: VideoModel, mode: Mode, resolution: Resolution, hasSource: Bool, hasReferences: Bool,
         usesFrames: Bool = false
@@ -170,19 +171,18 @@ public struct Pricing: Sendable, Hashable {
         }
     }
 
-    /// Whole seconds a job's rate applies to. Seedance bills the source video's seconds as well as the output's,
-    /// both at 0.6 of its rate: Edit's output is as long as its source, so its rate (1.2 times) is per second of
-    /// source, while Extend's (0.6 times) applies to the source and the added part together.
+    /// Whole seconds a job's rate applies to: its duration. Edit's output is as long as its source selection, and
+    /// Extend bills only the part it adds; since 2026-11-14 open.higgsfield.ai says the existing video "is not added
+    /// to the billed duration", as the account already did (a 4 s extension of a 4 s clip cost 12 credits, 4 s at
+    /// 3 a second, in a live run on 2026-10-15).
     public static func billedSeconds(for spec: JobSpec) -> Int {
-        guard spec.mode == .extend else { return billedSeconds(spec.duration) }
-        return billedSeconds((spec.source?.selectedDuration ?? 0) + spec.duration)
+        billedSeconds(spec.duration)
     }
 
-    /// Whole seconds a job is billed for on `connection`. The account bills Extend's added part alone: a 4 s
-    /// extension of a 4 s clip was billed 12 credits, 4 s at 3 a second, in a live run on 2026-10-15. REST bills the
-    /// source selection too (`billedSeconds(for:)`), as does any connection not known yet.
+    /// Whole seconds a job is billed for on `connection`. The account and REST bill the same seconds now
+    /// (`billedSeconds(for:)`); the parameter stays for the callers that show either.
     public static func billedSeconds(for spec: JobSpec, on connection: ProviderKind?) -> Int {
-        connection == .account ? billedSeconds(spec.duration) : billedSeconds(for: spec)
+        billedSeconds(for: spec)
     }
 
     /// Whole seconds the API bills: the duration rounded up, ignoring float noise (12.0000001 s → 12 s).

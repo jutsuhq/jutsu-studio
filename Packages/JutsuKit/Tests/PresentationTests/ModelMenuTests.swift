@@ -27,17 +27,17 @@ import Testing
                     "Wan 3.0", "Wan 3.0 Prime",
                     "Wan 2.7", "Cinema Studio 4.0", "MiniMax H3",
                 ])
-            // At the form's 720p, or the nearest a model has (MiniMax H3's 2K). Kling O3, Kling O3 Edit and Cinema
-            // Studio publish only a range (or a price naming no mode), so their rows give its top, rounded up. An API
-            // key isn't offered MiniMax H3 Max. Genjutsu Lite bills the source and the result alike: twice $0.10.
+            // At the form's 720p, or the nearest a model has (MiniMax H3's 2K). With the form's source clip, Seedance,
+            // Kling 4.0, Kling 4.0 Flash, Wan 3.0 and Cinema Studio give
+            // their with-video rate. An API key isn't offered MiniMax H3 Max.
             #expect(
                 menu.map(\.detail) == [
-                    "$0.681 / s · up to 30 s", "$0.200 / s · up to 15 s", "$0.555 / s · up to 30 s",
-                    "$0.126 / s · up to 30 s",
-                    "up to $0.168 / s · up to 10 s", "up to $0.126 / s · up to 15 s", "$0.070 / s · up to 30 s",
-                    "$0.188 / s · up to 30 s", "$0.126 / s · up to 20 s",
-                    "$0.100 / s · up to 30 s", "$0.140 / s · up to 30 s", "$0.100 / s · up to 10 s",
-                    "up to $0.463 / s · up to 30 s", "$0.130 / s · up to 15 s",
+                    "$0.345 / s · up to 30 s", "$0.147 / s · up to 15 s", "$0.326 / s · up to 30 s",
+                    "$0.092 / s · up to 30 s",
+                    "$0.095 / s · up to 10 s", "$0.095 / s · up to 15 s", "$0.052 / s · up to 30 s",
+                    "$0.154 / s · up to 30 s", "$0.126 / s · up to 20 s",
+                    "$0.149 / s · up to 30 s", "$0.208 / s · up to 30 s", "$0.075 / s · up to 10 s",
+                    "$0.555 / s · up to 30 s", "$0.130 / s · up to 15 s",
                 ])
         }
     }

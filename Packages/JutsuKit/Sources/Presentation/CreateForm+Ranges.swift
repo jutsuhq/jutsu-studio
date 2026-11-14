@@ -12,17 +12,11 @@ extension CreateForm {
         return "\(CostText.timecode(range.lowerBound)) – \(CostText.timecode(range.upperBound))"
     }
 
-    /// Whole seconds billed over all ranges on `connection`; each job is rounded up on its own. Extend bills the part
-    /// it adds, and with an API key its source range too (`Pricing.billedSeconds(for:on:)`).
+    /// Whole seconds billed over all ranges; each job is rounded up on its own. Extend bills only the part it adds,
+    /// on the account and with an API key alike (`Pricing.billedSeconds(for:on:)`).
     public func billedSeconds(on connection: ProviderKind?) -> Int {
         ranges.reduce(0) { total, range in
-            let selected = range.upperBound - range.lowerBound
-            let seconds: TimeInterval =
-                switch (mode, connection) {
-                case (.extend, .account): clipLength
-                case (.extend, _): selected + clipLength
-                default: selected
-                }
+            let seconds: TimeInterval = mode == .extend ? clipLength : range.upperBound - range.lowerBound
             return total + Pricing.billedSeconds(seconds)
         }
     }

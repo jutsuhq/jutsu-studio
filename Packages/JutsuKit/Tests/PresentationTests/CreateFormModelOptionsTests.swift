@@ -143,8 +143,8 @@ import Testing
             #expect(spec.aspectRatio == nil)
             #expect(spec.endpointID == "bytedance/seedance-2.5/image-to-video")
             // 5 s at 720p, priced like a clip without video input.
-            #expect(form.priceText(isDraft: false, in: Self.apiKey) == "$2.31")
-            #expect(form.rateText(in: Self.apiKey) == "$0.462 / s")
+            #expect(form.priceText(isDraft: false, in: Self.apiKey) == "$1.32")
+            #expect(form.rateText(in: Self.apiKey) == "$0.265 / s")
 
             var reopened = CreateForm()
             reopened.load(spec, source: nil)

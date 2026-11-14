@@ -18,7 +18,7 @@ enum CreateFixture {
 
     static func references(_ urls: [URL]) -> [LocalImage] { urls.map { LocalImage(fileURL: $0) } }
 
-    /// Genjutsu at $0.318, $0.681 and $1.632 per second.
+    /// Genjutsu Motion Transfer at $0.154, $0.3446 and $0.8346 per second.
     static let pricing = try! Pricing.bundled()
 
     static let apiKey = CreateContext(connection: .apiKey(keyID: "kid"), pricing: pricing)
@@ -234,7 +234,7 @@ enum CreateFixture {
                 form.modelOptions(in: context)
                     == VideoModel.allCases.filter { [.motionTransfer, .edit, .extend].contains(where: $0.serves) })
             #expect(form.blocker(isDraft: false, in: context) == nil)
-            #expect(form.rateText(in: context) == "$0.168 / s")
+            #expect(form.rateText(in: context) == "$0.119 / s")
             #expect(form.costLine(in: context)?.detail == "Estimate · failed runs are free")
             #expect(
                 context.videoBackgroundUnavailableReason
@@ -398,11 +398,11 @@ enum CreateFixture {
             form.setSource(CreateFixture.video(duration: 47.3))
             form.setEnd(12.4)
             let line = form.costLine(in: CreateFixture.apiKey)
-            #expect(line?.text == "13 s × $0.681 = $8.85")
+            #expect(line?.text == "13 s × $0.345 = $4.48")
             #expect(line?.detail == "List price · failed runs are free")
             #expect(line?.isWarning == false)
-            #expect(form.priceText(isDraft: false, in: CreateFixture.apiKey) == "$8.85")
-            #expect(form.rateText(in: CreateFixture.apiKey) == "$0.681 / s")
+            #expect(form.priceText(isDraft: false, in: CreateFixture.apiKey) == "$4.48")
+            #expect(form.rateText(in: CreateFixture.apiKey) == "$0.345 / s")
         }
     }
 
@@ -441,10 +441,10 @@ enum CreateFixture {
         CostText.$locale.withValue(.enUS) {
             var form = CreateFixture.ready(.p1080)
             #expect(form.showsDraftLength)
-            #expect(form.priceText(isDraft: true, in: CreateFixture.apiKey) == "$4.77")
+            #expect(form.priceText(isDraft: true, in: CreateFixture.apiKey) == "$2.31")
             form.draftLength = .firstFiveSeconds
             #expect(form.draftDuration == 5)
-            #expect(form.draftLengthDetail(in: CreateFixture.apiKey) == "5.0 s · $1.59")
+            #expect(form.draftLengthDetail(in: CreateFixture.apiKey) == "5.0 s · $0.77")
             let draft = form.makeSpecs(isDraft: true).first
             #expect(draft?.resolution == .p480)
             #expect(draft?.isDraft == true)
@@ -604,7 +604,7 @@ enum CreateFixture {
             #expect(specs == form.makeSpecs(isDraft: false))
             #expect(confirmation.title == "Over today's spend cap")
             #expect(
-                confirmation.message == "This job adds $10.22, bringing today to $80.22 against your $75.00 cap.")
+                confirmation.message == "This job adds $5.17, bringing today to $75.17 against your $75.00 cap.")
             #expect(confirmation.confirmTitle == "Start anyway")
         }
     }

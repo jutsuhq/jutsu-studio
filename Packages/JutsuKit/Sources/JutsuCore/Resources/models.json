@@ -49,7 +49,7 @@
       "limits": { "duration": [4, 15], "referenceImages": [1, 10] },
       "controls": ["draft"],
       "listPriceIsExact": true,
-      "billsSourceVideo": true,
+      "billsSourceVideo": false,
       "request": {
         "shape": "genjutsu",
         "endpoints": { "motionTransfer": "higgsfield/genjutsu-light/motion-transfer/v1.0" },
@@ -209,6 +209,7 @@
     },
     {
       "id": "wan30Reference",
+      "billsSourceVideo": true,
       "family": "Wan",
       "title": "Wan 3.0",
       "detail": "Wan 3.0 · follows the video and the prompt",
@@ -225,6 +226,7 @@
     },
     {
       "id": "wan30PrimeReference",
+      "billsSourceVideo": true,
       "family": "Wan",
       "title": "Wan 3.0 Prime",
       "detail": "Wan 3.0 Prime · follows the video and the prompt",
@@ -256,6 +258,7 @@
     },
     {
       "id": "cinemaStudio4",
+      "billsSourceVideo": true,
       "family": "Cinema Studio",
       "title": "Cinema Studio 4.0",
       "detail": "Cinema Studio 4.0 · directs the shot from the prompt",

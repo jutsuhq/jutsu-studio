@@ -135,7 +135,7 @@ import Testing
             #expect(drafts.map(\.source?.range) == [0...5, 10...15, 20...25])
             #expect(drafts.allSatisfy { $0.isDraft && $0.resolution == .p480 })
             #expect(form.draftDuration == 15)
-            #expect(form.draftLengthDetail(in: CreateFixture.apiKey) == "15.0 s · $4.77")
+            #expect(form.draftLengthDetail(in: CreateFixture.apiKey) == "15.0 s · $2.31")
         }
     }
 
@@ -157,7 +157,7 @@ import Testing
             form.setEnd(4.5)
             form.addRange()
             #expect(form.billedSeconds(on: .apiKey) == 10)
-            #expect(form.costLine(in: CreateFixture.apiKey)?.text == "10 s × $0.681 = $6.81")
+            #expect(form.costLine(in: CreateFixture.apiKey)?.text == "10 s × $0.345 = $3.45")
         }
     }
 
@@ -165,10 +165,10 @@ import Testing
         CostText.$locale.withValue(.enUS) {
             let form = Self.threeRanges()
             let line = form.costLine(in: CreateFixture.apiKey)
-            #expect(line?.text == "30 s × $0.681 = $20.43")
+            #expect(line?.text == "30 s × $0.345 = $10.34")
             #expect(line?.detail == "List price · 3 jobs · failed runs are free")
-            #expect(form.priceText(isDraft: false, in: CreateFixture.apiKey) == "$20.43")
-            #expect(form.priceText(isDraft: true, in: CreateFixture.apiKey) == "$9.54")
+            #expect(form.priceText(isDraft: false, in: CreateFixture.apiKey) == "$10.34")
+            #expect(form.priceText(isDraft: true, in: CreateFixture.apiKey) == "$4.62")
         }
     }
 
@@ -192,13 +192,13 @@ import Testing
             estimates: [specs[0]: .credits(40, isEstimate: true)])
         #expect(context.cost(for: specs) == nil)
         #expect(context.cost(for: []) == nil)
-        #expect(context.cost(for: Array(specs.dropFirst())) == .usd(Decimal(string: "13.62") ?? 0, isEstimate: false))
+        #expect(context.cost(for: Array(specs.dropFirst())) == .usd(Decimal(string: "6.892") ?? 0, isEstimate: false))
     }
 
     @Test func spendCapChecksTheSumAndAsksOnce() {
         CostText.$locale.withValue(.enUS) {
             var context = CreateFixture.apiKey
-            context.committedToday = 60
+            context.committedToday = 70
             context.cap = .usd(75)
             var single = Self.threeRanges()
             single.removeRange(at: 0)
@@ -214,7 +214,7 @@ import Testing
             #expect(specs == form.makeSpecs(isDraft: false))
             #expect(specs.count == 3)
             #expect(
-                confirmation.message == "These 3 jobs add $20.43, bringing today to $80.43 against your $75.00 cap.")
+                confirmation.message == "These 3 jobs add $10.34, bringing today to $80.34 against your $75.00 cap.")
         }
     }
 }

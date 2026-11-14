@@ -268,10 +268,11 @@ extension Network {
 
         // MARK: Prices
 
-        /// The REST list prices: $0.157 and $0.235 a second without an input video; with one, $0.094 and $0.141 on
-        /// the output's seconds plus as many of the input's, which are the selection's.
+        /// The REST list prices: $0.1257 and $0.1879 a second without an input video; with one, $0.1544 and $0.2336
+        /// per second of output, the input's seconds not added.
         @Test(arguments: [
-            (Resolution.p720, false, "1.57"), (.p1080, false, "2.35"), (.p720, true, "1.88"), (.p1080, true, "2.82"),
+            (Resolution.p720, false, "1.257"), (.p1080, false, "1.879"), (.p720, true, "1.544"),
+            (.p1080, true, "2.336"),
         ])
         func restListPrices(resolution: Resolution, withVideo: Bool, usd: String) throws {
             let pricing = try Pricing.bundled()
@@ -293,7 +294,7 @@ extension Network {
         }
 
         /// On the account: 5 credits a second at 720p and 7.5 at 1080p, Higgsfield's announced price, until a quote;
-        /// with a source video (references or Edit) 1.2 times that, as REST bills the input video too.
+        /// with a source video (references or Edit) 1.2 times that.
         @Test func theAccountEstimatesFromTheAnnouncedPrice() throws {
             var spec = try Self.clip(seconds: 10)
             #expect(AccountModel.estimatedCredits(for: spec) == 75)

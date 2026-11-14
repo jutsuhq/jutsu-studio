@@ -49,7 +49,7 @@ import Testing
             let state = SubmitBarState(form: form, in: Self.apiKey)
             #expect(state.generateBlocker == nil)
             #expect(state.draftBlocker == nil && state.draftPrice == nil)
-            #expect(state.generatePrice == "$2.52")
+            #expect(state.generatePrice == "$1.84")
 
             form.model = .genjutsu
             #expect(form.offersDraft)
@@ -71,17 +71,17 @@ import Testing
         #expect(form.primarySubmit(in: Self.apiKey).isDraft)
     }
 
-    /// 14.2 s billed as 15 s: Standard at $0.126, Pro at $0.168 a second.
+    /// 14.2 s billed as 15 s: Standard at $0.092, Pro at $0.1189 a second.
     @Test func costFollowsTheQuality() {
         CostText.$locale.withValue(.enUS) {
             var form = Self.kling(.p480)
-            #expect(form.rateText(in: Self.apiKey) == "$0.126 / s")
-            #expect(form.priceText(isDraft: false, in: Self.apiKey) == "$1.89")
-            #expect(form.costLine(in: Self.apiKey)?.text == "15 s = $1.89")
+            #expect(form.rateText(in: Self.apiKey) == "$0.092 / s")
+            #expect(form.priceText(isDraft: false, in: Self.apiKey) == "$1.38")
+            #expect(form.costLine(in: Self.apiKey)?.text == "15 s = $1.38")
 
             form.klingQuality = .pro
-            #expect(form.rateText(in: Self.apiKey) == "$0.168 / s")
-            #expect(form.priceText(isDraft: false, in: Self.apiKey) == "$2.52")
+            #expect(form.rateText(in: Self.apiKey) == "$0.119 / s")
+            #expect(form.priceText(isDraft: false, in: Self.apiKey) == "$1.78")
         }
     }
 

@@ -168,7 +168,7 @@ enum LibraryFixture {
     let pricing: Pricing
 
     init() throws {
-        // Genjutsu at $0.318, $0.681 and $1.632 per second.
+        // Genjutsu Restyle at $0.318, $0.681 and $1.632 per second.
         pricing = try Pricing.bundled()
     }
 
