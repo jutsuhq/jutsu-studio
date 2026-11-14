@@ -24,18 +24,21 @@ import Testing
         #expect(model.declares(.quality) && !model.offersDraft && !model.makesClipsWithoutSource)
     }
 
-    /// One endpoint for both qualities (Standard below 1080p, Pro at 1080p). Its page gives only a range, $0.126 to
-    /// $0.168 a second, naming no mode, so both are priced up to its top.
-    @Test func itIsPricedUpToTheTopOfItsRange() throws {
+    /// One endpoint for both qualities (Standard below 1080p, Pro at 1080p), each with its own rate: $0.0945 a second
+    /// at 720p, $0.1263 at 1080p. No 480p rate is published, so 480p is priced up to the 720p one.
+    @Test func itIsPricedByResolutionAnd480pUpToThe720pRate() throws {
         let pricing = try Pricing.bundled()
+        let draft = try Self.spec(seconds: 5, resolution: .p480)
         let standard = try Self.spec(seconds: 5, resolution: .p720)
         let pro = try Self.spec(seconds: 5, resolution: .p1080)
         #expect(standard.endpointID == "kling-video/o3/video-reference")
         #expect(pro.endpointID == "kling-video/o3/video-reference")
-        for spec in [standard, pro] {
-            #expect(try pricing.cost(for: spec) == .usd(Decimal(string: "0.84") ?? 0, isEstimate: true))
-            #expect(pricing.isUpperBound(for: spec))
-        }
+        #expect(try pricing.cost(for: draft) == .usd(Decimal(string: "0.4725") ?? 0, isEstimate: true))
+        #expect(pricing.isUpperBound(for: draft))
+        #expect(try pricing.cost(for: standard) == .usd(Decimal(string: "0.4725") ?? 0, isEstimate: true))
+        #expect(!pricing.isUpperBound(for: standard))
+        #expect(try pricing.cost(for: pro) == .usd(Decimal(string: "0.6315") ?? 0, isEstimate: true))
+        #expect(!pricing.isUpperBound(for: pro))
     }
 
     /// The schema requires a prompt, and takes 3–10 s.

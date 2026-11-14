@@ -128,7 +128,7 @@ func submitGoesToTheModeWorkflowAndKeepsTheReturnedURLs(mode: Mode, path: String
                 resolutions: Set(Resolution.allCases), costUnit: .usd, maxConcurrency: nil,
                 parameters: Set(ModelParameter.allCases).subtracting([.klingVideoBackground]),
                 unservedModes: [lite: [.objectSwap]]))
-    #expect(try await provider.estimate(spec()) == .usd(Decimal(string: "3.816") ?? 0, isEstimate: false))
+    #expect(try await provider.estimate(spec()) == .usd(Decimal(string: "1.848") ?? 0, isEstimate: false))
     #expect(try await provider.balance() == nil)
     #expect(try await provider.submitIsIdempotent(spec()))
 }
@@ -288,7 +288,7 @@ func seedanceWithASourceMakesItsOwnSoundOnlyWhenAsked(audio: AudioOption, genera
         server.requests.first?.bodyText
             == #"{"duration":8,"end_image_url":"https://cdn.example.com/b.jpg","generate_audio":true,"image_url":"https://cdn.example.com/a.jpg","prompt":"a fox in the snow","resolution":"720p"}"#
     )
-    #expect(try await provider.estimate(job) == .usd(Decimal(string: "3.6976") ?? 0, isEstimate: true))
+    #expect(try await provider.estimate(job) == .usd(Decimal(string: "2.1176") ?? 0, isEstimate: true))
     await #expect(throws: ProviderError.validation(field: "image_url", message: "Seedance needs the start frame.")) {
         try await provider.submit(job, inputs: RemoteInputs(video: nil, images: []), idempotencyKey: UUID())
     }
@@ -352,10 +352,10 @@ func seedanceEditAndExtendSendTheSourceAsTheClip(mode: Mode, path: String, body:
     var kling = spec()
     kling.model = .klingMotionControl
 
-    #expect(try await provider.estimate(kling) == .usd(Decimal(string: "1.512") ?? 0, isEstimate: true))
+    #expect(try await provider.estimate(kling) == .usd(Decimal(string: "1.104") ?? 0, isEstimate: true))
     #expect(
         try await provider.estimate(seedance(hasSource: false))
-            == .usd(Decimal(string: "3.6976") ?? 0, isEstimate: true))
+            == .usd(Decimal(string: "2.1176") ?? 0, isEstimate: true))
 }
 
 /// A job with nothing to upload is quoted by `POST /estimate` with the body its submit sends, before anything else
@@ -386,7 +386,7 @@ func seedanceEditAndExtendSendTheSourceAsTheClip(mode: Mode, path: String, body:
     let server = StubServer()
     server.on("POST", "/estimate/bytedance/seedance-2.5/text-to-video", StubResponse(status: 503, body: "{}"))
     let provider = server.makeAPIProvider()
-    let listPrice = Cost.usd(Decimal(string: "3.6976") ?? 0, isEstimate: true)
+    let listPrice = Cost.usd(Decimal(string: "2.1176") ?? 0, isEstimate: true)
     var unprompted = seedance(hasSource: false)
     unprompted.prompt = " "
 

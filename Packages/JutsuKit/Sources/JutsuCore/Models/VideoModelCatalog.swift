@@ -125,7 +125,7 @@ public struct VideoModelDescriptor: Sendable, Hashable {
     public var controls: Set<Control>
     /// A job needs a prompt even with a source.
     public var requiresPrompt: Bool
-    /// The list price bills the source video's seconds too (`Pricing.tariffID`).
+    /// The list price changes when the source video goes with the job (`Pricing.tariffID`).
     public var billsSourceVideo: Bool
     /// The list price is what the job costs, rather than an estimate.
     public var listPriceIsExact: Bool

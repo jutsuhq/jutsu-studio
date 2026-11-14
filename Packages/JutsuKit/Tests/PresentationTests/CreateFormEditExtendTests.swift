@@ -74,15 +74,16 @@ import Testing
             #expect(draft.length == 30)
             #expect(draft.duration == 30)
             #expect(draft.source?.range == 0...14.2)
-            // With an API key the source selection and the added part are billed together.
-            #expect(form.billedSeconds(on: .apiKey) == 45)
-            #expect(form.costLine(in: CreateFixture.apiKey)?.text == "45 s = $12.48")
+            // With an API key too, only the added part is billed.
+            #expect(form.billedSeconds(on: .apiKey) == 30)
+            #expect(form.costLine(in: CreateFixture.apiKey)?.text == "30 s = $9.79")
         }
     }
 
-    /// The account bills only the part Extend adds: a 4 s extension of a 4 s clip cost 12 credits, 4 s at 3 a second,
-    /// in a live run on 2026-10-15.
-    @Test func extendOnTheAccountBillsOnlyTheAddedPart() throws {
+    /// Extend bills only the part it adds, on the account and with an API key alike: a 4 s extension of a 4 s clip
+    /// cost 12 credits, 4 s at 3 a second, in a live run on 2026-10-15, and open.higgsfield.ai says since 2026-11-14
+    /// that the existing video isn't added to the billed duration.
+    @Test func extendBillsOnlyTheAddedPartOnEveryConnection() throws {
         try CostText.$locale.withValue(.enUS) {
             var form = seedance(.extend)
             form.length = 4
@@ -94,7 +95,8 @@ import Testing
             #expect(form.trimSummary(on: .account) == "14.2 s selected · billed 4 s")
             #expect(form.costLine(in: context)?.text.hasPrefix("4 s") == true)
             #expect(Pricing.billedSeconds(for: spec, on: .account) == 4)
-            #expect(Pricing.billedSeconds(for: spec, on: .apiKey) == 19)
+            #expect(Pricing.billedSeconds(for: spec, on: .apiKey) == 4)
+            #expect(form.billedSeconds(on: .apiKey) == 4)
         }
     }
 

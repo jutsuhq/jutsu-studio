@@ -20,6 +20,22 @@ import Testing
         return context
     }()
 
+    /// `apiKey` with the bundled pricing changed: no bundled tariff is unpriced any more, and the only range left
+    /// (Kling O3 at 480p) is one the form never makes, since Kling's quality picks 720p or 1080p.
+    static func apiKeyChanging(
+        unpriced: Set<Pricing.TariffKey> = [], upperBounds: Set<Pricing.TariffKey> = []
+    ) throws -> CreateContext {
+        let bundled = try Pricing.bundled()
+        var rates = bundled.rates
+        for key in unpriced { rates[key.tariff]?[key.resolution] = nil }
+        var context = apiKey
+        context.pricing = try Pricing(
+            rates: rates, unpriced: unpriced, upperBounds: bundled.upperBounds.union(upperBounds))
+        return context
+    }
+
+    static let klingO3EditProTariff = Pricing.TariffKey("kling-video/o3/video-edit", .p1080)
+
     static func form(_ model: VideoModel?, resolution: Resolution) throws -> CreateForm {
         var form = CreateFixture.ready(resolution)
         form.model = try #require(model)
@@ -78,32 +94,33 @@ import Testing
     @Test func wan27IsPricedAtItsOwnResolution() throws {
         try CostText.$locale.withValue(.enUS) {
             let form = try Self.form(Self.wan27, resolution: .p480)
-            #expect(form.rateText(in: Self.apiKey) == "$0.100 / s")
+            #expect(form.rateText(in: Self.apiKey) == "$0.075 / s")
             #expect(form.blocker(isDraft: false, in: Self.apiKey) == nil)
         }
     }
 
-    /// No page states Kling O3 Edit's Pro rate: the price reads as unknown, never as $0, and under a cap the submit
-    /// asks first.
+    /// With Kling O3 Edit's Pro rate listed as unpriced: the price reads as unknown, never as $0, and under a cap the
+    /// submit asks first.
     @Test func anUnpricedModelSaysThePriceIsUnknown() throws {
+        let context = try Self.apiKeyChanging(unpriced: [Self.klingO3EditProTariff])
         try CostText.$locale.withValue(.enUS) {
             let form = try Self.klingO3EditPro()
-            let cost = Self.apiKey.cost(for: form.makeSpecs(isDraft: false))
+            let cost = context.cost(for: form.makeSpecs(isDraft: false))
             #expect(cost == .unknownUSD)
-            #expect(form.rateText(in: Self.apiKey) == nil)
-            #expect(form.priceText(isDraft: false, in: Self.apiKey) == PostOperationText.priceUnknown)
-            let line = try #require(form.costLine(in: Self.apiKey))
+            #expect(form.rateText(in: context) == nil)
+            #expect(form.priceText(isDraft: false, in: context) == PostOperationText.priceUnknown)
+            let line = try #require(form.costLine(in: context))
             #expect(line.text == "15 s · Price unknown")
             #expect(line.detail == "Higgsfield quotes it once the files are uploaded · failed runs are free")
 
-            var capped = Self.apiKey
+            var capped = context
             capped.cap = SpendCap(amount: 50, unit: .usd)
             guard case .confirm(_, let confirmation) = form.submitDecision(isDraft: false, in: capped) else {
                 Issue.record("expected a confirmation")
                 return
             }
             #expect(confirmation.title == "Price not known yet")
-            #expect(form.submitDecision(isDraft: false, in: Self.apiKey) == .start(form.makeSpecs(isDraft: false)))
+            #expect(form.submitDecision(isDraft: false, in: context) == .start(form.makeSpecs(isDraft: false)))
         }
     }
 
@@ -112,7 +129,7 @@ import Testing
         var known = try Self.form(Self.wan27, resolution: .p720).makeSpecs(isDraft: false)
         let unknown = try Self.klingO3EditPro().makeSpecs(isDraft: false)
         known += unknown
-        #expect(Self.apiKey.cost(for: known) == .unknownUSD)
+        #expect(try Self.apiKeyChanging(unpriced: [Self.klingO3EditProTariff]).cost(for: known) == .unknownUSD)
     }
 
     static func klingO3EditPro() throws -> CreateForm {
@@ -121,13 +138,14 @@ import Testing
         return form
     }
 
-    /// Wan 3.0's list price per second at each resolution (open.higgsfield.ai/pricing, 2026-10-15, before discounts).
+    /// Wan 3.0's list price per second (open.higgsfield.ai, 2026-11-14): with the source clip, its "with video
+    /// reference" rate, $0.1493 a second at 720p.
     @Test func wan30HasItsPublishedRate() throws {
         try CostText.$locale.withValue(.enUS) {
             let form = try Self.form(Self.wan30, resolution: .p720)
-            #expect(form.rateText(in: Self.apiKey) == "$0.100 / s")
+            #expect(form.rateText(in: Self.apiKey) == "$0.149 / s")
             let line = try #require(form.costLine(in: Self.apiKey))
-            #expect(line.text == "15 s = $1.50")
+            #expect(line.text == "15 s = $2.24")
             #expect(line.detail == "Estimate · failed runs are free")
         }
     }
@@ -146,17 +164,18 @@ import Testing
         }
     }
 
-    /// Cinema Studio publishes only a range over all its settings: the price is its top, said as "up to", until
+    /// With Kling O3 Edit's Pro rate ($0.1263) marked as the top of a range: the price is said as "up to" it, until
     /// Higgsfield quotes the uploaded files.
     @Test func aRangeIsShownAsUpToItsTop() throws {
+        let context = try Self.apiKeyChanging(upperBounds: [Self.klingO3EditProTariff])
         try CostText.$locale.withValue(.enUS) {
-            let form = try Self.form(Self.cinema, resolution: .p480)
-            let cost = Self.apiKey.cost(for: form.makeSpecs(isDraft: false))
-            #expect(cost == .usd(Decimal(string: "6.9345") ?? 0, isEstimate: true))
+            let form = try Self.klingO3EditPro()
+            let cost = context.cost(for: form.makeSpecs(isDraft: false))
+            #expect(cost == .usd(Decimal(string: "1.8945") ?? 0, isEstimate: true))
             // Rounded up, so an "up to" price never reads lower than the rate.
-            #expect(form.rateText(in: Self.apiKey) == "up to $0.463 / s")
-            let line = try #require(form.costLine(in: Self.apiKey))
-            #expect(line.text == "15 s = up to $6.94")
+            #expect(form.rateText(in: context) == "up to $0.127 / s")
+            let line = try #require(form.costLine(in: context))
+            #expect(line.text == "15 s = up to $1.90")
             #expect(line.detail == "Top of Higgsfield's published range, quoted after upload · failed runs are free")
         }
     }

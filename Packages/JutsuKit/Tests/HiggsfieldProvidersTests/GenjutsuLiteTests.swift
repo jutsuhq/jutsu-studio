@@ -157,9 +157,9 @@ extension Network {
                     ])
         }
 
-        /// The list price bills the output's seconds and the input video's, both the selection's: 12 s at 720p is
-        /// 24 × $0.10. The source is uploaded, so nothing is quoted before.
-        @Test(arguments: [(Resolution.p480, "1.2"), (.p720, "2.4"), (.p1080, "4.8")])
+        /// The list price bills the output's seconds alone, the selection's: 12 s at 720p is 12 × $0.1471. The source
+        /// is uploaded, so nothing is quoted before.
+        @Test(arguments: [(Resolution.p480, "0.8868"), (.p720, "1.7652"), (.p1080, "3.5232")])
         func anAPIKeyEstimatesTheListPrice(resolution: Resolution, usd: String) async throws {
             let server = StubServer()
             let cost = try await server.makeAPIProvider().estimate(Self.spec(.motionTransfer, resolution: resolution))

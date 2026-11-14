@@ -184,7 +184,7 @@ import Testing
         motion.mode = "motion_transfer"
         let spec = try motion.spec(from: base, in: Self.apiKey).get()
         #expect(spec.model == Self.lite)
-        #expect(Self.apiKey.cost(for: spec) == .usd(Decimal(string: "2.4")!, isEstimate: false))
+        #expect(Self.apiKey.cost(for: spec) == .usd(Decimal(string: "1.7652")!, isEstimate: false))
 
         var long = order
         long.source = AgentVideoOrder.Source(video: CreateFixture.video(duration: 20), start: 0, end: 18)
