@@ -1,13 +1,15 @@
 import Foundation
 import JutsuCore
 
-/// A file that went into a result, to save back to the Mac: the source video or a reference image. The copy
-/// on this Mac is used while it is there; otherwise the one Higgsfield keeps is downloaded.
+/// A file that went into a result, to save back to the Mac: the source video, a reference image or the speech. The
+/// copy on this Mac is used while it is there; otherwise the one Higgsfield keeps is downloaded.
 public struct InputFile: Sendable, Hashable, Identifiable {
     public enum Role: Sendable, Hashable {
         case source
         /// 1-based, in the order the job sent them.
         case reference(Int)
+        /// The recording the characters say (`JobSpec.speech`).
+        case speech
     }
 
     public var role: Role
@@ -22,17 +24,25 @@ public struct InputFile: Sendable, Hashable, Identifiable {
         switch role {
         case .source: String(localized: "Source video", bundle: .module)
         case .reference(let number): String(localized: "Reference \(number)", bundle: .module)
+        case .speech: String(localized: "Speech", bundle: .module)
         }
     }
 
-    /// "rooftop – Source.mp4", "rooftop – Reference 2.png". The extension comes from the file, else the kind.
+    /// "rooftop – Source.mp4", "rooftop – Reference 2.png", "rooftop – Speech.mp3". The extension comes from the
+    /// file, else the kind.
     public func fileName(base: String) -> String {
         let label =
             switch role {
             case .source: String(localized: "Source", bundle: .module)
             case .reference(let number): String(localized: "Reference \(number)", bundle: .module)
+            case .speech: String(localized: "Speech", bundle: .module)
             }
-        let fallback = role == .source ? "mp4" : "jpg"
+        let fallback =
+            switch role {
+            case .source: "mp4"
+            case .reference: "jpg"
+            case .speech: "m4a"
+            }
         let ext = [local?.fileURL, remote].compactMap { $0?.pathExtension }.first { !$0.isEmpty } ?? fallback
         return "\(Self.fileSafe(base)) – \(label).\(ext.lowercased())"
     }
@@ -46,7 +56,8 @@ public struct InputFile: Sendable, Hashable, Identifiable {
         return visible.isEmpty ? "Result" : visible
     }
 
-    /// The source and every reference of the item, in the job's order; inputs with no file anywhere are left out.
+    /// The source, every reference and the speech of the item, in the job's order; inputs with no file anywhere are
+    /// left out.
     public static func all(in item: LibraryItemModel) -> [InputFile] {
         let spec = item.spec
         let uploaded = item.job.inputs ?? item.historyItem?.inputs ?? spec.remoteInputs
@@ -60,7 +71,13 @@ public struct InputFile: Sendable, Hashable, Identifiable {
                 role: .reference(index + 1), file: reference,
                 uploaded: uploaded.flatMap { $0.images.indices.contains(index) ? $0.images[index].url : nil })
         }
-        return ((source.map { [$0] } ?? []) + references).filter { $0.local != nil || $0.remote != nil }
+        let speech = spec.speech.map {
+            InputFile(
+                role: .speech, file: LocalImage(fileURL: $0.fileURL, bookmark: $0.bookmark),
+                uploaded: uploaded?.audio?.url)
+        }
+        return ((source.map { [$0] } ?? []) + references + (speech.map { [$0] } ?? []))
+            .filter { $0.local != nil || $0.remote != nil }
     }
 
     /// A file URL is the local copy; a web URL means the spec itself points at Higgsfield's copy.

@@ -42,6 +42,18 @@ public enum MediaProbe {
         )
     }
 
+    /// Seconds of the sound in the file at `url`: an audio file, or a video's soundtrack. Throws
+    /// `MediaError.unsupportedFormat` when it has no audio track AVFoundation can read.
+    public static func audioDuration(_ url: URL) async throws -> TimeInterval {
+        let asset = AVURLAsset(url: url)
+        let duration = try await unsupportedOnFailure { try await asset.load(.duration) }
+        let audioTracks = try await unsupportedOnFailure { try await asset.loadTracks(withMediaType: .audio) }
+        guard !audioTracks.isEmpty, duration.seconds.isFinite, duration.seconds > 0 else {
+            throw MediaError.unsupportedFormat
+        }
+        return duration.seconds
+    }
+
     /// AVFoundation reports unreadable containers with assorted `NSError`s; callers only need to know
     /// the file can't be used. Cancellation is passed through so a canceled job isn't marked failed.
     static func unsupportedOnFailure<T>(_ load: () async throws -> T) async throws -> T {

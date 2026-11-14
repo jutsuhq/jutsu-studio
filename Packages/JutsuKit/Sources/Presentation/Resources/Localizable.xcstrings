@@ -1,7 +1,16 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Add a speech recording" : {
+
+    },
     "Agents off" : {
+
+    },
+    "AI video" : {
+
+    },
+    "General" : {
 
     },
     "No agent connected" : {
@@ -11,6 +20,27 @@
 
     },
     "%lld agents connected" : {
+
+    },
+    "Old film" : {
+
+    },
+    "Phone footage" : {
+
+    },
+    "Remove the source video, %@ takes none" : {
+
+    },
+    "Short series" : {
+
+    },
+    "Speech" : {
+
+    },
+    "Use a speech of at least %@" : {
+
+    },
+    "Use a speech of at most %@" : {
 
     },
     "Your daily cap: %@ of %@" : {
@@ -2811,6 +2841,9 @@
 
     },
     "%@ doesn't take start and end frames, so they are references now." : {
+
+    },
+    "%@ takes only a start frame, so the end frame is a reference now." : {
 
     },
     "%lld images were removed" : {

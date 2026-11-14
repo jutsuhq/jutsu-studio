@@ -90,34 +90,14 @@ extension Network {
             }
         }
 
-        /// As the server answered a long Genjutsu prompt on 2026-10-14, trimmed.
-        static let presetNotice: JSONValue = [
-            "notice": [
-                "type": "preset_recommendation",
-                "message": "This prompt looks like the Higgsfield preset \"IN THE DARK\".",
-                "data": ["retry_literal_with": ["declined_preset_id": "preset-1"]],
-            ]
+        /// A reply with only a `notice` (`type` and `message`, as `generate_video`'s output schema has it).
+        static let notice: JSONValue = [
+            "notice": ["type": "info", "message": "Nothing was submitted."]
         ]
 
-        @Test func aSuggestedPresetIsDeclinedOnce() async throws {
-            let (account, stub) = Self.account { _, arguments in
-                arguments["params"]?["declined_preset_id"] == nil ? Self.presetNotice : ["results": [["id": "job-1"]]]
-            }
-            #expect(try await account.generate(Self.request).id == "job-1")
-            let sent = Self.calls(stub).map { $0["arguments"]?["params"]?["declined_preset_id"] }
-            #expect(sent == [nil, "preset-1"])
-        }
-
-        @Test func aQuoteDeclinesTheSuggestedPresetToo() async throws {
-            let (account, _) = Self.account { _, arguments in
-                arguments["params"]?["declined_preset_id"] == nil ? Self.presetNotice : ["cost": ["credits_exact": 45]]
-            }
-            #expect(try await account.cost(of: Self.request) == 45)
-        }
-
-        @Test func aNoticeDoesNotResubmitAnAcceptedGeneration() async throws {
+        @Test func aNoticeBesideResultsIsTheGeneration() async throws {
             let (account, stub) = Self.account { _, _ in
-                var answer = Self.presetNotice.objectValue ?? [:]
+                var answer = Self.notice.objectValue ?? [:]
                 answer["results"] = [["id": "paid-job"]]
                 return .object(answer)
             }
@@ -126,12 +106,11 @@ extension Network {
         }
 
         @Test func aNoticeAloneSubmittedNothing() async throws {
-            let (account, stub) = Self.account { _, _ in Self.presetNotice }
-            await #expect(
-                throws: HiggsfieldError.validation(
-                    field: nil, message: "This prompt looks like the Higgsfield preset \"IN THE DARK\".")
-            ) { try await account.generate(Self.request) }
-            #expect(Self.calls(stub).count == 2)
+            let (account, stub) = Self.account { _, _ in Self.notice }
+            await #expect(throws: HiggsfieldError.validation(field: nil, message: "Nothing was submitted.")) {
+                try await account.generate(Self.request)
+            }
+            #expect(Self.calls(stub).count == 1)
         }
 
         @Test func costAsksForAQuote() async throws {
@@ -244,14 +223,20 @@ extension Network {
             #expect(try await account.balance() == AccountBalance(credits: 2596.34, plan: "ultra"))
         }
 
-        @Test func uploadPutsTheFileAndConfirmsItsMediaID() async throws {
+        /// `media_confirm`'s `type` follows the content type: a video, an audio file (a speech recording), else an image.
+        @Test(arguments: [("image/png", "png", "image"), ("video/mp4", "mp4", "video"), ("audio/mpeg", "mp3", "audio")])
+        func uploadPutsTheFileAndConfirmsItsMediaID(
+            contentType: String, fileExtension: String, type: String
+        )
+            async throws
+        {
             let mcp = mcpServer(tools: Self.fullSet) { name, _ in
                 name == "media_upload"
                     ? [
                         "uploads": [
                             [
-                                "media_id": "media-1", "upload_url": "https://upload.example/in.png?X-Signature=abc",
-                                "url": "https://cdn.example/media-1.png",
+                                "media_id": "media-1", "upload_url": "https://upload.example/in?X-Signature=abc",
+                                "url": "https://cdn.example/media-1",
                             ]
                         ]
                     ]
@@ -261,18 +246,19 @@ extension Network {
             let session = stub.session()
             let client = MCPClient(endpoint: Fixture.mcpURL, tokens: tokenProvider(), session: session)
             let account = HiggsfieldAccount(client: client, session: session)
-            let file = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).png")
-            try Data("png".utf8).write(to: file)
+            let file = FileManager.default.temporaryDirectory.appendingPathComponent(
+                "\(UUID().uuidString).\(fileExtension)")
+            try Data("file".utf8).write(to: file)
             defer { try? FileManager.default.removeItem(at: file) }
 
-            let media = try await account.upload(fileAt: file, contentType: "image/png")
+            let media = try await account.upload(fileAt: file, contentType: contentType)
 
-            let url = try #require(URL(string: "https://cdn.example/media-1.png"))
+            let url = try #require(URL(string: "https://cdn.example/media-1"))
             #expect(media == UploadedMedia(id: "media-1", url: url))
             let put = try #require(stub.requests.first { $0.method == "PUT" })
             #expect(put.header("Authorization") == nil)
-            #expect(put.header("Content-Type") == "image/png")
-            #expect(Self.calls(stub).last?["arguments"] == ["media_id": "media-1", "type": "image"])
+            #expect(put.header("Content-Type") == contentType)
+            #expect(Self.calls(stub).last?["arguments"] == ["media_id": "media-1", "type": .string(type)])
         }
 
         @Test func uploadURLThatIsNotHTTPSIsNeverOpened() async throws {

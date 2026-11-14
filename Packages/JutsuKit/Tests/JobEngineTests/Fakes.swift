@@ -459,6 +459,11 @@ struct FakeMedia: MediaPreparing {
         return PreparedFile(fileURL: source.fileURL, contentType: "video/mp4", byteCount: 1, contentHash: "video")
     }
 
+    func prepareAudio(_ audio: LocalAudio) -> PreparedFile {
+        log.append("prepareAudio")
+        return PreparedFile(fileURL: audio.fileURL, contentType: "audio/mpeg", byteCount: 1, contentHash: "audio")
+    }
+
     func prepareImage(_ image: LocalImage) -> PreparedFile {
         log.append("prepareImage")
         return PreparedFile(

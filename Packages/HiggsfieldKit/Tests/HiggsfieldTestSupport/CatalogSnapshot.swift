@@ -111,11 +111,12 @@ public enum CatalogSnapshot {
 
     // MARK: - Tool definitions
 
-    /// The snapshot file itself, found from this source file's place in the repository.
+    /// The newest snapshot file, found from this source file's place in the repository. The answers above stay as
+    /// 2026-10-28's snapshot gave them; `tool(_:)` and `model(_:)` read this one.
     static let snapshot: JSONValue? = {
         var url = URL(fileURLWithPath: #filePath)
         for _ in 0..<5 { url.deleteLastPathComponent() }
-        let file = url.appendingPathComponent("docs/mcp-snapshots/2026-10-28.json")
+        let file = url.appendingPathComponent("docs/mcp-snapshots/2026-11-10.json")
         guard let data = try? Data(contentsOf: file) else { return nil }
         return try? JSONDecoder().decode(JSONValue.self, from: data)
     }()
@@ -171,9 +172,18 @@ public enum CatalogSnapshot {
         return model
     }
 
+    /// The snapshot's `models_explore {action: "list", type: "image"}` answer (its `structuredContent`): every image
+    /// model on one page, in the server's order.
+    public static func imageListing() throws -> JSONValue {
+        guard let listing = snapshot?["models"]?["list"]?["image"]?.arrayValue?.first?["structuredContent"],
+            listing["items"]?.arrayValue != nil
+        else { throw MissingModel(id: "image list") }
+        return listing
+    }
+
     /// `generate_video`'s own `params`, which no model schema lists.
     static let toolParams: Set<String> = [
-        "model", "prompt", "medias", "use_unlim", "get_cost", "declined_preset_id", "count",
+        "model", "prompt", "medias", "use_unlim", "get_cost", "count",
     ]
 
     /// Where the `params` of a `generate_video` call break the schema `models_explore get` gives for their `model`;

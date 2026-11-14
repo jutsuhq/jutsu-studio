@@ -35,10 +35,12 @@ public struct AgentLibraryInput: Codable, Equatable, Sendable {
         case reference
         /// The result an Enhance operation or an edit was made from.
         case editedFrom = "edited_from"
+        /// The recording the characters said.
+        case speech
     }
 
     public var role: Role
-    /// 1-based among the images the job sent, the N of its prompt's @ImageN; nil for the source and edited_from.
+    /// 1-based among the images the job sent, the N of its prompt's @ImageN; nil for the source, edited_from and speech.
     public var position: Int?
     /// The file on this Mac, when it is still here.
     public var file: String?

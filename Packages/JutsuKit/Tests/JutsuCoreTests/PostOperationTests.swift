@@ -39,9 +39,20 @@ import Testing
         #expect(
             try JSONDecoder().decode(PostOperation.self, from: upscale)
                 == PostOperation(
-                    action: .upscale(UpscaleOptions(target: .k4, frameRate: .keep, engine: .topaz)),
+                    action: .upscale(UpscaleOptions(target: .k4, frameRate: .keep, engine: .topaz, preset: .common)),
                     sourceJobID: "job-1"))
         #expect(try JSONDecoder().decode(PostOperation.self, from: cutout) == PostOperation(action: .removeBackground))
+    }
+
+    /// An upscale stored before the preset was sent ran with the server's default, so it reads as `common`; a new
+    /// one keeps the preset it was queued with.
+    @Test func anUpscalePresetSurvivesASaveAndOldJobsReadAsCommon() throws {
+        let old = Data(#"{"target":"1080p","frameRate":24,"engine":"standard"}"#.utf8)
+        #expect(try JSONDecoder().decode(UpscaleOptions.self, from: old).preset == .common)
+
+        let options = UpscaleOptions(preset: .ugc)
+        #expect(try JSONDecoder().decode(UpscaleOptions.self, from: JSONEncoder().encode(options)) == options)
+        #expect(UpscaleOptions().preset == .aigc)
     }
 
     @Test func theNewOperationsKeepTheirStoredShape() throws {

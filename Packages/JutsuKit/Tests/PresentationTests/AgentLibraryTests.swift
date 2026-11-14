@@ -148,6 +148,18 @@ import Testing
         #expect(try AgentEnhanceOrder(kind: .dub, language: "fra").action(voices: nil).get() == .dub(.french))
     }
 
+    @Test func anUpscaleIsTunedForAIVideoUnlessThePresetIsNamed() throws {
+        #expect(try AgentEnhanceOrder(kind: .upscale).action(voices: nil).get() == .upscale(UpscaleOptions()))
+        #expect(
+            try AgentEnhanceOrder(kind: .upscale, preset: "ugc").action(voices: nil).get()
+                == .upscale(UpscaleOptions(preset: .ugc)))
+        guard case .failure(let refusal) = AgentEnhanceOrder(kind: .upscale, preset: "anime").action(voices: nil) else {
+            Issue.record("an unknown preset was taken")
+            return
+        }
+        #expect(refusal.kind == .invalid)
+    }
+
     @Test func topazIsRefusedForItsPriceComesAfterTheRun() {
         guard case .failure(let refusal) = AgentEnhanceOrder(kind: .upscale, engine: "topaz").action(voices: nil) else {
             Issue.record("Topaz was taken")

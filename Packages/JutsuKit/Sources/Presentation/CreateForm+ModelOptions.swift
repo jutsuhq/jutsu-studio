@@ -115,6 +115,9 @@ extension CreateForm {
     /// A frame is filled, so the jobs run from the frames and the references wait.
     public var usesFrames: Bool { showsFrames && !frames.isEmpty }
 
+    /// The slots the selected model fills: a start and an end frame, or the start alone (`VideoModel.takesEndFrame`).
+    public var frameSlots: [FrameSlot] { selectedModel.takesEndFrame ? FrameSlot.allCases : [.start] }
+
     public func frame(_ slot: FrameSlot) -> LocalImage? { frames[slot] }
 
     /// Fills or clears (`nil`) one slot.

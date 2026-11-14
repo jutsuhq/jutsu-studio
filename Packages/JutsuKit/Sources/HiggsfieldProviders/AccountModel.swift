@@ -27,7 +27,8 @@ enum AccountModel {
         case .reframe(let aspect):
             let length = sourceLength(of: spec)
             guard length > 0, length <= ReframeAspect.maxSourceLength else { return nil }
-            // `reframe` takes 480p, 720p or 1080p: a MiniMax result's 768p or 2K goes as the nearest.
+            // `reframe` takes 480p, 720p or 1080p: a MiniMax result's 768p or 2K, or a Gemini one's 360p or 4K, goes
+            // as the nearest.
             return .reframe(
                 aspectRatio: aspect.rawValue, durationSeconds: length,
                 resolution: spec.resolution.standardized.rawValue)
@@ -44,7 +45,7 @@ enum AccountModel {
     }
 
     /// `upscale_video` per its schema: `bytedance` takes "1080p", "2k" or "4k", needs the source's size and takes a
-    /// frame rate (left out for the server's 24 fps); `topaz` takes "1080p" or "2160p" and neither.
+    /// frame rate (left out for the server's 24 fps) and a preset; `topaz` takes "1080p" or "2160p" and none of them.
     private static func upscale(_ options: UpscaleOptions, size: PixelSize?) -> VideoEdit.Operation? {
         switch options.engine {
         case .standard:
@@ -52,7 +53,7 @@ enum AccountModel {
             return .upscale(
                 resolution: options.target.rawValue,
                 fps: options.frameRate == .keep ? nil : options.frameRate.rawValue, provider: .bytedance,
-                width: size.width, height: size.height)
+                width: size.width, height: size.height, preset: options.preset.rawValue)
         case .topaz:
             let resolution: String? =
                 switch options.target {
@@ -60,7 +61,9 @@ enum AccountModel {
                 case .k4: "2160p"
                 case .k2: nil
                 }
-            return resolution.map { .upscale(resolution: $0, fps: nil, provider: .topaz, width: nil, height: nil) }
+            return resolution.map {
+                .upscale(resolution: $0, fps: nil, provider: .topaz, width: nil, height: nil, preset: nil)
+            }
         }
     }
 
@@ -123,8 +126,7 @@ enum AccountModel {
         if let draftJobID = spec.draftJobID, model == .seedance25 { return .finalize(draftJobID: draftJobID) }
         var request = VideoRequest(model: model, media: media, prompt: spec.prompt)
         switch spec.model.descriptor.shape {
-        case .genjutsu:
-            request.resolution = spec.resolution.rawValue
+        case .genjutsu: request.resolution = spec.resolution.rawValue
         case .seedance:
             request.resolution = spec.resolution.rawValue
             request.generateAudio = generatesAudio(spec)
@@ -175,8 +177,9 @@ enum AccountModel {
             request.resolution = spec.resolution.rawValue
             request.duration = Double(durationSeconds(of: spec, constraints: constraints))
             request.generateAudio = generatesAudio(spec)
-        case .kling4:
-            kling4(&request, spec: spec, constraints: constraints)
+        case .kling4: kling4(&request, spec: spec, constraints: constraints)
+        case .geminiOmni: geminiOmni(&request, spec: spec, constraints: constraints)
+        case .intone: intone(&request, spec: spec)
         }
         return request
     }
@@ -186,8 +189,9 @@ enum AccountModel {
         zip(media, [MediaRole.startFrame, .endFrame]).map { item, role in VideoRequest.Media(role: role, id: item.id) }
     }
 
-    /// Kling 4.0's `kling4_0` settings: the resolution, the length, the frame and the `mode`, with frames as
-    /// `start_image` and `end_image`.
+    /// The settings of Kling 4.0 (`kling4_0`) and 4.0 Flash (`kling_4_0_flash`, the same fields at 720p and 3–20 s,
+    /// with no `end_image` role): the resolution, the length, the frame and the `mode`, with frames as `start_image`
+    /// and `end_image`; Flash's one frame is its `start_image`.
     static func kling4(_ request: inout VideoRequest, spec: JobSpec, constraints: ModelConstraintTable) {
         request.resolution = spec.resolution.rawValue
         request.duration = Double(durationSeconds(of: spec, constraints: constraints))
@@ -205,11 +209,45 @@ enum AccountModel {
             ? VideoRequest.kling4TextToVideo : VideoRequest.kling4ReferenceToVideo
     }
 
-    /// Kling 4.0's `aspect_ratio` on either connection: `auto` (REST's `adaptive`, the account's `auto`), which
-    /// follows the references, for a job with a source and for Auto; otherwise the model's fixed frame
-    /// (`models.json` `aspectRatios`) nearest the one asked for, as no Kling 4.0 schema has 4:3 or 3:4. A clip from
-    /// frames is asked for its start frame's shape, set when the job is queued (`JobEngine.insert`). `nil` for `auto`
-    /// leaves the field out (REST's text-to-video, which has no `adaptive` and defaults to 16:9).
+    /// Gemini Omni Flash 1.2's settings (`gemini_omni_flash_1_2`, catalog snapshot of 2026-11-10): the resolution, the
+    /// `mode` (`geminiOmniMode`), the length but for Edit, whose output follows the source, and frames as
+    /// `start_image` and `end_image`. Its `aspect_ratios` are 16:9 and 9:16 with no `auto`, so a clip without a source
+    /// is sent the nearest of them, and Auto or a job with a source none, to follow the inputs. It makes its soundtrack
+    /// on its own (no `generate_audio`); a muted job has it removed after download (`AudioPlan`).
+    static func geminiOmni(_ request: inout VideoRequest, spec: JobSpec, constraints: ModelConstraintTable) {
+        request.resolution = spec.resolution.rawValue
+        request.mode = geminiOmniMode(of: spec)
+        if spec.mode != .edit { request.duration = Double(durationSeconds(of: spec, constraints: constraints)) }
+        request.aspectRatio = kling4Frame(of: spec, auto: nil)
+        if spec.usesFrames { request.media = asFrames(request.media) }
+    }
+
+    /// Higgsfield Intone's settings (`intone`, catalog snapshot of 2026-11-10): the images as the speakers
+    /// (`character_images`), the speech as `audio_references`, the resolution and the frame. It takes no `duration`
+    /// (the speech sets it), `mode` or `generate_audio`; `bitrate_mode` is left at the server's default. Its
+    /// `aspect_ratios` have no `auto`, so Auto sends none, and a frame asked for the nearest of them.
+    static func intone(_ request: inout VideoRequest, spec: JobSpec) {
+        request.resolution = spec.resolution.rawValue
+        request.aspectRatio = kling4Frame(of: spec, auto: nil)
+        request.media = request.media.map { $0.role == .image ? VideoRequest.Media(role: .character, id: $0.id) : $0 }
+    }
+
+    /// Gemini Omni Flash 1.2's `mode`: its own for Edit and Extend, else Kling 4.0's (`kling4Mode`), which it names
+    /// alike.
+    static func geminiOmniMode(of spec: JobSpec) -> String {
+        switch spec.mode {
+        case .edit: VideoRequest.geminiEdit
+        case .extend: VideoRequest.geminiExtend
+        default: kling4Mode(of: spec)
+        }
+    }
+
+    /// Kling 4.0's `aspect_ratio` on either connection, and Gemini Omni Flash 1.2's: `auto` (REST's `adaptive`, the
+    /// account's `auto`), which follows the references, for a job with a source and for Auto; otherwise the model's
+    /// fixed frame (`models.json` `aspectRatios`) nearest the one asked for, as no Kling 4.0 schema has 4:3 or 3:4. A
+    /// clip from frames is asked for its start frame's shape, set when the job is queued (`JobEngine.insert`). `nil`
+    /// for `auto` leaves the field out (REST's text-to-video, which has no `adaptive` and defaults to 16:9, and
+    /// Gemini, which has no `auto`).
     static func kling4Frame(of spec: JobSpec, auto: String?) -> String? {
         guard spec.source == nil, let shape = spec.aspectRatio?.widthOverHeight else { return auto }
         let size = PixelSize(width: Int((shape * 10_000).rounded()), height: 10_000)
@@ -266,11 +304,15 @@ enum AccountModel {
     }
 
     /// Whether `get_cost` can price the job only with its media: one billed by its source (`billsSource`), and a
-    /// Kling 4.0 job with a source, frames or images. A quote without media can't name its `mode` truthfully, and
-    /// Higgsfield's announcement of Kling 4.0 says references may change the price, so it is quoted once uploaded.
+    /// Kling 4.0 or Gemini Omni Flash 1.2 job with a source, frames or images. A quote without media can't name its
+    /// `mode` truthfully, and Higgsfield's announcement of Kling 4.0 says references may change the price, so it is
+    /// quoted once uploaded; Gemini's input video is billed too (Google's API prices it as input tokens).
+    /// A model that voices a speech is priced by it, and sent no length, so it too is quoted with its media.
     static func quotesAfterUpload(_ spec: JobSpec) -> Bool {
         billsSource(spec)
-            || (spec.model.descriptor.shape == .kling4 && (spec.source != nil || !spec.references.isEmpty))
+            || ([.kling4, .geminiOmni].contains(spec.model.descriptor.shape)
+                && (spec.source != nil || !spec.references.isEmpty))
+            || spec.model.declares(.speech)
     }
 
     /// The `get_cost` question for a job before anything is uploaded: its request with no media, prompt or variants,

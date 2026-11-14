@@ -18,10 +18,13 @@ import Testing
 
     // MARK: Role options
 
-    @Test func rolesFollowTheModelsDeclaredInputs() {
+    @Test func rolesFollowTheModelsDeclaredInputs() throws {
         #expect(ImageRole.options(for: .seedance25, mode: .motionTransfer) == [.startFrame, .endFrame, .reference])
         #expect(ImageRole.options(for: .genjutsu, mode: .restyle) == [.reference])
         #expect(ImageRole.options(for: .klingMotionControl, mode: .motionTransfer) == [.reference])
+        // Kling 4.0 Flash starts from a frame but has no end frame.
+        let flash = try #require(VideoModel(rawValue: "kling40Flash"))
+        #expect(ImageRole.options(for: flash, mode: .motionTransfer) == [.startFrame, .reference])
         // Every model in models.json: frames only where it declares them, a reference where its limit takes one.
         for model in VideoModel.allCases {
             let mode = model.modes[0]
@@ -122,6 +125,21 @@ import Testing
         #expect(note.hasSuffix("\(kling) takes up to 1 reference image: 1 image was removed."))
         // The start frame goes first, so the frame the clip started on is the one kept.
         #expect(form.references == [Self.start])
+    }
+
+    /// A model with a start frame alone keeps the start frame and makes the end frame the first reference.
+    @Test func aModelWithoutAnEndFrameMakesItAReference() throws {
+        var form = Self.seedance()
+        form.addReferences([Self.third])
+        _ = form.makeVideo(from: [Self.start, Self.end], as: MakeVideoChoice(roles: [.startFrame, .endFrame]))
+        let flash = try #require(VideoModel(rawValue: "kling40Flash"))
+        let note = try #require(form.recheckingRoles { $0.model = flash })
+        #expect(note == "Kling 4.0 Flash takes only a start frame, so the end frame is a reference now.")
+        #expect(form.frameSlots == [.start])
+        #expect(form.frame(.start) == Self.start && form.frame(.end) == nil)
+        #expect(form.references == [Self.end, Self.third])
+        #expect(form.placedImages.map(\.role) == [.startFrame])
+        #expect(form.makeVideoChoices(imageCount: 2).map(\.roles) == [[.reference, .reference]])
     }
 
     @Test func aSwitchThatKeepsEveryRoleSaysNothing() {

@@ -62,11 +62,11 @@ import Testing
             ])
     }
 
-    /// Every mode of every model an API key runs reaches an endpoint, and every endpoint is priced: `Pricing` refuses
-    /// to load with a tariff of the catalog missing.
+    /// Every mode an API key runs reaches an endpoint, and every endpoint is priced: `Pricing` refuses to load with a
+    /// tariff of the catalog missing.
     @Test func everyModelsEndpointsArePriced() throws {
         for model in VideoModel.allCases where model.runsWithAPIKey {
-            for mode in model.modes {
+            for mode in model.modes where model.runsWithAPIKey(in: mode) {
                 for hasMedia in [true, false] {
                     let endpoint = model.endpointID(for: mode, resolution: .p720, hasMedia: hasMedia)
                     #expect(!endpoint.isEmpty, "\(model.rawValue) \(mode.rawValue)")
@@ -76,8 +76,8 @@ import Testing
         _ = try Pricing.bundled()
     }
 
-    /// MiniMax H3 Max isn't in the public REST docs, nor is Genjutsu Lite's request schema: they have no endpoint, so
-    /// no tariff, and run on the account only.
+    /// MiniMax H3 Max isn't in the public REST docs: it has no endpoint, so no tariff, and runs on the account only.
+    /// Genjutsu Lite's REST endpoint is Motion Transfer's alone: its Object Swap runs on the account only.
     @Test func aModelWithoutEndpointsRunsOnTheAccountOnly() throws {
         let max = try #require(VideoModel(rawValue: "minimaxH3MaxReference"))
         let lite = try #require(VideoModel(rawValue: "genjutsuLite"))
@@ -85,7 +85,18 @@ import Testing
         #expect(max.endpointID(for: .motionTransfer, resolution: .p768, hasMedia: true).isEmpty)
         #expect(max.accountModelID(for: .motionTransfer) == "minimax_h3_max")
         #expect(!Pricing.tariffs.contains { $0.0.isEmpty })
-        #expect(VideoModel.allCases.filter { !$0.runsWithAPIKey } == [lite, max])
+        let gemini = try #require(VideoModel(rawValue: "geminiOmniFlash12"))
+        let intone = try #require(VideoModel(rawValue: "intone"))
+        #expect(VideoModel.allCases.filter { !$0.runsWithAPIKey } == [max, gemini, intone])
+        #expect(lite.runsWithAPIKey(in: .motionTransfer) && !lite.runsWithAPIKey(in: .objectSwap))
+        #expect(
+            lite.endpointID(for: .motionTransfer, resolution: .p480, hasMedia: true)
+                == "higgsfield/genjutsu-light/motion-transfer/v1.0")
+        #expect(lite.endpointID(for: .objectSwap, resolution: .p720, hasMedia: true).isEmpty)
+        // Every other model runs each of its modes with an API key.
+        for model in VideoModel.allCases where model != lite && model.runsWithAPIKey {
+            #expect(model.modes.allSatisfy(model.runsWithAPIKey(in:)), "\(model.rawValue)")
+        }
     }
 
     /// Genjutsu Lite: Genjutsu's request and draft for Motion and Swap (no Restyle) on models of its own, up to 15 s

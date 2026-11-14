@@ -32,6 +32,8 @@ public enum ModelEndpoint: String, Sendable, CaseIterable {
     case motionTransfer = "higgsfield/genjutsu/motion-transfer/v1.0"
     case restyle = "higgsfield/genjutsu/restyle/v1.0"
     case objectSwap = "higgsfield/genjutsu/object-swap/v1.0"
+    /// Genjutsu Lite's one REST endpoint; the same body as Genjutsu's (`GenerationRequest`).
+    case genjutsuLiteMotionTransfer = "higgsfield/genjutsu-light/motion-transfer/v1.0"
     case seedanceTextToVideo = "bytedance/seedance-2.5/text-to-video"
     case seedanceReferenceToVideo = "bytedance/seedance-2.5/reference-to-video"
     case seedanceImageToVideo = "bytedance/seedance-2.5/image-to-video"
@@ -58,6 +60,11 @@ public enum ModelEndpoint: String, Sendable, CaseIterable {
     case kling4ImageToVideo = "kling-video/v4.0/image-to-video"
     case kling4ReferenceToVideo = "kling-video/v4.0/reference-to-video"
     case kling4VideoEdit = "kling-video/v4.0/video-edit"
+    /// Kling 4.0 Flash's four endpoints, the same body at 720p and 3–20 s, without an end frame.
+    case kling4FlashTextToVideo = "kling-video/v4.0-flash/text-to-video"
+    case kling4FlashImageToVideo = "kling-video/v4.0-flash/image-to-video"
+    case kling4FlashReferenceToVideo = "kling-video/v4.0-flash/reference-to-video"
+    case kling4FlashVideoEdit = "kling-video/v4.0-flash/video-edit"
     case soulV2 = "higgsfield-ai/soul/v2/standard"
     /// Generates without `image_urls`, edits with them.
     case grokImage2 = "xai/grok-imagine-image-2.0"

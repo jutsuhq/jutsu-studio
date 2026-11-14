@@ -153,12 +153,21 @@ public struct AgentCapabilities: Codable, Equatable, Sendable {
         public var hasDraft: Bool
         public var makesClipsWithoutSource: Bool
         public var needsPrompt: Bool
+        /// `true` for a model whose characters say a recording: `create_video` takes it as `speech`, `quote` its length
+        /// as `speech_length`; left out for every other model.
+        // swiftlint:disable:next discouraged_optional_boolean
+        public var takesSpeech: Bool?
 
-        public init(modes: [ModeDetails], hasDraft: Bool, makesClipsWithoutSource: Bool, needsPrompt: Bool) {
+        public init(
+            modes: [ModeDetails], hasDraft: Bool, makesClipsWithoutSource: Bool, needsPrompt: Bool,
+            // swiftlint:disable:next discouraged_optional_boolean
+            takesSpeech: Bool? = nil
+        ) {
             self.modes = modes
             self.hasDraft = hasDraft
             self.makesClipsWithoutSource = makesClipsWithoutSource
             self.needsPrompt = needsPrompt
+            self.takesSpeech = takesSpeech
         }
     }
 

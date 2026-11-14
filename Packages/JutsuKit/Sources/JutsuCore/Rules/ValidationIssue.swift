@@ -18,4 +18,11 @@ public enum ValidationIssue: Sendable, Hashable {
     case frameTooSmall(PixelSize)
     /// Length counted in Unicode scalars, as the API's JSON schema does.
     case promptTooLong(length: Int)
+    /// A model that voices a speech (`VideoModelDescriptor.Control.speech`) has none.
+    case speechRequired
+    /// The speech outside the model's window (`VideoModelDescriptor.speechSeconds`), in seconds.
+    case speechTooShort(TimeInterval)
+    case speechTooLong(TimeInterval)
+    /// A model that voices a speech makes the clip from images alone and takes no source video.
+    case sourceNotTaken
 }

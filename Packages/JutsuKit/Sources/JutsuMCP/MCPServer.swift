@@ -234,7 +234,10 @@ public struct MCPServer: Sendable {
         response.capabilities?.noteHelper(self.version)
         return .success(Self.toolResult(response, structured: Self.isStructured(version)))
     }
+}
 
+// Requests with files: each is handed to the app before the command that names its copy.
+extension MCPServer {
     /// Hands the request's files to the app, each checked against the request ID before a byte is sent, then sends the
     /// command naming their copies. A request the app already queued with these parameters (`request_known`) needs no
     /// file again: the command goes without them and gets the jobs it queued before.
@@ -251,9 +254,13 @@ public struct MCPServer: Sendable {
             for path in command.video.images {
                 staged.video.images.append(try await stage(path, request, client).get())
             }
+            if let path = command.video.speech {
+                staged.video.speech = try await stage(path, request, client).get()
+            }
         } catch  where error.code == .requestKnown {
             staged.video.source?.path = nil
             staged.video.images = []
+            staged.video.speech = nil
         } catch {
             return AgentResponse(error: error)
         }

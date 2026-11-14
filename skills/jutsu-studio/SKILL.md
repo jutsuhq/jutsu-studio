@@ -51,9 +51,15 @@ says rather than guessing.
    `maxInputs`; with `maxInputsNote` that is only a bound, and Higgsfield's quote refuses (for free) what the model
    doesn't take.
    - **Clips without a source.** A model with `makesClipsWithoutSource` in `capabilities` with `model` (Seedance
-     2.5, Kling 4.0) makes a clip from the prompt and `images` alone: leave out `source` and set `length` and
-     `aspect_ratio`. With `needsPrompt` the prompt is required. Kling 4.0 also edits a video as the prompt says
-     (`mode: "edit"`), with up to ten images.
+     2.5, Kling 4.0, Kling 4.0 Flash) makes a clip from the prompt and `images` alone: leave out `source` and set
+     `length` and `aspect_ratio`. With `needsPrompt` the prompt is required. Kling 4.0 also edits a video as the
+     prompt says (`mode: "edit"`), with up to ten images. Kling 4.0 Flash (`kling40Flash`) does the same for less,
+     at 720p and up to 20 s: the cheap draft option before a Kling 4.0 final. On an account, Gemini Omni Flash 1.2
+     (`geminiOmniFlash12`) is the pick for a clip with native sound, an Extend outside Seedance, or 4K: 360p to
+     `4k`, 3–15 s from a prompt alone but 3–10 s with images or a source (and for what Extend adds), 16:9 or 9:16.
+     Higgsfield Intone (`intone`, account, `takesSpeech`) is a talking head: one or two people in `images` say the
+     `speech` file (2–27.5 s) in `create_video`; leave out `source` and `length`, as the clip runs the speech and
+     2.5 s more. Quote it with `speech_length`, the recording's seconds.
    - **Characters by name.** `elements` lists the account's characters, environments and props. Pass their names in
      `elements` to `create_video`, `quote` or `create_image`: their images go first, in order, then your own files.
      The answer's `references` gives each image's `@ImageN` tag; name them that way in the prompt, and the
@@ -81,7 +87,9 @@ says rather than guessing.
      (`onHiggsfield`, no file yet; `refresh_higgsfield` reloads it), and `library_download` brings those results
      into the Library. Both are free.
 6. **Finish.** `enhance` upscales, reframes, removes a background, dubs or changes the voice of a video on
-   Higgsfield, with its own `request_id` and `max_cost`. Two operations run on this Mac instead, free and without
+   Higgsfield, with its own `request_id` and `max_cost`. An upscale there is tuned for AI video (`preset: "aigc"`)
+   unless you name another `preset` (`common`, `ugc`, `short_series`, `old_film`); the preset doesn't change the
+   price, `target` and `frame_rate` do. Two operations run on this Mac instead, free and without
    `max_cost`: `smooth_motion` (`mode` `60fps`, `slow_2x` or `slow_4x`) on a video, and `upscale` with `engine: "mac"`
    on a video up to 1280×720 or an image up to 1920×1080. That upscale is 4× unless you give `target`: `1080p`, `2k`
    or `4k` sets the short side (a 720×1280 clip at `1080p` becomes 1080×1920), and a factor such as `2x` or `2.5x`

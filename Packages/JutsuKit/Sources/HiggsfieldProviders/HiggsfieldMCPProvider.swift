@@ -290,7 +290,9 @@ public actor HiggsfieldMCPProvider: GenerationProvider, GenerationHistory {
     /// `use_unlim` only for a job queued to be paid that way that still is: opted in, and covered by the allowance.
     private func videoRequest(_ spec: JobSpec, inputs: RemoteInputs) async throws -> VideoRequest {
         guard let model = AccountModel.model(for: spec) else { throw Self.notAvailable }
-        let assets = (inputs.video.map { [($0, MediaRole.video)] } ?? []) + inputs.images.map { ($0, .image) }
+        let assets =
+            (inputs.video.map { [($0, MediaRole.video)] } ?? []) + inputs.images.map { ($0, .image) }
+            + (inputs.audio.map { [($0, MediaRole.audio)] } ?? [])
         let media = try assets.map { asset, role in VideoRequest.Media(role: role, id: try Self.mediaID(asset)) }
         var request = AccountModel.request(for: spec, model: model, media: media, constraints: await constraints())
         // A finalize sends exactly its four keys: `use_unlim: false` and no `count`.

@@ -1409,6 +1409,39 @@
         }
       }
     },
+    "geminiOmniFlash12.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gemini Omni Flash 1.2 · native audio, up to 4K, on an account"
+          }
+        }
+      }
+    },
+    "geminiOmniFlash12.family" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gemini"
+          }
+        }
+      }
+    },
+    "geminiOmniFlash12.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gemini Omni Flash 1.2"
+          }
+        }
+      }
+    },
     "genjutsu.detail" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1475,6 +1508,39 @@
         }
       }
     },
+    "intone.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Higgsfield Intone · talking heads that say your recording, on an account"
+          }
+        }
+      }
+    },
+    "intone.family" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Higgsfield"
+          }
+        }
+      }
+    },
+    "intone.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Higgsfield Intone"
+          }
+        }
+      }
+    },
     "kling40.detail" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1504,6 +1570,39 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kling 4.0"
+          }
+        }
+      }
+    },
+    "kling40Flash.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kling 4.0 Flash · cheaper 720p drafts, up to 20 s"
+          }
+        }
+      }
+    },
+    "kling40Flash.family" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kling"
+          }
+        }
+      }
+    },
+    "kling40Flash.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kling 4.0 Flash"
           }
         }
       }

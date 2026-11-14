@@ -155,6 +155,10 @@ extension Tool {
                     "description": "upscale: 1080p, 2k or 4k; with engine mac also a factor such as 2x or 2.5x.",
                 ],
                 "frame_rate": ["type": "integer", "enum": [24, 30, 60]],
+                "preset": [
+                    "type": "string", "enum": ["aigc", "common", "ugc", "short_series", "old_film"],
+                    "description": "upscale on Higgsfield: what the upscaler tunes itself for; aigc when left out.",
+                ],
                 "engine": [
                     "type": "string", "enum": ["standard", .string(EnhanceCommand.macEngine)],
                     "description": "upscale: standard on Higgsfield (paid), mac on this Mac (free, 4×).",
@@ -375,7 +379,7 @@ extension Tool {
                 "description": "How many reference images there will be.",
             ]
         }
-        return properties
+        return properties.merging(speechProperty(files: files)) { $1 }
     }
 
     private var annotations: JSONValue {

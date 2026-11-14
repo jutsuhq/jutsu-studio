@@ -134,7 +134,10 @@ func costRoundTripsExactly(cost: Cost) throws {
     #expect(try JSONDecoder().decode(JobSpec.self, from: JSONEncoder().encode(spec)) == spec)
     #expect(spec.duration == 12)
     #expect(spec.limits().referenceImages == 0...8)
-    #expect(VideoModel.allCases.filter(\.makesClipsWithoutSource).map(\.rawValue) == ["seedance25", "kling40"])
+    #expect(
+        VideoModel.allCases.filter(\.makesClipsWithoutSource).map(\.rawValue) == [
+            "seedance25", "kling40", "kling40Flash", "geminiOmniFlash12", "intone",
+        ])
 }
 
 @Test func aSpecIsNamedByItsSourceElseItsPrompt() {

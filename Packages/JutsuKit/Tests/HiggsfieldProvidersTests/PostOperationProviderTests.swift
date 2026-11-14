@@ -67,8 +67,7 @@ extension Network {
                     quote, quote,
                     [
                         "video_id": "3f1c8a52-6b0e-4d7a-9a51-2f4b8c9d0e17", "provider": "bytedance", "resolution": "4k",
-                        "fps": 60, "width": 1280,
-                        "height": 720,
+                        "fps": 60, "width": 1280, "height": 720, "preset": "aigc",
                     ],
                 ])
         }
@@ -143,6 +142,29 @@ extension Network {
                         "medias": [["role": "video", "value": "5b7d1e90-2a4c-4e8f-9d36-7c1a2b3e4f50"]],
                         "aspect_ratio": "1:1",
                         "duration_seconds": 20, "resolution": "720p",
+                    ],
+                ])
+            #expect(try Provider.schemaViolations(stub).isEmpty)
+        }
+
+        /// Up to 15 s the reframe goes without `resolution`, so a 1080p result stays 1080p; the quote, which needs a
+        /// resolution, names the result's.
+        @Test func aShortReframeKeepsTheResultsResolution() async throws {
+            let (provider, stub) = Self.provider { _, arguments in
+                arguments["params"]?["get_cost"] == true ? ["cost": ["credits": 30]] : ["results": [["id": "job-5"]]]
+            }
+            var spec = Self.spec(.reframe(.portrait), seconds: 12)
+            spec.resolution = .p1080
+
+            #expect(try await provider.estimate(spec) == .credits(30, isEstimate: true))
+            _ = try await provider.submit(spec, inputs: Self.noInputs, idempotencyKey: UUID())
+
+            #expect(
+                Self.params(stub) == [
+                    ["get_cost": true, "duration_seconds": 12, "resolution": "1080p"],
+                    [
+                        "medias": [["role": "video", "value": "3f1c8a52-6b0e-4d7a-9a51-2f4b8c9d0e17"]],
+                        "aspect_ratio": "9:16",
                     ],
                 ])
             #expect(try Provider.schemaViolations(stub).isEmpty)

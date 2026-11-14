@@ -70,15 +70,27 @@ public struct VideoModel: RawRepresentable, Codable, Sendable, Hashable, CaseIte
 
     public func serves(_ mode: Mode) -> Bool { descriptor.modes.contains(mode) }
 
-    /// Whether the REST API runs it, with an API key; a model without endpoints runs on the account only (MiniMax H3
-    /// Max, which the public docs don't list).
-    public var runsWithAPIKey: Bool { !descriptor.endpoints.isEmpty }
+    /// Whether the REST API runs it, with an API key, in any of its modes; a model without endpoints runs on the
+    /// account only (MiniMax H3 Max, which the public docs don't list).
+    public var runsWithAPIKey: Bool { modes.contains(where: runsWithAPIKey(in:)) }
+
+    /// Whether the REST API runs it in `mode`: some endpoint applies to a job in that mode (`endpointID`). Genjutsu
+    /// Lite has a Motion Transfer endpoint and none for Object Swap, which only the account runs.
+    public func runsWithAPIKey(in mode: Mode) -> Bool {
+        serves(mode)
+            && resolutions(for: mode).contains { resolution in
+                [true, false].contains { !endpointID(for: mode, resolution: resolution, hasMedia: $0).isEmpty }
+            }
+    }
 
     /// Whether Create shows `control` for this model.
     public func declares(_ control: VideoModelDescriptor.Control) -> Bool { descriptor.controls.contains(control) }
 
     /// Makes a clip from the prompt and images alone (`clipWithoutSource`).
     public var makesClipsWithoutSource: Bool { declares(.clipWithoutSource) }
+
+    /// A clip from frames may end on a second image (`frameImages`); Kling 4.0 Flash takes a start frame alone.
+    public var takesEndFrame: Bool { descriptor.frameImages.upperBound > 1 }
 
     /// A model without a draft has a cheapest quality instead (Kling's Standard, whose 480p costs as much as 720p).
     public var offersDraft: Bool { declares(.draft) }
@@ -100,8 +112,9 @@ public struct VideoModel: RawRepresentable, Codable, Sendable, Hashable, CaseIte
     /// What one job on this model takes in `mode`: the mode's limits with the catalog's over them. Seedance's 4–30 s
     /// is confirmed by `get_cost`, and Kling's one image by the server refusing more ("exactly one image_references
     /// entry is required"); a limit with no quote, schema or refusal behind it is Genjutsu's. Without a source
-    /// (`hasSource`) the prompt may stand alone, so no image is required. Edit takes up to 30 s of source and makes as
-    /// much; Extend takes up to 30 s of source and adds 4–30 s (`duration` 4–30 in the `video-extend` schema).
+    /// (`hasSource`) the prompt may stand alone, so no image is required, except by a model that voices a speech,
+    /// whose images are the people who say it (Intone). Edit takes up to 30 s of source and makes as much; Extend
+    /// takes up to 30 s of source and adds 4–30 s (`duration` 4–30 in the `video-extend` schema).
     /// `constraints` replaces these with what the server says, bound by bound, where it says something.
     public func limits(
         for mode: Mode, hasSource: Bool = true, constraints: ModelConstraintTable = .builtIn
@@ -110,8 +123,19 @@ public struct VideoModel: RawRepresentable, Codable, Sendable, Hashable, CaseIte
         if let duration = descriptor.duration { limits.duration = duration }
         if let images = descriptor.referenceImages { limits.referenceImages = images }
         if let server = constraints[self, mode] { limits = server.applied(to: limits) }
-        if !hasSource { limits.referenceImages = 0...limits.referenceImages.upperBound }
+        if !hasSource, !declares(.speech) { limits.referenceImages = 0...limits.referenceImages.upperBound }
         return limits
+    }
+
+    /// `duration` inside the shorter window the model keeps for a job with references, a source or an end frame
+    /// (`durationWithReferences`): Gemini Omni Flash 1.2 makes 3–15 s from a prompt or a start frame alone, but 3–10 s
+    /// from references or a start and an end frame, and Extend adds 3–10 s. Edit, whose output follows the source,
+    /// keeps `duration`.
+    public func duration(
+        _ duration: ClosedRange<TimeInterval>, in mode: Mode, withReferences: Bool
+    ) -> ClosedRange<TimeInterval> {
+        guard withReferences, mode != .edit, let window = descriptor.durationWithReferences else { return duration }
+        return duration.clamped(to: window)
     }
 
     /// The account's `generate_video` model ID for a job in `mode`; `nil` where the account doesn't run it.

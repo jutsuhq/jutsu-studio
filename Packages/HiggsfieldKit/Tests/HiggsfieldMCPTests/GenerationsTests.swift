@@ -118,7 +118,9 @@ extension Network {
     #expect(MediaRole(historyRole: "image_references") == .image)
     #expect(MediaRole(historyRole: "start_image") == .startFrame)
     #expect(MediaRole(historyRole: "end_image") == .endFrame)
-    #expect(MediaRole(historyRole: "audio") == nil)
+    #expect(MediaRole(historyRole: "audio") == .audio)
+    #expect(MediaRole(historyRole: "audio_references") == .audio)
+    #expect(MediaRole(historyRole: "mask") == nil)
 }
 
 @Test(arguments: [

@@ -174,6 +174,10 @@ struct AgentImageQueueTests {
         #expect(refusal(order(model: "edit"))?.contains("send inputs") == true)
         #expect(refusal(AgentImageOrder(model: nil, prompt: "x", aspectRatio: "21:9", count: nil)) != nil)
         #expect(refusal(order(), saved: true) != nil)
+        // A model whose catalog lists no frame (the account's MiniMax H3 Image) offers only "auto", taken unasked.
+        let anyFrame = ImageModel(id: "minimax_h3_image", title: "MiniMax H3 Image", aspectRatios: ["auto"])
+        let auto = try order(model: anyFrame.id).draft(models: models + [anyFrame], modelsAreSaved: false).get()
+        #expect(auto.aspectRatio == "auto")
     }
 
     /// Several images go in order, up to the model's own limit from its catalog; a text-only model takes none.

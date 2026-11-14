@@ -23,6 +23,8 @@ public struct VideoModelDescriptor: Sendable, Hashable {
         case videoBackground
         /// Cinema Studio 4.0's camera, lens, genre, era and the rest (`CinemaControls`).
         case cinemaControls
+        /// A speech recording the characters say (`JobSpec.speech`), which Create and the agents take only here.
+        case speech
     }
 
     /// The code that encodes a job's body for the REST endpoint and its `generate_video` arguments. A model whose
@@ -43,9 +45,17 @@ public struct VideoModelDescriptor: Sendable, Hashable {
         /// the resolution and the soundtrack, and the creative controls the job sets (`CinemaControls`); the director
         /// picks the rest.
         case cinemaStudio
-        /// Kling 4.0: from the prompt alone, from a start and an optional end frame, from references (the source and
-        /// the images), or the source edited as the prompt says, each with the length and the resolution.
+        /// Kling 4.0 and 4.0 Flash: from the prompt alone, from a start and an optional end frame (Flash a start
+        /// alone), from references (the source and the images), or the source edited as the prompt says, each with the
+        /// length and the resolution.
         case kling4
+        /// Gemini Omni Flash 1.2, on the account only: Kling 4.0's clips from the prompt, frames or references, with
+        /// its own `mode`s for an Edit of the source and an Extend of it, and no `aspect_ratio` that follows the
+        /// source.
+        case geminiOmni
+        /// Higgsfield Intone, on the account only: one or two characters (the images) say the speech, in the frame
+        /// asked for, with the resolution alone; the speech sets the length.
+        case intone
     }
 
     /// The account's estimate of a job's credits, for when Higgsfield can't quote it yet (a model billed by its
@@ -102,6 +112,16 @@ public struct VideoModelDescriptor: Sendable, Hashable {
     /// Over the mode's own (`Mode.limits`); `nil` keeps it.
     public var duration: ClosedRange<TimeInterval>?
     public var referenceImages: ClosedRange<Int>?
+    /// The images a clip from frames takes (`frames`): a start frame and an optional end frame, or the start alone
+    /// (Kling 4.0 Flash, whose `image-to-video` has no end frame).
+    public var frameImages: ClosedRange<Int>
+    /// The shorter length window of a job with references, a source or an end frame, over `duration`; Edit keeps
+    /// `duration` (`VideoModel.duration(_:in:withReferences:)`). `nil` where the model has one window.
+    public var durationWithReferences: ClosedRange<TimeInterval>?
+    /// How long the speech of a model that takes one (`speech`) may run, and what the clip adds to it: Intone runs
+    /// the voices and 2.5 s more (`JobSpec.duration`). `nil` and 0 for every other model.
+    public var speechSeconds: ClosedRange<TimeInterval>?
+    public var speechTail: TimeInterval
     public var controls: Set<Control>
     /// A job needs a prompt even with a source.
     public var requiresPrompt: Bool
@@ -123,7 +143,8 @@ public struct VideoModelDescriptor: Sendable, Hashable {
             id: id, family: id, title: id, detail: "", modes: [], resolutions: Resolution.standard,
             modeResolutions: [:],
             aspectRatios: [],
-            duration: nil, referenceImages: nil, controls: [],
+            duration: nil, referenceImages: nil, frameImages: 1...2,
+            durationWithReferences: nil, speechSeconds: nil, speechTail: 0, controls: [],
             requiresPrompt: false, billsSourceVideo: false, listPriceIsExact: false, shape: .genjutsu, endpoints: [:],
             accountModels: [:],
             credits: Credits(base: 0, perSecond: [:]))
@@ -140,6 +161,10 @@ extension VideoModelDescriptor: Decodable {
     private struct Limits: Decodable {
         var duration: [TimeInterval]?
         var referenceImages: [Int]?
+        var frames: [Int]?
+        var durationWithReferences: [TimeInterval]?
+        var speech: [TimeInterval]?
+        var speechTail: TimeInterval?
     }
 
     private struct Request: Decodable {
@@ -186,11 +211,14 @@ extension VideoModelDescriptor: Decodable {
             }
             result[mode] = Resolution.allCases.filter(listed.contains)
         }
-        let frames = try container.decodeIfPresent([String].self, forKey: .aspectRatios) ?? []
-        aspectRatios = try frames.map { try Self.value($0, key: .aspectRatios, in: container) }
+        let shapes = try container.decodeIfPresent([String].self, forKey: .aspectRatios) ?? []
+        aspectRatios = try shapes.map { try Self.value($0, key: .aspectRatios, in: container) }
         let limits = try container.decodeIfPresent(Limits.self, forKey: .limits)
         duration = try limits?.duration.map { try Self.range($0, key: .limits, in: container) }
         referenceImages = try limits?.referenceImages.map { try Self.range($0, key: .limits, in: container) }
+        frameImages = try limits?.frames.map { try Self.range($0, key: .limits, in: container) } ?? 1...2
+        (durationWithReferences, speechSeconds) = try Self.windows(limits, in: container)
+        speechTail = limits?.speechTail ?? 0
         let controls = try container.decodeIfPresent([String].self, forKey: .controls) ?? []
         self.controls = Set(try controls.map { try Self.value($0, key: .controls, in: container) })
         requiresPrompt = try container.decodeIfPresent(Bool.self, forKey: .requiresPrompt) ?? false
@@ -205,6 +233,16 @@ extension VideoModelDescriptor: Decodable {
         }
         let credits = try container.decodeIfPresent(CreditsFile.self, forKey: .credits)
         self.credits = try credits.map { try Self.credits($0, in: container) } ?? Credits(base: 0, perSecond: [:])
+    }
+
+    /// The length windows besides `duration`: with references, and of a speech.
+    private static func windows(
+        _ limits: Limits?, in container: KeyedDecodingContainer<CodingKeys>
+    ) throws -> (ClosedRange<TimeInterval>?, ClosedRange<TimeInterval>?) {
+        (
+            try limits?.durationWithReferences.map { try range($0, key: .limits, in: container) },
+            try limits?.speech.map { try range($0, key: .limits, in: container) }
+        )
     }
 
     private static func credits(

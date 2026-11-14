@@ -8,7 +8,7 @@ extension CreateForm {
     private enum CodingKeys: String, CodingKey {
         case mode, model, source, ranges, selectedRangeIndex, references, presetID, prompt, resolution
         case draftResolution, draftLength, allowsUpscale, audio, keepsVideoBackground, length, aspectRatio
-        case parentID, remoteInputs, constraints
+        case parentID, remoteInputs, constraints, speech
     }
 
     public init(from decoder: any Decoder) throws {
@@ -32,6 +32,7 @@ extension CreateForm {
         parentID = try container.decodeIfPresent(UUID.self, forKey: .parentID)
         remoteInputs = try container.decodeIfPresent(RemoteInputs.self, forKey: .remoteInputs)
         constraints = try container.decodeIfPresent(ModelConstraintTable.self, forKey: .constraints)
+        speech = try container.decodeIfPresent(LocalAudio.self, forKey: .speech)
         picks = try ModelPicks(from: decoder)
         frames = try FramePair(from: decoder)
         batch = try CreateBatch(from: decoder)
@@ -58,6 +59,7 @@ extension CreateForm {
         try container.encodeIfPresent(parentID, forKey: .parentID)
         try container.encodeIfPresent(remoteInputs, forKey: .remoteInputs)
         try container.encodeIfPresent(constraints, forKey: .constraints)
+        try container.encodeIfPresent(speech, forKey: .speech)
         try picks.encode(to: encoder)
         try frames.encode(to: encoder)
         try batch.encode(to: encoder)

@@ -1,17 +1,17 @@
 {
-  "updated": "2026-10-28",
+  "updated": "2026-11-11",
   "notes": [
     "One entry per video model, in the order the model picker lists them; the first model serving a mode is that mode's default.",
     "id: stored in jobs, templates and settings; never change an existing one. title, family and detail are the English fallbacks of the keys <id>.title, <id>.family and <id>.detail in Models.xcstrings.",
-    "resolutions: the ones the model renders at, when not all of 480p, 720p and 1080p (also 768p and 2K, which only MiniMax has); the picker offers these and a job asking for another gets the nearest. pricing.json needs each.",
+    "resolutions: the ones the model renders at, when not all of 480p, 720p and 1080p (also 768p and 2K, which only MiniMax has, and 360p and 4k, which only Gemini Omni Flash 1.2 has); the picker offers these and a job asking for another gets the nearest. pricing.json needs each.",
     "modeResolutions: a mode that renders at fewer of them, by its models_explore get (Genjutsu Lite's Object Swap at 720p and 1080p only); the picker, Draft and agents offer that mode only these, and a job asking for another, or stored at another, gets the nearest.",
-    "aspectRatios: the frames a REST body may name, for a schema whose aspect_ratio has no 'follow the source' value; the body names the one nearest the source's frame. Left out, so is the field. Kling 4.0 lists the fixed frames of its text-to-video schema: a clip without a source is sent the one nearest the frame asked for, and a source or references Auto (REST adaptive, the account's auto).",
-    "limits: [min, max] over the mode's own (Mode.limits); the server's models_explore answer still overrides them bound by bound. Genjutsu Lite's 4-15 s and 1-10 images are from Higgsfield's creator changelog of 2026-10-19 ('a video from 4 to 15 seconds and up to 10 reference images'); neither of its models_explore get schemas states a count.",
-    "controls: draft, clipWithoutSource (length and frame without a source video), generatedAudio, bitrate, frames, quality (Standard/Pro instead of a resolution), characterOrientation, videoBackground, cinemaControls (Cinema Studio's camera, lens, genre, era and the rest; their titles are cinemaStudio4.<field> and cinemaStudio4.<field>.<value> in Models.xcstrings).",
-    "request.shape: the code that encodes the body (genjutsu, seedance, klingMotionControl, klingVideoReference, klingVideoEdit, wanReference, cinemaStudio, kling4). request.endpoints: the REST endpoint by the first key that applies: the mode, frames, standard/pro, reference (with media) or text, then default. Every endpoint needs rates in pricing.json. Empty for a model the public REST docs don't list: it runs on the account only, and an API key isn't offered it.",
+    "aspectRatios: the frames a REST body may name, for a schema whose aspect_ratio has no 'follow the source' value; the body names the one nearest the source's frame. Left out, so is the field. Kling 4.0 and 4.0 Flash list the fixed frames of their text-to-video schemas: a clip without a source is sent the one nearest the frame asked for, and a source or references Auto (REST adaptive, the account's auto).",
+    "limits: [min, max] over the mode's own (Mode.limits); the server's models_explore answer still overrides them bound by bound. Genjutsu Lite's 4-15 s and 1-10 images are from Higgsfield's creator changelog of 2026-10-19 ('a video from 4 to 15 seconds and up to 10 reference images'); neither of its models_explore get schemas states a count. Its REST Motion Transfer schema takes 1-8 image_urls, which an API key applies over these (HiggsfieldAPIProvider.modelConstraints). frames: the images a clip from frames takes, [1, 2] (a start and an optional end frame) unless listed; Kling 4.0 Flash takes the start alone ([1, 1]): its image-to-video schema and its models_explore get have no end frame. durationWithReferences: a shorter window over duration for a job with a source, references or an end frame, except Edit; Gemini Omni Flash 1.2's models_explore get (snapshot of 2026-11-10) says 'Output seconds: 3-15 for text or a single first frame, 3-10 for references or first/last frames. For extend, 3-10 added seconds. Ignored for edit, which uses the source length (3-15 seconds)'. It states no image count: its 6 is the lower of two public guides of 2026-11 (Morphic's six reference images; Runware's API schema takes 10). speech and speechTail: for a model with the speech control, how long the recording may run and what the clip adds after it; Intone's models_explore get (snapshot of 2026-11-10) says 'It runs the voices (2 to 30 seconds in total, the pauses between files not counted) and 2.5 s more, 4 to 30 seconds'. The speech is held to 27.5 s so that it and its tail stay within the stated 30 s output, as the get gives 30 s both for the voices and for the clip. Its duration [4, 30] is that output window, which only bounds the billed seconds of the estimate, as Intone is sent no length. Its 1-2 images are the one or two characters the get describes.",
+    "controls: draft, clipWithoutSource (length and frame without a source video), generatedAudio, bitrate, frames, quality (Standard/Pro instead of a resolution), characterOrientation, videoBackground, cinemaControls (Cinema Studio's camera, lens, genre, era and the rest; their titles are cinemaStudio4.<field> and cinemaStudio4.<field>.<value> in Models.xcstrings), speech (a recording the characters say, JobSpec.speech: Create and the agents offer it, the job needs one, it sets the length, and the model takes no source video).",
+    "request.shape: the code that encodes the body (genjutsu, seedance, klingMotionControl, klingVideoReference, klingVideoEdit, wanReference, cinemaStudio, kling4, geminiOmni, intone). request.endpoints: the REST endpoint by the first key that applies: the mode, frames, standard/pro, reference (with media) or text, then default. Every endpoint needs rates in pricing.json. Empty for a model the public REST docs don't list: it runs on the account only, and an API key isn't offered it. A mode no key applies to runs on the account only (Genjutsu Lite's Object Swap: REST lists its Motion Transfer alone); an API key offers the model without that mode.",
     "request.account: the account's generate_video model ID by mode, once its models_explore get schema confirms every field the shape sends (the snapshot tests check it); a model without one runs with an API key only.",
-    "requiresPrompt: a job needs a prompt even with a source; a model that also makes clips without one (Kling 4.0) needs it there too, except from frames.",
-    "credits: the account's fallback estimate, base + perSecond[resolution] x billed seconds, rounded up; modes overrides it for a mode priced apart. The price Create shows is Higgsfield's get_cost quote: before upload for a model sent a length, after upload for one billed by its source (Genjutsu, Edit). The estimate stands in only until then, or when the quote fails. Rates from free get_cost quotes of 2026-10-15 (issue #113). Left out (or a resolution missing), a job the server can't quote shows 'Price unknown'. Genjutsu Lite's 720p rate is what an agent's Lite jobs were quoted after upload (2 credits a second, issue #22); its 480p and 1080p rates follow the 1:2:4 of its REST prices and aren't confirmed by a quote yet. MiniMax H3's 2K and H3 Max's 768p rates are from free get_cost quotes of 2026-10-28; H3 Max at 480p isn't quoted yet. Kling 4.0's 5 (720p) and 7.5 (1080p) credits a second are from Higgsfield's announcement of 2026-10-20 (it adds that references may change the cost), not confirmed by a quote. credits.withSource: perSecond for a job with a source video (Kling 4.0's references and Edit); Kling 4.0's 6 and 9 are its 5 and 7.5 times 1.2, the ratio of its REST prices with and without an input video ($0.282 to $0.235 at 1080p; $0.188 to $0.157 at 720p is 1.197), derived from REST, not from a quote."
+    "requiresPrompt: a job needs a prompt even with a source; a model that also makes clips without one (Kling 4.0 and 4.0 Flash) needs it there too, except from frames.",
+    "credits: the account's fallback estimate, base + perSecond[resolution] x billed seconds, rounded up; modes overrides it for a mode priced apart. The price Create shows is Higgsfield's get_cost quote: before upload for a model sent a length, after upload for one billed by its source (Genjutsu, Edit). The estimate stands in only until then, or when the quote fails. Rates from free get_cost quotes of 2026-10-15 (issue #113). Left out (or a resolution missing), a job the server can't quote shows 'Price unknown'. Genjutsu Lite's 720p rate is what an agent's Lite jobs were quoted after upload (2 credits a second, issue #22); its 480p and 1080p rates follow the 1:2:4 of its REST prices and aren't confirmed by a quote yet. MiniMax H3's 2K and H3 Max's 768p rates are from free get_cost quotes of 2026-10-28; H3 Max at 480p isn't quoted yet. Kling 4.0's 5 (720p) and 7.5 (1080p) credits a second are from Higgsfield's announcement of 2026-10-20 (it adds that references may change the cost), not confirmed by a quote. credits.withSource: perSecond for a job with a source video (Kling 4.0's references and Edit); Kling 4.0's 6 and 9 are its 5 and 7.5 times 1.2, the ratio of its REST prices with and without an input video ($0.282 to $0.235 at 1080p; $0.188 to $0.157 at 720p is 1.197), derived from REST, not from a quote. Kling 4.0 Flash has no published credit price: its 3 (720p) is Kling 4.0's 5 times the ratio of their REST prices without an input video ($0.094 to $0.157, 0.6), and its withSource 4 is that 3 times Flash's own REST ratio with and without one ($0.126 to $0.094, 1.34), both rounded and derived, not quoted. Gemini Omni Flash 1.2 has no published credit price either: its 2 credits a second at 720p is Higgsfield's blog's $0.15 a second for Gemini Omni Flash at 720p (2026-07-13) at its Basic plan's $9 for 120 credits (2026-06-30); 360p, 1080p and 4k follow the ratios of Google's per-second API prices for 1.2 (about $0.023, $0.0695, $0.104 and $0.209): 0.67, 3 and 6. Estimates only, until Higgsfield's quote. Higgsfield Intone has no published price at all (neither the pricing feed nor a blog or changelog names one): its 1, 2 and 4 credits a second at 480p, 720p and 1080p are Genjutsu Lite's, Higgsfield's other own model at those three resolutions, a placeholder, not a derivation; an unconfirmed third-party figure for Higgsfield's older lip sync, 14 credits per 5 s (2.8 a second), sits below the 1080p rate, so the estimate leans high. Intone is always quoted after upload, with the speech, before anything is paid."
   ],
   "models": [
     {
@@ -49,9 +49,10 @@
       "limits": { "duration": [4, 15], "referenceImages": [1, 10] },
       "controls": ["draft"],
       "listPriceIsExact": true,
+      "billsSourceVideo": true,
       "request": {
         "shape": "genjutsu",
-        "endpoints": {},
+        "endpoints": { "motionTransfer": "higgsfield/genjutsu-light/motion-transfer/v1.0" },
         "account": {
           "motionTransfer": "hf_mult_motion_control_flash",
           "objectSwap": "hf_mult_replace_object_flash"
@@ -180,6 +181,33 @@
       "credits": { "perSecond": { "720p": 5, "1080p": 7.5 }, "withSource": { "720p": 6, "1080p": 9 } }
     },
     {
+      "id": "kling40Flash",
+      "family": "Kling",
+      "title": "Kling 4.0 Flash",
+      "detail": "Kling 4.0 Flash · cheaper 720p drafts, up to 20 s",
+      "modes": ["motionTransfer", "edit"],
+      "resolutions": ["720p"],
+      "aspectRatios": ["21:9", "16:9", "9:16", "1:1"],
+      "limits": { "duration": [3, 20], "referenceImages": [0, 10], "frames": [1, 1] },
+      "controls": ["clipWithoutSource", "frames"],
+      "requiresPrompt": true,
+      "billsSourceVideo": true,
+      "request": {
+        "shape": "kling4",
+        "endpoints": {
+          "edit": "kling-video/v4.0-flash/video-edit",
+          "frames": "kling-video/v4.0-flash/image-to-video",
+          "reference": "kling-video/v4.0-flash/reference-to-video",
+          "text": "kling-video/v4.0-flash/text-to-video"
+        },
+        "account": {
+          "motionTransfer": "kling_4_0_flash",
+          "edit": "kling_4_0_flash"
+        }
+      },
+      "credits": { "perSecond": { "720p": 3 }, "withSource": { "720p": 4 } }
+    },
+    {
       "id": "wan30Reference",
       "family": "Wan",
       "title": "Wan 3.0",
@@ -275,6 +303,44 @@
         "account": { "motionTransfer": "minimax_h3_max" }
       },
       "credits": { "perSecond": { "768p": 2.5 } }
+    },
+    {
+      "id": "geminiOmniFlash12",
+      "family": "Gemini",
+      "title": "Gemini Omni Flash 1.2",
+      "detail": "Gemini Omni Flash 1.2 · native audio, up to 4K, on an account",
+      "modes": ["motionTransfer", "edit", "extend"],
+      "resolutions": ["360p", "720p", "1080p", "4k"],
+      "aspectRatios": ["16:9", "9:16"],
+      "limits": { "duration": [3, 15], "durationWithReferences": [3, 10], "referenceImages": [0, 6] },
+      "controls": ["clipWithoutSource", "frames"],
+      "requiresPrompt": true,
+      "request": {
+        "shape": "geminiOmni",
+        "endpoints": {},
+        "account": {
+          "motionTransfer": "gemini_omni_flash_1_2",
+          "edit": "gemini_omni_flash_1_2",
+          "extend": "gemini_omni_flash_1_2"
+        }
+      },
+      "credits": { "perSecond": { "360p": 0.67, "720p": 2, "1080p": 3, "4k": 6 } }
+    },
+    {
+      "id": "intone",
+      "family": "Higgsfield",
+      "title": "Higgsfield Intone",
+      "detail": "Higgsfield Intone · talking heads that say your recording, on an account",
+      "modes": ["motionTransfer"],
+      "aspectRatios": ["21:9", "16:9", "9:16", "1:1", "4:3", "3:4"],
+      "limits": { "duration": [4, 30], "referenceImages": [1, 2], "speech": [2, 27.5], "speechTail": 2.5 },
+      "controls": ["clipWithoutSource", "speech"],
+      "request": {
+        "shape": "intone",
+        "endpoints": {},
+        "account": { "motionTransfer": "intone" }
+      },
+      "credits": { "perSecond": { "480p": 1, "720p": 2, "1080p": 4 } }
     }
   ]
 }

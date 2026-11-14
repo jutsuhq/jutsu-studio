@@ -12,12 +12,14 @@ import HiggsfieldCore
 public struct VideoEdit: Sendable, Hashable {
     public enum Operation: Sendable, Hashable {
         /// `bytedance`: `resolution` "1080p", "2k" or "4k", the source's `width` and `height` (required), `fps` 24,
-        /// 30 or 60 (`nil` for the server's default, 24). `topaz`: `resolution` "1080p" or "2160p", no size and no
-        /// frame rate.
-        case upscale(resolution: String, fps: Int?, provider: Provider, width: Int?, height: Int?)
+        /// 30 or 60 (`nil` for the server's default, 24), `preset` "common", "aigc", "short_series", "ugc" or
+        /// "old_film" (`nil` for the server's default, common). `topaz`: `resolution` "1080p" or "2160p", no size,
+        /// frame rate or preset.
+        case upscale(resolution: String, fps: Int?, provider: Provider, width: Int?, height: Int?, preset: String?)
         case removeBackground
         /// `aspectRatio` "9:16" and the like. The source's length in seconds (at most 60) and a resolution ("480p",
-        /// "720p", "1080p") price the call, and are sent with it for a source longer than `reframeShortSource`.
+        /// "720p", "1080p") price the call, and are sent with it for a source longer than `reframeShortSource`. A
+        /// shorter source goes without them, so the output keeps the source's resolution; its quote still needs one.
         case reframe(aspectRatio: String, durationSeconds: Double, resolution: String)
         /// `language` is an ISO 639-3 code ("fra").
         case dub(language: String)
@@ -45,7 +47,7 @@ public struct VideoEdit: Sendable, Hashable {
             case .dub: "dubbing"
             case .changeVoice: "voice_change"
             case .removeBackground: "video_background_remover"
-            case .upscale(_, _, .bytedance, _, _): "bytedance_video_upscale"
+            case .upscale(_, _, .bytedance, _, _, _): "bytedance_video_upscale"
             case .upscale, .reframe: nil
             }
         }
@@ -70,8 +72,9 @@ public struct VideoEdit: Sendable, Hashable {
         }
     }
 
-    /// The length up to which `reframe` takes the source alone ("for source videos over 15 seconds, pass
-    /// duration_seconds and resolution").
+    /// The length up to which `reframe` takes the source alone. Its `resolution` is "required when get_cost is true or
+    /// duration_seconds is over 15 seconds; when omitted for shorter videos, the source video resolution is used"
+    /// (catalog snapshot of 2026-11-10).
     public static let reframeShortSource: TimeInterval = 15
 
     public var operation: Operation
@@ -89,12 +92,13 @@ public struct VideoEdit: Sendable, Hashable {
     var arguments: [String: JSONValue] {
         var params: [String: JSONValue]
         switch operation {
-        case .upscale(let resolution, let fps, let provider, let width, let height):
+        case .upscale(let resolution, let fps, let provider, let width, let height, let preset):
             params = [
                 ToolKey.videoID: .string(input.id), ToolKey.provider: .string(provider.rawValue),
                 ToolKey.resolution: .string(resolution),
             ]
             if let fps { params[ToolKey.fps] = .number(Double(fps)) }
+            if let preset { params[ToolKey.preset] = .string(preset) }
             if let width { params[ToolKey.width] = .number(Double(width)) }
             if let height { params[ToolKey.height] = .number(Double(height)) }
         case .removeBackground:
@@ -143,7 +147,7 @@ public struct VideoEdit: Sendable, Hashable {
             ToolKey.model: .string(model), ToolKey.getCost: true,
             ToolKey.duration: .number(Double(seconds)),
         ]
-        if case .upscale(let resolution, let fps, _, _, _) = operation {
+        if case .upscale(let resolution, let fps, _, _, _, _) = operation {
             params[ToolKey.resolution] = .string(resolution)
             if let fps { params[ToolKey.fps] = .number(Double(fps)) }
         }

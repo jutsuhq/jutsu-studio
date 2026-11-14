@@ -95,7 +95,7 @@ public struct AgentLibraryDetail: Sendable, Hashable {
             file: version.fileURL.flatMap(local))
     }
 
-    /// The source, or the result an operation worked on, then the images in the job's order.
+    /// The source, or the result an operation worked on, then the images in the job's order, then the speech.
     private static func inputs(
         of item: LibraryItemModel, version: MaterialVersion, listed: (UUID?) -> UUID?
     ) -> [Input] {
@@ -132,6 +132,12 @@ public struct AgentLibraryDetail: Sendable, Hashable {
                     item: listed(relation(MaterialRelations.imageRoles, offset)),
                     isOnHiggsfield: (uploaded?.images.count ?? 0) > offset || reference.serverMedia != nil
                         || !reference.fileURL.isFileURL))
+        }
+        if let speech = spec.speech {
+            inputs.append(
+                Input(
+                    role: .speech, file: local(speech.fileURL),
+                    isOnHiggsfield: uploaded?.audio != nil || !speech.fileURL.isFileURL))
         }
         return inputs
     }

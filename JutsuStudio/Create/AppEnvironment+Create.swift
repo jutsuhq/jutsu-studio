@@ -108,6 +108,11 @@ extension AppEnvironment {
             fileSize: info.fileSize, bookmark: bookmark)
     }
 
+    /// A speech recording as a job takes it: its length read from the file (`MediaProbe.audioDuration`).
+    static func probeSpeech(_ url: URL, bookmark: Data?) async throws -> LocalAudio {
+        LocalAudio(fileURL: url, bookmark: bookmark, duration: try await MediaProbe.audioDuration(url))
+    }
+
     /// A bookmark for a file just picked or dropped; `nil` when it can't be made, so the job still
     /// runs in this launch and only a relaunch loses access.
     static func bookmark(for url: URL) -> Data? {

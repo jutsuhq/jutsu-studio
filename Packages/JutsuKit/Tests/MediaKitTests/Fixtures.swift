@@ -85,22 +85,19 @@ enum Fixtures {
         return buffer
     }
 
-    /// `video` with a 440 Hz AAC tone as long as the video, as a new MP4.
-    static func addingTone(to video: URL, in directory: URL) async throws -> URL {
-        let videoAsset = AVURLAsset(url: video)
-        guard let picture = try await videoAsset.loadTracks(withMediaType: .video).first else {
-            throw WriteFailed(underlying: nil)
-        }
-        let pictureRange = try await picture.load(.timeRange)
-
-        let tone = directory.appendingPathComponent(UUID().uuidString).appendingPathExtension("m4a")
+    /// A 440 Hz mono tone of `seconds`, in the type `fileExtension` names: AAC for m4a, 16-bit PCM otherwise.
+    static func makeTone(in directory: URL, seconds: Double, fileExtension: String = "m4a") throws -> URL {
+        let tone = directory.appendingPathComponent(UUID().uuidString).appendingPathExtension(fileExtension)
         let rate = 44_100.0
-        let settings: [String: Any] = [
-            AVFormatIDKey: kAudioFormatMPEG4AAC, AVSampleRateKey: rate, AVNumberOfChannelsKey: 1,
-        ]
+        let settings: [String: Any] =
+            fileExtension == "m4a"
+            ? [AVFormatIDKey: kAudioFormatMPEG4AAC, AVSampleRateKey: rate, AVNumberOfChannelsKey: 1]
+            : [
+                AVFormatIDKey: kAudioFormatLinearPCM, AVSampleRateKey: rate, AVNumberOfChannelsKey: 1,
+                AVLinearPCMBitDepthKey: 16, AVLinearPCMIsFloatKey: false, AVLinearPCMIsBigEndianKey: false,
+            ]
         guard let format = AVAudioFormat(standardFormatWithSampleRate: rate, channels: 1),
-            let buffer = AVAudioPCMBuffer(
-                pcmFormat: format, frameCapacity: AVAudioFrameCount(pictureRange.duration.seconds * rate)),
+            let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(seconds * rate)),
             let samples = buffer.floatChannelData?[0]
         else { throw WriteFailed(underlying: nil) }
         buffer.frameLength = buffer.frameCapacity
@@ -109,6 +106,18 @@ enum Fixtures {
         }
         // The file is finished when it goes out of scope.
         try AVAudioFile(forWriting: tone, settings: settings).write(from: buffer)
+        return tone
+    }
+
+    /// `video` with a 440 Hz AAC tone as long as the video, as a new MP4.
+    static func addingTone(to video: URL, in directory: URL) async throws -> URL {
+        let videoAsset = AVURLAsset(url: video)
+        guard let picture = try await videoAsset.loadTracks(withMediaType: .video).first else {
+            throw WriteFailed(underlying: nil)
+        }
+        let pictureRange = try await picture.load(.timeRange)
+
+        let tone = try makeTone(in: directory, seconds: pictureRange.duration.seconds)
 
         let soundAsset = AVURLAsset(url: tone)
         guard let sound = try await soundAsset.loadTracks(withMediaType: .audio).first else {

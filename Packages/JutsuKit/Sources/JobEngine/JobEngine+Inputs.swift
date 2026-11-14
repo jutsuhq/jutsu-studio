@@ -32,7 +32,15 @@ extension JobEngine {
             }
             images.append(try await media.prepareImage(image))
         }
-        return PreparedInputs(video: video, images: images)
+        var audio: PreparedFile?
+        if var speech = job.spec.speech {
+            if !speech.fileURL.isFileURL {
+                speech.fileURL = try await fetchInput(speech.fileURL, named: "speech", of: job.id)
+                downloaded.append(speech.fileURL)
+            }
+            audio = try await media.prepareAudio(speech)
+        }
+        return PreparedInputs(video: video, images: images, audio: audio)
     }
 
     /// Downloads a remote input into the temporary folder; an earlier partial download there is resumed.
@@ -70,7 +78,8 @@ extension JobEngine {
             files = try await prepare(job)
         }
         let videoCount = files.video == nil ? 0 : 1
-        let total = Double(files.images.count + videoCount)
+        let audioCount = files.audio == nil ? 0 : 1
+        let total = Double(files.images.count + videoCount + audioCount)
         var video: RemoteAsset?
         if let file = files.video {
             let source = job.spec.source
@@ -95,8 +104,13 @@ extension JobEngine {
             }
             report(progress: Double(images.count + videoCount) / total, of: job.id, in: .uploading)
         }
+        var audio: RemoteAsset?
+        if let file = files.audio {
+            audio = try await upload(file, for: job)
+            report(progress: 1, of: job.id, in: .uploading)
+        }
         prepared[job.id] = nil
-        return RemoteInputs(video: video, images: images)
+        return RemoteInputs(video: video, images: images, audio: audio)
     }
 
     private func upload(_ file: PreparedFile, for job: Job) async throws -> RemoteAsset {

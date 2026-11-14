@@ -104,4 +104,17 @@ import Testing
         let unnamed = try #require(HistoryMapping.item(kling4(mode: nil, media: [video, image])))
         #expect(unnamed.mode == .motionTransfer && !unnamed.referencesAreFrames)
     }
+
+    /// A recording the generation was voiced from comes back as its speech, by the link Higgsfield keeps it at; its
+    /// length is read once it is downloaded.
+    @Test func aSpeechComesBackWithTheInputs() throws {
+        let image = PastMedia(role: .image, id: "image-1", url: URL(string: "https://cdn.example/a.png"))
+        let audio = PastMedia(role: .audio, id: "audio-1", url: URL(string: "https://cdn.example/lines.mp3"))
+
+        let item = try #require(HistoryMapping.item(kling4(mode: "reference-to-video", media: [image, audio])))
+
+        #expect(item.inputs.images.map(\.id) == ["image-1"])
+        #expect(item.inputs.audio?.id == "audio-1")
+        #expect(item.spec().speech?.fileURL == audio.url)
+    }
 }

@@ -9,7 +9,7 @@ import Testing
 
 extension Network {
     /// The reference-video models of issue #101: their REST bodies from the documented schemas, and their
-    /// `generate_video` arguments against the account's own schemas in the catalog snapshot of 2026-10-28.
+    /// `generate_video` arguments against the account's own schemas in the catalog snapshot of 2026-11-10.
     @Suite struct MoreVideoModels {
         static func model(_ id: String) throws -> VideoModel { try #require(VideoModel(rawValue: id)) }
 
@@ -28,6 +28,7 @@ extension Network {
         static let inputs = RemoteInputs(
             video: RemoteAsset(url: URL(string: "https://cdn.example.com/in.mp4")!, id: "video-1"),
             images: [RemoteAsset(url: URL(string: "https://cdn.example.com/a.jpg")!, id: "image-1")])
+        static let speech = RemoteAsset(url: URL(string: "https://cdn.example.com/lines.mp3")!, id: "audio-1")
 
         static func body(of request: APIModel) throws -> String {
             let encoder = JSONEncoder()
@@ -167,7 +168,12 @@ extension Network {
                                 // Variants (`count`) are a `generate_video` setting every account model takes.
                                 spec.variants = audio == .generated ? JobSpec.maximumVariants : 1
                                 if spec.variants > 1 { withVariants += 1 }
-                                _ = try await provider.submit(spec, inputs: Self.inputs, idempotencyKey: UUID())
+                                // A model that voices a speech takes it, and no source video.
+                                let inputs =
+                                    model.declares(.speech)
+                                    ? RemoteInputs(video: nil, images: Self.inputs.images, audio: Self.speech)
+                                    : Self.inputs
+                                _ = try await provider.submit(spec, inputs: inputs, idempotencyKey: UUID())
                                 sent += 1
                             }
                         }

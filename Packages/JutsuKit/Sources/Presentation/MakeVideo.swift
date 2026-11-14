@@ -25,12 +25,15 @@ public enum ImageRole: String, Sendable, Hashable, CaseIterable {
     }
 
     /// The roles `model` takes for an image in `mode`, in this order: start frame, end frame, reference. Frames go
-    /// with a model that makes a clip from them without a source; a reference with one whose limit takes an image.
+    /// with a model that makes a clip from them without a source, the end frame where it takes one
+    /// (`VideoModel.takesEndFrame`); a reference with one whose limit takes an image.
     public static func options(
         for model: VideoModel, mode: Mode, constraints: ModelConstraintTable = .builtIn
     ) -> [ImageRole] {
         var roles: [ImageRole] = []
-        if model.declares(.frames) && model.makesClipsWithoutSource { roles += [.startFrame, .endFrame] }
+        if model.declares(.frames) && model.makesClipsWithoutSource {
+            roles += model.takesEndFrame ? [.startFrame, .endFrame] : [.startFrame]
+        }
         if model.limits(for: mode, constraints: constraints).referenceImages.upperBound > 0 { roles.append(.reference) }
         return roles
     }
@@ -166,12 +169,24 @@ extension CreateForm {
                 (moved + references.filter { image in !moved.contains { $0.fileURL == image.fileURL } })
                     .prefix(referenceLimits.upperBound))
         }
+        // A model with a start frame alone (Kling 4.0 Flash) keeps the end frame as the first reference.
+        let movedEnd = showsFrames && !selectedModel.takesEndFrame ? frames.end : nil
+        if let end = movedEnd {
+            frames.end = nil
+            references = Array(
+                ([end] + references.filter { $0.fileURL != end.fileURL }).prefix(referenceLimits.upperBound))
+        }
         let after = Dictionary(placedImages.map { ($0.image.fileURL, $0.role) }) { first, _ in first }
         let removed = held.subtracting(heldImages).count
         let becameReferences = before.contains { $0.role != .reference && after[$0.image.fileURL] == .reference }
         var lines: [String] = []
         let model = selectedModel.title
-        if becameReferences {
+        if movedEnd != nil {
+            lines.append(
+                String(
+                    localized: "\(model) takes only a start frame, so the end frame is a reference now.",
+                    bundle: .module))
+        } else if becameReferences {
             lines.append(
                 String(
                     localized: "\(model) doesn't take start and end frames, so they are references now.",

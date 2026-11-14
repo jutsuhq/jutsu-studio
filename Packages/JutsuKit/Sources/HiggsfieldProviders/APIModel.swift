@@ -31,6 +31,8 @@ struct APIModel {
         case .klingVideoEdit: body = try Self.klingVideoEdit(spec, inputs: inputs)
         case .wanReference, .cinemaStudio: body = try Self.referenceToVideo(spec, inputs: inputs)
         case .kling4: body = try Self.kling4(spec, inputs: inputs)
+        // No REST endpoint (`models.json`), so `endpointID` refused it above.
+        case .geminiOmni, .intone: throw APIModel.needsAccount
         }
     }
 
@@ -150,12 +152,13 @@ struct APIModel {
             controls: spec.model.declares(.cinemaControls) ? spec.cinemaControls.fields : [:])
     }
 
-    /// Kling 4.0 on the endpoint the job picks (`JobSpec.endpointID`): Edit sends the source as the clip to edit
-    /// (`video_url`) with the images as references; frames the start and end frame; a clip with a source or images
-    /// sends them as references (the source is `video_urls`' one item); a prompt alone neither. References and Edit
-    /// get the prompt's tags in the schemas' form (`kling4Prompt`). The length is the selection's, or the one asked
-    /// for, inside 3–30 s, also for Edit, whose `duration` is the output's (`durationSeconds`). The frame follows `AccountModel.kling4Frame`, with REST's `adaptive` for Auto where the
-    /// endpoint has it; `image-to-video` takes none.
+    /// Kling 4.0 and 4.0 Flash on the endpoint the job picks (`JobSpec.endpointID`): Edit sends the source as the clip
+    /// to edit (`video_url`) with the images as references; frames the start and end frame (Flash the start alone); a
+    /// clip with a source or images sends them as references (the source is `video_urls`' one item); a prompt alone
+    /// neither. References and Edit get the prompt's tags in the schemas' form (`kling4Prompt`). The length is the
+    /// selection's, or the one asked for, inside the model's 3–30 s (Flash 3–20 s), also for Edit, whose `duration` is
+    /// the output's (`durationSeconds`). The frame follows `AccountModel.kling4Frame`, with REST's `adaptive` for Auto
+    /// where the endpoint has it; `image-to-video` takes none.
     static func kling4(_ spec: JobSpec, inputs: RemoteInputs) throws -> Kling4Request {
         let duration = AccountModel.durationSeconds(of: spec)
         let resolution = spec.resolution.rawValue
@@ -179,8 +182,9 @@ struct APIModel {
                     message: String(localized: "\(spec.model.title) needs the start frame.", bundle: .module))
             }
             return Kling4Request(
-                prompt: spec.prompt, imageURL: start, endImageURL: images.dropFirst().first, duration: duration,
-                resolution: resolution)
+                prompt: spec.prompt, imageURL: start,
+                endImageURL: spec.model.takesEndFrame ? images.dropFirst().first : nil,
+                duration: duration, resolution: resolution)
         }
         guard spec.source != nil || !spec.references.isEmpty else {
             return Kling4Request(

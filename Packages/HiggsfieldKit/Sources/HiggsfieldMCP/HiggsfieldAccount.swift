@@ -71,8 +71,9 @@ public actor HiggsfieldAccount {
             variantIDs: Array(ids.dropFirst()))
     }
 
-    /// Asks for an upload URL, PUTs the file there and confirms it. The server tells video from image by the
-    /// file name's extension. An upload URL that isn't https is never opened.
+    /// Asks for an upload URL, PUTs the file there and confirms it as a video, an audio file or an image, by its
+    /// content type. The server tells them apart by the file name's extension. An upload URL that isn't https is never
+    /// opened.
     public func upload(fileAt fileURL: URL, contentType: String) async throws -> UploadedMedia {
         let value = try await call(
             .upload,
@@ -87,7 +88,7 @@ public actor HiggsfieldAccount {
         request.setValue(contentType, forHTTPHeaderField: "Content-Type")
         let (_, response) = try await session.send(request, fromFile: fileURL)
         guard response.isSuccess else { throw HiggsfieldError.server(status: response.statusCode) }
-        let type = contentType.hasPrefix("video/") ? "video" : "image"
+        let type = ["video", "audio"].first { contentType.hasPrefix("\($0)/") } ?? "image"
         let confirmed = try await call(
             .confirmUpload, [ToolKey.mediaID: .string(mediaID), ToolKey.type: .string(type)])
         if let error = confirmed[ToolKey.error]?.stringValue {
@@ -229,19 +230,10 @@ public actor HiggsfieldAccount {
         return Generation(id: id, requestID: value[ToolKey.requestID]?.stringValue)
     }
 
-    /// `generate_video`, quoted or submitted. For some prompts the server neither quotes nor submits but suggests a
-    /// look-alike preset (`notice.type: preset_recommendation`) and asks to retry with `declined_preset_id` to
-    /// use the prompt as written; that is what the user typed, so the suggestion is declined once. A reply that
-    /// is still only a notice submitted nothing and throws its message.
+    /// `generate_video`, quoted or submitted. A reply that is only a `notice`, with neither `results` nor `cost`,
+    /// submitted nothing and throws its message.
     private func send(_ request: VideoRequest, getCost: Bool) async throws -> JSONValue {
-        var value = try await call(.generate, request.arguments(getCost: getCost))
-        if value[ToolKey.results] == nil, value[ToolKey.cost] == nil,
-            value[ToolKey.notice]?["type"] == "preset_recommendation",
-            let declined = value[ToolKey.notice]?[ToolKey.data]?[ToolKey.retryLiteral]?[ToolKey.declinedPresetID]?
-                .stringValue
-        {
-            value = try await call(.generate, request.arguments(getCost: getCost, declinedPresetID: declined))
-        }
+        let value = try await call(.generate, request.arguments(getCost: getCost))
         if let notice = value[ToolKey.notice], value[ToolKey.results] == nil, value[ToolKey.cost] == nil {
             throw HiggsfieldError.validation(
                 field: nil, message: notice[ToolKey.message]?.stringValue ?? "Higgsfield didn't take the request")

@@ -10,17 +10,20 @@ enum FilePickTarget {
     case characterSet
     /// One of Seedance's start and end frames.
     case frame(FrameSlot)
+    /// The recording the characters say (`CreateForm.speech`).
+    case speech
 
     var contentTypes: [UTType] {
         switch self {
         case .source: [.movie]
         case .references, .characterSet, .frame: [.image]
+        case .speech: [.audio]
         }
     }
 
     var allowsMultipleSelection: Bool {
         switch self {
-        case .source, .frame: false
+        case .source, .frame, .speech: false
         case .references, .characterSet: true
         }
     }

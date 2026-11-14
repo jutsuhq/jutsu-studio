@@ -49,8 +49,9 @@ import Testing
         #expect(Resolution.standard.map(h3.fitted) == [.k2, .k2, .k2])
         #expect(Resolution.standard.map(max.fitted) == [.p480, .p768, .p768])
         #expect(VideoModel.genjutsu.fitted(.p768) == .p720 && VideoModel.genjutsu.fitted(.k2) == .p1080)
-        #expect(Resolution.allCases.map(\.rawValue) == ["480p", "720p", "768p", "1080p", "2K"])
-        #expect(Resolution.allCases.map(\.standardized) == [.p480, .p720, .p720, .p1080, .p1080])
+        // Gemini Omni Flash 1.2's 360p and 4k frame them.
+        #expect(Resolution.allCases.map(\.rawValue) == ["360p", "480p", "720p", "768p", "1080p", "2K", "4k"])
+        #expect(Resolution.allCases.map(\.standardized) == [.p480, .p480, .p720, .p720, .p1080, .p1080, .p1080])
         #expect(JobSpec(mode: .motionTransfer, model: h3, source: nil, resolution: .p720).resolution == .k2)
     }
 

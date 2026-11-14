@@ -69,6 +69,8 @@ public actor JobEngine {
         /// `nil` for a clip made without a source video.
         var video: PreparedFile?
         var images: [PreparedFile]
+        /// The speech (`JobSpec.speech`); `nil` without one.
+        var audio: PreparedFile?
     }
 
     /// - Parameters:

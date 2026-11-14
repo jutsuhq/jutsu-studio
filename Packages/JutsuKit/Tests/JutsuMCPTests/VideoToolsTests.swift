@@ -82,6 +82,61 @@ actor FakeInbox {
         #expect(command.maxCost == AgentAmount(250, .usdCents))
     }
 
+    /// The speech is staged after the images, and its size is part of the request.
+    @Test func createVideoStagesTheSpeechToo() async throws {
+        let image = try file("face.png")
+        let speech = try file("lines.mp3")
+
+        let result = try await call("create_video", create(["images": [.string(image)], "speech": .string(speech)]))
+
+        #expect(result["isError"] == false)
+        #expect(await inbox.staged.map(\.path) == [image, speech])
+        guard case .createVideo(let command)? = await app.calls.first?.0 else {
+            Issue.record("create_video wasn't sent")
+            return
+        }
+        #expect(command.video.speech == "/tmp/inbox/2/lines.mp3")
+        let fingerprint = command.fingerprint
+        try Data(repeating: 2, count: 10).write(to: URL(filePath: speech))
+        guard
+            case .success(.createVideo(let changed)) = Tool.createVideo.command(
+                [
+                    "request_id": "r1", "mode": "motion_transfer", "max_cost": ["amount": 1, "unit": "usd"],
+                    "images": [.string(image)], "speech": .string(speech),
+                ])
+        else {
+            Issue.record("no create_video")
+            return
+        }
+        #expect(changed.fingerprint != fingerprint)
+    }
+
+    /// A quote reads no file: it takes the recording's seconds, never the recording.
+    @Test func aQuoteTakesTheSpeechLengthNotTheFile() throws {
+        let arguments: [String: JSONValue] = ["mode": "motion_transfer", "speech_length": .number(6.5)]
+        guard case .success(.quote(let quote)) = Tool.quote.command(arguments) else {
+            Issue.record("no quote")
+            return
+        }
+        #expect(quote.video.speechLength == 6.5)
+        guard case .failure(let error) = Tool.quote.command(["mode": "motion_transfer", "speech": "/tmp/a.mp3"])
+        else {
+            Issue.record("a quote took the speech file")
+            return
+        }
+        #expect(error.message.contains("quote takes speech_length, the recording's seconds, not the speech file"))
+        guard
+            case .failure = Tool.createVideo.command(
+                [
+                    "request_id": "r1", "mode": "motion_transfer", "max_cost": ["amount": 1, "unit": "usd"],
+                    "speech_length": .number(6.5),
+                ])
+        else {
+            Issue.record("create_video took speech_length")
+            return
+        }
+    }
+
     /// The same request gives the same fingerprint; any change, another one.
     @Test func theFingerprintFollowsTheParametersAndTheFiles() async throws {
         let source = try file("clip.mov")

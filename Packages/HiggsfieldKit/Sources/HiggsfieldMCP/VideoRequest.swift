@@ -55,6 +55,11 @@ public struct VideoRequest: Sendable, Hashable {
     public static let kling4ImageToVideo = "image-to-video"
     public static let kling4ReferenceToVideo = "reference-to-video"
     public static let kling4VideoEdit = "video-edit"
+    /// Gemini Omni Flash 1.2's own `mode`s (`gemini_omni_flash_1_2`, catalog snapshot of 2026-11-10) beside Kling
+    /// 4.0's other three, which it names alike: the clip changed as the prompt says, whose `duration` is ignored as
+    /// the output follows it, and the clip extended by `duration` seconds, each sent as `video_references`.
+    public static let geminiEdit = "edit"
+    public static let geminiExtend = "extend"
     /// Kling's `background_source`: the output keeps the reference video's background, not the image's.
     public static let backgroundFromVideo = "input_video"
 
@@ -63,7 +68,8 @@ public struct VideoRequest: Sendable, Hashable {
     public var media: [Media]
     /// Left out when empty.
     public var prompt: String
-    /// "480p", "720p" or "1080p", from the model's `resolution` options; Kling takes `mode` instead.
+    /// "480p", "720p" or "1080p", from the model's `resolution` options (Gemini Omni Flash 1.2 also "360p" and
+    /// "4k"); Kling takes `mode` instead.
     public var resolution: String?
     public var mode: String?
     /// Seconds: Seedance and Cinema Studio take 4–30, Wan 3.0 2–30; Kling 3.0 requires it, Kling O3 Edit takes
@@ -119,9 +125,8 @@ public struct VideoRequest: Sendable, Hashable {
     /// What a draft is finalized at; `draft_job_id` takes no other.
     public static let finalizeResolution = "1080p"
 
-    /// With `getCost`, the server quotes the request instead of submitting it. `declinedPresetID` turns down a
-    /// preset the server suggested for this prompt, so the prompt is used as written.
-    func arguments(getCost: Bool = false, declinedPresetID: String? = nil) -> [String: JSONValue] {
+    /// With `getCost`, the server quotes the request instead of submitting it.
+    func arguments(getCost: Bool = false) -> [String: JSONValue] {
         var params: [String: JSONValue] = [
             ToolKey.model: .string(model.rawValue),
             ToolKey.useUnlim: .bool(usesUnlimited),
@@ -144,7 +149,6 @@ public struct VideoRequest: Sendable, Hashable {
         if let generateAudio { params[ToolKey.generateAudio] = .bool(generateAudio) }
         if !prompt.isEmpty { params[ToolKey.prompt] = .string(prompt) }
         if getCost { params[ToolKey.getCost] = true }
-        if let declinedPresetID { params[ToolKey.declinedPresetID] = .string(declinedPresetID) }
         return [ToolKey.params: .object(params)]
     }
 }
@@ -158,6 +162,10 @@ public enum MediaRole: String, Sendable {
     /// mode the server's Seedance 2.5 tools put these roles under (catalog snapshot of 2026-10-15).
     case startFrame = "start_image"
     case endFrame = "end_image"
+    /// A speech recording (`JobSpec.speech`), as the models that voice one list it in `medias[].roles`.
+    case audio = "audio_references"
+    /// Intone's speakers, the one or two people who say the speech (`intone`, catalog snapshot of 2026-11-10).
+    case character = "character_images"
 }
 
 /// A submitted generation.

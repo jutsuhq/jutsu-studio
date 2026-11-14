@@ -43,6 +43,18 @@ import Testing
         #expect(form.pickedResolution == .p1080)
     }
 
+    /// Gemini Omni Flash 1.2 renders at 360p, 720p, 1080p and 4K; with the source it takes 3–10 s, and Edit, whose
+    /// output follows the clip, 3–15 s.
+    @Test func geminiOffers360pTo4KAndAShorterWindowWithASource() throws {
+        var form = try Self.form(VideoModel(rawValue: "geminiOmniFlash12"), resolution: .p1080)
+        #expect(form.resolutionOptions == [.p360, .p720, .p1080, .k4])
+        form.pickedResolution = .k4
+        #expect(form.makeSpecs(isDraft: false).map(\.resolution) == [.k4])
+        #expect(form.limits.duration == 3...10)
+        form.mode = .edit
+        #expect(form.limits.duration == 3...15)
+    }
+
     /// Cinema Studio stops at 720p, so 1080p comes down to it.
     @Test func aResolutionAboveTheModelsComesDown() throws {
         let form = try Self.form(Self.cinema, resolution: .p1080)
@@ -52,7 +64,10 @@ import Testing
 
     /// The models that render at 480p, 720p and 1080p keep the form's exactly as before.
     @Test func theOtherModelsKeepEveryResolution() {
-        let own = ["kling40", "wan27Reference", "cinemaStudio4", "minimaxH3Reference", "minimaxH3MaxReference"]
+        let own = [
+            "kling40", "kling40Flash", "wan27Reference", "cinemaStudio4", "minimaxH3Reference", "minimaxH3MaxReference",
+            "geminiOmniFlash12",
+        ]
         for model in VideoModel.allCases where !own.contains(model.rawValue) {
             #expect(model.resolutions == Resolution.standard, "\(model.rawValue)")
             for resolution in Resolution.standard { #expect(model.fitted(resolution) == resolution) }

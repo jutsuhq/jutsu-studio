@@ -113,7 +113,8 @@ struct ReferenceGeneration {
     let onOpen: () -> Void
 }
 
-/// Seedance's start and end frames: two optional slots above the references, each filled by drop or the file picker.
+/// The start and end frames: two optional slots above the references (the start alone on a model without an end
+/// frame), each filled by drop or the file picker.
 /// Filling one makes the clip from the frames (`CreateForm.usesFrames`).
 struct FramesSection: View {
     @Binding var form: CreateForm
@@ -125,7 +126,7 @@ struct FramesSection: View {
         VStack(alignment: .leading, spacing: Theme.Spacing.small) {
             SectionLabel(title: "Frames", detail: String(localized: "Optional"))
             HStack(spacing: Theme.Spacing.small) {
-                ForEach(FrameSlot.allCases, id: \.self) { slot in
+                ForEach(form.frameSlots, id: \.self) { slot in
                     FrameSlotTile(
                         slot: slot, image: form.frame(slot), onPick: { onPick(slot) },
                         onRemove: { form.setFrame(nil, for: slot) }
@@ -141,7 +142,9 @@ struct FramesSection: View {
             }
         }
         .disabled(unavailableReason != nil)
-        .hoverHint(unavailableReason.map { Text($0) } ?? Text("First and last frame"))
+        .hoverHint(
+            unavailableReason.map { Text($0) }
+                ?? (form.frameSlots.count > 1 ? Text("First and last frame") : Text("First frame")))
     }
 }
 
