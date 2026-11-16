@@ -43,7 +43,7 @@
 | Results | Downloaded to your disk with source, prompt and cost; the library opens offline | Higgsfield's links expire |
 | Source | MIT, on GitHub | Closed |
 
-What Jutsu Studio does not do: run on Windows, Linux or iPhone, or generate video on your Mac. Every generation runs
+What Jutsu Studio does not do: run on Windows or Linux (that is [Jutsu Studio for Windows and Linux](https://github.com/jutsuhq/higgsfield-desktop)) or on iPhone (that is [Jutsu for iPhone](https://github.com/jutsuhq/jutsu-studio-ios)), or generate video on your Mac. Every generation runs
 on Higgsfield's servers and is billed to your Higgsfield account; only smoothing, slow motion, upscaling and subtitles
 run on the Mac, for free. It is not made or endorsed by Higgsfield.
 
@@ -114,6 +114,7 @@ or grab `Jutsu-Studio-<version>.dmg` from the [latest release](https://github.co
 
 Other open-source projects from [Jutsu Studio](https://jutsustudio.com/):
 
+- [Jutsu for iPhone](https://github.com/jutsuhq/jutsu-studio-ios): the open-source Higgsfield app for iPhone and iPad · [jutsustudio.com/ios](https://jutsustudio.com/ios/)
 - [Swapjutsu](https://github.com/jutsuhq/swapjutsu-seedance-character-swap): free character swap for Mac, no watermark · [jutsustudio.com/swapjutsu](https://jutsustudio.com/swapjutsu/)
 - [Kawarimi](https://github.com/jutsuhq/kawarimi-local-character-swap): free local AI character swap for Windows and Linux, no cloud · [jutsustudio.com/kawarimi](https://jutsustudio.com/kawarimi/)
 - [Content Factory](https://github.com/jutsuhq/content-factory): open-source faceless video generator for Shorts, TikTok and Reels · [jutsustudio.com/content-factory](https://jutsustudio.com/content-factory/)
