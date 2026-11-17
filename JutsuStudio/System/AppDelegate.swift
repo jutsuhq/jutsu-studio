@@ -7,7 +7,9 @@ import Presentation
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private(set) lazy var environment = AppEnvironment.launch()
     private(set) lazy var system = SystemIntegration(environment: environment)
-    private(set) lazy var updater = SoftwareUpdater()
+    #if !APP_STORE
+        private(set) lazy var updater = SoftwareUpdater()
+    #endif
     private(set) lazy var agents = AgentService(environment: environment, system: system)
 
     /// The notification delegate has to be in place before launch finishes to receive the click that launched the app.

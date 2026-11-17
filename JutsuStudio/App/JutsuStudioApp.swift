@@ -15,7 +15,9 @@ struct JutsuStudioApp: App {
                 .environment(environment.connection)
                 .environment(environment.liveJobs)
                 .environment(environment.navigation)
-                .environment(appDelegate.updater)
+                #if !APP_STORE
+                    .environment(appDelegate.updater)
+                #endif
                 .environment(appDelegate.agents)
                 .preferredColorScheme(.dark)
                 .tint(Theme.accent)
@@ -28,7 +30,9 @@ struct JutsuStudioApp: App {
         .commands {
             CommandGroup(replacing: .appInfo) {
                 AboutMenuItem()
-                CheckForUpdatesMenuItem(updater: appDelegate.updater)
+                #if !APP_STORE
+                    CheckForUpdatesMenuItem(updater: appDelegate.updater)
+                #endif
             }
             // View › Toggle Sidebar (⌃⌘S), acting on the main window's split view.
             SidebarCommands()

@@ -32,8 +32,10 @@ settings:
     SWIFT_EMIT_LOC_STRINGS: YES
     LOCALIZATION_PREFERS_STRING_CATALOGS: YES
 
-targets:
-  JutsuStudio:
+targetTemplates:
+  # Everything the Developer ID app and the App Store app share; each target adds its updater, helper, entitlements
+  # file and Info.plist.
+  JutsuApp:
     type: application
     platform: macOS
     sources: [JutsuStudio]
@@ -62,16 +64,7 @@ targets:
         product: MediaKit
       - package: JutsuKit
         product: JutsuAgent
-      - package: Sparkle
-      # The `jutsu` helper agents run (JutsuCLI), signed with the app so it carries the same team.
-      - target: jutsu-helper
-        embed: true
-        codeSign: true
-        copy:
-          destination: wrapper
-          subpath: Contents/Helpers
     entitlements:
-      path: JutsuStudio/Resources/JutsuStudio.entitlements
       properties:
         com.apple.security.app-sandbox: true
         com.apple.security.network.client: true
@@ -80,16 +73,11 @@ targets:
         com.apple.security.files.user-selected.read-write: true
         com.apple.security.files.bookmarks.app-scope: true
         com.apple.security.assets.movies.read-write: true
-        # Sparkle's installer runs outside the sandbox as an XPC service; the app reaches it by these names.
-        com.apple.security.temporary-exception.mach-lookup.global-name:
-          - $(PRODUCT_BUNDLE_IDENTIFIER)-spks
-          - $(PRODUCT_BUNDLE_IDENTIFIER)-spki
-        # The agent socket lives in this group's container, where the unsandboxed `jutsu` helper can reach it. A
-        # team-prefixed group needs no provisioning profile; an ad-hoc build has no team, and agents are off for it.
+        # The agent socket lives in this group's container, where the `jutsu` helper can reach it. A team-prefixed
+        # group needs no provisioning profile; an ad-hoc build has no team, and agents are off for it.
         com.apple.security.application-groups:
           - $(JUTSU_APP_GROUP)
     info:
-      path: JutsuStudio/Resources/Info.plist
       properties:
         CFBundleDisplayName: $(APP_DISPLAY_NAME)
         CFBundleName: $(APP_DISPLAY_NAME)
@@ -100,14 +88,6 @@ targets:
         CFBundleURLTypes:
           - CFBundleURLName: $(PRODUCT_BUNDLE_IDENTIFIER)
             CFBundleURLSchemes: [$(APP_URL_SCHEME)]
-        # Sparkle. The appcast is a release asset, so `latest/download` follows the newest published release; each
-        # update is checked against this EdDSA key and the app's own code signature before it is installed.
-        SUFeedURL: https://github.com/jutsuhq/jutsu-studio/releases/latest/download/appcast.xml
-        # The public half of the key release.yml signs updates with (secret SPARKLE_ED_PRIVATE_KEY).
-        SUPublicEDKey: RUjFlCdW3fQ0905uaHtYOCvhdtv6nKMkBc4FxFPG0N8=
-        SUEnableInstallerLauncherService: true
-        SUEnableAutomaticChecks: true
-        SUScheduledCheckInterval: 86400
         # The app group, read by the app and by the `jutsu` helper to find the agent socket.
         JutsuAppGroup: $(JUTSU_APP_GROUP)
         NSHumanReadableCopyright: MIT License. Unofficial, not affiliated with Higgsfield AI.
@@ -140,9 +120,7 @@ targets:
           APP_URL_SCHEME: jutsustudio-debug
           JUTSU_APP_GROUP: $(DEVELOPMENT_TEAM).com.jutsustudio.jutsustudio.debug
 
-  # `jutsu mcp`: the MCP server agents start, bundled at Contents/Helpers/jutsu. Not sandboxed, so it can find and
-  # start the app; it reaches the app only through the agent socket.
-  jutsu-helper:
+  JutsuHelper:
     type: tool
     platform: macOS
     sources: [JutsuCLI]
@@ -164,3 +142,80 @@ targets:
         # A Developer ID signature with hardened runtime and no debugging entitlement, as notarization requires.
         Release:
           CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
+
+targets:
+  # The Developer ID build: the DMG, Homebrew and Sparkle's updates.
+  JutsuStudio:
+    templates: [JutsuApp]
+    dependencies:
+      - package: Sparkle
+      # The `jutsu` helper agents run (JutsuCLI), signed with the app so it carries the same team.
+      - target: jutsu-helper
+        embed: true
+        codeSign: true
+        copy:
+          destination: wrapper
+          subpath: Contents/Helpers
+    entitlements:
+      path: JutsuStudio/Resources/JutsuStudio.entitlements
+      properties:
+        # Sparkle's installer runs outside the sandbox as an XPC service; the app reaches it by these names.
+        com.apple.security.temporary-exception.mach-lookup.global-name:
+          - $(PRODUCT_BUNDLE_IDENTIFIER)-spks
+          - $(PRODUCT_BUNDLE_IDENTIFIER)-spki
+    info:
+      path: JutsuStudio/Resources/Info.plist
+      properties:
+        # Sparkle. The appcast is a release asset, so `latest/download` follows the newest published release; each
+        # update is checked against this EdDSA key and the app's own code signature before it is installed.
+        SUFeedURL: https://github.com/jutsuhq/jutsu-studio/releases/latest/download/appcast.xml
+        # The public half of the key release.yml signs updates with (secret SPARKLE_ED_PRIVATE_KEY).
+        SUPublicEDKey: RUjFlCdW3fQ0905uaHtYOCvhdtv6nKMkBc4FxFPG0N8=
+        SUEnableInstallerLauncherService: true
+        SUEnableAutomaticChecks: true
+        SUScheduledCheckInterval: 86400
+
+  # The Mac App Store build (packaging/appstore/README.md): no Sparkle, since the App Store updates the app, no
+  # temporary sandbox exceptions, a sandboxed helper, and no links to buy credits or balance outside the app
+  # (`APP_STORE` in Swift).
+  JutsuStudio-AppStore:
+    templates: [JutsuApp]
+    dependencies:
+      - target: jutsu-helper-appstore
+        embed: true
+        codeSign: true
+        copy:
+          destination: wrapper
+          subpath: Contents/Helpers
+    entitlements:
+      path: packaging/appstore/JutsuStudio.entitlements
+    info:
+      path: packaging/appstore/Info.plist
+      properties:
+        # Only HTTPS and Apple's own encryption, which export compliance exempts.
+        ITSAppUsesNonExemptEncryption: false
+    settings:
+      base:
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: $(inherited) APP_STORE
+
+  # `jutsu mcp`: the MCP server agents start, bundled at Contents/Helpers/jutsu. Not sandboxed, so it can find and
+  # start the app; it reaches the app only through the agent socket.
+  jutsu-helper:
+    templates: [JutsuHelper]
+
+  # The same helper for the App Store, which requires every executable in the bundle to be sandboxed: its sandbox
+  # shares the app's group, whose container holds the agent socket.
+  jutsu-helper-appstore:
+    templates: [JutsuHelper]
+    entitlements:
+      path: packaging/appstore/jutsu.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.application-groups:
+          - $(JUTSU_APP_GROUP)
+    settings:
+      base:
+        JUTSU_APP_GROUP: $(DEVELOPMENT_TEAM).com.jutsustudio.jutsustudio
+      configs:
+        Debug:
+          JUTSU_APP_GROUP: $(DEVELOPMENT_TEAM).com.jutsustudio.jutsustudio.debug
