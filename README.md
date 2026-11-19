@@ -2,7 +2,9 @@
 
 ![Jutsu Studio](docs/assets/hero-banner.png)
 
-**Jutsu Studio is the open-source Higgsfield desktop app for Mac. Unofficial.** It is free, for macOS 14+ on Apple silicon and Intel; Higgsfield itself has no standalone desktop app. It runs 14 Higgsfield video models, including Genjutsu, Seedance 2.5 and Kling 4.0, and saves every result to your disk.
+**Jutsu Studio is the open-source Higgsfield desktop app and AI video generator for Mac. Unofficial.** It is free, for macOS 14+ on Apple silicon and Intel; Higgsfield itself has no standalone desktop app. It runs 14 Higgsfield video models, including Genjutsu, Seedance 2.5 and Kling 4.0, and saves every result to your disk.
+
+AI agents can use it too: the app bundles a `jutsu` MCP server and a [Claude Code skill](skills/jutsu-studio/SKILL.md), so Claude Code, Codex or Cursor can generate Higgsfield videos and images through it, with the price checked before each job and a daily budget you set.
 
 [![Download for macOS](https://img.shields.io/badge/Download-macOS-8b5cf6?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/jutsuhq/jutsu-studio/releases/latest)
 
