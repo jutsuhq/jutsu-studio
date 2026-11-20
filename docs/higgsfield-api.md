@@ -848,6 +848,14 @@ The owner ran issue #114's checklist on the account (plan `ultra`) from a 4.02 s
 - **Models:** `seedance_2_5` offers `4k` besides 480p, 720p and 1080p, and its `draft_job_id` finalizes at the selected resolution, not only 1080p; Jutsu doesn't offer 4k for it yet. New: video `seedance_2_5_flash` (Seedance 2.5 Flash, 480p and 720p, the same four `mode`s) and audio `audio_dubbing`, neither in Jutsu yet. Gone: `seedance1_5` and the image model `autosprite`, which Jutsu didn't use. `sync_so` takes `active_speaker_detection` and `segments`.
 ---
 
+### 4.10 Catalog snapshot of 2026-11-20
+
+`docs/mcp-snapshots/2026-11-20.json` replaces 2026-11-17's as the one the tests replay (`CatalogSnapshot`). Against 2026-11-17's:
+
+- **Price questions:** `estimate_video_cost`, `estimate_image_cost` and `estimate_audio_cost` are new. Each takes the same `params` as its generate tool (`params.model` required), submits no job and answers `cost` and `adjustments`. `generate_video`, `generate_image` and `generate_audio` no longer declare `get_cost`, and their descriptions say it "is not accepted here". Their `params` still allow extra keys, so the schema alone would not stop the flag. Jutsu now asks `estimate_video_cost` and `estimate_image_cost` for every account quote, with the same `params` minus `get_cost` (`HiggsfieldAccount.callResult`). A server without them is still asked through `get_cost`, only while the generate tool declares it; otherwise the price is unknown and nothing is sent. `reframe` still declares `get_cost` and is still quoted by its own tool. The `get_cost` quotes earlier in this document describe the server as it was then.
+- **Tools:** 218, up from 211. New besides the three above: `gpu_show_computer` and the Meta Ads connector (`meta_ads_connect`, `meta_ads_tools`, `meta_ads_read`, `meta_ads_write`), which Jutsu doesn't use. Gone: `dubbing`, so a Dub is refused as not available before anything is sent (`checkTool(for:)`).
+- **Models:** new image models `ideogram_4_6`, `ideogram_4_6_precise_edit` and `kling_image_4_0`, none in Jutsu yet; none removed.
+
 ## 5. REST and MCP differences
 
 | Topic | REST | MCP |
@@ -889,6 +897,7 @@ The owner ran issue #114's checklist on the account (plan `ultra`) from a 4.02 s
 
 | Date | Change |
 |---|---|
+| 2026-11-20 | Catalog snapshot of 2026-11-20 (4.10): `estimate_video_cost`, `estimate_image_cost` and `estimate_audio_cost` replace `get_cost` on the generate tools, and Jutsu quotes through them; `dubbing` is gone; Meta Ads tools and three image models are new. The tests replay this snapshot. |
 | 2026-11-17 | Catalog snapshot of 2026-11-17 (4.9): GPU rental, project sharing, `separate_stems` and the micro drama's `drama_ads_id` new; Short Drama Studio is a workflow on the usual tools; `seedance_2_5` offers 4k, `seedance_2_5_flash` is new. The tests replay this snapshot. |
 | 2026-11-11 | The account's image models (4.4): Seedream and MiniMax join the families, each family offers its newest version first, and up to 7 are offered. From the catalog snapshot of 2026-11-10: Soul 2.0, Soul Cinema, Nano Banana 2.1, GPT Image 2.6, Seedream 5.5, Grok Image 2.0 and MiniMax H3 Image, each request checked against its `models_explore get`. MiniMax H3 Image lists no frame: it is offered as `auto` and sent no `aspect_ratio`. GPT Image 2.6 Flare and Image Command are left out; REST has no endpoint for the three new models (3.13). |
 | 2026-11-11 | Higgsfield Intone used on the account (4.4, 4.5): `intone` with the job's one or two images as `character_images` and its speech recording as `audio_references`, the resolution and the nearest of its frames, checked against the catalog snapshot of 2026-11-10; a speech of 2–27.5 s sets the length, the speech and 2.5 s more. Several speech files and the location image aren't sent yet. No REST endpoint is listed and no price is published: the fallback of 1, 2 and 4 credits a second is a placeholder, and the job is always quoted after upload. |

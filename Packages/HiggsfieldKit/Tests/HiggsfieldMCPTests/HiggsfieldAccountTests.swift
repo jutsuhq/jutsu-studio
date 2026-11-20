@@ -15,6 +15,8 @@ extension Network {
             tool("media_confirm", "Confirm file uploads", ["media_id", "type"]),
             tool("job_status", "Check the status and results of an async job", ["jobId", "sync"]),
             tool("balance", "Get the user's available credits and current plan", []),
+            tool("estimate_video_cost", "Estimate the credit cost of one video generation request", ["params"]),
+            tool("estimate_image_cost", "Estimate the credit cost of one image generation request", ["params"]),
         ]
 
         static let request = VideoRequest(
@@ -113,10 +115,40 @@ extension Network {
             #expect(Self.calls(stub).count == 1)
         }
 
-        @Test func costAsksForAQuote() async throws {
+        @Test func costAsksTheEstimateTool() async throws {
             let (account, stub) = Self.account { _, _ in ["cost": ["credits": 28, "credits_exact": .number(27.5)]] }
             #expect(try await account.cost(of: Self.request) == 27.5)
-            #expect(Self.calls(stub).first?["arguments"]?["params"]?["get_cost"] == true)
+            let calls = Self.calls(stub)
+            #expect(calls.map { $0["name"] } == ["estimate_video_cost"])
+            #expect(calls.first?["arguments"]?["params"] == Self.request.arguments()["params"])
+        }
+
+        /// A server without `estimate_video_cost` is asked through `get_cost` only while `generate_video` declares it.
+        @Test func withoutTheEstimateToolAQuoteUsesGetCostWhereDeclared() async throws {
+            let tools =
+                Self.fullSet.filter { $0["name"] != "generate_video" && $0["name"] != "estimate_video_cost" }
+                + [paramsTool("generate_video", ["model", "get_cost"])]
+            let (account, stub) = Self.account(tools: tools) { _, _ in ["cost": ["credits": 28]] }
+            #expect(try await account.cost(of: Self.request) == 28)
+            let calls = Self.calls(stub)
+            #expect(calls.map { $0["name"] } == ["generate_video"])
+            #expect(calls.first?["arguments"]?["params"]?["get_cost"] == true)
+        }
+
+        /// `generate_video` without `get_cost` might take the flag as unknown and submit a paid job: nothing is sent.
+        @Test func withNeitherAQuoteSendsNothing() async throws {
+            let (account, stub) = Self.account(tools: Self.fullSet.filter { $0["name"] != "estimate_video_cost" })
+            await #expect(throws: HiggsfieldError.toolUnavailable("estimate_video_cost")) {
+                try await account.cost(of: Self.request)
+            }
+            #expect(Self.calls(stub).isEmpty)
+        }
+
+        /// The 2026-11-20 schemas give `params` as `anyOf` variants.
+        @Test func paramsNamesAreReadFromAnyOfVariants() throws {
+            let generate = try CatalogSnapshot.tool("generate_video").decode(MCPTool.self)
+            #expect(generate.paramsArgumentNames.contains("model"))
+            #expect(!generate.paramsArgumentNames.contains("get_cost"))
         }
 
         @Test func missingToolsAreReportedByName() async throws {

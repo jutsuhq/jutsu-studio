@@ -37,6 +37,12 @@ extension Network {
             Provider.calls(stub).filter { $0["name"] == "generate_video" }.compactMap { $0["arguments"]?["params"] }
         }
 
+        static func quotes(_ stub: StubServer) -> [JSONValue] {
+            Provider.calls(stub).filter { $0["name"] == "estimate_video_cost" }.compactMap {
+                $0["arguments"]?["params"]
+            }
+        }
+
         @Test func aDraftAt480pAsksForTheNativeDraft() async throws {
             let (provider, stub) = Provider.provider(tools: Provider.fullSet) { _, _ in
                 ["results": [["id": "job-1"], ["id": "job-2"]]]
@@ -77,14 +83,15 @@ extension Network {
         @Test func theDraftQuoteAsksForADraft() async throws {
             let (provider, stub) = Provider.provider(tools: Provider.fullSet) { _, _ in ["cost": ["credits": 45]] }
             #expect(try await provider.estimate(Self.draft()) == .credits(45, isEstimate: false))
-            let quotes = Self.params(stub)
+            let quotes = Self.quotes(stub)
             #expect(quotes.count == 1)
-            #expect(quotes.allSatisfy { $0["draft"] == true && $0["get_cost"] == true })
+            #expect(quotes.allSatisfy { $0["draft"] == true && $0["get_cost"] == nil })
+            #expect(Self.params(stub).isEmpty)
         }
 
         @Test func aFinalizeSendsOnlyItsFourKeys() async throws {
-            let (provider, stub) = Provider.provider(tools: Provider.fullSet) { _, arguments in
-                arguments["params"]?["get_cost"] == true ? ["cost": ["credits": 80]] : ["results": [["id": "final-1"]]]
+            let (provider, stub) = Provider.provider(tools: Provider.fullSet) { name, _ in
+                name == "estimate_video_cost" ? ["cost": ["credits": 80]] : ["results": [["id": "final-1"]]]
             }
             var spec = Self.finalize
             spec.usesUnlimited = true
@@ -93,15 +100,14 @@ extension Network {
             #expect(job.requestID == "final-1")
             #expect(!job.isNativeDraft)
 
+            let quotes = Self.quotes(stub)
             let sent = Self.params(stub)
-            #expect(sent.count == 2)
+            #expect(quotes.count == 1 && sent.count == 1)
             let expected: JSONValue = [
                 "model": "seedance_2_5", "draft_job_id": "draft-job", "resolution": "1080p", "use_unlim": false,
             ]
-            var quote = sent[0].objectValue ?? [:]
-            #expect(quote.removeValue(forKey: "get_cost") == true)
-            #expect(JSONValue.object(quote) == expected)
-            #expect(sent[1] == expected)
+            #expect(quotes[0] == expected)
+            #expect(sent[0] == expected)
             #expect(try CatalogSnapshot.violations(ofParams: expected).isEmpty)
             #expect(try Provider.schemaViolations(stub).isEmpty)
         }
@@ -111,8 +117,7 @@ extension Network {
         @Test func aFinalizeIsQuotedAndFallsBackToAThirdOfTheFreshRate() async throws {
             let (quoted, stub) = Provider.provider(tools: Provider.fullSet) { _, _ in ["cost": ["credits": 80]] }
             #expect(try await quoted.estimate(Self.finalize) == .credits(80, isEstimate: false))
-            var quote = Self.params(stub).first?.objectValue ?? [:]
-            quote.removeValue(forKey: "get_cost")
+            let quote = Self.quotes(stub).first?.objectValue ?? [:]
             #expect(Set(quote.keys) == ["model", "draft_job_id", "resolution", "use_unlim"])
 
             let (failing, _) = Provider.provider(tools: Provider.fullSet) { _, _ in [:] }
@@ -129,7 +134,7 @@ extension Network {
             other.draftJobID = "other-draft"
             _ = try await provider.estimate(Self.finalize)
             _ = try await provider.estimate(other)
-            #expect(Self.params(stub).map { $0["draft_job_id"] } == ["draft-job", "other-draft"])
+            #expect(Self.quotes(stub).map { $0["draft_job_id"] } == ["draft-job", "other-draft"])
         }
     }
 }

@@ -156,10 +156,10 @@ public struct VideoEdit: Sendable, Hashable {
 }
 
 extension MCPTool {
-    /// The keys the tool's `params` object declares, over every `oneOf` variant.
+    /// The keys the tool's `params` object declares, over every `oneOf` and `anyOf` variant.
     var paramsArgumentNames: Set<String> {
         guard let params = inputSchema["properties"]?[ToolKey.params] else { return [] }
-        let variants = [params] + (params["oneOf"]?.arrayValue ?? [])
+        let variants = [params] + (params["oneOf"]?.arrayValue ?? []) + (params["anyOf"]?.arrayValue ?? [])
         return Set(variants.flatMap { ($0["properties"]?.objectValue ?? [:]).keys })
     }
 }
@@ -173,7 +173,7 @@ extension HiggsfieldAccount {
     }
 
     /// The price in credits; submits nothing. `reframe` asks its own tool, when its schema still declares
-    /// `get_cost`; the others ask `generate_video` for their catalog model (`VideoEdit.Operation.quoteModel`) and the
+    /// `get_cost`; the others ask `estimate_video_cost` (or `generate_video` with `get_cost`) for their catalog model (`VideoEdit.Operation.quoteModel`) and the
     /// source's `duration` in seconds. `nil`, without a call, with neither, and `nil` when the answer names no price
     /// or the question fails: the price is then unknown, which the sheet says, rather than the sheet failing.
     public func cost(of operation: VideoEdit.Operation, duration: TimeInterval? = nil) async throws -> Double? {
@@ -190,6 +190,9 @@ extension HiggsfieldAccount {
             return Self.credits(in: try await call(.generate, arguments)[ToolKey.cost])
         } catch HiggsfieldError.validation {
             // A model the quote doesn't take: the price is shown after the run.
+            return nil
+        } catch HiggsfieldError.toolUnavailable {
+            // No tool to ask the price of: it is unknown until the run.
             return nil
         }
     }

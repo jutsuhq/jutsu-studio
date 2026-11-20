@@ -13,7 +13,8 @@ extension Network {
         static let upscale = snapshotTool("upscale_video")
         static let removeBackground = snapshotTool("remove_background")
         static let reframe = snapshotTool("reframe")
-        static let dubbing = snapshotTool("dubbing")
+        /// Gone from the catalog of 2026-11-20; kept so the Dub request is still built as the server took it.
+        static let dubbing = paramsTool("dubbing", ["video_id", "target_language"])
         static let voiceChange = snapshotTool("voice_change")
         static let listVoices = snapshotTool("list_voices")
 
@@ -75,14 +76,14 @@ extension Network {
             #expect(try Account.schemaViolations(stub).isEmpty)
         }
 
-        /// The operation tools take no `get_cost`, so `generate_video` is asked for the catalog model by the whole
+        /// The operation tools take no `get_cost`, so `estimate_video_cost` is asked for the catalog model by the whole
         /// seconds; nothing is asked of the operation's own tool.
         @Test(arguments: [
             (VideoEdit.Operation.dub(language: "fra"), "dubbing"),
             (.changeVoice(voiceID: "v-1", voiceType: "preset"), "voice_change"),
             (.removeBackground, "video_background_remover"),
         ])
-        func operationsAreQuotedThroughGenerateVideo(operation: VideoEdit.Operation, model: String) async throws {
+        func operationsAreQuotedThroughEstimateVideoCost(operation: VideoEdit.Operation, model: String) async throws {
             let tools = [Self.upscale, Self.removeBackground, Self.dubbing, Self.voiceChange]
             let (account, stub) = Account.account(tools: Account.fullSet + tools) { _, _ in
                 ["cost": ["credits": 21, "credits_exact": 21]]
@@ -91,9 +92,8 @@ extension Network {
             #expect(try await account.cost(of: operation, duration: 7.04) == 21)
 
             let calls = Account.calls(stub)
-            #expect(calls.map { $0["name"] } == ["generate_video"])
-            #expect(
-                calls.first?["arguments"]?["params"] == ["model": .string(model), "get_cost": true, "duration": 7])
+            #expect(calls.map { $0["name"] } == ["estimate_video_cost"])
+            #expect(calls.first?["arguments"]?["params"] == ["model": .string(model), "duration": 7])
             #expect(try Account.schemaViolations(stub).isEmpty)
         }
 
@@ -109,7 +109,7 @@ extension Network {
             #expect(try await account.cost(of: operation, duration: 10) == 15)
             #expect(
                 Account.calls(stub).first?["arguments"]?["params"] == [
-                    "model": "bytedance_video_upscale", "get_cost": true, "duration": 10, "resolution": "4k", "fps": 60,
+                    "model": "bytedance_video_upscale", "duration": 10, "resolution": "4k", "fps": 60,
                 ])
         }
 
@@ -207,13 +207,14 @@ extension Network {
                     operation: .changeVoice(voiceID: "v-1", voiceType: "element"),
                     input: .media("a2c4e6f8-1b3d-4f5a-8c7e-9d0b1a2c3e4f")))
 
-            #expect(Account.calls(stub).map { $0["name"] } == ["dubbing", "voice_change"])
+            let calls = Account.calls(stub)
+            #expect(calls.map { $0["name"] } == ["dubbing", "voice_change"])
             #expect(
                 Self.params(stub) == [
                     ["video_id": "3f1c8a52-6b0e-4d7a-9a51-2f4b8c9d0e17", "target_language": "fra"],
                     ["video_id": "a2c4e6f8-1b3d-4f5a-8c7e-9d0b1a2c3e4f", "voice_id": "v-1", "voice_type": "element"],
                 ])
-            #expect(try Account.schemaViolations(stub).isEmpty)
+            #expect(try CatalogSnapshot.violations(of: calls[1]["arguments"] ?? [:], sentTo: "voice_change").isEmpty)
         }
 
         @Test func aMissingToolIsReportedBeforeAnyCall() async throws {

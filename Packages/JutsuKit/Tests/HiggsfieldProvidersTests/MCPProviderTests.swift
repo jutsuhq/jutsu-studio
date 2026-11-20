@@ -16,8 +16,12 @@ extension Network {
         static let confirm = tool("media_confirm", "Confirm file uploads", ["media_id", "type"])
         static let status = tool("job_status", "Check the status and results of an async job", ["jobId", "sync"])
         static let balance = tool("balance", "Get the user's available credits and current plan", [])
+        static let estimate = tool(
+            "estimate_video_cost", "Estimate the credit cost of one video generation request", ["params"])
+        static let estimateImage = tool(
+            "estimate_image_cost", "Estimate the credit cost of one image generation request", ["params"])
         static let unrelated = tool("generate_image", "Text to image with motion blur", ["params"])
-        static let fullSet = [unrelated, generate, upload, confirm, status, balance]
+        static let fullSet = [unrelated, generate, estimate, estimateImage, upload, confirm, status, balance]
 
         static func provider(
             tools: [JSONValue], call: @escaping @Sendable (String, JSONValue) -> JSONValue = { _, _ in [:] }
@@ -288,7 +292,7 @@ extension Network {
             frames.bitrate = nil
             _ = try await provider.submit(frames, inputs: images, idempotencyKey: UUID())
 
-            // The submits; the estimate's quote is the call with `get_cost`.
+            // The submits; the estimate's quote goes to `estimate_video_cost`, which the name filter leaves out.
             let params = Self.calls(stub).filter { $0["name"] == "generate_video" }.compactMap {
                 $0["arguments"]?["params"]
             }.filter { $0["get_cost"] == nil }
@@ -383,7 +387,9 @@ extension Network {
             let spec = Self.spec(.objectSwap)
             #expect(try await provider.estimate(spec) == .credits(76, isEstimate: true))
             #expect(try await provider.serverEstimate(spec, inputs: Self.inputs) == .credits(55.5, isEstimate: false))
-            #expect(Self.calls(stub).first?["arguments"]?["params"]?["get_cost"] == true)
+            let quote = try #require(Self.calls(stub).first)
+            #expect(quote["name"] == "estimate_video_cost")
+            #expect(quote["arguments"]?["params"]?["get_cost"] == nil)
         }
 
         @Test func uploadPutsTheFileAndConfirmsItsMediaID() async throws {

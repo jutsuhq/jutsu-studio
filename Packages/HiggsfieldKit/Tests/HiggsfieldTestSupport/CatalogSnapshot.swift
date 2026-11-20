@@ -116,7 +116,7 @@ public enum CatalogSnapshot {
     static let snapshot: JSONValue? = {
         var url = URL(fileURLWithPath: #filePath)
         for _ in 0..<5 { url.deleteLastPathComponent() }
-        let file = url.appendingPathComponent("docs/mcp-snapshots/2026-11-17.json")
+        let file = url.appendingPathComponent("docs/mcp-snapshots/2026-11-20.json")
         guard let data = try? Data(contentsOf: file) else { return nil }
         return try? JSONDecoder().decode(JSONValue.self, from: data)
     }()

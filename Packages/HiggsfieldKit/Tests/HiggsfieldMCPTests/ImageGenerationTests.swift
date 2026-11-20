@@ -10,8 +10,11 @@ import Testing
 extension Network {
     @Suite struct ImageGenerations {
         static func tools() throws -> [JSONValue] {
-            Account.fullSet.filter { $0["name"] != "generate_image" }
-                + [try CatalogSnapshot.tool("generate_image"), try CatalogSnapshot.tool("models_explore")]
+            Account.fullSet.filter { $0["name"] != "generate_image" && $0["name"] != "estimate_image_cost" }
+                + [
+                    try CatalogSnapshot.tool("generate_image"), try CatalogSnapshot.tool("estimate_image_cost"),
+                    try CatalogSnapshot.tool("models_explore"),
+                ]
         }
 
         static let request = AccountImageRequest(
@@ -19,8 +22,8 @@ extension Network {
             imageRole: "image")
 
         @Test func generateSendsTheParamsTheSchemaTakesAndReadsEveryJob() async throws {
-            let (account, stub) = Account.account(tools: try Self.tools()) { _, arguments in
-                arguments["params"]?["get_cost"] == true
+            let (account, stub) = Account.account(tools: try Self.tools()) { name, _ in
+                name == "estimate_image_cost"
                     ? ["cost": ["credits": 8, "credits_exact": .number(7.5)]]
                     : ["results": [["id": "job-1"], ["id": "job-2"]], "request_id": "req-1", "cost": ["credits": 8]]
             }
@@ -34,14 +37,9 @@ extension Network {
                 "model": "soul_2", "prompt": "a knight in silver armor", "aspect_ratio": "9:16", "count": 4,
                 "medias": [["role": "image", "value": "media-1"]], "use_unlim": false,
             ]
-            var quoted = params
-            if case .object(var object) = quoted {
-                object["get_cost"] = true
-                quoted = .object(object)
-            }
             #expect(
-                Account.calls(stub).map { $0["arguments"] } == [["params": quoted], ["params": params]])
-            #expect(Account.calls(stub).map { $0["name"] } == ["generate_image", "generate_image"])
+                Account.calls(stub).map { $0["arguments"] } == [["params": params], ["params": params]])
+            #expect(Account.calls(stub).map { $0["name"] } == ["estimate_image_cost", "generate_image"])
             #expect(try Account.schemaViolations(stub).isEmpty)
         }
 

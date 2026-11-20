@@ -13,9 +13,11 @@ extension Network {
     @Suite struct PostOperations {
         static let tools =
             Provider.fullSet
-            + ["upscale_video", "remove_background", "reframe", "dubbing", "voice_change", "list_voices"].map {
+            + ["upscale_video", "remove_background", "reframe", "voice_change", "list_voices"].map {
                 (try? CatalogSnapshot.tool($0)) ?? [:]
             }
+            // The 2026-11-20 snapshot no longer lists `dubbing`; its calls are not checked against a schema.
+            + [paramsTool("dubbing", ["video_id", "target_language"])]
         static let uploaded = RemoteInputs(
             video: RemoteAsset(url: URL(fileURLWithPath: "/in.mp4"), id: "5b7d1e90-2a4c-4e8f-9d36-7c1a2b3e4f50"),
             images: [])
@@ -43,7 +45,7 @@ extension Network {
             Provider.calls(stub).map { $0["arguments"]?["params"] }
         }
 
-        /// Quoted through `generate_video` by the result's length, resolution and frame rate.
+        /// Quoted through `estimate_video_cost` by the result's length, resolution and frame rate.
         @Test func upscaleNamesTheResultByItsJobIDAndIsQuotedByItsLength() async throws {
             let (provider, stub) = Self.provider { name, _ in
                 name == "upscale_video"
@@ -58,9 +60,12 @@ extension Network {
 
             #expect(remote.requestID == "job-2")
             #expect(remote.correlationID == "req-2")
-            #expect(Provider.calls(stub).map { $0["name"] } == ["generate_video", "generate_video", "upscale_video"])
+            #expect(
+                Provider.calls(stub).map { $0["name"] } == [
+                    "estimate_video_cost", "estimate_video_cost", "upscale_video",
+                ])
             let quote: JSONValue = [
-                "model": "bytedance_video_upscale", "get_cost": true, "duration": 10, "resolution": "4k", "fps": 60,
+                "model": "bytedance_video_upscale", "duration": 10, "resolution": "4k", "fps": 60,
             ]
             #expect(
                 Self.params(stub) == [
@@ -108,7 +113,7 @@ extension Network {
 
         @Test func removeBackgroundIsQuotedAndRunsOnTheUpload() async throws {
             let (provider, stub) = Self.provider { name, _ in
-                name == "generate_video" ? ["cost": ["credits": 1]] : ["results": [["id": "job-4"]]]
+                name == "estimate_video_cost" ? ["cost": ["credits": 1]] : ["results": [["id": "job-4"]]]
             }
             let spec = Self.spec(.removeBackground)
 
@@ -118,7 +123,7 @@ extension Network {
             #expect(remote.requestID == "job-4")
             #expect(
                 Self.params(stub) == [
-                    ["model": "video_background_remover", "get_cost": true, "duration": 10],
+                    ["model": "video_background_remover", "duration": 10],
                     ["media_id": "5b7d1e90-2a4c-4e8f-9d36-7c1a2b3e4f50", "media_type": "video"],
                 ])
             #expect(try Provider.schemaViolations(stub).isEmpty)
@@ -182,7 +187,7 @@ extension Network {
         /// price unknown.
         @Test func dubAndChangeVoiceAreQuotedByLengthAndNameTheResult() async throws {
             let (provider, stub) = Self.provider { name, arguments in
-                guard name == "generate_video" else { return ["results": [["id": "job-6"]]] }
+                guard name == "estimate_video_cost" else { return ["results": [["id": "job-6"]]] }
                 return arguments["params"]?["model"] == "dubbing" ? ["cost": ["credits": 21]] : ["error": "failed"]
             }
             let dub = Self.spec(.dub(.japanese), seconds: 7.04)
@@ -195,16 +200,21 @@ extension Network {
 
             #expect(
                 Provider.calls(stub).map { $0["name"] } == [
-                    "generate_video", "generate_video", "dubbing", "voice_change",
+                    "estimate_video_cost", "estimate_video_cost", "dubbing", "voice_change",
                 ])
             #expect(
                 Self.params(stub) == [
-                    ["model": "dubbing", "get_cost": true, "duration": 7],
-                    ["model": "voice_change", "get_cost": true, "duration": 10],
+                    ["model": "dubbing", "duration": 7],
+                    ["model": "voice_change", "duration": 10],
                     ["video_id": "3f1c8a52-6b0e-4d7a-9a51-2f4b8c9d0e17", "target_language": "jpn"],
                     ["video_id": "5b7d1e90-2a4c-4e8f-9d36-7c1a2b3e4f50", "voice_id": "v-1", "voice_type": "element"],
                 ])
-            #expect(try Provider.schemaViolations(stub).isEmpty)
+            // `dubbing` is not in the snapshot, so only the calls to the other tools are checked.
+            let known = Provider.calls(stub).filter { $0["name"] != "dubbing" }
+            let violations = try known.flatMap {
+                try CatalogSnapshot.violations(of: $0["arguments"] ?? [:], sentTo: $0["name"]?.stringValue ?? "")
+            }
+            #expect(violations.isEmpty)
         }
 
         @Test func voicesAreReadOncePerConnection() async throws {

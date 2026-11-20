@@ -127,7 +127,8 @@ extension HiggsfieldAccount {
         }
     }
 
-    /// The price in credits, read like `generate_video`'s quote; `nil` when the answer names none. Submits nothing.
+    /// The price in credits from `estimate_image_cost`, read like the video quote; `nil` when the answer names none.
+    /// Submits nothing.
     public func cost(of request: AccountImageRequest) async throws -> Double? {
         Self.credits(in: try await call(.generateImage, request.arguments(getCost: true))[ToolKey.cost])
     }
