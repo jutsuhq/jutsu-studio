@@ -4,15 +4,19 @@ import Testing
 
 @testable import HiggsfieldMCP
 
-/// The catalog snapshot of 2026-11-17 as the client reads it: every role finds its tool by name and arguments, and
+/// The catalog snapshot of 2026-11-20 as the client reads it: every role finds its tool by name and arguments, and
 /// the schema check the other tests rely on catches what the server would refuse.
 @Suite struct CatalogSnapshotTools {
+    /// `dubbing` left the catalog on 2026-11-20; a Dub is then refused as not available.
+    static let dropped: Set<ToolRole> = [.dubbing]
+
     @Test func everyRoleFindsItsToolInTheSnapshot() throws {
-        let tools = try ToolRole.allCases.map { role in
+        let roles = ToolRole.allCases.filter { !Self.dropped.contains($0) }
+        let tools = try roles.map { role in
             try CatalogSnapshot.tool(role.rawValue).decode(MCPTool.self)
         }
         let catalog = ToolCatalog(tools)
-        let missing = ToolRole.allCases.filter { catalog[$0] == nil }
+        let missing = roles.filter { catalog[$0] == nil }
         #expect(missing.isEmpty)
     }
 
@@ -25,15 +29,6 @@ import Testing
         // The first guess of the Virality Predictor call.
         let virality: JSONValue = ["action": "create", "job_id": "3f1c8a52-6b0e-4d7a-9a51-2f4b8c9d0e17"]
         #expect(try !CatalogSnapshot.violations(of: virality, sentTo: "virality_predictor").isEmpty)
-        // A language outside the enum.
-        let dub: JSONValue = [
-            "params": ["video_id": "3f1c8a52-6b0e-4d7a-9a51-2f4b8c9d0e17", "target_language": "nld"]
-        ]
-        #expect(try !CatalogSnapshot.violations(of: dub, sentTo: "dubbing").isEmpty)
-        let dubFrench: JSONValue = [
-            "params": ["video_id": "3f1c8a52-6b0e-4d7a-9a51-2f4b8c9d0e17", "target_language": "fra"]
-        ]
-        #expect(try CatalogSnapshot.violations(of: dubFrench, sentTo: "dubbing").isEmpty)
     }
 
     /// The model schemas of `models_explore get`: roles, parameter names, options, ranges and types.
