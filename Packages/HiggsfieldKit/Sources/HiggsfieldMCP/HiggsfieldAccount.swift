@@ -44,7 +44,7 @@ public actor HiggsfieldAccount {
         _ = try await tool(.generate)
     }
 
-    /// The exact price in credits; submits nothing. The server prices only uploaded files.
+    /// The exact price in credits from `estimate_video_cost`; submits nothing. The server prices only uploaded files.
     public func cost(of request: VideoRequest) async throws -> Double {
         guard let credits = Self.credits(in: try await send(request, getCost: true)[ToolKey.cost]) else {
             throw unexpected(.generate)
@@ -246,6 +246,21 @@ public actor HiggsfieldAccount {
     }
 
     private func callResult(_ role: ToolRole, _ arguments: [String: JSONValue]) async throws -> MCPToolResult {
+        if let estimate = role.costEstimate, case .object(var params)? = arguments[ToolKey.params],
+            params[ToolKey.getCost] == true
+        {
+            if try await lookUp(estimate, recheckingAfter: Self.optionalToolRecheck) != nil {
+                params[ToolKey.getCost] = nil
+                var estimateArguments = arguments
+                estimateArguments[ToolKey.params] = .object(params)
+                return try await callResult(estimate, estimateArguments)
+            }
+            // Without the estimate tool, a price question goes to the generate tool only while its schema still
+            // declares `get_cost`: one that no longer does may take the flag as unknown and submit a paid job.
+            guard try await tool(role).paramsArgumentNames.contains(ToolKey.getCost) else {
+                throw HiggsfieldError.toolUnavailable(estimate.rawValue)
+            }
+        }
         let name = try await readyToSend(role)
         let result: MCPToolResult
         do {

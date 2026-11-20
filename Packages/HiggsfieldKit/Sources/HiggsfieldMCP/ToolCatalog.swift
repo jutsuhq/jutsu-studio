@@ -29,7 +29,8 @@ enum ToolRole: String, CaseIterable, Sendable {
     case dubbing
     case voiceChange = "voice_change"
     case listVoices = "list_voices"
-    /// `{params: {model, prompt, count, aspect_ratio, medias, get_cost, use_unlim}}` (`AccountImageRequest`).
+    /// `{params: {model, prompt, count, aspect_ratio, medias, use_unlim}}` (`AccountImageRequest`); priced by
+    /// `estimate_image_cost`.
     case generateImage = "generate_image"
     /// `list`, `get` and `create` of the account's elements (`ReferenceElements.swift`).
     case referenceElements = "show_reference_elements"
@@ -43,6 +44,10 @@ enum ToolRole: String, CaseIterable, Sendable {
     case viralityPredictor = "virality_predictor"
     /// `url` and `type` in, a confirmed `media_id` out (`HiggsfieldAccount.importMedia`).
     case importMedia = "media_import_url"
+    /// Price questions for `generate_video` and `generate_image`: the same `params`, no job submitted. The catalog
+    /// snapshot of 2026-11-20 has them and no longer has `get_cost` on the generate tools.
+    case estimateVideoCost = "estimate_video_cost"
+    case estimateImageCost = "estimate_image_cost"
 
     /// Top-level arguments the tool's `inputSchema` must declare; otherwise its role counts as unavailable.
     var requiredArguments: Set<String> {
@@ -60,7 +65,9 @@ enum ToolRole: String, CaseIterable, Sendable {
         case .assets: [ToolKey.source, ToolKey.kind, ToolKey.cursor, ToolKey.size]
         case .modelsExplore: [ToolKey.action, ToolKey.type]
         case .jobsWait: [ToolKey.jobs]
-        case .upscaleVideo, .removeBackground, .reframe, .dubbing, .voiceChange, .generateImage: [ToolKey.params]
+        case .upscaleVideo, .removeBackground, .reframe, .dubbing, .voiceChange, .generateImage, .estimateVideoCost,
+            .estimateImageCost:
+            [ToolKey.params]
         case .listVoices: [ToolKey.cursor, ToolKey.size]
         case .referenceElements: [ToolKey.action, ToolKey.elementID, ToolKey.cursor, ToolKey.size]
         case .influencerOptions: [ToolKey.tier]
@@ -88,6 +95,15 @@ enum ToolRole: String, CaseIterable, Sendable {
             .voiceChange, .viralityPredictor, .influencerGenerate:
             true
         default: false
+        }
+    }
+
+    /// The tool that prices this one's requests without submitting them, for the generate tools.
+    var costEstimate: ToolRole? {
+        switch self {
+        case .generate: .estimateVideoCost
+        case .generateImage: .estimateImageCost
+        default: nil
         }
     }
 

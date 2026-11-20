@@ -8,7 +8,7 @@ import Testing
 @testable import HiggsfieldProviders
 
 extension Network {
-    /// The price before upload (issue #113): a model sent a length is quoted with `get_cost` and no media, once per
+    /// The price before upload (issue #113): a model sent a length is quoted with `estimate_video_cost` and no media, once per
     /// what the price depends on; a model billed by its source gets the catalog's estimate until it is uploaded.
     @Suite struct ProviderQuotes {
         static let quote: @Sendable (String, JSONValue) -> JSONValue = { _, _ in
@@ -33,7 +33,9 @@ extension Network {
         }
 
         static func quotes(_ stub: StubServer) -> [JSONValue] {
-            Provider.calls(stub).filter { $0["name"] == "generate_video" }.compactMap { $0["arguments"]?["params"] }
+            Provider.calls(stub).filter { $0["name"] == "estimate_video_cost" }.compactMap {
+                $0["arguments"]?["params"]
+            }
         }
 
         /// Seedance from a prompt alone (`t2v`), Seedance's Extend, Kling 3.0 (which needs `duration`), Wan 3.0, Wan
@@ -56,7 +58,7 @@ extension Network {
 
             let sent = try #require(Self.quotes(stub).first)
             #expect(Self.quotes(stub).count == 1)
-            #expect(sent["get_cost"] == true)
+            #expect(sent["get_cost"] == nil)
             #expect(sent["use_unlim"] == false)
             #expect(sent["duration"]?.numberValue != nil)
             // Nothing is uploaded yet, and the price doesn't depend on the prompt or the variants.
@@ -66,7 +68,7 @@ extension Network {
             #expect(try CatalogSnapshot.violations(ofParams: sent).filter { $0 != known }.isEmpty)
         }
 
-        /// Genjutsu, Seedance's Edit and Kling O3 Edit follow the source, which `get_cost` needs in `medias`: before
+        /// Genjutsu, Seedance's Edit and Kling O3 Edit follow the source, which `estimate_video_cost` needs in `medias`: before
         /// upload they show the estimate, and the quote with the uploaded source is exact.
         @Test(arguments: [
             spec(.genjutsu, seconds: 12), spec(.genjutsu, mode: .objectSwap, seconds: 12),
@@ -81,7 +83,7 @@ extension Network {
             #expect(
                 try await provider.serverEstimate(spec, inputs: Provider.inputs) == .credits(35.5, isEstimate: false))
             let sent = try #require(Self.quotes(stub).first)
-            #expect(sent["get_cost"] == true)
+            #expect(sent["get_cost"] == nil)
             #expect(sent["medias"]?.arrayValue?.first?["value"] == "video-1")
             #expect(try Provider.schemaViolations(stub).isEmpty)
         }
@@ -168,7 +170,7 @@ extension Network {
             #expect(
                 try await provider.serverEstimate(spec, inputs: Provider.inputs) == .credits(35.25, isEstimate: false))
             #expect(Self.quotes(stub).map { $0["medias"] == nil } == [true, false])
-            #expect(Self.quotes(stub).allSatisfy { $0["get_cost"] == true })
+            #expect(Self.quotes(stub).allSatisfy { $0["get_cost"] == nil })
         }
     }
 }

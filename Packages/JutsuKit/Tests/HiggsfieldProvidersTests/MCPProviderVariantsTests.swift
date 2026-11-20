@@ -69,7 +69,7 @@ extension Network {
             #expect(three.amount == one.amount * 3)
         }
 
-        /// Whether `get_cost` prices `count` isn't documented: one variant is quoted and priced that many times.
+        /// Whether `estimate_video_cost` prices `count` isn't documented: one variant is quoted and priced that many times.
         @Test func theQuoteIsForOneVariantTimesTheCount() async throws {
             let (provider, stub) = Provider.provider(tools: Provider.fullSet) { _, _ in
                 ["cost": ["credits": 28, "credits_exact": .number(27.5)]]
@@ -77,8 +77,9 @@ extension Network {
             let cost = try await provider.serverEstimate(Self.spec(variants: 3), inputs: Provider.inputs)
 
             #expect(cost == .credits(82.5, isEstimate: false))
-            let params = try #require(Self.generateParams(stub).first)
-            #expect(params["get_cost"] == true)
+            let params = try #require(
+                Provider.calls(stub).first { $0["name"] == "estimate_video_cost" }?["arguments"]?["params"])
+            #expect(params["get_cost"] == nil)
             #expect(params["count"] == nil)
             #expect(try Provider.schemaViolations(stub).isEmpty)
         }

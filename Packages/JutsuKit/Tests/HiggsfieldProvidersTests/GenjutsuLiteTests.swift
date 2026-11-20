@@ -88,7 +88,7 @@ extension Network {
             #expect(Validation.check(spec) == [.tooFewReferences(minimum: 1)])
         }
 
-        /// Billed by its source, like Genjutsu: `get_cost` quotes it once the source is uploaded, with the source in
+        /// Billed by its source, like Genjutsu: `estimate_video_cost` quotes it once the source is uploaded, with the source in
         /// `medias`. Before that it is the catalog's estimate, 2 credits a second at 720p, and nothing is asked.
         @Test(arguments: [Mode.motionTransfer, .objectSwap])
         func itIsQuotedOnceTheSourceIsUploaded(mode: Mode) async throws {
@@ -103,8 +103,9 @@ extension Network {
 
             let quoted = try await provider.serverEstimate(Self.spec(mode), inputs: Provider.inputs)
             #expect(quoted == .credits(12.5, isEstimate: false))
-            let sent = try #require(Provider.calls(stub).first?["arguments"]?["params"])
-            #expect(sent["get_cost"] == true)
+            let sent = try #require(
+                Provider.calls(stub).first { $0["name"] == "estimate_video_cost" }?["arguments"]?["params"])
+            #expect(sent["get_cost"] == nil)
             #expect(sent["model"]?.stringValue == AccountModel.model(for: Self.spec(mode))?.rawValue)
             #expect(sent["medias"]?.arrayValue?.first?["value"] == "video-1")
             #expect(try Provider.schemaViolations(stub).isEmpty)

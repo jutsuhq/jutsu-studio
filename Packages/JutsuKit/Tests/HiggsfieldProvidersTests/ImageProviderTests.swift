@@ -111,8 +111,11 @@ extension Network {
     /// 2026-10-15.
     @Suite struct AccountImages {
         static func tools() throws -> [JSONValue] {
-            Provider.fullSet.filter { $0["name"] != "generate_image" }
-                + [try CatalogSnapshot.tool("generate_image"), try CatalogSnapshot.tool("models_explore")]
+            Provider.fullSet.filter { $0["name"] != "generate_image" && $0["name"] != "estimate_image_cost" }
+                + [
+                    try CatalogSnapshot.tool("generate_image"), try CatalogSnapshot.tool("estimate_image_cost"),
+                    try CatalogSnapshot.tool("models_explore"),
+                ]
         }
         static let request = ImageRequest(
             model: "nano_banana_pro", prompt: "a knight", aspectRatio: "9:16", count: 2, inputImages: [input])
@@ -126,7 +129,7 @@ extension Network {
                 return list["items"]?.arrayValue?.first { $0["id"] == arguments["model_id"] } ?? [:]
             case "models_explore":
                 return arguments["after"] == nil ? list : ["items": [], "has_more": false]
-            case "generate_image" where arguments["params"]?["get_cost"] == true:
+            case "estimate_image_cost":
                 return ["cost": ["credits": 3, "credits_exact": .number(2.5)]]
             case "generate_image":
                 return ["results": [["id": .string(jobIDs[0])], ["id": .string(jobIDs[1])]], "request_id": "req-1"]
@@ -172,9 +175,13 @@ extension Network {
                 ])
             #expect(models.first { $0.id == "minimax_h3_image" }?.aspectRatios == ["auto"])
             #expect(models.map(\.inputLimit) == [1, 1] + Array(repeating: ImageModel.inputBound, count: 5))
-            let generates = Provider.calls(stub).filter { $0["name"] == "generate_image" }
-            #expect(generates.count == models.count * 2)
-            for call in generates {
+            let requests = Provider.calls(stub).filter {
+                ["generate_image", "estimate_image_cost"].contains($0["name"])
+            }
+            #expect(requests.count == models.count * 2)
+            #expect(requests.filter { $0["name"] == "estimate_image_cost" }.count == models.count)
+            let generates = requests.filter { $0["name"] == "generate_image" }
+            for call in requests {
                 let params = call["arguments"]?["params"] ?? .null
                 #expect(try CatalogSnapshot.violations(ofParams: params).isEmpty)
             }
@@ -195,7 +202,7 @@ extension Network {
             #expect(models.first?.variantCounts == [1, 2, 3, 4])
             #expect(models.first?.aspectRatios == ["1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3"])
             #expect(models.map(\.input) == [.optional, .optional, .none, .optional])
-            // get_cost prices one image: 2.5 credits times the request's 2.
+            // estimate_image_cost prices one image: 2.5 credits times the request's 2.
             #expect(cost == .credits(5, isEstimate: false))
             #expect(jobs.map(\.requestID) == Self.jobIDs)
             #expect(status == .completed([URL(string: "https://cdn.example.com/1.png")!]))
@@ -250,7 +257,8 @@ extension Network {
         }
 
         /// How many images a model edits comes from its `medias` entry's `max`. Where the catalog names none, as
-        /// `models_explore list` does for GPT Image 2 and Nano Banana Pro, the bound: `get_cost` refuses the rest.
+        /// `models_explore list` does for GPT Image 2 and Nano Banana Pro, the bound: the price question refuses the
+        /// rest.
         @Test func theCatalogsMaximumIsHowManyInputsAModelTakes() {
             let listed = [
                 AccountImageModel(

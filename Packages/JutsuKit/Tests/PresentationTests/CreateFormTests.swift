@@ -428,7 +428,7 @@ enum CreateFixture {
             form.costLine(in: context)?.detail
                 == "Estimate, Higgsfield quotes it after upload · 1240 cr left on your plan · failed runs are free")
         #expect(form.priceText(isDraft: false, in: context) == "120 cr")
-        // Higgsfield's `get_cost` quote before upload.
+        // Higgsfield's `estimate_video_cost` quote before upload.
         context.estimates[spec] = .credits(105, isEstimate: false)
         #expect(form.costLine(in: context)?.text == "15 s = 105 credits")
         #expect(

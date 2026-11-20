@@ -4,6 +4,10 @@ Notable changes to Jutsu Studio. Versions follow [Semantic Versioning](https://s
 
 ## [Unreleased]
 
+### Fixed
+
+- Price quotes on a Higgsfield account, for videos, images and the edits priced like a video, now ask Higgsfield's new price tools: its generate tools no longer accept the old price question. When an account has neither, the price is shown as unknown and nothing is sent.
+
 ## [0.2.7] - 2026-11-20
 
 ### Added
