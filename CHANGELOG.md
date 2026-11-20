@@ -4,6 +4,8 @@ Notable changes to Jutsu Studio. Versions follow [Semantic Versioning](https://s
 
 ## [Unreleased]
 
+## [0.2.8] - 2026-11-20
+
 ### Fixed
 
 - Price quotes on a Higgsfield account, for videos, images and the edits priced like a video, now ask Higgsfield's new price tools: its generate tools no longer accept the old price question. When an account has neither, the price is shown as unknown and nothing is sent.
@@ -143,7 +145,8 @@ The first public release.
 - The restyle preset gallery with search, favorites and recents.
 - Menu bar status, Dock badge, notifications and open at login.
 
-[Unreleased]: https://github.com/jutsuhq/jutsu-studio/compare/v0.2.7...HEAD
+[Unreleased]: https://github.com/jutsuhq/jutsu-studio/compare/v0.2.8...HEAD
+[0.2.8]: https://github.com/jutsuhq/jutsu-studio/compare/v0.2.7...v0.2.8
 [0.2.7]: https://github.com/jutsuhq/jutsu-studio/compare/v0.2.6...v0.2.7
 [0.2.6]: https://github.com/jutsuhq/jutsu-studio/compare/v0.2.5...v0.2.6
 [0.2.5]: https://github.com/jutsuhq/jutsu-studio/compare/v0.2.2...v0.2.5
