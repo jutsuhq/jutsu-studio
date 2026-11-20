@@ -42,7 +42,10 @@ struct MainWindow: View {
                 Button("Open Settings") { navigation.selection = .settings }
                 Button("OK", role: .cancel) {}
             case .openConsole:
-                Button("Open Console") { openURL(Higgsfield.consoleURL) }
+                // The App Store build never links to buying balance elsewhere (App Review 3.1.3(f)).
+                #if !APP_STORE
+                    Button("Open Console") { openURL(Higgsfield.consoleURL) }
+                #endif
                 Button("OK", role: .cancel) {}
             case nil:
                 Button("OK", role: .cancel) {}

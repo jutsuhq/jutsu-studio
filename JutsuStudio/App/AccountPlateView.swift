@@ -55,9 +55,18 @@ struct AccountPlateView: View {
         .buttonStyle(.plain)
         .pointerCursor()
         .onHover { isHovered = $0 }
-        .hoverHint(plate.warning == nil ? "Open Settings" : "Top up on higgsfield.ai")
+        .hoverHint(hint)
         .accessibilityLabel(plate.accessibilityLabel)
         .accessibilityHint("Opens Settings")
+    }
+
+    /// The App Store build never points to buying credits elsewhere (App Review 3.1.3(f)).
+    private var hint: LocalizedStringKey {
+        #if APP_STORE
+            "Open Settings"
+        #else
+            plate.warning == nil ? "Open Settings" : "Top up on higgsfield.ai"
+        #endif
     }
 
     /// The card, lit from the top corner in the plan's color.

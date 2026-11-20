@@ -11,7 +11,9 @@ struct GeneralSettingsView: View {
     @AppStorage(AppSettings.showActiveCountKey) private var showActiveCount = AppSettings.defaultShowActiveCount
     @AppStorage(AppSettings.runInMenuBarKey) private var runInMenuBar = AppSettings.defaultRunInMenuBar
     @AppStorage(AppSettings.promptHistoryClearedAtKey) private var promptHistoryClearedAt = 0.0
-    @Environment(SoftwareUpdater.self) private var updater
+    #if !APP_STORE
+        @Environment(SoftwareUpdater.self) private var updater
+    #endif
     @State private var isConfirmingClearHistory = false
     @State private var loginItem = LoginItemStatus.disabled
     @State private var errorText = ""
@@ -78,7 +80,9 @@ struct GeneralSettingsView: View {
                     }
                 }
             }
-            updates
+            #if !APP_STORE
+                updates
+            #endif
         }
         .onAppear(perform: readLoginItem)
         // The user may allow or remove the login item in System Settings meanwhile.
@@ -99,35 +103,37 @@ struct GeneralSettingsView: View {
         }
     }
 
-    private var updates: some View {
-        @Bindable var updater = updater
-        return SettingsSection(title: "Updates", footer: updatesFooter) {
-            SettingsRow(
-                label: "Check automatically", detail: String(localized: "Once a day"),
-                isFirst: true
-            ) {
-                Toggle("Check automatically", isOn: $updater.checksAutomatically)
-                    .toggleStyle(.switch)
-                    .labelsHidden()
+    #if !APP_STORE
+        private var updates: some View {
+            @Bindable var updater = updater
+            return SettingsSection(title: "Updates", footer: updatesFooter) {
+                SettingsRow(
+                    label: "Check automatically", detail: String(localized: "Once a day"),
+                    isFirst: true
+                ) {
+                    Toggle("Check automatically", isOn: $updater.checksAutomatically)
+                        .toggleStyle(.switch)
+                        .labelsHidden()
+                }
+                SettingsRow(
+                    label: "Download and install automatically",
+                    detail: String(localized: "Installs when you quit")
+                ) {
+                    Toggle("Download and install automatically", isOn: $updater.downloadsAutomatically)
+                        .toggleStyle(.switch)
+                        .labelsHidden()
+                }
+                .disabled(!updater.checksAutomatically)
+                .opacity(updater.checksAutomatically ? 1 : 0.45)
+                SettingsRow(label: AboutContent.versionText(info: Bundle.main.infoDictionary), detail: lastCheckText) {
+                    Button("Check Now") { updater.checkForUpdates() }
+                        .buttonStyle(.secondaryAction)
+                        .disabled(!updater.canCheckForUpdates)
+                }
             }
-            SettingsRow(
-                label: "Download and install automatically",
-                detail: String(localized: "Installs when you quit")
-            ) {
-                Toggle("Download and install automatically", isOn: $updater.downloadsAutomatically)
-                    .toggleStyle(.switch)
-                    .labelsHidden()
-            }
-            .disabled(!updater.checksAutomatically)
-            .opacity(updater.checksAutomatically ? 1 : 0.45)
-            SettingsRow(label: AboutContent.versionText(info: Bundle.main.infoDictionary), detail: lastCheckText) {
-                Button("Check Now") { updater.checkForUpdates() }
-                    .buttonStyle(.secondaryAction)
-                    .disabled(!updater.canCheckForUpdates)
-            }
+            .disabled(!SoftwareUpdater.isEnabled)
         }
-        .disabled(!SoftwareUpdater.isEnabled)
-    }
+    #endif
 
     /// What menu bar mode changes about opening at login, and the Login Items note when it needs approval.
     private var systemFooter: String {
@@ -138,19 +144,21 @@ struct GeneralSettingsView: View {
         return [mode, loginItem.note].compactMap(\.self).joined(separator: " ")
     }
 
-    private var lastCheckText: String {
-        guard let date = updater.lastCheck else { return String(localized: "Not checked yet") }
-        return String(localized: "Last checked \(date.formatted(date: .abbreviated, time: .shortened))")
-    }
+    #if !APP_STORE
+        private var lastCheckText: String {
+            guard let date = updater.lastCheck else { return String(localized: "Not checked yet") }
+            return String(localized: "Last checked \(date.formatted(date: .abbreviated, time: .shortened))")
+        }
 
-    private var updatesFooter: String {
-        SoftwareUpdater.isEnabled
-            ? String(
-                localized:
-                    "New versions come from the project's GitHub releases and are checked against its signing key before they install."
-            )
-            : String(localized: "Updates are off in development builds.")
-    }
+        private var updatesFooter: String {
+            SoftwareUpdater.isEnabled
+                ? String(
+                    localized:
+                        "New versions come from the project's GitHub releases and are checked against its signing key before they install."
+                )
+                : String(localized: "Updates are off in development builds.")
+        }
+    #endif
 
     private func readLoginItem() {
         loginItem = LoginItemStatus(SMAppService.mainApp.status)

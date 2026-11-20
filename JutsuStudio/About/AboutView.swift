@@ -64,7 +64,9 @@ struct AboutView: View {
             VStack(spacing: 2) {
                 Text(AboutContent.license)
                 Text(AboutContent.fontCredit)
-                Text(AboutContent.updaterCredit)
+                #if !APP_STORE
+                    Text(AboutContent.updaterCredit)
+                #endif
                 Text(SubtitleText.parakeetCredit)
             }
             .font(.system(size: 11))
@@ -95,12 +97,14 @@ struct AboutMenuItem: View {
     }
 }
 
-/// Software Update's menu item, dimmed while a check is under way and in Debug builds.
-struct CheckForUpdatesMenuItem: View {
-    let updater: SoftwareUpdater
+#if !APP_STORE
+    /// Software Update's menu item, dimmed while a check is under way and in Debug builds.
+    struct CheckForUpdatesMenuItem: View {
+        let updater: SoftwareUpdater
 
-    var body: some View {
-        Button("Check for Updates…") { updater.checkForUpdates() }
-            .disabled(!updater.canCheckForUpdates)
+        var body: some View {
+            Button("Check for Updates…") { updater.checkForUpdates() }
+                .disabled(!updater.canCheckForUpdates)
+        }
     }
-}
+#endif

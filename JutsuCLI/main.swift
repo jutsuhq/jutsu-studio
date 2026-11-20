@@ -2,13 +2,16 @@ import Foundation
 import JutsuAgent
 import JutsuMCP
 
-// The helper agents run, bundled at Jutsu Studio.app/Contents/Helpers/jutsu (project.yml). Not sandboxed: it drives
-// the sandboxed app through the agent socket in their shared app group's container. stdout carries MCP messages only;
-// anything for a person goes to stderr.
+// The helper agents run, bundled at Jutsu Studio.app/Contents/Helpers/jutsu (project.yml). Sandboxed only in the App
+// Store build, where its sandbox shares the app's group. It drives the sandboxed app through the agent socket in that
+// group's container. stdout carries MCP messages only; anything for a person goes to stderr.
 
 let executable = Bundle.main.executableURL ?? URL(filePath: CommandLine.arguments[0])
+// The user's own home folder, not the container a sandboxed helper (the App Store build) gets as its home: the
+// socket is in the app group's container under the real one.
+let home = getpwuid(getuid())?.pointee.pw_dir.map { URL(filePath: String(cString: $0), directoryHint: .isDirectory) }
 let location = AppConnection.locate(
-    executable: executable, environment: ProcessInfo.processInfo.environment, home: .homeDirectory)
+    executable: executable, environment: ProcessInfo.processInfo.environment, home: home ?? .homeDirectory)
 // The Info.plist built into this binary (project.yml) carries the app's version.
 let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "development"
 
