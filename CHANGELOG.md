@@ -4,6 +4,8 @@ Notable changes to Jutsu Studio. Versions follow [Semantic Versioning](https://s
 
 ## [Unreleased]
 
+## [0.2.7] - 2026-11-20
+
 ### Added
 
 - Higgsfield Intone, on a Higgsfield account: a talking head, one or two people from your images saying a speech recording, at 480p, 720p or 1080p in a frame from 21:9 to 3:4. Create shows a Speech row for it (an MP3, WAV, M4A or any audio file, 2–27.5 s, by drop or the file picker) and hides the length, as the clip runs the speech and 2.5 s more; it takes no source video. It has no REST endpoint, so an API key isn't offered it. No price is published, so until Higgsfield quotes the uploaded speech the estimate is 1, 2 or 4 credits a second, a placeholder. Agents get it through `create_video` with `speech`, `quote` with `speech_length` and `capabilities` (`takesSpeech`).
@@ -137,7 +139,8 @@ The first public release.
 - The restyle preset gallery with search, favorites and recents.
 - Menu bar status, Dock badge, notifications and open at login.
 
-[Unreleased]: https://github.com/jutsuhq/jutsu-studio/compare/v0.2.6...HEAD
+[Unreleased]: https://github.com/jutsuhq/jutsu-studio/compare/v0.2.7...HEAD
+[0.2.7]: https://github.com/jutsuhq/jutsu-studio/compare/v0.2.6...v0.2.7
 [0.2.6]: https://github.com/jutsuhq/jutsu-studio/compare/v0.2.5...v0.2.6
 [0.2.5]: https://github.com/jutsuhq/jutsu-studio/compare/v0.2.2...v0.2.5
 [0.2.2]: https://github.com/jutsuhq/jutsu-studio/compare/v0.2.1...v0.2.2
