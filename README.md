@@ -10,6 +10,10 @@ AI agents can use it too: the app bundles a `jutsu` MCP server and a [Claude Cod
 
 `brew install jutsuhq/tap/jutsu-studio`
 
+[![GitHub stars](https://img.shields.io/github/stars/jutsuhq/jutsu-studio?style=social)](https://github.com/jutsuhq/jutsu-studio/stargazers)
+
+⭐ If Jutsu Studio saves you time on Higgsfield, a star helps other people find it.
+
 [Quick start](#quick-start) · [Features](docs/features.md) · [Website](https://jutsustudio.com/) · [Higgsfield prices](https://jutsustudio.com/higgsfield-pricing/)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-8b5cf6.svg)](LICENSE)
